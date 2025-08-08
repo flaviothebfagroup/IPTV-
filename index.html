@@ -1,61 +1,667 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>IPTV Player Screen</title>
-  <meta charset="utf-8">
-  <style>
-    body { background: #000; color: #fff; text-align: center; font-family: sans-serif; }
-    video { width: 90vw; max-width: 1280px; aspect-ratio: 16/9; background: #111; margin-top: 40px;}
-    .ch { margin: 20px 0 0 0; font-size: 2em; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Signage - Live Stream Channels</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            position: relative;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Video Container */
+        .video-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+        }
+
+        /* Loading Spinner */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Channel Info Overlay */
+        .channel-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6));
+            backdrop-filter: blur(20px);
+            padding: 15px 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 50;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .channel-info.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .channel-name {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .channel-number {
+            font-size: 14px;
+            opacity: 0.8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .live-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #ff0000;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 5px rgba(255, 0, 0, 0); }
+        }
+
+        /* Status Bar */
+        .status-bar {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            padding: 12px 20px;
+            border-radius: 100px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 50;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 13px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: #43e97b;
+            border-radius: 50%;
+            animation: statusPulse 3s infinite;
+        }
+
+        .status-dot.disconnected {
+            background: #f5576c;
+            animation: none;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Display ID Badge */
+        .display-id {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        .display-id:hover {
+            opacity: 1;
+        }
+
+        /* Error Message */
+        .error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(245, 87, 108, 0.1);
+            border: 1px solid rgba(245, 87, 108, 0.3);
+            padding: 20px 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            z-index: 200;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .error-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #f5576c;
+        }
+
+        .error-text {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        /* Channel Transition Effect */
+        .transition-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 90;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .transition-overlay.active {
+            opacity: 1;
+        }
+
+        /* Volume Bar (visual only) */
+        .volume-indicator {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 10px;
+            display: none;
+            z-index: 60;
+        }
+
+        .volume-indicator.show {
+            display: block;
+            animation: fadeOut 2s forwards;
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+    </style>
 </head>
 <body>
-  <div class="ch" id="ch"></div>
-  <video id="video" controls autoplay muted></video>
-  <script>
-    // CHANGE THIS TO YOUR PUBLISHED CSV URL:
-    const sheetCSV = 'PASTE_YOUR_CSV_URL_HERE';
-    // How often to check (ms)
-    const POLL_INTERVAL = 2000;
+    <!-- Video Container -->
+    <div class="video-container">
+        <video id="videoPlayer" autoplay muted playsinline></video>
+    </div>
 
-    let channels = [];
-    let currentChannelNum = "1";
-    let lastChannelNum = null;
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
 
-    async function fetchCSV() {
-      const resp = await fetch(sheetCSV);
-      const text = await resp.text();
-      const lines = text.trim().split("\n");
-      channels = lines.slice(1).map(line => {
-        const [num, name, url] = line.split(",");
-        return { num, name, url };
-      });
-      // Get current channel number from the last column in the first row
-      currentChannelNum = lines[1].split(",")[3] || "1";
-    }
+    <!-- Channel Info -->
+    <div class="channel-info" id="channelInfo">
+        <div class="channel-name" id="channelName">News</div>
+        <div class="channel-number">
+            <span class="live-indicator"></span>
+            <span>LIVE • Channel <span id="channelNumber">1</span></span>
+        </div>
+    </div>
 
-    function updatePlayer() {
-      const channel = channels.find(ch => ch.num === currentChannelNum);
-      if (!channel) return;
-      document.getElementById('ch').textContent = channel.name + ' (' + channel.num + ')';
-      const video = document.getElementById('video');
-      if (video.src !== channel.url) {
-        video.src = channel.url;
-        video.load();
-        video.play();
-      }
-    }
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Connected</span>
+        <span>•</span>
+        <span id="currentTime">00:00</span>
+    </div>
 
-    async function poll() {
-      await fetchCSV();
-      if (currentChannelNum !== lastChannelNum) {
-        updatePlayer();
-        lastChannelNum = currentChannelNum;
-      }
-      setTimeout(poll, POLL_INTERVAL);
-    }
+    <!-- Display ID -->
+    <div class="display-id">
+        Display ID: <strong id="displayId">DISPLAY-001</strong>
+    </div>
 
-    poll();
-  </script>
+    <!-- Error Message -->
+    <div class="error-message" id="errorMessage">
+        <div class="error-title">Stream Unavailable</div>
+        <div class="error-text" id="errorText">Attempting to reconnect...</div>
+    </div>
+
+    <!-- Transition Overlay -->
+    <div class="transition-overlay" id="transitionOverlay"></div>
+
+    <!-- Volume Indicator -->
+    <div class="volume-indicator" id="volumeIndicator">
+        <span>Volume: Muted (Auto-play policy)</span>
+    </div>
+
+    <!-- HLS.js for stream playback -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
+    
+    <script>
+        // ============================================
+        // CONFIGURATION - CHANGE FOR EACH DISPLAY
+        // ============================================
+        const CONFIG = {
+            displayId: 'DISPLAY-001', // UNIQUE ID FOR EACH DISPLAY
+            dealershipName: 'Main Showroom', // Optional dealership identifier
+            
+            // Remote control settings
+            apiEndpoint: 'https://your-api.com/api/display', // Your API endpoint
+            wsUrl: 'wss://your-websocket.com/ws', // WebSocket endpoint (optional)
+            pollInterval: 2000, // Check for updates every 2 seconds
+            useWebSocket: false, // Set to true if you have WebSocket server
+            
+            // Channel definitions
+            channels: [
+                {
+                    id: 1,
+                    name: 'News',
+                    url: 'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8',
+                    type: 'hls'
+                },
+                {
+                    id: 2,
+                    name: 'Sports',
+                    url: 'http://fl5.moveonjoy.com/TSN_5/index.m3u8',
+                    type: 'hls'
+                },
+                {
+                    id: 3,
+                    name: 'Cooking',
+                    url: 'https://gusto-xumo.amagi.tv/playlist.m3u8',
+                    type: 'hls'
+                },
+                {
+                    id: 4,
+                    name: 'Nature',
+                    url: 'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8',
+                    type: 'hls'
+                },
+                {
+                    id: 5,
+                    name: 'Kids',
+                    url: 'https://fl2.moveonjoy.com/DISNEY_JR/index.m3u8',
+                    type: 'hls'
+                }
+            ]
+        };
+
+        // ============================================
+        // MAIN APPLICATION
+        // ============================================
+        
+        let currentChannel = 1;
+        let hls = null;
+        let ws = null;
+        let retryCount = 0;
+        let maxRetries = 3;
+        let isTransitioning = false;
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDisplay();
+            startClock();
+            loadChannel(1);
+            
+            if (CONFIG.useWebSocket) {
+                connectWebSocket();
+            } else {
+                startPolling();
+            }
+        });
+
+        // Initialize display settings
+        function initializeDisplay() {
+            document.getElementById('displayId').textContent = CONFIG.displayId;
+            
+            // Set up video player
+            const video = document.getElementById('videoPlayer');
+            video.volume = 0; // Start muted for autoplay
+            
+            // Handle video events
+            video.addEventListener('loadstart', () => showLoading(true));
+            video.addEventListener('canplay', () => showLoading(false));
+            video.addEventListener('error', handleVideoError);
+            video.addEventListener('stalled', handleStalled);
+        }
+
+        // Load and play channel
+        function loadChannel(channelNumber) {
+            if (isTransitioning) return;
+            
+            const channel = CONFIG.channels.find(ch => ch.id === channelNumber);
+            if (!channel) {
+                console.error('Channel not found:', channelNumber);
+                return;
+            }
+
+            console.log(`Loading channel ${channelNumber}: ${channel.name}`);
+            isTransitioning = true;
+            
+            // Show transition
+            const transitionOverlay = document.getElementById('transitionOverlay');
+            transitionOverlay.classList.add('active');
+            
+            setTimeout(() => {
+                // Update UI
+                currentChannel = channelNumber;
+                updateChannelInfo(channel);
+                
+                // Load stream
+                const video = document.getElementById('videoPlayer');
+                
+                if (Hls.isSupported()) {
+                    // Use HLS.js for HLS streams
+                    if (hls) {
+                        hls.destroy();
+                    }
+                    
+                    hls = new Hls({
+                        enableWorker: true,
+                        lowLatencyMode: true,
+                        backBufferLength: 90,
+                        maxBufferSize: 60 * 1000 * 1000, // 60MB
+                        maxBufferLength: 30,
+                        manifestLoadingTimeOut: 10000,
+                        manifestLoadingMaxRetry: 3,
+                        levelLoadingTimeOut: 10000,
+                        levelLoadingMaxRetry: 4
+                    });
+                    
+                    hls.loadSource(channel.url);
+                    hls.attachMedia(video);
+                    
+                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        video.play().catch(e => {
+                            console.log('Autoplay failed, user interaction required');
+                            showVolumeIndicator();
+                        });
+                    });
+                    
+                    hls.on(Hls.Events.ERROR, function(event, data) {
+                        handleHlsError(event, data);
+                    });
+                    
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    // Native HLS support (Safari)
+                    video.src = channel.url;
+                    video.play().catch(e => {
+                        console.log('Autoplay failed');
+                        showVolumeIndicator();
+                    });
+                } else {
+                    showError('HLS not supported on this device');
+                }
+                
+                // Hide transition
+                setTimeout(() => {
+                    transitionOverlay.classList.remove('active');
+                    isTransitioning = false;
+                }, 300);
+                
+            }, 300);
+        }
+
+        // Update channel info display
+        function updateChannelInfo(channel) {
+            document.getElementById('channelName').textContent = channel.name;
+            document.getElementById('channelNumber').textContent = channel.id;
+            
+            const channelInfo = document.getElementById('channelInfo');
+            channelInfo.classList.add('show');
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                channelInfo.classList.remove('show');
+            }, 5000);
+        }
+
+        // HTTP Polling for channel updates
+        function startPolling() {
+            setInterval(async () => {
+                try {
+                    const response = await fetch(`${CONFIG.apiEndpoint}/${CONFIG.displayId}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.channel && data.channel !== currentChannel) {
+                            loadChannel(data.channel);
+                        }
+                        updateConnectionStatus(true);
+                    } else {
+                        updateConnectionStatus(false);
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                    updateConnectionStatus(false);
+                }
+            }, CONFIG.pollInterval);
+        }
+
+        // WebSocket connection (optional)
+        function connectWebSocket() {
+            try {
+                ws = new WebSocket(`${CONFIG.wsUrl}?id=${CONFIG.displayId}`);
+                
+                ws.onopen = () => {
+                    console.log('WebSocket connected');
+                    updateConnectionStatus(true);
+                    ws.send(JSON.stringify({ 
+                        type: 'register', 
+                        displayId: CONFIG.displayId 
+                    }));
+                };
+                
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'channel-change' && data.channel) {
+                            loadChannel(data.channel);
+                        }
+                    } catch (e) {
+                        console.error('Message parse error:', e);
+                    }
+                };
+                
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    updateConnectionStatus(false);
+                };
+                
+                ws.onclose = () => {
+                    console.log('WebSocket disconnected, reconnecting...');
+                    updateConnectionStatus(false);
+                    setTimeout(connectWebSocket, 5000);
+                };
+            } catch (e) {
+                console.error('WebSocket failed, falling back to polling');
+                startPolling();
+            }
+        }
+
+        // Handle HLS errors
+        function handleHlsError(event, data) {
+            console.error('HLS Error:', data);
+            
+            if (data.fatal) {
+                switch(data.type) {
+                    case Hls.ErrorTypes.NETWORK_ERROR:
+                        console.log('Network error, attempting recovery...');
+                        if (retryCount < maxRetries) {
+                            retryCount++;
+                            setTimeout(() => {
+                                hls.startLoad();
+                            }, 2000);
+                        } else {
+                            showError('Network error - Unable to load stream');
+                        }
+                        break;
+                    case Hls.ErrorTypes.MEDIA_ERROR:
+                        console.log('Media error, attempting recovery...');
+                        hls.recoverMediaError();
+                        break;
+                    default:
+                        showError('Stream error - Attempting to reconnect');
+                        setTimeout(() => {
+                            loadChannel(currentChannel);
+                        }, 5000);
+                        break;
+                }
+            }
+        }
+
+        // Handle video errors
+        function handleVideoError(e) {
+            console.error('Video error:', e);
+            showError('Video playback error');
+            
+            // Try to reload channel after delay
+            setTimeout(() => {
+                loadChannel(currentChannel);
+            }, 5000);
+        }
+
+        // Handle stalled stream
+        function handleStalled() {
+            console.log('Stream stalled, buffering...');
+            showLoading(true);
+        }
+
+        // Show/hide loading overlay
+        function showLoading(show) {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (show) {
+                loadingOverlay.classList.add('active');
+            } else {
+                loadingOverlay.classList.remove('active');
+                hideError();
+            }
+        }
+
+        // Show error message
+        function showError(message) {
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMessage').classList.add('show');
+        }
+
+        // Hide error message
+        function hideError() {
+            document.getElementById('errorMessage').classList.remove('show');
+        }
+
+        // Show volume indicator
+        function showVolumeIndicator() {
+            const indicator = document.getElementById('volumeIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+
+        // Update connection status
+        function updateConnectionStatus(connected) {
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            
+            if (connected) {
+                statusDot.classList.remove('disconnected');
+                statusText.textContent = 'Connected';
+            } else {
+                statusDot.classList.add('disconnected');
+                statusText.textContent = 'Disconnected';
+            }
+        }
+
+        // Clock display
+        function startClock() {
+            function updateTime() {
+                const now = new Date();
+                const time = now.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false 
+                });
+                document.getElementById('currentTime').textContent = time;
+            }
+            updateTime();
+            setInterval(updateTime, 1000);
+        }
+
+        // Handle page visibility (power saving)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (hls) {
+                    hls.stopLoad();
+                }
+            } else {
+                if (hls) {
+                    hls.startLoad();
+                }
+            }
+        });
+    </script>
 </body>
 </html>
