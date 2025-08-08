@@ -485,25 +485,30 @@
         }
 
         // HTTP Polling for channel updates
-        function startPolling() {
-            setInterval(async () => {
-                try {
-                    const response = await fetch(`${CONFIG.apiEndpoint}/${CONFIG.displayId}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.channel && data.channel !== currentChannel) {
-                            loadChannel(data.channel);
-                        }
-                        updateConnectionStatus(true);
-                    } else {
-                        updateConnectionStatus(false);
-                    }
-                } catch (error) {
-                    console.error('Polling error:', error);
-                    updateConnectionStatus(false);
-                }
-            }, CONFIG.pollInterval);
+function startPolling() {
+    console.log('Starting polling for display:', CONFIG.displayId);
+    
+    setInterval(async () => {
+        try {
+            const url = `https://iptv-bfa-default-rtdb.firebaseio.com/displays/${CONFIG.displayId}.json`;
+            console.log('Polling:', url);
+            
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            console.log('Received data:', data);
+            
+            if (data && data.channel && data.channel !== currentChannel) {
+                console.log('Channel change detected:', data.channel);
+                loadChannel(data.channel);
+            }
+            updateConnectionStatus(true);
+        } catch (error) {
+            console.error('Polling error:', error);
+            updateConnectionStatus(false);
         }
+    }, CONFIG.pollInterval);
+}
 
         // WebSocket connection (optional)
         function connectWebSocket() {
