@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>IPTV Player Screen</title>
+  <meta charset="utf-8">
+  <style>
+    body { background: #000; color: #fff; text-align: center; font-family: sans-serif; }
+    video { width: 90vw; max-width: 1280px; aspect-ratio: 16/9; background: #111; margin-top: 40px;}
+    .ch { margin: 20px 0 0 0; font-size: 2em; }
+  </style>
+</head>
+<body>
+  <div class="ch" id="ch"></div>
+  <video id="video" controls autoplay muted></video>
+  <script>
+    // CHANGE THIS TO YOUR PUBLISHED CSV URL:
+    const sheetCSV = 'PASTE_YOUR_CSV_URL_HERE';
+    // How often to check (ms)
+    const POLL_INTERVAL = 2000;
+
+    let channels = [];
+    let currentChannelNum = "1";
+    let lastChannelNum = null;
+
+    async function fetchCSV() {
+      const resp = await fetch(sheetCSV);
+      const text = await resp.text();
+      const lines = text.trim().split("\n");
+      channels = lines.slice(1).map(line => {
+        const [num, name, url] = line.split(",");
+        return { num, name, url };
+      });
+      // Get current channel number from the last column in the first row
+      currentChannelNum = lines[1].split(",")[3] || "1";
+    }
+
+    function updatePlayer() {
+      const channel = channels.find(ch => ch.num === currentChannelNum);
+      if (!channel) return;
+      document.getElementById('ch').textContent = channel.name + ' (' + channel.num + ')';
+      const video = document.getElementById('video');
+      if (video.src !== channel.url) {
+        video.src = channel.url;
+        video.load();
+        video.play();
+      }
+    }
+
+    async function poll() {
+      await fetchCSV();
+      if (currentChannelNum !== lastChannelNum) {
+        updatePlayer();
+        lastChannelNum = currentChannelNum;
+      }
+      setTimeout(poll, POLL_INTERVAL);
+    }
+
+    poll();
+  </script>
+</body>
+</html>
