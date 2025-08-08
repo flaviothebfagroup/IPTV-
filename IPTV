@@ -463,6 +463,7 @@
             70% { opacity: 1; }
             100% { opacity: 0; }
         }
+      
     </style>
 </head>
 <body>
@@ -538,12 +539,24 @@
         // CONFIGURATION - CHANGE FOR EACH DISPLAY
         // ============================================
 
-        const CONFIG = {
-    displayId: 'DISPLAY-001',
-    apiEndpoint: 'https://iptv-bfa-default-rtdb.firebaseio.com/displays',
-    pollInterval: 2000,
-    useWebSocket: false,
-    dealershipName: 'Main Showroom', // Optional dealership identifier
+        <script>
+    // ============================================
+    // GET DISPLAY ID FROM URL PARAMETER
+    // ============================================
+    const urlParams = new URLSearchParams(window.location.search);
+    const displayIdFromUrl = urlParams.get('display');
+    
+    // ============================================
+    // CONFIGURATION - CHANGE FOR EACH DISPLAY
+    // ============================================
+    const CONFIG = {
+        displayId: displayIdFromUrl || 'DISPLAY-001', // 👈 USES URL OR DEFAULT
+        apiEndpoint: 'https://iptv-bfa-default-rtdb.firebaseio.com/displays',
+        pollInterval: 2000,
+        useWebSocket: false,
+        dealershipName: urlParams.get('name') || 'Main Showroom', // Optional: name from URL too
+        // ... rest of your config
+    
             
             // Remote control settings
             apiEndpoint: 'https://your-api.com/api/display', // Your API endpoint
@@ -1037,24 +1050,7 @@ function initVolumeControl() {
     });
 }
 
-// Show first-time audio setup
-function showAudioSetup() {
-    const setupDiv = document.createElement('div');
-    setupDiv.className = 'audio-setup-prompt';
-    setupDiv.innerHTML = `
-        <h2>🔊 Enable Audio?</h2>
-        <p>Would you like to enable sound for this display?</p>
-        <div class="setup-buttons">
-            <button class="setup-btn primary" onclick="enableAudioSetup()">
-                Yes, Enable Sound
-            </button>
-            <button class="setup-btn secondary" onclick="skipAudioSetup()">
-                No, Stay Muted
-            </button>
-        </div>
-    `;
-    document.body.appendChild(setupDiv);
-}
+
 
 function enableAudioSetup() {
     localStorage.setItem('audioSetupComplete', 'true');
@@ -1248,5 +1244,6 @@ function loadChannel(channelNumber) {
 }
 */
     </script>
+  
 </body>
 </html>
