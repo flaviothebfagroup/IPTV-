@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Signage Control Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.5s ease;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .display-selector {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: fadeInUp 0.5s ease 0.1s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .display-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .display-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .display-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .display-btn.active {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: #43e97b;
+            box-shadow: 0 0 20px rgba(67, 233, 123, 0.3);
+        }
+
+        .display-id {
+            display: block;
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .channel-controls {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: fadeInUp 0.5s ease 0.2s both;
+        }
+
+        .channel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .channel-btn {
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .channel-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.2));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .channel-btn:hover::before {
+            opacity: 1;
+        }
+
+        .channel-btn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+        }
+
+        .channel-btn:active {
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .channel-number {
+            font-size: 36px;
+            margin-bottom: 5px;
+        }
+
+        .channel-name {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        /* Channel specific colors */
+        .channel-btn[data-channel="1"] { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .channel-btn[data-channel="2"] { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .channel-btn[data-channel="3"] { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .channel-btn[data-channel="4"] { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+        .channel-btn[data-channel="5"] { background: linear-gradient(135deg, #fa709a, #fee140); }
+
+        .status {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            text-align: center;
+            font-size: 14px;
+            animation: fadeInUp 0.5s ease 0.3s both;
+        }
+
+        .status.success {
+            background: rgba(67, 233, 123, 0.2);
+            border: 1px solid rgba(67, 233, 123, 0.5);
+        }
+
+        .status.error {
+            background: rgba(245, 87, 108, 0.2);
+            border: 1px solid rgba(245, 87, 108, 0.5);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .current-status {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .add-display-btn {
+            background: rgba(67, 233, 123, 0.2);
+            border: 2px dashed rgba(67, 233, 123, 0.5);
+            color: #43e97b;
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .add-display-btn:hover {
+            background: rgba(67, 233, 123, 0.3);
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 480px) {
+            .channel-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .display-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 Signage Control</h1>
+            <p class="subtitle">Remote Channel Controller</p>
+        </div>
+
+        <!-- Display Selector -->
+        <div class="display-selector">
+            <div class="section-title">📺 Select Display</div>
+            <div class="display-grid" id="displayGrid">
+                <button class="display-btn active" onclick="selectDisplay('DISPLAY-001', this)">
+                    <span>Showroom</span>
+                    <span class="display-id">DISPLAY-001</span>
+                </button>
+                <button class="display-btn" onclick="selectDisplay('DISPLAY-002', this)">
+                    <span>Waiting Area</span>
+                    <span class="display-id">DISPLAY-002</span>
+                </button>
+                <button class="display-btn" onclick="selectDisplay('DISPLAY-003', this)">
+                    <span>Service</span>
+                    <span class="display-id">DISPLAY-003</span>
+                </button>
+                <button class="add-display-btn" onclick="addDisplay()">
+                    + Add Display
+                </button>
+            </div>
+            <div class="current-status">
+                <span>Selected: <strong id="currentDisplay">DISPLAY-001</strong></span>
+                <span>Channel: <strong id="currentChannel">1</strong></span>
+            </div>
+        </div>
+
+        <!-- Channel Controls -->
+        <div class="channel-controls">
+            <div class="section-title">📡 Select Channel</div>
+            <div class="channel-grid">
+                <button class="channel-btn" data-channel="1" onclick="changeChannel(1)">
+                    <span class="channel-number">1</span>
+                    <span class="channel-name">News</span>
+                </button>
+                <button class="channel-btn" data-channel="2" onclick="changeChannel(2)">
+                    <span class="channel-number">2</span>
+                    <span class="channel-name">Sports</span>
+                </button>
+                <button class="channel-btn" data-channel="3" onclick="changeChannel(3)">
+                    <span class="channel-number">3</span>
+                    <span class="channel-name">Cooking</span>
+                </button>
+                <button class="channel-btn" data-channel="4" onclick="changeChannel(4)">
+                    <span class="channel-number">4</span>
+                    <span class="channel-name">Nature</span>
+                </button>
+                <button class="channel-btn" data-channel="5" onclick="changeChannel(5)">
+                    <span class="channel-number">5</span>
+                    <span class="channel-name">Kids</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Status Messages -->
+        <div id="status" class="status" style="display: none;"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, get, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // ===============================================
+        // FIREBASE CONFIGURATION
+        // ===============================================
+        // 1. Go to https://console.firebase.google.com/
+        // 2. Create a new project (free)
+        // 3. Create a Realtime Database
+        // 4. Set rules to allow read/write (for testing):
+        //    {
+        //      "rules": {
+        //        ".read": true,
+        //        ".write": true
+        //      }
+        //    }
+        // 5. Copy your config from Project Settings > General
+        
+        const firebaseConfig = {
+            apiKey: "YOUR-API-KEY",
+            authDomain: "YOUR-PROJECT.firebaseapp.com",
+            databaseURL: "https://YOUR-PROJECT.firebaseio.com",
+            projectId: "YOUR-PROJECT",
+            storageBucket: "YOUR-PROJECT.appspot.com",
+            messagingSenderId: "YOUR-SENDER-ID",
+            appId: "YOUR-APP-ID"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Global variables
+        let currentDisplayId = 'DISPLAY-001';
+        let displays = ['DISPLAY-001', 'DISPLAY-002', 'DISPLAY-003'];
+
+        // Make functions available globally
+        window.selectDisplay = function(displayId, button) {
+            currentDisplayId = displayId;
+            document.getElementById('currentDisplay').textContent = displayId;
+            
+            // Update button states
+            document.querySelectorAll('.display-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            if (button) {
+                button.classList.add('active');
+            }
+            
+            // Get current channel for this display
+            const displayRef = ref(database, `displays/${displayId}`);
+            get(displayRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    document.getElementById('currentChannel').textContent = data.channel || 1;
+                }
+            });
+            
+            showStatus('Display selected: ' + displayId, 'success');
+        }
+
+        window.changeChannel = function(channelNumber) {
+            showStatus('Changing channel...<span class="loading"></span>', 'success');
+            
+            // Update Firebase
+            const displayRef = ref(database, `displays/${currentDisplayId}`);
+            set(displayRef, {
+                channel: channelNumber,
+                timestamp: Date.now(),
+                displayId: currentDisplayId
+            }).then(() => {
+                document.getElementById('currentChannel').textContent = channelNumber;
+                showStatus(`✅ Channel ${channelNumber} set for ${currentDisplayId}`, 'success');
+            }).catch((error) => {
+                showStatus('❌ Error: ' + error.message, 'error');
+            });
+        }
+
+        window.addDisplay = function() {
+            const newId = prompt('Enter Display ID (e.g., DISPLAY-004):');
+            if (newId && !displays.includes(newId)) {
+                displays.push(newId);
+                const grid = document.getElementById('displayGrid');
+                const newBtn = document.createElement('button');
+                newBtn.className = 'display-btn';
+                newBtn.innerHTML = `
+                    <span>${newId}</span>
+                    <span class="display-id">${newId}</span>
+                `;
+                newBtn.onclick = () => selectDisplay(newId, newBtn);
+                grid.insertBefore(newBtn, grid.lastElementChild);
+                
+                // Initialize in Firebase
+                const displayRef = ref(database, `displays/${newId}`);
+                set(displayRef, {
+                    channel: 1,
+                    timestamp: Date.now(),
+                    displayId: newId
+                });
+                
+                showStatus(`Display ${newId} added!`, 'success');
+            }
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.innerHTML = message;
+            status.className = 'status ' + type;
+            status.style.display = 'block';
+            
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+        }
+
+        // Listen for real-time updates (optional - shows what's happening)
+        displays.forEach(displayId => {
+            const displayRef = ref(database, `displays/${displayId}`);
+            onValue(displayRef, (snapshot) => {
+                if (snapshot.exists() && displayId === currentDisplayId) {
+                    const data = snapshot.val();
+                    document.getElementById('currentChannel').textContent = data.channel || 1;
+                }
+            });
+        });
+
+        // Initial load
+        selectDisplay('DISPLAY-001', document.querySelector('.display-btn'));
+    </script>
+</body>
+</html>
