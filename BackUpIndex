@@ -649,6 +649,16 @@
                 
                 // Load stream
                 const video = document.getElementById('videoPlayer');
+
+
+
+
+
+
+
+
+
+                
                 
                 if (Hls.isSupported()) {
                     // Use HLS.js for HLS streams
@@ -716,6 +726,9 @@
             }, 5000);
         }
 
+  
+
+        
         // HTTP Polling for channel updates
 function startPolling() {
     console.log('Starting polling for display:', CONFIG.displayId);
@@ -723,23 +736,98 @@ function startPolling() {
     setInterval(async () => {
         try {
             const url = `https://iptv-bfa-default-rtdb.firebaseio.com/displays/${CONFIG.displayId}.json`;
-            console.log('Polling:', url);
-            
             const response = await fetch(url);
             const data = await response.json();
             
-            console.log('Received data:', data);
-            
-            if (data && data.channel && data.channel !== currentChannel) {
-                console.log('Channel change detected:', data.channel);
-                loadChannel(data.channel);
+            if (data) {
+                // Check for channel change
+                if (data.channel && data.channel !== currentChannel) {
+                    console.log('Channel change detected:', data.channel);
+                    loadChannel(data.channel);
+                }
+                
+                // Check for volume change
+                if (data.volume !== undefined || data.muted !== undefined) {
+                    applyVolumeSettings(data.volume, data.muted);
+                }
+                
+                updateConnectionStatus(true);
             }
-            updateConnectionStatus(true);
         } catch (error) {
             console.error('Polling error:', error);
             updateConnectionStatus(false);
         }
     }, CONFIG.pollInterval);
+}
+
+        // Apply volume settings from remote control
+function applyVolumeSettings(volume, muted) {
+    const video = document.getElementById('videoPlayer');
+    
+    if (volume !== undefined) {
+        currentVolume = volume;
+        video.volume = volume / 100;
+        console.log('Volume set to:', volume + '%');
+    }
+    
+    if (muted !== undefined) {
+        isMuted = muted;
+        
+        if (muted) {
+            video.muted = true;
+            console.log('Audio muted');
+        } else {
+            // Attempt to unmute - this is where BrightSign differs from browsers
+            video.muted = false;
+            video.volume = currentVolume / 100;
+            
+            // Try to play to activate audio
+            video.play().then(() => {
+                console.log('Audio unmuted successfully at', currentVolume + '%');
+                showVolumeIndicator(`🔊 ${currentVolume}%`);
+            }).catch(e => {
+                console.log('Unmute attempted - BrightSign should allow this');
+                // On BrightSign, this should work without user interaction
+            });
+        }
+    }
+      // Update any visual indicators if you have them
+    updateVolumeDisplay();
+}
+
+        // Show volume change indicator (visual feedback)
+function showVolumeIndicator(text) {
+    // Remove any existing indicator
+    let indicator = document.querySelector('.remote-volume-indicator');
+    if (indicator) {
+        indicator.remove();
+    }
+    
+    // Create new indicator
+    indicator = document.createElement('div');
+    indicator.className = 'remote-volume-indicator';
+    indicator.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 30px 50px;
+        border-radius: 20px;
+        font-size: 48px;
+        font-weight: bold;
+        z-index: 9999;
+        pointer-events: none;
+        animation: fadeInOut 2s ease;
+    `;
+    indicator.textContent = text;
+    document.body.appendChild(indicator);
+    
+    // Remove after animation
+    setTimeout(() => {
+        indicator.remove();
+    }, 2000);
 }
 
         // WebSocket connection (optional)
