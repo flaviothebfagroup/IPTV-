@@ -274,6 +274,137 @@
             margin-bottom: 5px;
         }
 
+        /* Volume Controls */
+        .volume-controls {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-top: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: fadeInUp 0.5s ease 0.3s both;
+        }
+
+        .volume-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .vol-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 15px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .vol-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .vol-btn:active {
+            transform: scale(0.95);
+        }
+
+        .vol-btn.mute-btn {
+            background: rgba(245, 87, 108, 0.2);
+            border-color: rgba(245, 87, 108, 0.5);
+        }
+
+        .vol-btn.mute-btn.unmuted {
+            background: rgba(67, 233, 123, 0.2);
+            border-color: rgba(67, 233, 123, 0.5);
+        }
+
+        .vol-btn span {
+            font-size: 14px;
+        }
+
+        .vol-btn #muteIcon {
+            font-size: 24px;
+        }
+
+        .volume-slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+        }
+
+        .vol-adjust-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .vol-adjust-btn:hover {
+            background: rgba(67, 233, 123, 0.2);
+            border-color: rgba(67, 233, 123, 0.5);
+            transform: scale(1.1);
+        }
+
+        .vol-adjust-btn:active {
+            transform: scale(0.95);
+        }
+
+        .volume-slider {
+            flex: 1;
+            position: relative;
+        }
+
+        .volume-track {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .volume-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #43e97b, #38f9d7);
+            border-radius: 5px;
+            width: 0%;
+            transition: width 0.3s;
+            box-shadow: 0 0 10px rgba(67, 233, 123, 0.5);
+        }
+
+        .volume-value {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
         /* Mobile responsive */
         @media (max-width: 480px) {
             .channel-grid {
@@ -282,6 +413,15 @@
             
             .display-grid {
                 grid-template-columns: 1fr;
+            }
+            
+            .volume-buttons {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .vol-btn {
+                padding: 12px 8px;
+                font-size: 12px;
             }
         }
     </style>
@@ -337,7 +477,6 @@
                     <span class="channel-name">Sports</span>
                 </button>
                 <button class="channel-btn" data-channel="3" onclick="changeChannel(3)">
-                    <span class="channel-number">3</span>
                     <span class="channel-name">Cooking</span>
                 </button>
                 <button class="channel-btn" data-channel="4" onclick="changeChannel(4)">
@@ -348,6 +487,39 @@
                     <span class="channel-number">5</span>
                     <span class="channel-name">Kids</span>
                 </button>
+            </div>
+        </div>
+
+        <!-- Volume Controls -->
+        <div class="volume-controls">
+            <div class="section-title">🔊 Volume Control</div>
+            <div class="volume-buttons">
+                <button class="vol-btn mute-btn" onclick="toggleMute()">
+                    <span id="muteIcon">🔇</span>
+                    <span id="muteText">Muted</span>
+                </button>
+                <button class="vol-btn" onclick="setVolume(25)">
+                    <span class="vol-level">25%</span>
+                </button>
+                <button class="vol-btn" onclick="setVolume(50)">
+                    <span class="vol-level">50%</span>
+                </button>
+                <button class="vol-btn" onclick="setVolume(75)">
+                    <span class="vol-level">75%</span>
+                </button>
+                <button class="vol-btn" onclick="setVolume(100)">
+                    <span class="vol-level">100%</span>
+                </button>
+            </div>
+            <div class="volume-slider-container">
+                <button class="vol-adjust-btn" onclick="volumeDown()">−</button>
+                <div class="volume-slider">
+                    <div class="volume-track">
+                        <div class="volume-fill" id="volumeFill"></div>
+                    </div>
+                    <span class="volume-value" id="volumeValue">0%</span>
+                </div>
+                <button class="vol-adjust-btn" onclick="volumeUp()">+</button>
             </div>
         </div>
 
@@ -381,6 +553,8 @@
         // Global variables
         let currentDisplayId = 'DISPLAY-001';
         let displays = ['DISPLAY-001', 'DISPLAY-002', 'DISPLAY-003'];
+        let currentVolume = 0;
+        let isMuted = true;
 
         // Make functions available globally
         window.selectDisplay = function(displayId, button) {
@@ -395,20 +569,30 @@
                 button.classList.add('active');
             }
             
-            // Get current channel for this display
+            // Get current channel and volume for this display
             const displayRef = ref(database, `displays/${displayId}`);
             get(displayRef).then((snapshot) => {
                 if (snapshot.exists()) {
                     const data = snapshot.val();
                     document.getElementById('currentChannel').textContent = data.channel || 1;
+                    
+                    // Update volume display
+                    currentVolume = data.volume !== undefined ? data.volume : 0;
+                    isMuted = data.muted !== undefined ? data.muted : true;
+                    updateVolumeDisplay();
                 } else {
                     // Initialize display if it doesn't exist
                     set(displayRef, {
                         channel: 1,
+                        volume: 0,
+                        muted: true,
                         timestamp: Date.now(),
                         displayId: displayId
                     });
                     document.getElementById('currentChannel').textContent = 1;
+                    currentVolume = 0;
+                    isMuted = true;
+                    updateVolumeDisplay();
                 }
             }).catch((error) => {
                 console.error('Error fetching display data:', error);
@@ -422,16 +606,107 @@
             
             // Update Firebase
             const displayRef = ref(database, `displays/${currentDisplayId}`);
-            set(displayRef, {
-                channel: channelNumber,
-                timestamp: Date.now(),
-                displayId: currentDisplayId
-            }).then(() => {
-                document.getElementById('currentChannel').textContent = channelNumber;
-                showStatus(`✅ Channel ${channelNumber} set for ${currentDisplayId}`, 'success');
-            }).catch((error) => {
-                showStatus('❌ Error: ' + error.message, 'error');
-                console.error('Error setting channel:', error);
+            get(displayRef).then((snapshot) => {
+                const currentData = snapshot.exists() ? snapshot.val() : {};
+                
+                set(displayRef, {
+                    ...currentData,
+                    channel: channelNumber,
+                    timestamp: Date.now(),
+                    displayId: currentDisplayId
+                }).then(() => {
+                    document.getElementById('currentChannel').textContent = channelNumber;
+                    showStatus(`✅ Channel ${channelNumber} set for ${currentDisplayId}`, 'success');
+                }).catch((error) => {
+                    showStatus('❌ Error: ' + error.message, 'error');
+                    console.error('Error setting channel:', error);
+                });
+            });
+        }
+
+        // Volume control functions
+        window.setVolume = function(volume) {
+            currentVolume = volume;
+            if (volume > 0) {
+                isMuted = false;
+            }
+            updateVolumeDisplay();
+            sendVolumeUpdate();
+        }
+
+        window.volumeUp = function() {
+            currentVolume = Math.min(100, currentVolume + 10);
+            if (currentVolume > 0) {
+                isMuted = false;
+            }
+            updateVolumeDisplay();
+            sendVolumeUpdate();
+        }
+
+        window.volumeDown = function() {
+            currentVolume = Math.max(0, currentVolume - 10);
+            if (currentVolume === 0) {
+                isMuted = true;
+            }
+            updateVolumeDisplay();
+            sendVolumeUpdate();
+        }
+
+        window.toggleMute = function() {
+            isMuted = !isMuted;
+            if (!isMuted && currentVolume === 0) {
+                currentVolume = 50; // Default unmute volume
+            }
+            updateVolumeDisplay();
+            sendVolumeUpdate();
+        }
+
+        function updateVolumeDisplay() {
+            const volumeFill = document.getElementById('volumeFill');
+            const volumeValue = document.getElementById('volumeValue');
+            const muteIcon = document.getElementById('muteIcon');
+            const muteText = document.getElementById('muteText');
+            const muteBtn = document.querySelector('.mute-btn');
+            
+            volumeFill.style.width = currentVolume + '%';
+            volumeValue.textContent = currentVolume + '%';
+            
+            if (isMuted || currentVolume === 0) {
+                muteIcon.textContent = '🔇';
+                muteText.textContent = 'Muted';
+                muteBtn.classList.remove('unmuted');
+            } else {
+                if (currentVolume < 30) {
+                    muteIcon.textContent = '🔈';
+                } else if (currentVolume < 70) {
+                    muteIcon.textContent = '🔉';
+                } else {
+                    muteIcon.textContent = '🔊';
+                }
+                muteText.textContent = currentVolume + '%';
+                muteBtn.classList.add('unmuted');
+            }
+        }
+
+        function sendVolumeUpdate() {
+            showStatus('Updating volume...<span class="loading"></span>', 'success');
+            
+            const displayRef = ref(database, `displays/${currentDisplayId}`);
+            get(displayRef).then((snapshot) => {
+                const currentData = snapshot.exists() ? snapshot.val() : {};
+                
+                set(displayRef, {
+                    ...currentData,
+                    volume: currentVolume,
+                    muted: isMuted,
+                    volumeChanged: true, // Flag to trigger update on display
+                    timestamp: Date.now(),
+                    displayId: currentDisplayId
+                }).then(() => {
+                    showStatus(`✅ Volume ${isMuted ? 'muted' : currentVolume + '%'} for ${currentDisplayId}`, 'success');
+                }).catch((error) => {
+                    showStatus('❌ Error updating volume: ' + error.message, 'error');
+                });
             });
         }
 
@@ -521,5 +796,4 @@
         console.log('Firebase connected to:', firebaseConfig.databaseURL);
     </script>
 </body>
-    
 </html>
