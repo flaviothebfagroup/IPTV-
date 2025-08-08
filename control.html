@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Signage Control Panel</title>
+    <title>IPTV Control Panel</title>
     <style>
         * {
             margin: 0;
@@ -259,6 +259,21 @@
             background: rgba(67, 233, 123, 0.3);
         }
 
+        .setup-notice {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .setup-notice strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
         /* Mobile responsive */
         @media (max-width: 480px) {
             .channel-grid {
@@ -274,8 +289,13 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎮 Signage Control</h1>
+            <h1>📺 IPTV Control</h1>
             <p class="subtitle">Remote Channel Controller</p>
+        </div>
+
+        <div class="setup-notice">
+            <strong>⚡ Quick Setup:</strong>
+            Click on a display below, then select a channel to change it instantly!
         </div>
 
         <!-- Display Selector -->
@@ -341,28 +361,17 @@
         import { getDatabase, ref, set, get, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
         // ===============================================
-        // FIREBASE CONFIGURATION
+        // YOUR FIREBASE CONFIGURATION
         // ===============================================
-        // 1. Go to https://console.firebase.google.com/
-        // 2. Create a new project (free)
-        // 3. Create a Realtime Database
-        // 4. Set rules to allow read/write (for testing):
-        //    {
-        //      "rules": {
-        //        ".read": true,
-        //        ".write": true
-        //      }
-        //    }
-        // 5. Copy your config from Project Settings > General
-        
         const firebaseConfig = {
-            apiKey: "YOUR-API-KEY",
-            authDomain: "YOUR-PROJECT.firebaseapp.com",
-            databaseURL: "https://YOUR-PROJECT.firebaseio.com",
-            projectId: "YOUR-PROJECT",
-            storageBucket: "YOUR-PROJECT.appspot.com",
-            messagingSenderId: "YOUR-SENDER-ID",
-            appId: "YOUR-APP-ID"
+            apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+            authDomain: "iptv-bfa.firebaseapp.com",
+            databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+            projectId: "iptv-bfa",
+            storageBucket: "iptv-bfa.firebasestorage.app",
+            messagingSenderId: "838790935867",
+            appId: "1:838790935867:web:1860eac7dbeb7159e1b31e",
+            measurementId: "G-CV5Y0BRYRF"
         };
 
         // Initialize Firebase
@@ -382,7 +391,7 @@
             document.querySelectorAll('.display-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            if (button) {
+            if (button && button.classList.contains('display-btn')) {
                 button.classList.add('active');
             }
             
@@ -392,7 +401,17 @@
                 if (snapshot.exists()) {
                     const data = snapshot.val();
                     document.getElementById('currentChannel').textContent = data.channel || 1;
+                } else {
+                    // Initialize display if it doesn't exist
+                    set(displayRef, {
+                        channel: 1,
+                        timestamp: Date.now(),
+                        displayId: displayId
+                    });
+                    document.getElementById('currentChannel').textContent = 1;
                 }
+            }).catch((error) => {
+                console.error('Error fetching display data:', error);
             });
             
             showStatus('Display selected: ' + displayId, 'success');
@@ -412,18 +431,21 @@
                 showStatus(`✅ Channel ${channelNumber} set for ${currentDisplayId}`, 'success');
             }).catch((error) => {
                 showStatus('❌ Error: ' + error.message, 'error');
+                console.error('Error setting channel:', error);
             });
         }
 
         window.addDisplay = function() {
             const newId = prompt('Enter Display ID (e.g., DISPLAY-004):');
             if (newId && !displays.includes(newId)) {
+                const newName = prompt('Enter Display Name (e.g., Conference Room):') || newId;
+                
                 displays.push(newId);
                 const grid = document.getElementById('displayGrid');
                 const newBtn = document.createElement('button');
                 newBtn.className = 'display-btn';
                 newBtn.innerHTML = `
-                    <span>${newId}</span>
+                    <span>${newName}</span>
                     <span class="display-id">${newId}</span>
                 `;
                 newBtn.onclick = () => selectDisplay(newId, newBtn);
@@ -434,10 +456,15 @@
                 set(displayRef, {
                     channel: 1,
                     timestamp: Date.now(),
-                    displayId: newId
+                    displayId: newId,
+                    name: newName
+                }).then(() => {
+                    showStatus(`Display ${newId} added successfully!`, 'success');
+                }).catch((error) => {
+                    showStatus('Error adding display: ' + error.message, 'error');
                 });
-                
-                showStatus(`Display ${newId} added!`, 'success');
+            } else if (displays.includes(newId)) {
+                showStatus('Display ID already exists!', 'error');
             }
         }
 
@@ -447,24 +474,51 @@
             status.className = 'status ' + type;
             status.style.display = 'block';
             
-            setTimeout(() => {
-                status.style.display = 'none';
-            }, 3000);
+            if (!message.includes('loading')) {
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 3000);
+            }
         }
 
-        // Listen for real-time updates (optional - shows what's happening)
-        displays.forEach(displayId => {
-            const displayRef = ref(database, `displays/${displayId}`);
-            onValue(displayRef, (snapshot) => {
-                if (snapshot.exists() && displayId === currentDisplayId) {
-                    const data = snapshot.val();
-                    document.getElementById('currentChannel').textContent = data.channel || 1;
-                }
+        // Listen for real-time updates (shows what's happening)
+        function setupRealtimeListeners() {
+            displays.forEach(displayId => {
+                const displayRef = ref(database, `displays/${displayId}`);
+                onValue(displayRef, (snapshot) => {
+                    if (snapshot.exists() && displayId === currentDisplayId) {
+                        const data = snapshot.val();
+                        document.getElementById('currentChannel').textContent = data.channel || 1;
+                    }
+                }, (error) => {
+                    console.error('Realtime update error:', error);
+                });
+            });
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Control panel initialized');
+            selectDisplay('DISPLAY-001', document.querySelector('.display-btn'));
+            setupRealtimeListeners();
+            
+            // Initialize all displays in Firebase
+            displays.forEach(displayId => {
+                const displayRef = ref(database, `displays/${displayId}`);
+                get(displayRef).then((snapshot) => {
+                    if (!snapshot.exists()) {
+                        set(displayRef, {
+                            channel: 1,
+                            timestamp: Date.now(),
+                            displayId: displayId
+                        });
+                    }
+                });
             });
         });
 
-        // Initial load
-        selectDisplay('DISPLAY-001', document.querySelector('.display-btn'));
+        // Log Firebase connection
+        console.log('Firebase connected to:', firebaseConfig.databaseURL);
     </script>
 </body>
 </html>
