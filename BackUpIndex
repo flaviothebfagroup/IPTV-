@@ -5,6 +5,220 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Digital Signage - Live Stream Channels</title>
     <style>
+
+.volume-control-panel {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(20px);
+    padding: 15px 20px;
+    border-radius: 60px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    z-index: 1000;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s;
+    opacity: 0;
+}
+
+.volume-control-panel:hover {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.05);
+}
+
+.volume-control-panel.show {
+    opacity: 1;
+}
+
+.volume-control-panel.pulse {
+    animation: volumePulse 2s infinite;
+}
+
+@keyframes volumePulse {
+    0%, 100% { 
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(67, 233, 123, 0.7);
+    }
+    50% { 
+        opacity: 0.9;
+        box-shadow: 0 0 0 10px rgba(67, 233, 123, 0);
+    }
+}
+
+.volume-btn {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.volume-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+    border-color: #43e97b;
+}
+
+.volume-btn:active {
+    transform: scale(0.95);
+}
+
+.volume-btn#muteToggle {
+    font-size: 20px;
+}
+
+.volume-btn#muteToggle.unmuted {
+    background: rgba(67, 233, 123, 0.2);
+    border-color: #43e97b;
+}
+
+.volume-bar {
+    width: 150px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+
+.volume-level {
+    height: 100%;
+    background: linear-gradient(90deg, #43e97b, #38f9d7);
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.3s;
+    box-shadow: 0 0 10px rgba(67, 233, 123, 0.5);
+}
+
+.volume-percent {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+/* First-time setup prompt */
+.audio-setup-prompt {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, rgba(103, 126, 234, 0.95), rgba(118, 75, 162, 0.95));
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    z-index: 9999;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    animation: setupBounce 0.5s ease;
+}
+
+@keyframes setupBounce {
+    0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+    50% { transform: translate(-50%, -50%) scale(1.05); }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+.audio-setup-prompt h2 {
+    margin-bottom: 20px;
+    font-size: 28px;
+    color: white;
+}
+
+.audio-setup-prompt p {
+    margin-bottom: 30px;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.setup-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.setup-btn {
+    padding: 15px 30px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    color: white;
+}
+
+.setup-btn.primary {
+    background: #43e97b;
+}
+
+.setup-btn.secondary {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.setup-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Remote volume control indicator */
+.volume-change-indicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    padding: 30px 50px;
+    border-radius: 20px;
+    font-size: 48px;
+    font-weight: bold;
+    color: white;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.volume-change-indicator.show {
+    opacity: 1;
+}
+
+/* Mobile-friendly adjustments */
+@media (max-width: 600px) {
+    .volume-control-panel {
+        bottom: 20px;
+        padding: 10px 15px;
+        gap: 10px;
+    }
+    
+    .volume-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
+    
+    .volume-bar {
+        width: 120px;
+    }
+}
+        
         * {
             margin: 0;
             padding: 0;
@@ -252,6 +466,24 @@
     </style>
 </head>
 <body>
+
+    <!-- Volume Container -->
+<div class="volume-control-panel" id="volumeControlPanel">
+    <button class="volume-btn" onclick="toggleMute()" id="muteToggle">
+        <span id="volumeIcon">🔇</span>
+    </button>
+    <button class="volume-btn" onclick="volumeDown()">
+        <span>−</span>
+    </button>
+    <div class="volume-bar">
+        <div class="volume-level" id="volumeLevel"></div>
+        <span class="volume-percent" id="volumePercent">0%</span>
+    </div>
+    <button class="volume-btn" onclick="volumeUp()">
+        <span>+</span>
+    </button>
+</div>
+    
     <!-- Video Container -->
     <div class="video-container">
         <video id="videoPlayer" autoplay muted playsinline></video>
@@ -671,6 +903,262 @@ function startPolling() {
                 }
             }
         });
+
+        // Volume Control System
+let currentVolume = 0; // Start muted
+let isMuted = true;
+let lastVolume = 50; // Remember last volume before muting
+
+// Initialize volume control
+function initVolumeControl() {
+    const video = document.getElementById('videoPlayer');
+    
+    // Check if we have a saved volume preference
+    const savedVolume = localStorage.getItem('displayVolume');
+    const savedMuted = localStorage.getItem('displayMuted');
+    
+    if (savedVolume !== null) {
+        currentVolume = parseInt(savedVolume);
+        lastVolume = currentVolume || 50;
+    }
+    
+    if (savedMuted !== null) {
+        isMuted = savedMuted === 'true';
+    }
+    
+    // Apply saved settings
+    video.volume = currentVolume / 100;
+    video.muted = isMuted;
+    updateVolumeDisplay();
+    
+    // Show audio setup on first visit
+    if (!localStorage.getItem('audioSetupComplete')) {
+        showAudioSetup();
+    } else if (!isMuted) {
+        // If previously unmuted, try to restore audio
+        setTimeout(() => attemptUnmute(), 1000);
+    }
+    
+    // Show volume control when hovering near bottom of screen
+    document.addEventListener('mousemove', (e) => {
+        const panel = document.getElementById('volumeControlPanel');
+        if (e.clientY > window.innerHeight - 200) {
+            panel.classList.add('show');
+            setTimeout(() => panel.classList.remove('show'), 3000);
+        }
+    });
+}
+
+// Show first-time audio setup
+function showAudioSetup() {
+    const setupDiv = document.createElement('div');
+    setupDiv.className = 'audio-setup-prompt';
+    setupDiv.innerHTML = `
+        <h2>🔊 Enable Audio?</h2>
+        <p>Would you like to enable sound for this display?</p>
+        <div class="setup-buttons">
+            <button class="setup-btn primary" onclick="enableAudioSetup()">
+                Yes, Enable Sound
+            </button>
+            <button class="setup-btn secondary" onclick="skipAudioSetup()">
+                No, Stay Muted
+            </button>
+        </div>
+    `;
+    document.body.appendChild(setupDiv);
+}
+
+function enableAudioSetup() {
+    localStorage.setItem('audioSetupComplete', 'true');
+    document.querySelector('.audio-setup-prompt').remove();
+    setVolume(50);
+    unmute();
+    showVolumeIndicator('🔊 50%');
+    
+    // Show volume control panel
+    const panel = document.getElementById('volumeControlPanel');
+    panel.classList.add('show', 'pulse');
+    setTimeout(() => {
+        panel.classList.remove('show', 'pulse');
+    }, 5000);
+}
+
+function skipAudioSetup() {
+    localStorage.setItem('audioSetupComplete', 'true');
+    document.querySelector('.audio-setup-prompt').remove();
+}
+
+// Toggle mute/unmute
+function toggleMute() {
+    if (isMuted) {
+        unmute();
+    } else {
+        mute();
+    }
+}
+
+function mute() {
+    const video = document.getElementById('videoPlayer');
+    isMuted = true;
+    video.muted = true;
+    updateVolumeDisplay();
+    localStorage.setItem('displayMuted', 'true');
+    showVolumeIndicator('🔇 Muted');
+}
+
+function unmute() {
+    const video = document.getElementById('videoPlayer');
+    
+    // If volume was 0, set to default
+    if (currentVolume === 0) {
+        currentVolume = lastVolume || 50;
+    }
+    
+    isMuted = false;
+    video.muted = false;
+    video.volume = currentVolume / 100;
+    
+    // Try to play to activate audio context
+    video.play().catch(e => {
+        console.log('Unmute requires user interaction');
+        // Show the volume panel to encourage interaction
+        document.getElementById('volumeControlPanel').classList.add('show', 'pulse');
+    });
+    
+    updateVolumeDisplay();
+    localStorage.setItem('displayMuted', 'false');
+    showVolumeIndicator(`🔊 ${currentVolume}%`);
+}
+
+function attemptUnmute() {
+    const video = document.getElementById('videoPlayer');
+    video.muted = false;
+    video.volume = currentVolume / 100;
+    video.play().catch(e => {
+        console.log('Auto-unmute failed, user interaction required');
+    });
+}
+
+// Volume up
+function volumeUp() {
+    currentVolume = Math.min(100, currentVolume + 10);
+    setVolume(currentVolume);
+    showVolumeIndicator(`🔊 ${currentVolume}%`);
+    
+    if (currentVolume > 0 && isMuted) {
+        unmute();
+    }
+}
+
+// Volume down
+function volumeDown() {
+    currentVolume = Math.max(0, currentVolume - 10);
+    setVolume(currentVolume);
+    
+    if (currentVolume === 0) {
+        showVolumeIndicator('🔇 Muted');
+    } else {
+        showVolumeIndicator(`🔊 ${currentVolume}%`);
+    }
+}
+
+// Set volume
+function setVolume(volume) {
+    const video = document.getElementById('videoPlayer');
+    currentVolume = volume;
+    
+    if (volume > 0) {
+        lastVolume = volume;
+    }
+    
+    video.volume = volume / 100;
+    updateVolumeDisplay();
+    localStorage.setItem('displayVolume', volume);
+    
+    if (volume === 0) {
+        isMuted = true;
+        video.muted = true;
+    }
+}
+
+// Update volume display
+function updateVolumeDisplay() {
+    const volumeLevel = document.getElementById('volumeLevel');
+    const volumePercent = document.getElementById('volumePercent');
+    const volumeIcon = document.getElementById('volumeIcon');
+    const muteToggle = document.getElementById('muteToggle');
+    
+    volumeLevel.style.width = currentVolume + '%';
+    volumePercent.textContent = currentVolume + '%';
+    
+    if (isMuted || currentVolume === 0) {
+        volumeIcon.textContent = '🔇';
+        muteToggle.classList.remove('unmuted');
+    } else if (currentVolume < 30) {
+        volumeIcon.textContent = '🔈';
+        muteToggle.classList.add('unmuted');
+    } else if (currentVolume < 70) {
+        volumeIcon.textContent = '🔉';
+        muteToggle.classList.add('unmuted');
+    } else {
+        volumeIcon.textContent = '🔊';
+        muteToggle.classList.add('unmuted');
+    }
+}
+
+// Show volume change indicator
+function showVolumeIndicator(text) {
+    let indicator = document.querySelector('.volume-change-indicator');
+    
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.className = 'volume-change-indicator';
+        document.body.appendChild(indicator);
+    }
+    
+    indicator.textContent = text;
+    indicator.classList.add('show');
+    
+    setTimeout(() => {
+        indicator.classList.remove('show');
+    }, 1500);
+}
+
+// Add keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    switch(e.key) {
+        case 'ArrowUp':
+            e.preventDefault();
+            volumeUp();
+            break;
+        case 'ArrowDown':
+            e.preventDefault();
+            volumeDown();
+            break;
+        case 'm':
+        case 'M':
+            toggleMute();
+            break;
+    }
+});
+
+// Add this to your existing DOMContentLoaded event
+document.addEventListener('DOMContentLoaded', function() {
+    initVolumeControl();
+});
+
+// IMPORTANT: Add this to your loadChannel function
+// After loading a new stream, maintain volume settings:
+/*
+function loadChannel(channelNumber) {
+    // ... existing code ...
+    
+    // After attaching new stream
+    const video = document.getElementById('videoPlayer');
+    video.volume = currentVolume / 100;
+    video.muted = isMuted;
+}
+*/
     </script>
 </body>
 </html>
