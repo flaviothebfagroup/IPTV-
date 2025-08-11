@@ -8,18 +8,17 @@
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { background: #000; color: #fff; font-family: 'SF Pro Display', -apple-system, system-ui, sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
     .signup-box { width: 100%; max-width: 320px; text-align: center; }
-    .logo { height: 56px; width: auto; display: block; margin: 0 auto 10px; }
+    h1 { font-size: 48px; margin-bottom: 10px; }
     .subtitle { color: #666; font-size: 14px; margin-bottom: 40px; text-transform: uppercase; letter-spacing: 2px; }
     .form { background: #111; border-radius: 30px; padding: 30px; }
     input, select { width: 100%; padding: 15px; margin-bottom: 15px; background: #000; border: 1px solid #222; border-radius: 12px; color: #fff; font-size: 16px; text-align: center; }
     input::placeholder { color: #444; }
-    select { cursor: pointer; appearance: none;
-      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-      background-repeat: no-repeat; background-position: right 15px center; background-size: 20px; padding-right: 40px; }
+    select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 15px center; background-size: 20px; padding-right: 40px; }
     select option { background: #000; color: #fff; }
     .or-divider { color: #444; margin: 15px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
     button { width: 100%; padding: 15px; background: #fff; color: #000; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; }
     button:active { background: #ccc; }
+    .success-button { background: #0f0; }
     .link { margin-top: 30px; font-size: 14px; color: #666; }
     .link a { color: #fff; text-decoration: none; }
     .toast { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); background: #0f0; color: #000; padding: 12px 24px; border-radius: 20px; font-size: 14px; font-weight: 600; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
@@ -28,14 +27,13 @@
     button:disabled { background: #333; color: #666; }
     .loading-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #666; border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; margin-left: 10px; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .add-new { color: #0f0; font-size: 14px; cursor: pointer; margin-bottom: 15px; display: inline-block; }
     .hidden { display: none; }
   </style>
 </head>
 <body>
   <div class="signup-box">
-    <!-- Your logo instead of the TV icon -->
-    <img src="https://i.ibb.co/LzJwPhjg/ICON-IPTV.png" alt="IPTV" class="logo" loading="lazy" />
-    <h1>Login to IPTV</h1>
+    <h1 style="margin-bottom:10px"><img src="https://i.ibb.co/LzJwPhjg/ICON-IPTV.png" alt="IPTV" style="height:56px;width:auto" loading="lazy" /></h1>
     <p class="subtitle">Create Account</p>
 
     <div class="form">
@@ -44,20 +42,15 @@
       <input type="text" id="name" placeholder="Your Name" autocomplete="name" />
 
       <div class="or-divider">Select Dealership</div>
-
-      <!-- Dealership Selection (loaded from /dealership) -->
       <select id="dealership">
         <option value="">Loading dealerships...</option>
       </select>
-
-      <!-- New Dealership Input (hidden by default) -->
       <input type="text" id="newDealership" placeholder="Enter Dealership Name" class="hidden" />
 
       <button id="signupBtn" onclick="signUp()">CREATE ACCOUNT</button>
     </div>
 
-    <div class="link">Already have account? <a href="https://flaviothebfagroup.github.io/IPTV-/remote-control.html">Sign In</a>
-</div>
+    <div class="link">Already have account? <a href="remote.html">Sign In</a></div>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -86,23 +79,36 @@
     const auth = getAuth(app);
     const database = getDatabase(app);
 
-    // Helpers
+    // Helper: two-letter prefix from dealership name (handles CamelCase & spaces)
+    function getTwoLetterPrefix(name) {
+      const raw = (name || '').trim();
+      if (!raw) return 'DS';
+      let parts = raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g);
+      if (!parts || parts.length < 2) parts = raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g) || [];
+      let first = parts[0] || '';
+      let second = parts[1] || '';
+      let prefix = '';
+      if (first) prefix += first[0];
+      if (second) prefix += second[0];
+      if (prefix.length < 2 && first.length >= 2) prefix = first.slice(0, 2);
+      return prefix.toUpperCase();
+    }
+
+    // Toast helper
     function showToast(message, type = '') {
       const toast = document.getElementById('toast');
-      toast.textContent = message;
-      toast.className = 'toast show';
+      toast.textContent = message; toast.className = 'toast show';
       if (type === 'error') toast.classList.add('error');
       setTimeout(() => { toast.classList.remove('show'); }, 3000);
     }
 
-    // Load dealerships (SINGULAR 'dealership' path)
+    // Load dealerships from Firebase (SINGULAR 'dealership')
     async function loadDealerships() {
       try {
         const dealershipsRef = ref(database, 'dealership');
         const snapshot = await get(dealershipsRef);
         const select = document.getElementById('dealership');
         select.innerHTML = '<option value="">Choose Dealership...</option>';
-
         if (snapshot.exists()) {
           const dealerships = snapshot.val();
           for (const [id, dealership] of Object.entries(dealerships)) {
@@ -112,7 +118,6 @@
             select.appendChild(option);
           }
         }
-
         const newOption = document.createElement('option');
         newOption.value = 'new';
         newOption.textContent = '+ Add New Dealership';
@@ -134,7 +139,7 @@
       else { newDealershipInput.classList.add('hidden'); }
     });
 
-    // Sign Up (uses LOCAL persistence so the user stays signed in after redirect)
+    // Sign Up
     window.signUp = async function () {
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
@@ -145,10 +150,12 @@
       if (!email || !password || !name) { showToast('Please fill all fields', 'error'); return; }
       if (password.length < 6) { showToast('Password must be 6+ characters', 'error'); return; }
 
+      // Determine dealershipId & name
       let dealershipId = dealershipSelect;
       let dealershipName = '';
+      const isNew = dealershipSelect === 'new';
 
-      if (dealershipSelect === 'new') {
+      if (isNew) {
         if (!newDealershipName) { showToast('Enter dealership name', 'error'); return; }
         dealershipName = newDealershipName;
         dealershipId = newDealershipName.toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + Date.now();
@@ -164,49 +171,45 @@
       btn.disabled = true; btn.innerHTML = 'CREATING<span class="loading-spinner"></span>';
 
       try {
-        // Ensure the session persists across redirects/reloads
+        // Keep user signed in across redirects
         await setPersistence(auth, browserLocalPersistence);
 
-        // Create user (Auth). Firebase automatically signs the user in after this.
+        // Create user (Auth)
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // If new dealership, create under SINGULAR 'dealership' with boolean display membership
+        // Displays for this user
         let userDisplays = [];
-        if (dealershipSelect === 'new') {
-          const displayPrefix = dealershipId.substring(0, 3).toUpperCase();
-          userDisplays = [
-            `${displayPrefix}_DISPLAY_001`,
-            `${displayPrefix}_DISPLAY_002`,
-            `${displayPrefix}_DISPLAY_003`
-          ];
+
+        if (isNew) {
+          // Create ONLY ONE display (e.g., Bfa Group -> BG-001)
+          const prefix = getTwoLetterPrefix(dealershipName);
+          const displayId = `${prefix}-001`;
+          userDisplays = [displayId];
 
           const dealershipData = {
             name: dealershipName,
             createdBy: email,
-            createdAt: Date.now(),
-            displays: {}
+            createdAt: Date.now(), // <-- still present
+            displays: { [displayId]: true }
           };
-          userDisplays.forEach((displayId) => { dealershipData.displays[displayId] = true; });
 
           // Write dealership node (singular)
           await set(ref(database, `dealership/${dealershipId}`), dealershipData);
 
-          // Create global display state under /displays
-          for (const displayId of userDisplays) {
-            await set(ref(database, `displays/${displayId}`), {
-              channel: 1,
-              volume: 0,
-              muted: true,
-              dealership: dealershipId,
-              timestamp: Date.now()
-            });
-          }
+          // Create global display state under /displays for this single screen
+          await set(ref(database, `displays/${displayId}`), {
+            channel: 1,
+            volume: 0,
+            muted: true,
+            dealership: dealershipId,
+            timestamp: Date.now()
+          });
         } else {
           // Existing dealership → read its displays list
           const dealershipRef = ref(database, `dealership/${dealershipId}/displays`);
           const snapshot = await get(dealershipRef);
-          userDisplays = snapshot.exists() ? Object.keys(snapshot.val()) : ['DISPLAY-001', 'DISPLAY-002', 'DISPLAY-003'];
+          userDisplays = snapshot.exists() ? Object.keys(snapshot.val()) : [];
         }
 
         // Create user profile under SINGULAR 'user'
@@ -224,20 +227,13 @@
         showToast('Account created!');
         btn.innerHTML = 'SUCCESS! REDIRECTING...';
         btn.style.background = '#0f0';
-
-        // Redirect to remote — session persists, so remote.html should see the user as logged in
-        setTimeout(() => {
-          window.location.href = 'https://flaviothebfagroup.github.io/IPTV-/remote-control.html';
-
-        }, 1200);
-
+        setTimeout(() => { window.location.href = 'remote.html'; }, 1200);
       } catch (error) {
         console.error('Signup error:', error);
         if (error.code === 'auth/email-already-in-use') showToast('Email already registered', 'error');
         else if (error.code === 'auth/weak-password') showToast('Password too weak', 'error');
         else if (error.code === 'auth/invalid-email') showToast('Invalid email address', 'error');
         else showToast('Signup failed: ' + error.message, 'error');
-
         btn.disabled = false; btn.innerHTML = 'CREATE ACCOUNT'; btn.style.background = '#fff';
       }
     };
