@@ -244,6 +244,44 @@
         const auth = getAuth(app);
         const database = getDatabase(app);
 
+        // Load dealerships from Firebase on page load
+        async function loadDealerships() {
+            try {
+                const dealershipsRef = ref(database, 'dealerships');
+                const snapshot = await get(dealershipsRef);
+                
+                const select = document.getElementById('dealership');
+                
+                // Clear existing options except the first and last
+                select.innerHTML = '<option value="">Choose Dealership...</option>';
+                
+                if (snapshot.exists()) {
+                    const dealerships = snapshot.val();
+                    
+                    // Add each dealership from Firebase
+                    for (const [id, dealership of Object.entries(dealerships)) {
+                        const option = document.createElement('option');
+                        option.value = id;
+                        option.textContent = dealership.name || id;
+                        select.appendChild(option);
+                    }
+                }
+                
+                // Add the "Add New" option at the end
+                const newOption = document.createElement('option');
+                newOption.value = 'new';
+                newOption.textContent = '+ Add New Dealership';
+                select.appendChild(newOption);
+                
+            } catch (error) {
+                console.error('Error loading dealerships:', error);
+                showToast('Error loading dealerships', 'error');
+            }
+        }
+
+        // Load dealerships when page loads
+        window.addEventListener('DOMContentLoaded', loadDealerships);
+
         // Handle dealership selection
         document.getElementById('dealership').addEventListener('change', function() {
             const newDealershipInput = document.getElementById('newDealership');
@@ -285,15 +323,20 @@
                     return;
                 }
                 dealershipName = newDealershipName;
-                // Create simple ID from name
-                dealershipId = newDealershipName.toLowerCase().replace(/\s+/g, '-');
+                // Create unique ID with timestamp to avoid conflicts
+                dealershipId = newDealershipName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
             } else if (!dealershipSelect) {
                 showToast('Select a dealership', 'error');
                 return;
             } else {
-                // Get name from selection
-                const option = document.querySelector(`#dealership option[value="${dealershipSelect}"]`);
-                dealershipName = option.textContent;
+                // Get existing dealership name from Firebase
+                const dealershipRef = ref(database, `dealerships/${dealershipSelect}`);
+                const snapshot = await get(dealershipRef);
+                if (snapshot.exists()) {
+                    dealershipName = snapshot.val().name || dealershipSelect;
+                } else {
+                    dealershipName = dealershipSelect;
+                }
             }
             
             // Show loading
@@ -306,19 +349,40 @@
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
                 
-                // If new dealership, create it
+                // If new dealership, create it in Firebase
                 if (dealershipSelect === 'new') {
-                    const dealershipRef = ref(database, `dealerships/${dealershipId}`);
-                    await set(dealershipRef, {
+                    // Generate unique display IDs for this dealership
+                    const displayPrefix = dealershipId.toUpperCase().substring(0, 3);
+                    
+                    const dealershipData = {
                         name: dealershipName,
                         createdBy: email,
                         createdAt: Date.now(),
-                        displays: {
-                            'DISPLAY-001': { name: 'Display 1', channel: 1 },
-                            'DISPLAY-002': { name: 'Display 2', channel: 1 },
-                            'DISPLAY-003': { name: 'Display 3', channel: 1 }
-                        }
-                    });
+                        displays: {}
+                    };
+                    
+                    // Create 3 displays for new dealership
+                    for (let i = 1; i <= 3; i++) {
+                        const displayId = `${displayPrefix}-DISPLAY-${String(i).padStart(3, '0')}`;
+                        dealershipData.displays[displayId] = {
+                            name: `Display ${i}`,
+                            channel: 1,
+                            volume: 0,
+                            muted: true
+                        };
+                        
+                        // Also create the display in the main displays node
+                        await set(ref(database, `displays/${displayId}`), {
+                            channel: 1,
+                            volume: 0,
+                            muted: true,
+                            dealership: dealershipId,
+                            timestamp: Date.now()
+                        });
+                    }
+                    
+                    // Create the dealership
+                    await set(ref(database, `dealerships/${dealershipId}`), dealershipData);
                 }
                 
                 // Get dealership displays
@@ -328,22 +392,36 @@
                 
                 if (snapshot.exists()) {
                     userDisplays = Object.keys(snapshot.val());
-                } else {
-                    // Default displays if dealership doesn't exist yet
+                } else if (dealershipSelect !== 'new') {
+                    // If existing dealership has no displays, create defaults
                     userDisplays = ['DISPLAY-001', 'DISPLAY-002', 'DISPLAY-003'];
                     
-                    // Create the dealership with default displays
-                    await set(ref(database, `dealerships/${dealershipId}`), {
-                        name: dealershipName,
-                        displays: {
-                            'DISPLAY-001': { name: 'Display 1', channel: 1 },
-                            'DISPLAY-002': { name: 'Display 2', channel: 1 },
-                            'DISPLAY-003': { name: 'Display 3', channel: 1 }
-                        }
+                    const displayData = {};
+                    userDisplays.forEach((displayId, index) => {
+                        displayData[displayId] = {
+                            name: `Display ${index + 1}`,
+                            channel: 1,
+                            volume: 0,
+                            muted: true
+                        };
                     });
+                    
+                    // Update dealership with displays
+                    await set(ref(database, `dealerships/${dealershipId}/displays`), displayData);
+                    
+                    // Create displays in main node
+                    for (const displayId of userDisplays) {
+                        await set(ref(database, `displays/${displayId}`), {
+                            channel: 1,
+                            volume: 0,
+                            muted: true,
+                            dealership: dealershipId,
+                            timestamp: Date.now()
+                        });
+                    }
                 }
                 
-                // Create user profile
+                // Create user profile in Firebase
                 await set(ref(database, `users/${user.uid}`), {
                     email: email,
                     name: name,
@@ -381,6 +459,7 @@
                 // Reset button
                 btn.disabled = false;
                 btn.innerHTML = 'CREATE ACCOUNT';
+                btn.classList.remove('success-button');
             }
         }
 
