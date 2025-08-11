@@ -1,520 +1,278 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TV Remote</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>IPTV Remote — Dealership Scoped (5 Channels)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    body { background: #000; color: #fff; font-family: 'SF Pro Display', -apple-system, system-ui, sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
 
-        body {
-            background: #000;
-            color: #fff;
-            font-family: 'SF Pro Display', -apple-system, system-ui, sans-serif;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
+    /* Simple Login */
+    .login { width: 100%; max-width: 280px; text-align: center; }
+    .login h1 { font-size: 42px; margin-bottom: 40px; }
+    .login input { width: 100%; padding: 15px; margin-bottom: 15px; background: #111; border: none; border-radius: 12px; color: #fff; font-size: 16px; text-align: center; }
+    .login input::placeholder { color: #444; }
+    .login button { width: 100%; padding: 15px; background: #fff; color: #000; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; }
 
-        /* Simple Login */
-        .login {
-            width: 100%;
-            max-width: 280px;
-            text-align: center;
-        }
+    /* Remote Control */
+    .remote { display: none; width: 100%; max-width: 320px; background: #111; border-radius: 40px; padding: 30px 25px 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
+    .remote.active { display: block; }
 
-        .login h1 {
-            font-size: 42px;
-            margin-bottom: 40px;
-        }
+    /* Power + Display */
+    .power { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+    .power-btn { width: 100px; height: 30px; border-radius: 24px; background: #d32f2f; border: none; font-size: 14px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .power-btn:active { background: #b71c1c; }
+    .display-name { font-size: 16px; color: #999; cursor: pointer; }
 
-        .login input {
-            width: 100%;
-            padding: 15px;
-            margin-bottom: 15px;
-            background: #111;
-            border: none;
-            border-radius: 12px;
-            color: #fff;
-            font-size: 16px;
-            text-align: center;
-        }
+    /* Screen */
+    .screen { background: #000; border: 2px solid #222; border-radius: 20px; padding: 25px; margin-bottom: 30px; text-align: center; }
+    .channel-number { font-size: 50px; font-weight: 500; line-height: 1; color: #0f0; font-family: 'Courier New', monospace; }
 
-        .login input::placeholder {
-            color: #444;
-        }
+    /* Numpad (5 channels) */
+    .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
+    .num-btn { aspect-ratio: 1.5; background: #222; border: none; border-radius: 15px; color: #ffffff; font-size: 25px; font-weight: 900; cursor: pointer; position: relative; }
+    .num-btn:active { background: #333; transform: scale(0.95); }
+    .num-btn span { display: block; font-size: 10px; margin-top: 2px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
 
-        .login button {
-            width: 100%;
-            padding: 15px;
-            background: #fff;
-            color: #000;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-        }
+    /* Volume & Channel */
+    .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px; }
+    .control-group { text-align: center; }
+    .control-label { font-size: 15px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .control-btns { display: flex; flex-direction: column; gap: 10px; }
+    .ctrl-btn { padding: 12px; background: #222; border: none; border-radius: 10px; color: #fff; font-size: 25px; cursor: pointer; }
+    .ctrl-btn:active { background: #333; }
 
-        /* Remote Control */
-        .remote {
-            display: none;
-            width: 100%;
-            max-width: 320px;
-            background: #111;
-            border-radius: 40px;
-            padding: 30px 25px 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-        }
+    /* Mute Button */
+    .mute-btn { width: 100%; padding: 15px; background: #222; border: none; border-radius: 15px; color: #ffffff; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; margin-bottom: 20px; }
+    .mute-btn:active { background: #333; }
+    .mute-btn.muted { background: #d32f2f; color: #fff; }
 
-        .remote.active {
-            display: block;
-        }
+    /* Display Selector */
+    .displays { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; padding: 10px; background: rgba(0,0,0,0.9); border-radius: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .displays.show { opacity: 1; pointer-events: all; }
+    .display-btn { padding: 8px 16px; background: #222; border: none; border-radius: 10px; color: #bbb; font-size: 12px; cursor: pointer; }
+    .display-btn.active { background: #0f0; color: #000; }
 
-        /* Power Button */
-        .power {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .power-btn {
-            width: 100px;
-            height: 30px;
-            border-radius: 24px;
-            background: #d32f2f;
-            border: none;
-            font-size: 20px;
-            color: #fff;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .power-btn:active {
-            background: #b71c1c;
-        }
-
-        .display-name {
-            font-size: 20px;
-            color: #666;
-        }
-
-        /* Screen Display */
-        .screen {
-            background: #000;
-            border: 2px solid #222;
-            border-radius: 20px;
-            padding: 25px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .channel-number {
-            font-size: 50px;
-            font-weight: 500;
-            line-height: 1;
-            color: #0f0;
-            font-family: 'Courier New', monospace;
-        }
-
-        /* Number Pad */
-        .numpad {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .num-btn {
-            aspect-ratio: 1.5;
-            background: #222;
-            border: none;
-            border-radius: 15px;
-            color: #ffffff;
-            font-size: 25px;
-            font-weight: 900;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .num-btn:active {
-            background: #333;
-            transform: scale(0.95);
-        }
-
-        .num-btn span {
-            display: block;
-            font-size: 10px;
-            margin-top: 2px;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* Volume & Channel */
-        .controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 25px;
-            margin-bottom: 30px;
-        }
-
-        .control-group {
-            text-align: center;
-        }
-
-        .control-label {
-            font-size: 15px;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-        }
-
-        .control-btns {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .ctrl-btn {
-            padding: 12px;
-            background: #222;
-            border: none;
-            border-radius: 10px;
-            color: #fff;
-            font-size: 25px;
-            cursor: pointer;
-        }
-
-        .ctrl-btn:active {
-            background: #333;
-        }
-
-        /* Mute Button */
-        .mute-btn {
-            width: 100%;
-            padding: 15px;
-            background: #222;
-            border: none;
-            border-radius: 15px;
-            color: #ffffff;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            cursor: pointer;
-            margin-bottom: 20px;
-        }
-
-        .mute-btn:active {
-            background: #333;
-        }
-
-        .mute-btn.muted {
-            background: #d32f2f;
-            color: #fff;
-        }
-
-        /* Display Selector (Hidden by default) */
-        .displays {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-            padding: 10px;
-            background: rgba(0,0,0,0.9);
-            border-radius: 20px;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-        }
-
-        .displays.show {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .display-btn {
-            padding: 8px 16px;
-            background: #222;
-            border: none;
-            border-radius: 10px;
-            color: #666;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        .display-btn.active {
-            background: #0f0;
-            color: #000;
-        }
-
-        /* Notification */
-        .toast {
-            position: fixed;
-            top: 50px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #0f0;
-            color: #000;
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-        }
-
-        .toast.show {
-            opacity: 1;
-        }
-    </style>
+    /* Toast */
+    .toast { position: fixed; top: 50px; left: 50%; transform: translateX(-50%); background: #0f0; color: #000; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 600; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .toast.show { opacity: 1; }
+  </style>
 </head>
 <body>
-    <!-- Login -->
-    <div class="login" id="login">
-        <h1>📺</h1>
-        <input type="email" id="email" placeholder="Email" autocomplete="email">
-        <input type="password" id="password" placeholder="Password" autocomplete="current-password">
-        <button onclick="signIn()">ENTER</button>
+  <!-- Login -->
+  <div class="login" id="login">
+    <h1>📺</h1>
+    <input type="email" id="email" placeholder="Email" autocomplete="email" />
+    <input type="password" id="password" placeholder="Password" autocomplete="current-password" />
+    <button onclick="signIn()">ENTER</button>
+  </div>
+
+  <!-- Remote -->
+  <div class="remote" id="remote">
+    <div class="power">
+      <button class="power-btn" onclick="powerOff()">Sign out</button>
+      <div class="display-name" id="currentDisplay" onclick="showDisplays()">DISPLAY</div>
     </div>
 
-    <!-- Remote Control -->
-    <div class="remote" id="remote">
-        <!-- Power & Display -->
-        <div class="power">
-            <button class="power-btn" onclick="powerOff()">Sign out</button>
-            <div class="display-name" id="currentDisplay" onclick="showDisplays()">DISPLAY-001</div>
-        </div>
-
-        <!-- Screen -->
-        <div class="screen">
-            <div class="channel-number" id="channelDisplay">1</div>
-        </div>
-
-        <!-- Number Pad -->
-        <div class="numpad">
-            <button class="num-btn" onclick="setChannel(1)">
-                1
-                <span>News</span>
-            </button>
-            <button class="num-btn" onclick="setChannel(2)">
-                2
-                <span>Sports</span>
-            </button>
-            <button class="num-btn" onclick="setChannel(3)">
-                3
-                <span>Cook</span>
-            </button>
-            <button class="num-btn" onclick="setChannel(4)">
-                4
-                <span>Nature</span>
-            </button>
-            <button class="num-btn" onclick="setChannel(5)">
-                5
-                <span>Kids</span>
-            </button>
-            <button class="num-btn" onclick="setChannel(6)">
-                6
-                <span>Music</span>
-            </button>
-            <button class="num-btn" onclick="setChannel(7)">
-                7
-                <span>Movie</span>
-            </button>
-            <button class="num-btn" onclick="setChannel(8)">
-                8
-                <span>Game</span>
-            </button>
-            <button class="num-btn" onclick="setChannel(9)">
-                9
-                <span>Weather</span>
-            </button>
-        </div>
-
-        <!-- Volume & Channel Controls -->
-        <div class="controls">
-            <div class="control-group">
-                <div class="control-label">VOL</div>
-                <div class="control-btns">
-                    <button class="ctrl-btn" onclick="volUp()">+</button>
-                    <button class="ctrl-btn" onclick="volDown()">−</button>
-                </div>
-            </div>
-            <div class="control-group">
-                <div class="control-label">CH</div>
-                <div class="control-btns">
-                    <button class="ctrl-btn" onclick="chUp()">▲</button>
-                    <button class="ctrl-btn" onclick="chDown()">▼</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Mute -->
-        <button class="mute-btn" id="muteBtn" onclick="toggleMute()">MUTE</button>
+    <div class="screen">
+      <div class="channel-number" id="channelDisplay">1</div>
     </div>
 
-    <!-- Display Selector -->
-    <div class="displays" id="displays">
-        <button class="display-btn active" onclick="switchDisplay('DISPLAY-001', this)">TV 1</button>
-        <button class="display-btn" onclick="switchDisplay('DISPLAY-002', this)">TV 2</button>
-        <button class="display-btn" onclick="switchDisplay('DISPLAY-003', this)">TV 3</button>
+    <!-- First 5 channels only -->
+    <div class="numpad">
+      <button class="num-btn" onclick="setChannel(1)">1<span>News</span></button>
+      <button class="num-btn" onclick="setChannel(2)">2<span>Sports</span></button>
+      <button class="num-btn" onclick="setChannel(3)">3<span>Cooking</span></button>
+      <button class="num-btn" onclick="setChannel(4)">4<span>Nature</span></button>
+      <button class="num-btn" onclick="setChannel(5)">5<span>Kids</span></button>
     </div>
 
-    <!-- Toast Notification -->
-    <div class="toast" id="toast"></div>
+    <div class="controls">
+      <div class="control-group">
+        <div class="control-label">VOL</div>
+        <div class="control-btns">
+          <button class="ctrl-btn" onclick="volUp()">+</button>
+          <button class="ctrl-btn" onclick="volDown()">−</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <div class="control-label">CH</div>
+        <div class="control-btns">
+          <button class="ctrl-btn" onclick="chUp()">▲</button>
+          <button class="ctrl-btn" onclick="chDown()">▼</button>
+        </div>
+      </div>
+    </div>
 
-    <!-- Firebase -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getDatabase, ref, set } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    <button class="mute-btn" id="muteBtn" onclick="toggleMute()">MUTE</button>
+  </div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
-            authDomain: "iptv-bfa.firebaseapp.com",
-            databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
-            projectId: "iptv-bfa",
-            storageBucket: "iptv-bfa.firebasestorage.app",
-            messagingSenderId: "838790935867",
-            appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
-        };
+  <!-- Display selector (built dynamically) -->
+  <div class="displays" id="displays"></div>
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const database = getDatabase(app);
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
 
-        // State
-        let currentDisplay = 'DISPLAY-001';
-        let currentChannel = 1;
-        let volume = 50;
-        let muted = false;
+  <!-- Firebase logic -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getDatabase, ref, set, get, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-        // Sign In
-        window.signIn = async () => {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-                toast('Invalid login');
-            }
+    // --- Firebase config ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+      authDomain: "iptv-bfa.firebaseapp.com",
+      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+      projectId: "iptv-bfa",
+      storageBucket: "iptv-bfa.firebasestorage.app",
+      messagingSenderId: "838790935867",
+      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    // --- UI helper ---
+    function toast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 1500);
+    }
+
+    // --- State ---
+    let dealershipId = null;
+    let displayIds = [];
+    let currentDisplay = null;
+    let currentChannel = 1;
+    let volume = 50;
+    let muted = false;
+
+    // --- Auth ---
+    window.signIn = async () => {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      try { await signInWithEmailAndPassword(auth, email, password); }
+      catch (e) { console.error(e); toast('Invalid login'); }
+    };
+
+    window.powerOff = () => { signOut(auth); };
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        document.getElementById('login').style.display = 'none';
+        document.getElementById('remote').classList.add('active');
+        await afterLogin(user);
+      } else {
+        document.getElementById('login').style.display = 'block';
+        document.getElementById('remote').classList.remove('active');
+        document.getElementById('displays').innerHTML = '';
+        document.getElementById('currentDisplay').textContent = 'DISPLAY';
+        currentDisplay = null;
+      }
+    });
+
+    // --- After login: resolve dealership and load its TVs ---
+    async function afterLogin(user) {
+      const uSnap = await get(ref(db, `user/${user.uid}`));
+      const u = uSnap.val() || {};
+      dealershipId = u.dealershipId ?? u.dealership; // temporary fallback
+      if (!dealershipId) { toast('No dealership assigned'); return; }
+
+      // Load displays for this dealership (singular path 'dealership/')
+      onValue(ref(db, `dealership/${dealershipId}/displays`), (snap) => {
+        const map = snap.val() || {};
+        displayIds = Object.keys(map).filter(k => map[k]);
+        renderDisplayButtons(displayIds);
+        if (!currentDisplay || !displayIds.includes(currentDisplay)) {
+          currentDisplay = displayIds[0] || null;
+          document.getElementById('currentDisplay').textContent = currentDisplay || 'NO TV';
         }
+      });
+    }
 
-        // Power Off (Logout)
-        window.powerOff = () => {
-            signOut(auth);
-        }
+    function renderDisplayButtons(ids) {
+      const wrap = document.getElementById('displays');
+      wrap.innerHTML = '';
+      ids.forEach((id) => {
+        const btn = document.createElement('button');
+        btn.className = 'display-btn' + (id === currentDisplay ? ' active' : '');
+        btn.textContent = id;
+        btn.onclick = () => switchDisplay(id, btn);
+        wrap.appendChild(btn);
+      });
+    }
 
-        // Auth State
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                document.getElementById('login').style.display = 'none';
-                document.getElementById('remote').classList.add('active');
-            } else {
-                document.getElementById('login').style.display = 'block';
-                document.getElementById('remote').classList.remove('active');
-            }
-        });
+    window.showDisplays = () => {
+      const displays = document.getElementById('displays');
+      displays.classList.add('show');
+      setTimeout(() => displays.classList.remove('show'), 3000);
+    };
 
-        // Set Channel
-        window.setChannel = async (ch) => {
-            currentChannel = ch;
-            document.getElementById('channelDisplay').textContent = ch;
-            
-            // Update Firebase
-            await updateDisplay();
-            toast(`CH ${ch}`);
-        }
+    window.switchDisplay = (id, btn) => {
+      currentDisplay = id;
+      document.getElementById('currentDisplay').textContent = id;
+      document.querySelectorAll('.display-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      document.getElementById('displays').classList.remove('show');
+      toast(id);
+    };
 
-        // Channel Up/Down
-        window.chUp = () => {
-            currentChannel = currentChannel >= 9 ? 1 : currentChannel + 1;
-            setChannel(currentChannel);
-        }
+    // --- Channel & volume ---
+    window.setChannel = async (ch) => {
+      currentChannel = ch;
+      document.getElementById('channelDisplay').textContent = ch;
+      await updateDisplay();
+      toast(`CH ${ch}`);
+    };
 
-        window.chDown = () => {
-            currentChannel = currentChannel <= 1 ? 9 : currentChannel - 1;
-            setChannel(currentChannel);
-        }
+    window.chUp = () => {
+      if (!displayIds.length) return;
+      currentChannel = currentChannel >= 5 ? 1 : currentChannel + 1; // wrap 1..5
+      setChannel(currentChannel);
+    };
 
-        // Volume
-        window.volUp = async () => {
-            volume = Math.min(100, volume + 10);
-            await updateDisplay();
-            toast(`VOL ${volume}`);
-        }
+    window.chDown = () => {
+      if (!displayIds.length) return;
+      currentChannel = currentChannel <= 1 ? 5 : currentChannel - 1; // wrap 1..5
+      setChannel(currentChannel);
+    };
 
-        window.volDown = async () => {
-            volume = Math.max(0, volume - 10);
-            await updateDisplay();
-            toast(`VOL ${volume}`);
-        }
+    window.volUp = async () => {
+      if (!displayIds.length) return;
+      volume = Math.min(100, volume + 10);
+      await updateDisplay();
+      toast(`VOL ${volume}`);
+    };
 
-        // Mute
-        window.toggleMute = async () => {
-            muted = !muted;
-            document.getElementById('muteBtn').classList.toggle('muted', muted);
-            await updateDisplay();
-            toast(muted ? 'MUTED' : 'UNMUTED');
-        }
+    window.volDown = async () => {
+      if (!displayIds.length) return;
+      volume = Math.max(0, volume - 10);
+      await updateDisplay();
+      toast(`VOL ${volume}`);
+    };
 
-        // Show Display Selector
-        window.showDisplays = () => {
-            const displays = document.getElementById('displays');
-            displays.classList.add('show');
-            setTimeout(() => displays.classList.remove('show'), 3000);
-        }
+    window.toggleMute = async () => {
+      if (!displayIds.length) return;
+      muted = !muted;
+      document.getElementById('muteBtn').classList.toggle('muted', muted);
+      await updateDisplay();
+      toast(muted ? 'MUTED' : 'UNMUTED');
+    };
 
-        // Switch Display
-        window.switchDisplay = (id, btn) => {
-            currentDisplay = id;
-            document.getElementById('currentDisplay').textContent = id;
-            
-            document.querySelectorAll('.display-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            document.getElementById('displays').classList.remove('show');
-            toast(id);
-        }
+    // --- Write to selected TV ---
+    async function updateDisplay() {
+      if (!currentDisplay) { toast('Select a TV'); return; }
+      const state = { channel: currentChannel, volume, muted, timestamp: Date.now() };
+      await set(ref(db, `displays/${currentDisplay}`), state);
+    }
 
-        // Update Firebase
-        async function updateDisplay() {
-            const displayRef = ref(database, `displays/${currentDisplay}`);
-            await set(displayRef, {
-                channel: currentChannel,
-                volume: volume,
-                muted: muted,
-                timestamp: Date.now()
-            });
-        }
-
-        // Toast Notification
-        function toast(msg) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 1500);
-        }
-
-        // Enter key to login
-        document.getElementById('password').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') signIn();
-        });
-    </script>
+    // Enter to login
+    document.getElementById('password').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') signIn();
+    });
+  </script>
 </body>
 </html>
