@@ -144,4 +144,103 @@
       if (password.length < 6) { showToast('Password must be 6+ characters', 'error'); return; }
 
       let dealershipId = dealershipSelect;
-      let
+      let dealershipName = '';
+
+      if (dealershipSelect === 'new') {
+        if (!newDealershipName) { showToast('Enter dealership name', 'error'); return; }
+        dealershipName = newDealershipName;
+        dealershipId = newDealershipName.toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + Date.now();
+      } else if (!dealershipSelect) {
+        showToast('Select a dealership', 'error'); return;
+      } else {
+        dealershipId = dealershipSelect;
+        const selectedOption = document.querySelector(`#dealership option[value="${dealershipSelect}"]`);
+        dealershipName = selectedOption ? selectedOption.textContent : dealershipSelect;
+      }
+
+      const btn = document.getElementById('signupBtn');
+      btn.disabled = true; btn.innerHTML = 'CREATING<span class="loading-spinner"></span>';
+
+      try {
+        // Ensure the session persists across redirects/reloads
+        await setPersistence(auth, browserLocalPersistence);
+
+        // Create user (Auth). Firebase automatically signs the user in after this.
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // If new dealership, create under SINGULAR 'dealership' with boolean display membership
+        let userDisplays = [];
+        if (dealershipSelect === 'new') {
+          const displayPrefix = dealershipId.substring(0, 3).toUpperCase();
+          userDisplays = [
+            `${displayPrefix}_DISPLAY_001`,
+            `${displayPrefix}_DISPLAY_002`,
+            `${displayPrefix}_DISPLAY_003`
+          ];
+
+          const dealershipData = {
+            name: dealershipName,
+            createdBy: email,
+            createdAt: Date.now(),
+            displays: {}
+          };
+          userDisplays.forEach((displayId) => { dealershipData.displays[displayId] = true; });
+
+          // Write dealership node (singular)
+          await set(ref(database, `dealership/${dealershipId}`), dealershipData);
+
+          // Create global display state under /displays
+          for (const displayId of userDisplays) {
+            await set(ref(database, `displays/${displayId}`), {
+              channel: 1,
+              volume: 0,
+              muted: true,
+              dealership: dealershipId,
+              timestamp: Date.now()
+            });
+          }
+        } else {
+          // Existing dealership → read its displays list
+          const dealershipRef = ref(database, `dealership/${dealershipId}/displays`);
+          const snapshot = await get(dealershipRef);
+          userDisplays = snapshot.exists() ? Object.keys(snapshot.val()) : ['DISPLAY-001', 'DISPLAY-002', 'DISPLAY-003'];
+        }
+
+        // Create user profile under SINGULAR 'user'
+        const userProfile = {
+          email,
+          name,
+          role: 'user',
+          dealershipId,
+          dealershipName,
+          displays: userDisplays,
+          createdAt: Date.now()
+        };
+        await set(ref(database, `user/${user.uid}`), userProfile);
+
+        showToast('Account created!');
+        btn.innerHTML = 'SUCCESS! REDIRECTING...';
+        btn.style.background = '#0f0';
+
+        // Redirect to remote — session persists, so remote.html should see the user as logged in
+        setTimeout(() => {
+          window.location.href = 'remote.html';
+        }, 1200);
+
+      } catch (error) {
+        console.error('Signup error:', error);
+        if (error.code === 'auth/email-already-in-use') showToast('Email already registered', 'error');
+        else if (error.code === 'auth/weak-password') showToast('Password too weak', 'error');
+        else if (error.code === 'auth/invalid-email') showToast('Invalid email address', 'error');
+        else showToast('Signup failed: ' + error.message, 'error');
+
+        btn.disabled = false; btn.innerHTML = 'CREATE ACCOUNT'; btn.style.background = '#fff';
+      }
+    };
+
+    // Enter key to submit
+    document.addEventListener('keypress', (e) => { if (e.key === 'Enter') signUp(); });
+  </script>
+</body>
+</html>
