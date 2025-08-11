@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TV Remote</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'SF Pro Display', -apple-system, system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Simple Login */
+        .login {
+            width: 100%;
+            max-width: 280px;
+            text-align: center;
+        }
+
+        .login h1 {
+            font-size: 42px;
+            margin-bottom: 40px;
+        }
+
+        .login input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #111;
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .login input::placeholder {
+            color: #444;
+        }
+
+        .login button {
+            width: 100%;
+            padding: 15px;
+            background: #fff;
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Remote Control */
+        .remote {
+            display: none;
+            width: 100%;
+            max-width: 320px;
+            background: #111;
+            border-radius: 40px;
+            padding: 30px 25px 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+        }
+
+        .remote.active {
+            display: block;
+        }
+
+        /* Power Button */
+        .power {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .power-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #d32f2f;
+            border: none;
+            font-size: 20px;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .power-btn:active {
+            background: #b71c1c;
+        }
+
+        .display-name {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Screen Display */
+        .screen {
+            background: #000;
+            border: 2px solid #222;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .channel-number {
+            font-size: 56px;
+            font-weight: 300;
+            line-height: 1;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Number Pad */
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .num-btn {
+            aspect-ratio: 1.5;
+            background: #222;
+            border: none;
+            border-radius: 15px;
+            color: #fff;
+            font-size: 28px;
+            font-weight: 500;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .num-btn:active {
+            background: #333;
+            transform: scale(0.95);
+        }
+
+        .num-btn span {
+            display: block;
+            font-size: 10px;
+            margin-top: 2px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Volume & Channel */
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            text-align: center;
+        }
+
+        .control-label {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .control-btns {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .ctrl-btn {
+            padding: 12px;
+            background: #222;
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .ctrl-btn:active {
+            background: #333;
+        }
+
+        /* Mute Button */
+        .mute-btn {
+            width: 100%;
+            padding: 15px;
+            background: #222;
+            border: none;
+            border-radius: 15px;
+            color: #666;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .mute-btn:active {
+            background: #333;
+        }
+
+        .mute-btn.muted {
+            background: #d32f2f;
+            color: #fff;
+        }
+
+        /* Display Selector (Hidden by default) */
+        .displays {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(0,0,0,0.9);
+            border-radius: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .displays.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .display-btn {
+            padding: 8px 16px;
+            background: #222;
+            border: none;
+            border-radius: 10px;
+            color: #666;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .display-btn.active {
+            background: #0f0;
+            color: #000;
+        }
+
+        /* Notification */
+        .toast {
+            position: fixed;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0f0;
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login -->
+    <div class="login" id="login">
+        <h1>IPTV Login</h1>
+        <input type="email" id="email" placeholder="Email" autocomplete="email">
+        <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+        <button onclick="signIn()">ENTER</button>
+    </div>
+
+    <!-- Remote Control -->
+    <div class="remote" id="remote">
+        <!-- Power & Display -->
+        <div class="power">
+            <button class="power-btn" onclick="powerOff()">⏻</button>
+            <div class="display-name" id="currentDisplay" onclick="showDisplays()">DISPLAY-001</div>
+        </div>
+
+        <!-- Screen -->
+        <div class="screen">
+            <div class="channel-number" id="channelDisplay">1</div>
+        </div>
+
+        <!-- Number Pad -->
+        <div class="numpad">
+            <button class="num-btn" onclick="setChannel(1)">
+                1
+                <span>News</span>
+            </button>
+            <button class="num-btn" onclick="setChannel(2)">
+                2
+                <span>Sports</span>
+            </button>
+            <button class="num-btn" onclick="setChannel(3)">
+                3
+                <span>Cook</span>
+            </button>
+            <button class="num-btn" onclick="setChannel(4)">
+                4
+                <span>Nature</span>
+            </button>
+            <button class="num-btn" onclick="setChannel(5)">
+                5
+                <span>Kids</span>
+            </button>
+            <button class="num-btn" onclick="setChannel(6)">
+                6
+                <span>Music</span>
+            </button>
+            <button class="num-btn" onclick="setChannel(7)">
+                7
+                <span>Movie</span>
+            </button>
+            <button class="num-btn" onclick="setChannel(8)">
+                8
+                <span>Info</span>
+            </button>
+            <button class="num-btn" onclick="setChannel(9)">
+                9
+                <span>Shop</span>
+            </button>
+        </div>
+
+        <!-- Volume & Channel Controls -->
+        <div class="controls">
+            <div class="control-group">
+                <div class="control-label">VOL</div>
+                <div class="control-btns">
+                    <button class="ctrl-btn" onclick="volUp()">+</button>
+                    <button class="ctrl-btn" onclick="volDown()">−</button>
+                </div>
+            </div>
+            <div class="control-group">
+                <div class="control-label">CH</div>
+                <div class="control-btns">
+                    <button class="ctrl-btn" onclick="chUp()">▲</button>
+                    <button class="ctrl-btn" onclick="chDown()">▼</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mute -->
+        <button class="mute-btn" id="muteBtn" onclick="toggleMute()">MUTE</button>
+    </div>
+
+    <!-- Display Selector -->
+    <div class="displays" id="displays">
+        <button class="display-btn active" onclick="switchDisplay('DISPLAY-001', this)">TV 1</button>
+        <button class="display-btn" onclick="switchDisplay('DISPLAY-002', this)">TV 2</button>
+        <button class="display-btn" onclick="switchDisplay('DISPLAY-003', this)">TV 3</button>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getDatabase, ref, set } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+            authDomain: "iptv-bfa.firebaseapp.com",
+            databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+            projectId: "iptv-bfa",
+            storageBucket: "iptv-bfa.firebasestorage.app",
+            messagingSenderId: "838790935867",
+            appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+
+        // State
+        let currentDisplay = 'DISPLAY-001';
+        let currentChannel = 1;
+        let volume = 50;
+        let muted = false;
+
+        // Sign In
+        window.signIn = async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                toast('Invalid login');
+            }
+        }
+
+        // Power Off (Logout)
+        window.powerOff = () => {
+            signOut(auth);
+        }
+
+        // Auth State
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('login').style.display = 'none';
+                document.getElementById('remote').classList.add('active');
+            } else {
+                document.getElementById('login').style.display = 'block';
+                document.getElementById('remote').classList.remove('active');
+            }
+        });
+
+        // Set Channel
+        window.setChannel = async (ch) => {
+            currentChannel = ch;
+            document.getElementById('channelDisplay').textContent = ch;
+            
+            // Update Firebase
+            await updateDisplay();
+            toast(`CH ${ch}`);
+        }
+
+        // Channel Up/Down
+        window.chUp = () => {
+            currentChannel = currentChannel >= 9 ? 1 : currentChannel + 1;
+            setChannel(currentChannel);
+        }
+
+        window.chDown = () => {
+            currentChannel = currentChannel <= 1 ? 9 : currentChannel - 1;
+            setChannel(currentChannel);
+        }
+
+        // Volume
+        window.volUp = async () => {
+            volume = Math.min(100, volume + 10);
+            await updateDisplay();
+            toast(`VOL ${volume}`);
+        }
+
+        window.volDown = async () => {
+            volume = Math.max(0, volume - 10);
+            await updateDisplay();
+            toast(`VOL ${volume}`);
+        }
+
+        // Mute
+        window.toggleMute = async () => {
+            muted = !muted;
+            document.getElementById('muteBtn').classList.toggle('muted', muted);
+            await updateDisplay();
+            toast(muted ? 'MUTED' : 'UNMUTED');
+        }
+
+        // Show Display Selector
+        window.showDisplays = () => {
+            const displays = document.getElementById('displays');
+            displays.classList.add('show');
+            setTimeout(() => displays.classList.remove('show'), 3000);
+        }
+
+        // Switch Display
+        window.switchDisplay = (id, btn) => {
+            currentDisplay = id;
+            document.getElementById('currentDisplay').textContent = id;
+            
+            document.querySelectorAll('.display-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            document.getElementById('displays').classList.remove('show');
+            toast(id);
+        }
+
+        // Update Firebase
+        async function updateDisplay() {
+            const displayRef = ref(database, `displays/${currentDisplay}`);
+            await set(displayRef, {
+                channel: currentChannel,
+                volume: volume,
+                muted: muted,
+                timestamp: Date.now()
+            });
+        }
+
+        // Toast Notification
+        function toast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 1500);
+        }
+
+        // Enter key to login
+        document.getElementById('password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') signIn();
+        });
+    </script>
+</body>
+</html>
