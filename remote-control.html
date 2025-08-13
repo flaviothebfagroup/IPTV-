@@ -1,142 +1,186 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="apple-touch-icon" sizes="180x180" href="https://i.ibb.co/LzJwPhjg/ICON-IPTV.png">
-
-  <!-- PWA -->
-<link rel="manifest" href="/IPTV-/manifest.webmanifest">
-<meta name="theme-color" content="#000000">
-
-<!-- App icons (Android + desktop) -->
-<link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png">
-
-<!-- iOS Add to Home Screen -->
-<link rel="apple-touch-icon" sizes="180x180" href="/IPTV-/icons/apple-touch-icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="IPTV Remote">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>IPTV Remote — Dealership Scoped (5 Channels)</title>
+  <title>IPTV Remote — Liquid Glass (Focus Swipe + Header Toggle + Mute)</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-    body { background: #000; color: #fff; font-family: 'SF Pro Display', -apple-system, system-ui, sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    :root { --bg:#0b0b0c; --fg:#fff; --muted:#9a9aa0; --panel:#121214; --border:rgba(255,255,255,.14); --accent:#ff9500; --tile:#17171a; --tileActive:#1d1d21; --shadow:0 18px 48px rgba(0,0,0,.45); }
+    body.light { --bg:#f5f5f7; --fg:#111; --muted:#6e6e73; --panel:#fff; --border:rgba(0,0,0,.12); --accent:#ff9500; --tile:#f2f2f7; --tileActive:#eaeaef; --shadow:0 14px 36px rgba(0,0,0,.10); }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+    html,body{height:100%}
+    body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;padding:22px;transition:background .25s,color .25s}
 
-    /* Simple Login */
-    .login { width: 100%; max-width: 280px; text-align: center; }
-    .login h1 { font-size: 42px; margin-bottom: 40px; }
-    .login input { width: 100%; padding: 15px; margin-bottom: 15px; background: #111; border: none; border-radius: 12px; color: #fff; font-size: 16px; text-align: center; }
-    .login input::placeholder { color: #444; }
-    .login button { width: 100%; padding: 15px; background: #fff; color: #000; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; }
+    /* Login */
+    .login{width:100%;max-width:380px;text-align:center}
+    .logo{width:110px;height:110px;margin:0 auto 18px;display:block;background:var(--accent);
+      -webkit-mask:url('https://i.ibb.co/LzJwPhjg/ICON-IPTV.png') center/contain no-repeat;
+      mask:url('https://i.ibb.co/LzJwPhjg/ICON-IPTV.png') center/contain no-repeat}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:28px;padding:24px;box-shadow:var(--shadow)}
+    .login input{width:100%;padding:16px;margin-bottom:14px;background:transparent;border:1px solid var(--border);border-radius:14px;color:var(--fg);font-size:16px;text-align:center}
+    .login input::placeholder{color:var(--muted)}
+    .login button{width:100%;padding:14px;background:var(--accent);color:#000;border:none;border-radius:999px;font-size:16px;font-weight:700;cursor:pointer}
+    .link{margin-top:12px;font-size:14px;color:var(--muted)}
+    .link a{color:var(--fg);text-decoration:none;border-bottom:1px dashed var(--border)}
 
-    /* Remote Control */
-    .remote { display: none; width: 100%; max-width: 320px; background: #111; border-radius: 40px; padding: 30px 25px 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
-    .remote.active { display: block; }
+    /* Remote shell */
+    .remote{display:none;width:100%;max-width:clamp(360px,92vw,440px);background:var(--panel);border:1px solid var(--border);border-radius:42px;padding:18px 18px 22px;box-shadow:var(--shadow)}
 
-    /* Power + Display */
-    .power { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-    .power-btn { width: 100px; height: 30px; border-radius: 24px; background: #d32f2f; border: none; font-size: 14px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .power-btn:active { background: #b71c1c; }
-    .display-name { font-size: 16px; color: #999; cursor: pointer; }
+    /* Header */
+    .hdr{display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
+    .pill{justify-self:start;height:34px;padding:0 14px;border-radius:9999px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer}
+    .display-name{justify-self:center;font-size:13px;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:.8px}
+    .theme-holder{justify-self:end}
+    .theme-switch{position:relative;width:56px;height:30px;border-radius:999px;background:var(--tileActive);border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 8px;box-shadow:inset 0 -2px 8px rgba(0,0,0,.12),inset 0 2px 6px rgba(255,255,255,.06);cursor:pointer}
+    .theme-switch .sun,.theme-switch .moon{font-size:14px;opacity:.55;transition:opacity .2s}
+    .theme-switch .thumb{position:absolute;top:2px;left:2px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.25);transition:transform .25s}
+    body.light .theme-switch .thumb{background:#000}
+    .theme-switch.on{border-color:var(--accent);box-shadow:inset 0 -2px 8px rgba(0,0,0,.12),0 6px 18px rgba(255,149,0,.22)}
+    .theme-switch.on .thumb{transform:translateX(26px)}
+    .theme-switch.on .sun{opacity:1}
+    .theme-switch.on .moon{opacity:.3}
 
-    /* Screen */
-    .screen { background: #000; border: 2px solid #222; border-radius: 20px; padding: 25px; margin-bottom: 30px; text-align: center; }
-    .channel-number { font-size: 50px; font-weight: 500; line-height: 1; color: #0f0; font-family: 'Courier New', monospace; }
+    .rule{height:1px;background:var(--border);margin:12px 0 10px}
 
-    /* Numpad (5 channels) */
-    .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
-    .num-btn { aspect-ratio: 1.5; background: #222; border: none; border-radius: 15px; color: #ffffff; font-size: 25px; font-weight: 900; cursor: pointer; position: relative; }
-    .num-btn:active { background: #333; transform: scale(0.95); }
-    .num-btn span { display: block; font-size: 10px; margin-top: 2px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+    /* Dial (round touchpad) */
+    .dial{width:min(78vw,360px);aspect-ratio:1/1;margin:0 auto 14px;position:relative;touch-action:none}
+    .dial-ring{position:absolute;inset:0;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02)),var(--tile);border:1px solid var(--border);box-shadow:none}
+    .dial-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:56%;height:56%;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02)),var(--panel);border:1px solid var(--border);display:grid;place-items:center;text-align:center;overflow:hidden;box-shadow:none}
+    .dial-center.flash{animation:ringFlash .22s ease-out; border-color: var(--accent);}
+    @keyframes ringFlash{0%{border-color: var(--accent)}100%{border-color: var(--border)}}
+    #dialContent{position:relative;width:100%;height:100%;display:grid;place-items:center}
+    #dialContent.pulse{animation:dialPulse .26s ease-out;}
+    @keyframes dialPulse{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
+    .dial-num{font-size:clamp(68px,12vw,96px);font-weight:800;color:var(--accent);line-height:1}
+    .dial-name{font-size:11px;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;margin-top:-2px}
+    .dial-select{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:56%;height:56%;border-radius:50%;background:transparent;border:0;cursor:pointer}
 
-    /* Volume & Channel */
-    .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px; }
-    .control-group { text-align: center; }
-    .control-label { font-size: 15px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
-    .control-btns { display: flex; flex-direction: column; gap: 10px; }
-    .ctrl-btn { padding: 12px; background: #222; border: none; border-radius: 10px; color: #fff; font-size: 25px; cursor: pointer; }
-    .ctrl-btn:active { background: #333; }
+    /* Quick grid */
+    .quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:14px 6px 6px}
+    .quick-btn{height:66px;border:1px solid var(--border);border-radius:16px;background:var(--tile);color:var(--fg);font-weight:800;font-size:22px;display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer;transition:border-color .2s,background .2s,transform .16s}
+    .quick-btn:active{transform:translateY(1px)}
+    .quick-btn span{margin-top:2px;font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+    .quick-btn.active{border-color:var(--accent);background:var(--tileActive);transform:scale(1.06);box-shadow:0 0 0 2px rgba(255,149,0,.35), inset 0 0 0 1px var(--accent);}
+    .quick-btn.pulsing{animation:tilePulse .24s ease-out;}
+    @keyframes tilePulse{0%{transform:scale(1.06)}50%{transform:scale(1.12)}100%{transform:scale(1.06)}}
+    .quick-btn.mute.muted{border-color:#ff453a;color:#ff453a}
 
-    /* Mute Button */
-    .mute-btn { width: 100%; padding: 15px; background: #222; border: none; border-radius: 15px; color: #ffffff; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; margin-bottom: 20px; }
-    .mute-btn:active { background: #333; }
-    .mute-btn.muted { background: #d32f2f; color: #fff; }
+    /* Volume */
+    .volume-bar{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;max-width:340px;margin:6px auto 0}
+    .vol-btn{width:54px;height:42px;border:1px solid var(--border);border-radius:12px;background:var(--tile);color:var(--fg);font-size:22px;cursor:pointer}
+    .vol-track{position:relative;height:14px;border-radius:999px;background:var(--tile);border:1px solid var(--border);overflow:hidden}
+    .vol-fill{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg,var(--accent),#ffb866)}
 
-    /* Display Selector */
-    .displays { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; padding: 10px; background: rgba(0,0,0,0.9); border-radius: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-    .displays.show { opacity: 1; pointer-events: all; }
-    .display-btn { padding: 8px 16px; background: #222; border: none; border-radius: 10px; color: #bbb; font-size: 12px; cursor: pointer; }
-    .display-btn.active { background: #0f0; color: #000; }
+    /* Displays & toast */
+    .displays{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;padding:10px;background:var(--panel);border:1px solid var(--border);border-radius:28px;opacity:0;pointer-events:none;transition:opacity .25s}
+    .displays.show{opacity:1;pointer-events:all}
+    .display-btn{padding:8px 14px;background:transparent;border:1px solid var(--border);border-radius:9999px;color:var(--fg);font-size:12px;cursor:pointer}
+    .display-btn.active{color:var(--accent);border-color:var(--accent)}
+    .toast{position:fixed;top:50px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none}
+    .toast.show{opacity:1}
 
-    /* Toast */
-    .toast { position: fixed; top: 50px; left: 50%; transform: translateX(-50%); background: #0f0; color: #000; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 600; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
-    .toast.show { opacity: 1; }
+    /* Hint arrows around dial */
+    .hint{position:absolute;color:var(--muted);opacity:.55;font-size:13px;pointer-events:none}
+    .hint.up{left:50%;top:9%;transform:translate(-50%,-50%)}
+    .hint.down{left:50%;bottom:9%;transform:translate(-50%,50%)}
+    .hint.left{left:9%;top:50%;transform:translate(-50%,-50%)}
+    .hint.right{right:9%;top:50%;transform:translate(50%,-50%)}
+    .hint.hide{opacity:0; transition: opacity .6s ease;}
+
+    @media (min-height:900px){.quick-btn{height:70px}.vol-btn{height:46px;width:60px}}
+    @media (max-width:420px){body{padding:16px}.remote{padding:16px}.quick-btn{height:60px}}
   </style>
 </head>
 <body>
-  <!-- Login -->
+  <!-- LOGIN -->
   <div class="login" id="login">
-    <img src="https://i.ibb.co/LzJwPhjg/ICON-IPTV.png" alt="Logo" style="width:100px; height:auto;">
-    <input type="email" id="email" placeholder="Email" autocomplete="email" />
-    <input type="password" id="password" placeholder="Password" autocomplete="current-password" />
-    <button onclick="signIn()">ENTER</button>
+    <div class="logo" role="img" aria-label="IPTV logo"></div>
+    <div class="card" id="loginCard">
+      <input type="email" id="email" placeholder="Email" autocomplete="email" />
+      <input type="password" id="password" placeholder="Password" autocomplete="current-password" />
+      <button id="btnEnter" type="button" onclick="window.signIn()">ENTER</button>
+      <div class="link">Don’t have an account? <a href="https://flaviothebfagroup.github.io/IPTV-/signup.html">Create your account</a></div>
+    </div>
   </div>
 
-  <!-- Remote -->
-  <div class="remote" id="remote">
-    <div class="power">
-      <button class="power-btn" onclick="powerOff()">Sign out</button>
-      <div class="display-name" id="currentDisplay" onclick="showDisplays()">DISPLAY</div>
-    </div>
+  <!-- PERMANENT ENTER FIX -->
+  <script>
+    (function () {
+      const btn   = document.getElementById('btnEnter');
+      const email = document.getElementById('email');
+      const pass  = document.getElementById('password');
+      function callSignIn() {
+        if (typeof window.signIn === 'function') { try { window.signIn(); } catch(e){} return; }
+        let tries=0; const iv=setInterval(()=>{ 
+          if (typeof window.signIn === 'function') { clearInterval(iv); try{ window.signIn(); }catch(e){}; }
+          else if(++tries>50){ clearInterval(iv); console.warn('signIn not ready'); }
+        },100);
+      }
+      if (btn) { btn.addEventListener('click', e=>{e.preventDefault();callSignIn();}); btn.onclick=e=>{e.preventDefault();callSignIn();}; }
+      [email,pass].forEach(el=> el && el.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); callSignIn(); } }));
+    })();
+  </script>
 
-    <div class="screen">
-      <div class="channel-number" id="channelDisplay">1</div>
-    </div>
-
-    <!-- First 5 channels only -->
-    <div class="numpad">
-      <button class="num-btn" onclick="setChannel(1)">1<span>News</span></button>
-      <button class="num-btn" onclick="setChannel(2)">2<span>Sports</span></button>
-      <button class="num-btn" onclick="setChannel(3)">3<span>Cooking</span></button>
-      <button class="num-btn" onclick="setChannel(4)">4<span>Nature</span></button>
-      <button class="num-btn" onclick="setChannel(5)">5<span>Kids</span></button>
-    </div>
-
-    <div class="controls">
-      <div class="control-group">
-        <div class="control-label">VOL</div>
-        <div class="control-btns">
-          <button class="ctrl-btn" onclick="volUp()">+</button>
-          <button class="ctrl-btn" onclick="volDown()">−</button>
-        </div>
-      </div>
-      <div class="control-group">
-        <div class="control-label">CH</div>
-        <div class="control-btns">
-          <button class="ctrl-btn" onclick="chUp()">▲</button>
-          <button class="ctrl-btn" onclick="chDown()">▼</button>
+  <!-- REMOTE -->
+  <div class="remote" id="remote" style="display:none;">
+    <div class="hdr">
+      <button class="pill" onclick="window.powerOff()">Sign out</button>
+      <div class="display-name" id="currentDisplay" onclick="window.showDisplays()">DISPLAY</div>
+      <div class="theme-holder">
+        <div id="hdrSwitch" class="theme-switch" onclick="window.toggleTheme()">
+          <span class="sun">☀️</span>
+          <span class="moon">🌙</span>
+          <i class="thumb"></i>
         </div>
       </div>
     </div>
 
-    <button class="mute-btn" id="muteBtn" onclick="toggleMute()">MUTE</button>
+    <div class="rule"></div>
+
+    <!-- Dial -->
+    <div class="dial" id="dial" aria-label="Ring navigation">
+      <div class="dial-ring"></div>
+      <div class="dial-center">
+        <div id="dialContent">
+          <div class="dial-num" id="dialNumber">1</div>
+          <div class="dial-name" id="dialName">News</div>
+        </div>
+        <button class="dial-select" onclick="window.selectFocused()" aria-label="Select"></button>
+      </div>
+      <div class="hint up">▲</div>
+      <div class="hint down">▼</div>
+      <div class="hint left">◀︎</div>
+      <div class="hint right">▶︎</div>
+    </div>
+
+    <!-- Grid (1..5 + MUTE) -->
+    <div class="quick-grid">
+      <button class="quick-btn" id="qch-1" onclick="window.selectChannel(1)"><strong>1</strong><span>News</span></button>
+      <button class="quick-btn" id="qch-2" onclick="window.selectChannel(2)"><strong>2</strong><span>Sports</span></button>
+      <button class="quick-btn" id="qch-3" onclick="window.selectChannel(3)"><strong>3</strong><span>Cooking</span></button>
+      <button class="quick-btn" id="qch-4" onclick="window.selectChannel(4)"><strong>4</strong><span>Nature</span></button>
+      <button class="quick-btn" id="qch-5" onclick="window.selectChannel(5)"><strong>5</strong><span>Kids</span></button>
+      <button class="quick-btn mute" id="q-mute" onclick="window.toggleMute()"><strong>🔇</strong><span id="muteLabel">Mute</span></button>
+    </div>
+
+    <!-- Volume -->
+    <div class="volume-bar">
+      <button class="vol-btn minus" onclick="window.volDown()">−</button>
+      <div class="vol-track"><div class="vol-fill" id="volFill"></div></div>
+      <button class="vol-btn plus" onclick="window.volUp()">+</button>
+    </div>
   </div>
 
-  <!-- Display selector (built dynamically) -->
+  <!-- Display selector & toast -->
   <div class="displays" id="displays"></div>
-
-  <!-- Toast -->
   <div class="toast" id="toast"></div>
 
-  <!-- Firebase logic -->
+  <!-- Firebase + logic -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getAuth, signOut, onAuthStateChanged, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import { getDatabase, ref, set, get, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    // --- Firebase config ---
     const firebaseConfig = {
       apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
       authDomain: "iptv-bfa.firebaseapp.com",
@@ -151,144 +195,190 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // --- UI helper ---
-    function toast(msg) {
-      const t = document.getElementById('toast');
-      t.textContent = msg; t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 1500);
+    // ----- STATE -----
+    let dealershipId = null, displayIds = [], currentDisplay = null;
+    let currentChannel = 1, previewChannel = 1;
+    let volume = 50, muted = false;
+    const CHANNELS = {1:'News',2:'Sports',3:'Cooking',4:'Nature',5:'Kids'};
+    const IDX_TO_ID = ['qch-1','qch-2','qch-3','qch-4','qch-5','q-mute'];
+    let focusedIndex = 0;
+
+    // THEME
+    const savedTheme = localStorage.getItem('iptv_theme') || 'light';
+    document.body.classList.toggle('light', savedTheme==='light');
+    syncThemeSwitch();
+    window.toggleTheme = function(){
+      const isLight = !document.body.classList.contains('light');
+      document.body.classList.toggle('light', isLight);
+      localStorage.setItem('iptv_theme', isLight ? 'light' : 'dark');
+      syncThemeSwitch();
+      toast(isLight ? 'White mode' : 'Dark mode');
+    }
+    function syncThemeSwitch(){ const sw=document.getElementById('hdrSwitch'); if(!sw) return; sw.classList.toggle('on', document.body.classList.contains('light')); }
+
+    // UI helpers
+    function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1400); }
+    function haptic(){ if(navigator.vibrate){ try{ navigator.vibrate(10);}catch(e){} } }
+
+    function paintDial(ch){
+      const n=document.getElementById('dialNumber'); const nm=document.getElementById('dialName');
+      if(n) n.textContent=ch; if(nm) nm.textContent=CHANNELS[ch] || `Channel ${ch}`;
+    }
+    function animateDialTo(ch, dir){
+      const content=document.getElementById('dialContent'); if(!content){ paintDial(ch); return; }
+      const axis=(dir==='up'||dir==='down')?'Y':'X'; const amt=(dir==='left'||dir==='up')?-26:26;
+      const out = content.animate([{transform:`translate${axis}(0px)`,opacity:1},{transform:`translate${axis}(${amt}px)`,opacity:.6}],{duration:130,easing:'ease-out'});
+      out.finished.then(()=>{ paintDial(ch);
+        content.animate([{transform:`translate${axis}(${-amt}px)`,opacity:.6},{transform:`translate${axis}(0px)`,opacity:1}],{duration:130,easing:'ease-out'});
+      }).catch(()=>{});
     }
 
-    // --- State ---
-    let dealershipId = null;
-    let displayIds = [];
-    let currentDisplay = null;
-    let currentChannel = 1;
-    let volume = 50;
-    let muted = false;
+    function setActiveTileByIndex(i, dir){
+      const clamped = Math.max(0, Math.min(IDX_TO_ID.length-1, i));
+      if (clamped === focusedIndex) return;
+      focusedIndex = clamped;
+      IDX_TO_ID.forEach((id,idx)=>{ const el=document.getElementById(id); if(el){ el.classList.toggle('active', idx===focusedIndex); } });
+      if (focusedIndex <= 4) { // preview channel
+        const nextCh = focusedIndex + 1;
+        if (nextCh !== previewChannel) { previewChannel = nextCh; animateDialTo(previewChannel, dir || 'right'); }
+      }
+      const dcEl = document.querySelector('.dial-center'); if (dcEl){ dcEl.classList.remove('flash'); void dcEl.offsetWidth; dcEl.classList.add('flash'); }
+      haptic();
+    }
+    function moveFocus(dx, dy){
+      let col = focusedIndex % 3, row = Math.floor(focusedIndex / 3);
+      let nCol = Math.max(0, Math.min(2, col + dx));
+      let nRow = Math.max(0, Math.min(1, row + dy));
+      let next = nRow*3 + nCol;
+      if(next >= IDX_TO_ID.length) next = IDX_TO_ID.length-1;
+      const dir = dx>0?'right':dx<0?'left':dy>0?'down':'up';
+      setActiveTileByIndex(next, dir);
+    }
 
-    // --- Auth ---
+    function updateVolumeUI(){ const fill=document.getElementById('volFill'); if(fill) fill.style.width = volume + '%'; }
+
+    // Initial paint
+    IDX_TO_ID.forEach((id,idx)=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active', idx===focusedIndex); });
+    paintDial(currentChannel); updateVolumeUI();
+    if(!localStorage.getItem('iptv_hints_seen')){ setTimeout(()=>{ document.querySelectorAll('.hint').forEach(h=>h.classList.add('hide')); localStorage.setItem('iptv_hints_seen','1'); }, 2600); }
+
+    // AUTH
     window.signIn = async () => {
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
-      try { await signInWithEmailAndPassword(auth, email, password); }
-      catch (e) { console.error(e); toast('Invalid login'); }
+      if(!email||!password){ toast('Enter email & password'); return; }
+      try{ await signInWithEmailAndPassword(auth,email,password); }
+      catch(e){ console.error(e); toast('Invalid login'); }
     };
-
     window.powerOff = () => { signOut(auth); };
 
     onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        document.getElementById('login').style.display = 'none';
-        document.getElementById('remote').classList.add('active');
-        await afterLogin(user);
-      } else {
-        document.getElementById('login').style.display = 'block';
-        document.getElementById('remote').classList.remove('active');
-        document.getElementById('displays').innerHTML = '';
-        document.getElementById('currentDisplay').textContent = 'DISPLAY';
-        currentDisplay = null;
+      const login=document.getElementById('login'); const remote=document.getElementById('remote');
+      if(user){ if(login) login.style.display='none'; if(remote) remote.style.display='block'; await afterLogin(user); }
+      else { if(login) login.style.display='block'; if(remote) remote.style.display='none'; document.getElementById('displays').innerHTML=''; const cd=document.getElementById('currentDisplay'); if(cd) cd.textContent='DISPLAY'; currentDisplay=null; }
+    });
+
+    // Robust profile + displays (singular/plural fallback)
+    async function afterLogin(user){
+      console.log('[auth] signed in as', user.uid);
+      // 1) Profile path fallback: user/{uid} -> users/{uid}
+      let uSnap = await get(ref(db, `user/${user.uid}`));
+      if (!uSnap.exists()) {
+        console.warn('[profile] user/ not found, trying users/');
+        uSnap = await get(ref(db, `users/${user.uid}`));
       }
-    });
-
-    // --- After login: resolve dealership and load its TVs ---
-    async function afterLogin(user) {
-      const uSnap = await get(ref(db, `user/${user.uid}`));
       const u = uSnap.val() || {};
-      dealershipId = u.dealershipId ?? u.dealership; // temporary fallback
-      if (!dealershipId) { toast('No dealership assigned'); return; }
+      console.log('[profile] data:', u);
+      dealershipId = u.dealershipId ?? u.dealership;
+      if(!dealershipId){ toast('No dealership assigned'); console.warn('[profile] missing dealershipId'); return; }
 
-      // Load displays for this dealership (singular path 'dealership/')
-      onValue(ref(db, `dealership/${dealershipId}/displays`), (snap) => {
-        const map = snap.val() || {};
-        displayIds = Object.keys(map).filter(k => map[k]);
+      // 2) Displays path fallback: dealership/{id}/displays -> dealerships/{id}/displays
+      const base1 = `dealership/${dealershipId}/displays`;
+      const base2 = `dealerships/${dealershipId}/displays`;
+      let basePath = base1;
+      let dTest = await get(ref(db, base1));
+      if (!dTest.exists()) {
+        console.warn('[displays] dealership/ not found, trying dealerships/');
+        basePath = base2;
+        dTest = await get(ref(db, base2));
+      }
+      if (!dTest.exists()) {
+        toast('No TVs found for this dealership');
+        console.warn('[displays] no displays under', base1, 'or', base2);
+        return;
+      }
+
+      const handle = (mapRaw) => {
+        const map = mapRaw || {};
+        displayIds = Object.keys(map);
+        console.log('[displays] loaded:', displayIds);
         renderDisplayButtons(displayIds);
-        if (!currentDisplay || !displayIds.includes(currentDisplay)) {
+        if(!currentDisplay || !displayIds.includes(currentDisplay)){
           currentDisplay = displayIds[0] || null;
-          document.getElementById('currentDisplay').textContent = currentDisplay || 'NO TV';
+          const cd=document.getElementById('currentDisplay');
+          if(cd) cd.textContent=currentDisplay || 'NO TV';
         }
+      };
+
+      // initial
+      handle(dTest.val());
+      // live updates
+      onValue(ref(db, basePath), (snap) => handle(snap.val()));
+    }
+
+    function renderDisplayButtons(ids){
+      const wrap=document.getElementById('displays'); if(!wrap) return; wrap.innerHTML='';
+      ids.forEach(id=>{ const btn=document.createElement('button'); btn.className='display-btn'+(id===currentDisplay?' active':''); btn.textContent=id; btn.onclick=()=>switchDisplay(id,btn); wrap.appendChild(btn); });
+    }
+    window.showDisplays = () => { const d=document.getElementById('displays'); if(!d) return; d.classList.add('show'); setTimeout(()=>d.classList.remove('show'),3000); };
+    window.switchDisplay = (id,btn) => { currentDisplay=id; const cd=document.getElementById('currentDisplay'); if(cd) cd.textContent=id; document.querySelectorAll('.display-btn').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); const d=document.getElementById('displays'); if(d) d.classList.remove('show'); toast(id); };
+
+    // SELECT / COMMIT
+    window.selectChannel = (ch)=>{ const idx = Math.max(0, Math.min(4, ch-1)); setActiveTileByIndex(idx, ch>previewChannel?'right':'left'); commitFocusedIfChannel(); };
+    window.selectFocused = ()=>{ commitFocusedIfChannel(); };
+    function commitFocusedIfChannel(){
+      const focusedId = IDX_TO_ID[focusedIndex];
+      const tileEl = document.getElementById(focusedId);
+      const dc = document.getElementById('dialContent');
+      if (focusedIndex <= 4) {
+        previewChannel = focusedIndex + 1;
+        if (previewChannel !== currentChannel) {
+          currentChannel = previewChannel;
+          paintDial(currentChannel);
+          updateDisplay();
+          if (tileEl) { tileEl.classList.add('pulsing'); setTimeout(()=>tileEl.classList.remove('pulsing'), 260); }
+          if (dc) { dc.classList.add('pulse'); setTimeout(()=>dc.classList.remove('pulse'), 280); }
+          toast(`CH ${currentChannel}`);
+        }
+      } else {
+        if (tileEl) { tileEl.classList.add('pulsing'); setTimeout(()=>tileEl.classList.remove('pulsing'), 260); }
+        window.toggleMute();
+      }
+    }
+
+    // NAV by swipe (focus only)
+    const dial=document.getElementById('dial');
+    let sx=0, sy=0, tracking=false; const TH=28;
+    if(dial){
+      dial.addEventListener('pointerdown',(e)=>{ tracking=true; sx=e.clientX; sy=e.clientY; dial.setPointerCapture(e.pointerId); });
+      dial.addEventListener('pointerup',(e)=>{ if(!tracking) return; tracking=false; const dx=e.clientX-sx, dy=e.clientY-sy;
+        if(Math.abs(dx)>Math.abs(dy) && Math.abs(dx)>TH){ moveFocus(dx>0?+1:-1,0); }
+        else if(Math.abs(dy)>TH){ moveFocus(0, dy<0?-1:+1); }
       });
+      dial.addEventListener('pointercancel',()=>{ tracking=false; });
     }
 
-    function renderDisplayButtons(ids) {
-      const wrap = document.getElementById('displays');
-      wrap.innerHTML = '';
-      ids.forEach((id) => {
-        const btn = document.createElement('button');
-        btn.className = 'display-btn' + (id === currentDisplay ? ' active' : '');
-        btn.textContent = id;
-        btn.onclick = () => switchDisplay(id, btn);
-        wrap.appendChild(btn);
-      });
+    // VOLUME & MUTE
+    window.volUp = async ()=>{ if(!currentDisplay){ toast('Select a TV'); return; } volume=Math.min(100,volume+10); updateVolumeUI(); await updateDisplay(); toast(`VOL ${volume}`); };
+    window.volDown = async ()=>{ if(!currentDisplay){ toast('Select a TV'); return; } volume=Math.max(0,volume-10); updateVolumeUI(); await updateDisplay(); toast(`VOL ${volume}`); };
+    window.toggleMute = async ()=>{ if(!currentDisplay){ toast('Select a TV'); return; } muted=!muted; const m=document.getElementById('q-mute'); if(m) m.classList.toggle('muted', muted); const ml=document.getElementById('muteLabel'); if(ml) ml.textContent = muted? 'Muted' : 'Mute'; await updateDisplay(); toast(muted?'MUTED':'UNMUTED'); };
+
+    async function updateDisplay(){
+      if(!currentDisplay){ console.warn('[update] no currentDisplay'); return; }
+      const state={channel:currentChannel,volume,muted,timestamp:Date.now()};
+      console.log('[update] displays/'+currentDisplay, state);
+      await set(ref(db,`displays/${currentDisplay}`),state);
     }
-
-    window.showDisplays = () => {
-      const displays = document.getElementById('displays');
-      displays.classList.add('show');
-      setTimeout(() => displays.classList.remove('show'), 3000);
-    };
-
-    window.switchDisplay = (id, btn) => {
-      currentDisplay = id;
-      document.getElementById('currentDisplay').textContent = id;
-      document.querySelectorAll('.display-btn').forEach(b => b.classList.remove('active'));
-      if (btn) btn.classList.add('active');
-      document.getElementById('displays').classList.remove('show');
-      toast(id);
-    };
-
-    // --- Channel & volume ---
-    window.setChannel = async (ch) => {
-      currentChannel = ch;
-      document.getElementById('channelDisplay').textContent = ch;
-      await updateDisplay();
-      toast(`CH ${ch}`);
-    };
-
-    window.chUp = () => {
-      if (!displayIds.length) return;
-      currentChannel = currentChannel >= 5 ? 1 : currentChannel + 1; // wrap 1..5
-      setChannel(currentChannel);
-    };
-
-    window.chDown = () => {
-      if (!displayIds.length) return;
-      currentChannel = currentChannel <= 1 ? 5 : currentChannel - 1; // wrap 1..5
-      setChannel(currentChannel);
-    };
-
-    window.volUp = async () => {
-      if (!displayIds.length) return;
-      volume = Math.min(100, volume + 10);
-      await updateDisplay();
-      toast(`VOL ${volume}`);
-    };
-
-    window.volDown = async () => {
-      if (!displayIds.length) return;
-      volume = Math.max(0, volume - 10);
-      await updateDisplay();
-      toast(`VOL ${volume}`);
-    };
-
-    window.toggleMute = async () => {
-      if (!displayIds.length) return;
-      muted = !muted;
-      document.getElementById('muteBtn').classList.toggle('muted', muted);
-      await updateDisplay();
-      toast(muted ? 'MUTED' : 'UNMUTED');
-    };
-
-    // --- Write to selected TV ---
-    async function updateDisplay() {
-      if (!currentDisplay) { toast('Select a TV'); return; }
-      const state = { channel: currentChannel, volume, muted, timestamp: Date.now() };
-      await set(ref(db, `displays/${currentDisplay}`), state);
-    }
-
-    // Enter to login
-    document.getElementById('password').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') signIn();
-    });
   </script>
 </body>
 </html>
