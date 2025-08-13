@@ -51,7 +51,6 @@
     #dialContent{position:relative;width:100%;height:100%;display:grid;place-items:center}
     #dialContent.pulse{animation:dialPulse .26s ease-out;}
     @keyframes dialPulse{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
-    /* >>> Tweaks you asked for <<< */
     .dial-num{font-size:clamp(68px,12vw,96px);font-weight:800;color:var(--accent);line-height:1}
     .dial-name{font-size:11px;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;margin-top:-2px}
     .dial-select{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:56%;height:56%;border-radius:50%;background:transparent;border:0;cursor:pointer}
@@ -93,7 +92,7 @@
   </style>
 </head>
 <body>
-  <!-- LOGIN (no <form>, no 404) -->
+  <!-- LOGIN -->
   <div class="login" id="login">
     <div class="logo" role="img" aria-label="IPTV logo"></div>
     <div class="card" id="loginCard">
@@ -103,6 +102,24 @@
       <div class="link">Don’t have an account? <a href="https://flaviothebfagroup.github.io/IPTV-/signup.html">Create your account</a></div>
     </div>
   </div>
+
+  <!-- PERMANENT ENTER FIX -->
+  <script>
+    (function () {
+      const btn   = document.getElementById('btnEnter');
+      const email = document.getElementById('email');
+      const pass  = document.getElementById('password');
+      function callSignIn() {
+        if (typeof window.signIn === 'function') { try { window.signIn(); } catch(e){} return; }
+        let tries=0; const iv=setInterval(()=>{ 
+          if (typeof window.signIn === 'function') { clearInterval(iv); try{ window.signIn(); }catch(e){}; }
+          else if(++tries>50){ clearInterval(iv); console.warn('signIn not ready'); }
+        },100);
+      }
+      if (btn) { btn.addEventListener('click', e=>{e.preventDefault();callSignIn();}); btn.onclick=e=>{e.preventDefault();callSignIn();}; }
+      [email,pass].forEach(el=> el && el.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); callSignIn(); } }));
+    })();
+  </script>
 
   <!-- REMOTE -->
   <div class="remote" id="remote" style="display:none;">
@@ -120,7 +137,7 @@
 
     <div class="rule"></div>
 
-    <!-- Dial (swipe = move focus; tap center = select) -->
+    <!-- Dial -->
     <div class="dial" id="dial" aria-label="Ring navigation">
       <div class="dial-ring"></div>
       <div class="dial-center">
@@ -183,7 +200,6 @@
     let currentChannel = 1, previewChannel = 1;
     let volume = 50, muted = false;
     const CHANNELS = {1:'News',2:'Sports',3:'Cooking',4:'Nature',5:'Kids'};
-
     const IDX_TO_ID = ['qch-1','qch-2','qch-3','qch-4','qch-5','q-mute'];
     let focusedIndex = 0;
 
@@ -256,24 +272,58 @@
     };
     window.powerOff = () => { signOut(auth); };
 
-    // ENTER key (no form submission)
-    ['email','password'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el) el.addEventListener('keydown',(e)=>{ if(e.key==='Enter') window.signIn(); });
-    });
-
     onAuthStateChanged(auth, async (user) => {
       const login=document.getElementById('login'); const remote=document.getElementById('remote');
       if(user){ if(login) login.style.display='none'; if(remote) remote.style.display='block'; await afterLogin(user); }
       else { if(login) login.style.display='block'; if(remote) remote.style.display='none'; document.getElementById('displays').innerHTML=''; const cd=document.getElementById('currentDisplay'); if(cd) cd.textContent='DISPLAY'; currentDisplay=null; }
     });
 
+    // Robust profile + displays (singular/plural fallback)
     async function afterLogin(user){
-      const uSnap=await get(ref(db,`user/${user.uid}`)); const u=uSnap.val()||{};
-      dealershipId = u.dealershipId ?? u.dealership; if(!dealershipId){ toast('No dealership assigned'); return; }
-      onValue(ref(db,`dealership/${dealershipId}/displays`),(snap)=>{ const map=snap.val()||{}; displayIds=Object.keys(map).filter(k=>map[k]); renderDisplayButtons(displayIds);
-        if(!currentDisplay||!displayIds.includes(currentDisplay)){ currentDisplay=displayIds[0]||null; const cd=document.getElementById('currentDisplay'); if(cd) cd.textContent=currentDisplay||'NO TV'; }
-      });
+      console.log('[auth] signed in as', user.uid);
+      // 1) Profile path fallback: user/{uid} -> users/{uid}
+      let uSnap = await get(ref(db, `user/${user.uid}`));
+      if (!uSnap.exists()) {
+        console.warn('[profile] user/ not found, trying users/');
+        uSnap = await get(ref(db, `users/${user.uid}`));
+      }
+      const u = uSnap.val() || {};
+      console.log('[profile] data:', u);
+      dealershipId = u.dealershipId ?? u.dealership;
+      if(!dealershipId){ toast('No dealership assigned'); console.warn('[profile] missing dealershipId'); return; }
+
+      // 2) Displays path fallback: dealership/{id}/displays -> dealerships/{id}/displays
+      const base1 = `dealership/${dealershipId}/displays`;
+      const base2 = `dealerships/${dealershipId}/displays`;
+      let basePath = base1;
+      let dTest = await get(ref(db, base1));
+      if (!dTest.exists()) {
+        console.warn('[displays] dealership/ not found, trying dealerships/');
+        basePath = base2;
+        dTest = await get(ref(db, base2));
+      }
+      if (!dTest.exists()) {
+        toast('No TVs found for this dealership');
+        console.warn('[displays] no displays under', base1, 'or', base2);
+        return;
+      }
+
+      const handle = (mapRaw) => {
+        const map = mapRaw || {};
+        displayIds = Object.keys(map);
+        console.log('[displays] loaded:', displayIds);
+        renderDisplayButtons(displayIds);
+        if(!currentDisplay || !displayIds.includes(currentDisplay)){
+          currentDisplay = displayIds[0] || null;
+          const cd=document.getElementById('currentDisplay');
+          if(cd) cd.textContent=currentDisplay || 'NO TV';
+        }
+      };
+
+      // initial
+      handle(dTest.val());
+      // live updates
+      onValue(ref(db, basePath), (snap) => handle(snap.val()));
     }
 
     function renderDisplayButtons(ids){
@@ -319,11 +369,16 @@
     }
 
     // VOLUME & MUTE
-    window.volUp = async ()=>{ if(!displayIds.length) return; volume=Math.min(100,volume+10); updateVolumeUI(); await updateDisplay(); toast(`VOL ${volume}`); };
-    window.volDown = async ()=>{ if(!displayIds.length) return; volume=Math.max(0,volume-10); updateVolumeUI(); await updateDisplay(); toast(`VOL ${volume}`); };
-    window.toggleMute = async ()=>{ if(!displayIds.length) return; muted=!muted; const m=document.getElementById('q-mute'); if(m) m.classList.toggle('muted', muted); const ml=document.getElementById('muteLabel'); if(ml) ml.textContent = muted? 'Muted' : 'Mute'; await updateDisplay(); toast(muted?'MUTED':'UNMUTED'); };
+    window.volUp = async ()=>{ if(!currentDisplay){ toast('Select a TV'); return; } volume=Math.min(100,volume+10); updateVolumeUI(); await updateDisplay(); toast(`VOL ${volume}`); };
+    window.volDown = async ()=>{ if(!currentDisplay){ toast('Select a TV'); return; } volume=Math.max(0,volume-10); updateVolumeUI(); await updateDisplay(); toast(`VOL ${volume}`); };
+    window.toggleMute = async ()=>{ if(!currentDisplay){ toast('Select a TV'); return; } muted=!muted; const m=document.getElementById('q-mute'); if(m) m.classList.toggle('muted', muted); const ml=document.getElementById('muteLabel'); if(ml) ml.textContent = muted? 'Muted' : 'Mute'; await updateDisplay(); toast(muted?'MUTED':'UNMUTED'); };
 
-    async function updateDisplay(){ if(!currentDisplay){ toast('Select a TV'); return; } const state={channel:currentChannel,volume,muted,timestamp:Date.now()}; await set(ref(db,`displays/${currentDisplay}`),state); }
+    async function updateDisplay(){
+      if(!currentDisplay){ console.warn('[update] no currentDisplay'); return; }
+      const state={channel:currentChannel,volume,muted,timestamp:Date.now()};
+      console.log('[update] displays/'+currentDisplay, state);
+      await set(ref(db,`displays/${currentDisplay}`),state);
+    }
   </script>
 </body>
 </html>
