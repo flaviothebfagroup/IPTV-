@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Signage - Live Stream Channels</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            position: relative;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Video Container */
+        .video-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+        }
+
+        /* Loading Spinner */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Channel Info Overlay */
+        .channel-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6));
+            backdrop-filter: blur(20px);
+            padding: 15px 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 50;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .channel-info.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .channel-name {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .channel-number {
+            font-size: 14px;
+            opacity: 0.8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .live-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #ff0000;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 5px rgba(255, 0, 0, 0); }
+        }
+
+        /* Status Bar */
+        .status-bar {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            padding: 12px 20px;
+            border-radius: 100px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 50;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 13px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: #43e97b;
+            border-radius: 50%;
+            animation: statusPulse 3s infinite;
+        }
+
+        .status-dot.disconnected {
+            background: #f5576c;
+            animation: none;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Display ID Badge */
+        .display-id {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        /* Error Message */
+        .error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(245, 87, 108, 0.1);
+            border: 1px solid rgba(245, 87, 108, 0.3);
+            padding: 20px 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            z-index: 200;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .error-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #f5576c;
+        }
+
+        .error-text {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        /* Channel Transition Effect */
+        .transition-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 90;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .transition-overlay.active {
+            opacity: 1;
+        }
+
+        /* Volume Control Panel - FIXED VERSION */
+        .volume-control-panel {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            padding: 15px 20px;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: opacity 0.3s, transform 0.3s;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .volume-control-panel.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .volume-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .volume-btn#muteToggle {
+            font-size: 20px;
+        }
+
+        .volume-btn#muteToggle.unmuted {
+            background: rgba(67, 233, 123, 0.2);
+            border-color: #43e97b;
+        }
+
+        .volume-bar {
+            width: 150px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .volume-level {
+            height: 100%;
+            background: linear-gradient(90deg, #43e97b, #38f9d7);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s;
+            box-shadow: 0 0 10px rgba(67, 233, 123, 0.5);
+        }
+
+        .volume-percent {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 2px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        /* Remote volume indicator */
+        .remote-volume-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 30px 50px;
+            border-radius: 20px;
+            font-size: 48px;
+            font-weight: bold;
+            z-index: 9999;
+            pointer-events: none;
+            animation: fadeInOut 2s ease;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Volume Control Panel -->
+    <div class="volume-control-panel" id="volumeControlPanel">
+        <button class="volume-btn" onclick="toggleMute()" id="muteToggle">
+            <span id="volumeIcon">Volume</span>
+        </button>
+        <button class="volume-btn" onclick="volumeDown()">
+            <span>−</span>
+        </button>
+        <div class="volume-bar">
+            <div class="volume-level" id="volumeLevel"></div>
+            <span class="volume-percent" id="volumePercent">0%</span>
+        </div>
+        <button class="volume-btn" onclick="volumeUp()">
+            <span>+</span>
+        </button>
+    </div>
+    
+    <!-- Video Container -->
+    <div class="video-container">
+        <video id="videoPlayer" autoplay muted playsinline></video>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Channel Info -->
+    <div class="channel-info" id="channelInfo">
+        <div class="channel-name" id="channelName">News</div>
+        <div class="channel-number">
+            <span class="live-indicator"></span>
+            <span>LIVE • Channel <span id="channelNumber">1</span></span>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Connected</span>
+        <span>•</span>
+        <span id="currentTime">00:00</span>
+    </div>
+
+    <!-- Display ID -->
+    <div class="display-id">
+        Display ID: <strong id="displayId">DISPLAY-001</strong>
+    </div>
+
+    <!-- Error Message -->
+    <div class="error-message" id="errorMessage">
+        <div class="error-title">Stream Unavailable</div>
+        <div class="error-text" id="errorText">Attempting to reconnect...</div>
+    </div>
+
+    <!-- Transition Overlay -->
+    <div class="transition-overlay" id="transitionOverlay"></div>
+
+    <!-- HLS.js for stream playback -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
+    
+    <script>
+        // ============================================
+        // CONFIGURATION - CHANGE FOR EACH DISPLAY
+        // ============================================
+        const CONFIG = {
+            displayId: 'BFA_PRINT', // UNIQUE ID FOR EACH DISPLAY
+            apiEndpoint: 'https://iptv-bfa-default-rtdb.firebaseio.com/displays',
+            pollInterval: 2000,
+            useWebSocket: false,
+            dealershipName: 'BFA_PRINT',
+            
+            // Channel definitions
+            channels: [
+                {
+                    id: 1,
+                    name: 'News',
+                    url: 'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8',
+                    type: 'hls'
+                },
+                {
+                    id: 2,
+                    name: 'Sports',
+                    url: 'http://fl5.moveonjoy.com/TSN_5/index.m3u8',
+                    type: 'hls'
+                },
+                {
+                    id: 3,
+                    name: 'Cooking',
+                    url: 'https://gusto-xumo.amagi.tv/playlist.m3u8',
+                    type: 'hls'
+                },
+                {
+                    id: 4,
+                    name: 'Nature',
+                    url: 'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8',
+                    type: 'hls'
+                },
+                {
+                    id: 5,
+                    name: 'Kids',
+                    url: 'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8',
+                    type: 'hls'
+                },
+                  {
+                    id: 6,
+                    name: 'music',
+                    url: 'https://lotus.stingray.com/manifest/ose-128ads-montreal/samsungtvplus/master.m3u8',
+                    type: 'hls'
+                },
+                {
+                    id: 7,
+                    name: 'movie',
+                    url: 'https://fl3.moveonjoy.com/CRAVE_2/index.m3u8',
+                    type: 'hls'
+                },
+                {
+                    id: 8,
+                    name: 'Game',
+                    url: 'https://a-cdn.klowdtv.com/live2/fntsy_720p/playlist.m3u8',
+                    type: 'hls'
+                },
+                {
+                    id: 9,
+                    name: 'Weather',
+                    url: 'http://cfd-v4-service-channel-stitcher-use1-1.prd.pluto.tv/stitch/hls/channel/63da370e2e477400081cf8b6livestitch/master.m3u8?appName=web&appVersion=unknown&clientTime=0&deviceDNT=0&deviceId=2c7c7782-35fc-11ef-a031-2b5d494037a2&deviceMake=Chrome&deviceModel=web&deviceType=web&deviceVersion=unknown&includeExtendedEvents=false&serverSideAds=false&sid=6b5c5f52-01b7-44d8-a06c-1f05f3169a75&profilesFromStream=true',
+                    type: 'hls'
+                },
+            ]
+        };
+
+        // ============================================
+        // GLOBAL VARIABLES
+        // ============================================
+        let currentChannel = 1;
+        let hls = null;
+        let retryCount = 0;
+        let maxRetries = 3;
+        let isTransitioning = false;
+        let currentVolume = 0;
+        let isMuted = true;
+        let lastVolume = 50;
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDisplay();
+            initVolumeControl();
+            startClock();
+            loadChannel(1);
+            startPolling();
+        });
+
+        // Initialize display settings
+        function initializeDisplay() {
+            document.getElementById('displayId').textContent = CONFIG.displayId;
+            
+            const video = document.getElementById('videoPlayer');
+            video.volume = 0;
+            
+            video.addEventListener('loadstart', () => showLoading(true));
+            video.addEventListener('canplay', () => showLoading(false));
+            video.addEventListener('error', handleVideoError);
+            video.addEventListener('stalled', handleStalled);
+        }
+
+        // ============================================
+        // VOLUME CONTROL - FIXED VERSION
+        // ============================================
+        function initVolumeControl() {
+            const video = document.getElementById('videoPlayer');
+            
+            // Load saved preferences
+            const savedVolume = localStorage.getItem('displayVolume');
+            const savedMuted = localStorage.getItem('displayMuted');
+            
+            if (savedVolume !== null) {
+                currentVolume = parseInt(savedVolume);
+                lastVolume = currentVolume || 50;
+            }
+            
+            if (savedMuted !== null) {
+                isMuted = savedMuted === 'true';
+            }
+            
+            // Apply saved settings
+            video.volume = currentVolume / 100;
+            video.muted = isMuted;
+            updateVolumeDisplay();
+            
+            // FOR BRIGHTSIGN: No hover events needed since no mouse/keyboard
+            // Volume panel will only show when changed remotely
+        }
+
+        // Volume control functions
+        function toggleMute() {
+            if (isMuted) {
+                unmute();
+            } else {
+                mute();
+            }
+        }
+
+        function mute() {
+            const video = document.getElementById('videoPlayer');
+            isMuted = true;
+            video.muted = true;
+            updateVolumeDisplay();
+            localStorage.setItem('displayMuted', 'true');
+        }
+
+        function unmute() {
+            const video = document.getElementById('videoPlayer');
+            
+            if (currentVolume === 0) {
+                currentVolume = lastVolume || 50;
+            }
+            
+            isMuted = false;
+            video.muted = false;
+            video.volume = currentVolume / 100;
+            
+            video.play().catch(e => {
+                console.log('Unmute attempted - BrightSign should allow this');
+            });
+            
+            updateVolumeDisplay();
+            localStorage.setItem('displayMuted', 'false');
+        }
+
+        function volumeUp() {
+            currentVolume = Math.min(100, currentVolume + 10);
+            setVolume(currentVolume);
+            
+            if (currentVolume > 0 && isMuted) {
+                unmute();
+            }
+        }
+
+        function volumeDown() {
+            currentVolume = Math.max(0, currentVolume - 10);
+            setVolume(currentVolume);
+            
+            if (currentVolume === 0) {
+                isMuted = true;
+            }
+        }
+
+        function setVolume(volume) {
+            const video = document.getElementById('videoPlayer');
+            currentVolume = volume;
+            
+            if (volume > 0) {
+                lastVolume = volume;
+            }
+            
+            video.volume = volume / 100;
+            updateVolumeDisplay();
+            localStorage.setItem('displayVolume', volume);
+            
+            if (volume === 0) {
+                isMuted = true;
+                video.muted = true;
+            }
+        }
+
+        function updateVolumeDisplay() {
+            const volumeLevel = document.getElementById('volumeLevel');
+            const volumePercent = document.getElementById('volumePercent');
+            const volumeIcon = document.getElementById('volumeIcon');
+            const muteToggle = document.getElementById('muteToggle');
+            
+            if (volumeLevel) volumeLevel.style.width = currentVolume + '%';
+            if (volumePercent) volumePercent.textContent = currentVolume + '%';
+            
+            if (volumeIcon) {
+                if (isMuted || currentVolume === 0) {
+                    volumeIcon.textContent = '🔇';
+                    muteToggle.classList.remove('unmuted');
+                } else if (currentVolume < 30) {
+                    volumeIcon.textContent = '🔈';
+                    muteToggle.classList.add('unmuted');
+                } else if (currentVolume < 70) {
+                    volumeIcon.textContent = '🔉';
+                    muteToggle.classList.add('unmuted');
+                } else {
+                    volumeIcon.textContent = '🔊';
+                    muteToggle.classList.add('unmuted');
+                }
+            }
+        }
+
+        // ============================================
+        // CHANNEL LOADING
+        // ============================================
+        function loadChannel(channelNumber) {
+            if (isTransitioning) return;
+            
+            const channel = CONFIG.channels.find(ch => ch.id === channelNumber);
+            if (!channel) {
+                console.error('Channel not found:', channelNumber);
+                return;
+            }
+
+            console.log(`Loading channel ${channelNumber}: ${channel.name}`);
+            isTransitioning = true;
+            
+            const transitionOverlay = document.getElementById('transitionOverlay');
+            transitionOverlay.classList.add('active');
+            
+            setTimeout(() => {
+                currentChannel = channelNumber;
+                updateChannelInfo(channel);
+                
+                const video = document.getElementById('videoPlayer');
+                
+                if (Hls.isSupported()) {
+                    if (hls) {
+                        hls.destroy();
+                    }
+                    
+                    hls = new Hls({
+                        enableWorker: true,
+                        lowLatencyMode: true,
+                        backBufferLength: 90,
+                        maxBufferSize: 60 * 1000 * 1000,
+                        maxBufferLength: 30,
+                        manifestLoadingTimeOut: 10000,
+                        manifestLoadingMaxRetry: 3,
+                        levelLoadingTimeOut: 10000,
+                        levelLoadingMaxRetry: 4
+                    });
+                    
+                    hls.loadSource(channel.url);
+                    hls.attachMedia(video);
+                    
+                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        video.play().then(() => {
+                            // Maintain volume settings
+                            video.volume = currentVolume / 100;
+                            video.muted = isMuted;
+                        }).catch(e => {
+                            console.log('Autoplay failed');
+                        });
+                    });
+                    
+                    hls.on(Hls.Events.ERROR, function(event, data) {
+                        handleHlsError(event, data);
+                    });
+                    
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.src = channel.url;
+                    video.play().then(() => {
+                        video.volume = currentVolume / 100;
+                        video.muted = isMuted;
+                    }).catch(e => {
+                        console.log('Autoplay failed');
+                    });
+                } else {
+                    showError('HLS not supported on this device');
+                }
+                
+                setTimeout(() => {
+                    transitionOverlay.classList.remove('active');
+                    isTransitioning = false;
+                }, 300);
+                
+            }, 300);
+        }
+
+        function updateChannelInfo(channel) {
+            document.getElementById('channelName').textContent = channel.name;
+            document.getElementById('channelNumber').textContent = channel.id;
+            
+            const channelInfo = document.getElementById('channelInfo');
+            channelInfo.classList.add('show');
+            
+            setTimeout(() => {
+                channelInfo.classList.remove('show');
+            }, 5000);
+        }
+
+        // ============================================
+        // POLLING FOR REMOTE CONTROL
+        // ============================================
+        function startPolling() {
+            console.log('Starting polling for display:', CONFIG.displayId);
+            
+            setInterval(async () => {
+                try {
+                    const url = `https://iptv-bfa-default-rtdb.firebaseio.com/displays/${CONFIG.displayId}.json`;
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    if (data) {
+                        // Check for channel change
+                        if (data.channel && data.channel !== currentChannel) {
+                            console.log('Channel change detected:', data.channel);
+                            loadChannel(data.channel);
+                        }
+                        
+                        // Check for volume change
+                        if (data.volume !== undefined || data.muted !== undefined) {
+                            applyVolumeSettings(data.volume, data.muted);
+                        }
+                        
+                        updateConnectionStatus(true);
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                    updateConnectionStatus(false);
+                }
+            }, CONFIG.pollInterval);
+        }
+
+        // Apply volume settings from remote
+        function applyVolumeSettings(volume, muted) {
+            const video = document.getElementById('videoPlayer');
+            let volumeChanged = false;
+            
+            if (volume !== undefined && volume !== currentVolume) {
+                currentVolume = volume;
+                video.volume = volume / 100;
+                volumeChanged = true;
+                console.log('Volume set to:', volume + '%');
+            }
+            
+            if (muted !== undefined && muted !== isMuted) {
+                isMuted = muted;
+                volumeChanged = true;
+                
+                if (muted) {
+                    video.muted = true;
+                    console.log('Audio muted');
+                } else {
+                    video.muted = false;
+                    video.volume = currentVolume / 100;
+                    video.play().then(() => {
+                        console.log('Audio unmuted successfully at', currentVolume + '%');
+                    }).catch(e => {
+                        console.log('Unmute attempted - BrightSign should allow this');
+                    });
+                }
+            }
+            
+            if (volumeChanged) {
+                updateVolumeDisplay();
+                showVolumeIndicator();
+            }
+        }
+
+        // Show volume indicator when changed remotely
+        function showVolumeIndicator() {
+            // Remove any existing indicator
+            let indicator = document.querySelector('.remote-volume-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+            
+            // Create indicator text
+            let text = isMuted ? '🔇 Muted' : `🔊 ${currentVolume}%`;
+            
+            // Create new indicator
+            indicator = document.createElement('div');
+            indicator.className = 'remote-volume-indicator';
+            indicator.textContent = text;
+            document.body.appendChild(indicator);
+            
+            // Show the volume panel briefly
+            const panel = document.getElementById('volumeControlPanel');
+            panel.classList.add('show');
+            
+            // Hide both after 2 seconds
+            setTimeout(() => {
+                indicator.remove();
+                panel.classList.remove('show');
+            }, 2000);
+        }
+
+        // ============================================
+        // ERROR HANDLING
+        // ============================================
+        function handleHlsError(event, data) {
+            console.error('HLS Error:', data);
+            
+            if (data.fatal) {
+                switch(data.type) {
+                    case Hls.ErrorTypes.NETWORK_ERROR:
+                        console.log('Network error, attempting recovery...');
+                        if (retryCount < maxRetries) {
+                            retryCount++;
+                            setTimeout(() => {
+                                hls.startLoad();
+                            }, 2000);
+                        } else {
+                            showError('Network error - Unable to load stream');
+                        }
+                        break;
+                    case Hls.ErrorTypes.MEDIA_ERROR:
+                        console.log('Media error, attempting recovery...');
+                        hls.recoverMediaError();
+                        break;
+                    default:
+                        showError('Stream error - Attempting to reconnect');
+                        setTimeout(() => {
+                            loadChannel(currentChannel);
+                        }, 5000);
+                        break;
+                }
+            }
+        }
+
+        function handleVideoError(e) {
+            console.error('Video error:', e);
+            showError('Video playback error');
+            
+            setTimeout(() => {
+                loadChannel(currentChannel);
+            }, 5000);
+        }
+
+        function handleStalled() {
+            console.log('Stream stalled, buffering...');
+            showLoading(true);
+        }
+
+        // ============================================
+        // UI HELPERS
+        // ============================================
+        function showLoading(show) {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (show) {
+                loadingOverlay.classList.add('active');
+            } else {
+                loadingOverlay.classList.remove('active');
+                hideError();
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMessage').classList.add('show');
+        }
+
+        function hideError() {
+            document.getElementById('errorMessage').classList.remove('show');
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            
+            if (connected) {
+                statusDot.classList.remove('disconnected');
+                statusText.textContent = 'Connected';
+            } else {
+                statusDot.classList.add('disconnected');
+                statusText.textContent = 'Disconnected';
+            }
+        }
+
+        function startClock() {
+            function updateTime() {
+                const now = new Date();
+                const time = now.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false 
+                });
+                document.getElementById('currentTime').textContent = time;
+            }
+            updateTime();
+            setInterval(updateTime, 1000);
+        }
+
+        // Handle page visibility (power saving)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (hls) {
+                    hls.stopLoad();
+                }
+            } else {
+                if (hls) {
+                    hls.startLoad();
+                }
+            }
+        });
+
+        // BrightSign Detection
+        if (navigator.userAgent.includes('BrightSign')) {
+            console.log('BrightSign detected - optimizing for digital signage');
+            // BrightSign allows unmuted autoplay by default
+            setTimeout(() => {
+                const video = document.getElementById('videoPlayer');
+                if (currentVolume > 0 && !isMuted) {
+                    video.muted = false;
+                    video.volume = currentVolume / 100;
+                }
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
