@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Digital Signage - Live Stream Channels</title>
+
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#000;color:#fff;overflow:hidden;position:relative;height:100vh;width:100vw}
@@ -33,7 +34,7 @@
     @keyframes statusPulse{0%,100%{opacity:1}50%{opacity:.5}}
 
     /* Display ID */
-    .display-id{position:absolute;bottom:20px;left:20px;background:rgba(255,255,255,.05);backdrop-filter:blur(20px);padding:10px 18px;border-radius:10px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.1);opacity:.7;transition:opacity .3s}
+    .display-id{position:absolute;bottom:20px;left:20px;background:rgba(255,255,255,.05);backdrop-filter:blur(20px);padding:10px 18px;border-radius:10px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.1);opacity:.7}
 
     /* Error */
     .error-message{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(245,87,108,.1);border:1px solid rgba(245,87,108,.3);padding:20px 30px;border-radius:15px;text-align:center;display:none;z-index:200}
@@ -102,46 +103,38 @@
   <!-- HLS.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
 
+  <!-- ========================= -->
+  <!-- PLAYER (non-module)       -->
+  <!-- ========================= -->
   <script>
-    // =========================
-    // CONFIG - per-display
-    // =========================
+    // ========= CONFIG (set these for each TV) =========
     const CONFIG = {
-      displayId: 'KF-001',           // <-- CHANGE for each TV (e.g., BG-001, KF-001)
-      dealershipName: 'KennedyFord', // <-- must match /dealership/{id} you use for this TV
-      pollInterval: 2000,            // (not used anymore; we use realtime)
+      displayId: 'KF-001',             // <-- CHANGE per TV (e.g. BG-001, KF-001, PT-001)
+      dealershipName: 'KennedyFord', // <-- CHANGE to the dealership ID used by your remote
       channels: [
         { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
-        { id:2, name:'Sports', url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8', type:'hls' },
+        { id:2, name:'Sports', url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8', type:'hls' },  // WARNING: http may be blocked on https
         { id:3, name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
         { id:4, name:'Nature', url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8', type:'hls' },
         { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
-        // you can keep more items here if you want (6..9), but remote only sends 1..5 by rules
       ]
     };
 
-    // =========================
-    // STATE
-    // =========================
-    let currentChannel = 1;
-    let hls = null;
-    let retryCount = 0;
-    const maxRetries = 3;
-    let isTransitioning = false;
-    let currentVolume = 0;
-    let isMuted = true;
-    let lastVolume = 50;
+    // ========= STATE (on window so the module can see it) =========
+    window.currentChannel = 1;
+    window.currentVolume  = 0;
+    window.isMuted        = true;
+    window.lastVolume     = 50;
 
-    document.addEventListener('DOMContentLoaded', function () {
-      initializeDisplay();
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('displayId').textContent = CONFIG.displayId;
+      initializeVideo();
       initVolumeControl();
       startClock();
       loadChannel(1);
-      // DO NOT call startPolling(); (we now use secure realtime listener below)
     });
 
-    function initializeDisplay() {
-      document.getElementById('displayId').textContent = CONFIG.displayId;
+    function initializeVideo(){
       const video = document.getElementById('videoPlayer');
       video.volume = 0;
       video.addEventListener('loadstart', () => showLoading(true));
@@ -151,66 +144,113 @@
     }
 
     // ---------- VOLUME ----------
-    function initVolumeControl() {
-      const video = document.getElementById('videoPlayer');
-      const savedVolume = localStorage.getItem('displayVolume');
-      const savedMuted  = localStorage.getItem('displayMuted');
-      if (savedVolume !== null) { currentVolume = parseInt(savedVolume,10); lastVolume = currentVolume || 50; }
-      if (savedMuted  !== null) { isMuted = savedMuted === 'true'; }
-      video.volume = currentVolume / 100;
-      video.muted  = isMuted;
-      updateVolumeDisplay();
+    let hudHideTimer = null;
+
+    function showVolumeIndicator(){
+      // Remove any existing indicator
+      let indicator = document.querySelector('.remote-volume-indicator');
+      if (indicator) indicator.remove();
+
+      // Fresh indicator
+      const text = (window.isMuted || window.currentVolume === 0) ? '🔇 Muted' : `🔊 ${window.currentVolume}%`;
+      indicator = document.createElement('div');
+      indicator.className = 'remote-volume-indicator';
+      indicator.textContent = text;
+      document.body.appendChild(indicator);
+
+      // Show HUD panel
+      const panel = document.getElementById('volumeControlPanel');
+      panel.classList.add('show');
+
+      // Debounced hide
+      if (hudHideTimer) clearTimeout(hudHideTimer);
+      hudHideTimer = setTimeout(() => {
+        indicator.remove();
+        panel.classList.remove('show');
+        hudHideTimer = null;
+      }, 2000);
     }
-    function toggleMute(){ isMuted ? mute() : unmute(); }
-    function mute(){ const v=document.getElementById('videoPlayer'); isMuted=true; v.muted=true; updateVolumeDisplay(); localStorage.setItem('displayMuted','true'); }
-    function unmute(){
-      const v=document.getElementById('videoPlayer');
-      if (currentVolume===0) currentVolume = lastVolume || 50;
-      isMuted=false; v.muted=false; v.volume=currentVolume/100;
-      v.play().catch(()=>{ console.log('Unmute attempted'); });
-      updateVolumeDisplay(); localStorage.setItem('displayMuted','false');
-    }
-    function volumeUp(){ currentVolume=Math.min(100,currentVolume+10); setVolume(currentVolume); if(currentVolume>0 && isMuted) unmute(); }
-    function volumeDown(){ currentVolume=Math.max(0,currentVolume-10); setVolume(currentVolume); if(currentVolume===0) isMuted=true; }
-    function setVolume(vol){
-      const v=document.getElementById('videoPlayer'); currentVolume=vol; if(vol>0) lastVolume=vol; v.volume=vol/100; updateVolumeDisplay(); localStorage.setItem('displayVolume',vol);
-      if(vol===0){ isMuted=true; v.muted=true; }
-    }
+
     function updateVolumeDisplay(){
-      const level=document.getElementById('volumeLevel'); const percent=document.getElementById('volumePercent'); const icon=document.getElementById('volumeIcon'); const muteBtn=document.getElementById('muteToggle');
-      if(level)   level.style.width = currentVolume + '%';
-      if(percent) percent.textContent = currentVolume + '%';
-      if(icon){
-        if(isMuted || currentVolume===0){ icon.textContent='🔇'; muteBtn.classList.remove('unmuted'); }
-        else if(currentVolume<30){ icon.textContent='🔈'; muteBtn.classList.add('unmuted'); }
-        else if(currentVolume<70){ icon.textContent='🔉'; muteBtn.classList.add('unmuted'); }
-        else { icon.textContent='🔊'; muteBtn.classList.add('unmuted'); }
+      const level   = document.getElementById('volumeLevel');
+      const percent = document.getElementById('volumePercent');
+      const icon    = document.getElementById('volumeIcon');
+      const muteBtn = document.getElementById('muteToggle');
+
+      if (level)   level.style.width = window.currentVolume + '%';
+      if (percent) percent.textContent = window.currentVolume + '%';
+
+      if (icon){
+        if (window.isMuted || window.currentVolume === 0){
+          icon.textContent = '🔇'; muteBtn.classList.remove('unmuted');
+        } else if (window.currentVolume < 30){
+          icon.textContent = '🔈'; muteBtn.classList.add('unmuted');
+        } else if (window.currentVolume < 70){
+          icon.textContent = '🔉'; muteBtn.classList.add('unmuted');
+        } else {
+          icon.textContent = '🔊'; muteBtn.classList.add('unmuted');
+        }
       }
     }
-    function showVolumeIndicator(){
-      let indicator = document.querySelector('.remote-volume-indicator'); if(indicator) indicator.remove();
-      const text = isMuted ? '🔇 Muted' : `🔊 ${currentVolume}%`;
-      indicator = document.createElement('div'); indicator.className='remote-volume-indicator'; indicator.textContent=text; document.body.appendChild(indicator);
-      const panel=document.getElementById('volumeControlPanel'); panel.classList.add('show'); setTimeout(()=>{ indicator.remove(); panel.classList.remove('show'); },2000);
+
+    function setVolume(vol){
+      const v = document.getElementById('videoPlayer');
+      window.currentVolume = vol;
+      if (vol > 0) window.lastVolume = vol;
+      v.volume = vol / 100;
+      updateVolumeDisplay();
+      localStorage.setItem('displayVolume', vol);
+      if (vol === 0){ window.isMuted = true; v.muted = true; }
+      showVolumeIndicator();
+    }
+    function volumeUp(){ setVolume(Math.min(100, window.currentVolume + 10)); if (window.currentVolume > 0 && window.isMuted) unmute(); }
+    function volumeDown(){ setVolume(Math.max(0, window.currentVolume - 10)); if (window.currentVolume === 0) window.isMuted = true; }
+    function toggleMute(){ window.isMuted ? mute() : unmute(); }
+    function mute(){
+      const v = document.getElementById('videoPlayer');
+      window.isMuted = true; v.muted = true;
+      updateVolumeDisplay();
+      localStorage.setItem('displayMuted', 'true');
+      showVolumeIndicator();
+    }
+    function unmute(){
+      const v = document.getElementById('videoPlayer');
+      if (window.currentVolume === 0) window.currentVolume = window.lastVolume || 50;
+      window.isMuted = false; v.muted = false; v.volume = window.currentVolume / 100;
+      v.play().catch(()=>{ /* ignore */ });
+      updateVolumeDisplay();
+      localStorage.setItem('displayMuted', 'false');
+      showVolumeIndicator();
+    }
+    function initVolumeControl(){
+      const v = document.getElementById('videoPlayer');
+      const savedVolume = localStorage.getItem('displayVolume');
+      const savedMuted  = localStorage.getItem('displayMuted');
+      if (savedVolume !== null) { window.currentVolume = parseInt(savedVolume,10); window.lastVolume = window.currentVolume || 50; }
+      if (savedMuted  !== null) { window.isMuted = savedMuted === 'true'; }
+      v.volume = window.currentVolume / 100;
+      v.muted  = window.isMuted;
+      updateVolumeDisplay();
     }
 
     // ---------- CHANNEL ----------
+    let hls = null, retryCount = 0; const maxRetries = 3; let isTransitioning = false;
+
     function loadChannel(channelNumber){
-      if(isTransitioning) return;
-      const channel = CONFIG.channels.find(ch=>ch.id===channelNumber);
-      if(!channel){ console.error('Channel not found:', channelNumber); return; }
+      if (isTransitioning) return;
+      const channel = CONFIG.channels.find(ch => ch.id === channelNumber);
+      if (!channel){ console.error('Channel not found:', channelNumber); return; }
 
       isTransitioning = true;
-      const transitionOverlay = document.getElementById('transitionOverlay');
-      transitionOverlay.classList.add('active');
+      document.getElementById('transitionOverlay').classList.add('active');
 
       setTimeout(()=>{
-        currentChannel = channelNumber;
+        window.currentChannel = channelNumber;
         updateChannelInfo(channel);
         const video = document.getElementById('videoPlayer');
 
-        if(Hls.isSupported()){
-          if(hls) hls.destroy();
+        if (Hls.isSupported()){
+          if (hls) hls.destroy();
           hls = new Hls({
             enableWorker:true, lowLatencyMode:true, backBufferLength:90,
             maxBufferSize:60*1000*1000, maxBufferLength:30,
@@ -220,19 +260,20 @@
           hls.loadSource(channel.url);
           hls.attachMedia(video);
           hls.on(Hls.Events.MANIFEST_PARSED, function(){
-            video.play().then(()=>{ video.volume=currentVolume/100; video.muted=isMuted; }).catch(()=>{ console.log('Autoplay failed'); });
+            video.play().then(()=>{ video.volume=window.currentVolume/100; video.muted=window.isMuted; }).catch(()=>{});
           });
           hls.on(Hls.Events.ERROR, handleHlsError);
         } else if (video.canPlayType('application/vnd.apple.mpegurl')){
           video.src = channel.url;
-          video.play().then(()=>{ video.volume=currentVolume/100; video.muted=isMuted; }).catch(()=>{ console.log('Autoplay failed'); });
+          video.play().then(()=>{ video.volume=window.currentVolume/100; video.muted=window.isMuted; }).catch(()=>{});
         } else {
           showError('HLS not supported on this device');
         }
 
-        setTimeout(()=>{ transitionOverlay.classList.remove('active'); isTransitioning=false; },300);
+        setTimeout(()=>{ document.getElementById('transitionOverlay').classList.remove('active'); isTransitioning=false; },300);
       },300);
     }
+    window.loadChannel = loadChannel; // make it visible to the module
 
     function updateChannelInfo(channel){
       document.getElementById('channelName').textContent = channel.name;
@@ -243,7 +284,6 @@
 
     // ---------- ERRORS/STATUS ----------
     function handleHlsError(event,data){
-      console.error('HLS Error:', data);
       if (data.fatal){
         switch(data.type){
           case Hls.ErrorTypes.NETWORK_ERROR:
@@ -253,28 +293,39 @@
           case Hls.ErrorTypes.MEDIA_ERROR:
             hls.recoverMediaError(); break;
           default:
-            showError('Stream error - Attempting to reconnect'); setTimeout(()=>{ loadChannel(currentChannel); },5000);
+            showError('Stream error - Attempting to reconnect'); setTimeout(()=>{ loadChannel(window.currentChannel); },5000);
         }
       }
     }
-    function handleVideoError(e){ console.error('Video error:', e); showError('Video playback error'); setTimeout(()=>{ loadChannel(currentChannel); },5000); }
-    function handleStalled(){ console.log('Stream stalled, buffering...'); showLoading(true); }
+    function handleVideoError(){ showError('Video playback error'); setTimeout(()=>{ loadChannel(window.currentChannel); },5000); }
+    function handleStalled(){ showLoading(true); }
 
     function showLoading(show){ const o=document.getElementById('loadingOverlay'); if(show) o.classList.add('active'); else { o.classList.remove('active'); hideError(); } }
     function showError(msg){ document.getElementById('errorText').textContent=msg; document.getElementById('errorMessage').classList.add('show'); }
     function hideError(){ document.getElementById('errorMessage').classList.remove('show'); }
-    function updateConnectionStatus(connected){ const dot=document.getElementById('statusDot'); const txt=document.getElementById('statusText'); if(connected){ dot.classList.remove('disconnected'); txt.textContent='Connected'; } else { dot.classList.add('disconnected'); txt.textContent='Disconnected'; } }
+
+    function updateConnectionStatus(connected){
+      const dot=document.getElementById('statusDot'); const txt=document.getElementById('statusText');
+      if(connected){ dot.classList.remove('disconnected'); txt.textContent='Connected'; }
+      else { dot.classList.add('disconnected'); txt.textContent='Disconnected'; }
+    }
     function startClock(){ function t(){ const now=new Date(); const time=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false}); document.getElementById('currentTime').textContent=time; } t(); setInterval(t,1000); }
 
     document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(hls) hls.stopLoad(); } else { if(hls) hls.startLoad(); } });
-    if(navigator.userAgent.includes('BrightSign')){ setTimeout(()=>{ const v=document.getElementById('videoPlayer'); if(currentVolume>0 && !isMuted){ v.muted=false; v.volume=currentVolume/100; } },2000); }
+    if(navigator.userAgent.includes('BrightSign')){ setTimeout(()=>{ const v=document.getElementById('videoPlayer'); if(window.currentVolume>0 && !window.isMuted){ v.muted=false; v.volume=window.currentVolume/100; } },2000); }
+
+    // Expose to module
+    window.updateVolumeDisplay = updateVolumeDisplay;
+    window.showVolumeIndicator = showVolumeIndicator;
   </script>
 
-  <!-- Firebase AUTH + REALTIME (secure, no public polling) -->
+  <!-- ========================================= -->
+  <!-- FIREBASE (module): auth + realtime listen -->
+  <!-- ========================================= -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import { getDatabase, ref, onValue, set, get, child } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    import { getDatabase, ref, onValue, set, get, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
@@ -290,54 +341,78 @@
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    // 1) Anonymous sign-in for the screen
+    // 1) Anonymous sign-in for the device
     signInAnonymously(auth).catch(err => console.error('[anon auth]', err));
 
-    // 2) After auth, register minimal device profile and subscribe to this display
+    // 2) After auth, create device profile and ensure display node
     onAuthStateChanged(auth, async (user) => {
       if (!user) return;
 
-      // Device profile so rules allow read access
+      const displayId = CONFIG.displayId;
+      const dealershipId = CONFIG.dealershipName;
+
+      // (a) device profile so rules can check dealership
       try {
         await set(ref(db, `user/${user.uid}`), {
           role: 'device',
-          name: CONFIG.displayId,
-          dealershipId: CONFIG.dealershipName,
+          name: displayId,
+          dealershipId: dealershipId,
           createdAt: Date.now()
         });
-      } catch (e) { console.warn('[device profile]', e); }
+      } catch (e) {
+        console.warn('[device profile]', e);
+      }
 
-      // Ensure the display doc has dealership field (needed by write/read rules)
+      // (b) ensure display exists with dealership
       try {
-        const dSnap = await get(ref(db, `displays/${CONFIG.displayId}`));
-        if (!dSnap.exists() || !dSnap.val().dealership) {
-          await set(ref(db, `displays/${CONFIG.displayId}/dealership`), CONFIG.dealershipName);
+        const dRef = ref(db, `displays/${displayId}`);
+        const snap = await get(dRef);
+        if (!snap.exists()) {
+          await set(dRef, {
+            channel: 1,
+            volume: 0,
+            muted: true,
+            dealership: dealershipId,
+            timestamp: Date.now()
+          });
+        } else if (!snap.val().dealership) {
+          await update(dRef, { dealership: dealershipId });
         }
-      } catch (e) { console.warn('[ensure dealership on display]', e); }
+      } catch (e) {
+        console.warn('[ensure display dealership]', e);
+      }
 
-      // Realtime updates for this display
-      const dref = ref(db, `displays/${CONFIG.displayId}`);
+      // (c) optional: ensure mapping under dealership/{id}/displays
+      try {
+        await update(ref(db, `dealership/${dealershipId}/displays`), { [displayId]: true });
+      } catch (e) {
+        // If your rules make this admin-only, it's fine to ignore
+      }
+
+      // 3) Realtime subscribe to this display
+      const dref = ref(db, `displays/${displayId}`);
       onValue(dref, (snap) => {
         const data = snap.val();
         if (!data) return;
 
-        // Channel
+        // Channel from remote
         if (typeof data.channel === 'number' && data.channel !== window.currentChannel) {
-          loadChannel(data.channel);
+          window.loadChannel(data.channel);
         }
-        // Volume/mute
+        // Volume & mute from remote
         if (data.volume !== undefined || data.muted !== undefined) {
           applyVolumeSettings(data.volume, data.muted);
         }
-        updateConnectionStatus(true);
+        // status
+        window.updateConnectionStatus?.(true);
       }, (err) => {
-        console.error('[display listener]', err);
-        updateConnectionStatus(false);
+        console.error('[display listen]', err);
+        window.updateConnectionStatus?.(false);
       });
     });
 
-    // Proxy to existing volume applier
-    window.applyVolumeSettings = function(volume, muted){
+    // Called by listener; use global functions so UI stays in sync
+    function applyVolumeSettings(volume, muted){
       const video = document.getElementById('videoPlayer');
       let changed = false;
 
@@ -345,21 +420,25 @@
         window.currentVolume = volume;
         video.volume = volume / 100;
         changed = true;
-        console.log('Volume set to:', volume + '%');
       }
       if (muted !== undefined && muted !== window.isMuted) {
-        window.isMuted = muted; changed = true;
+        window.isMuted = muted;
+        changed = true;
         if (muted) {
           video.muted = true;
-          console.log('Audio muted');
         } else {
           video.muted = false;
           video.volume = window.currentVolume / 100;
-          video.play().catch(()=>{ console.log('Unmute attempted'); });
+          video.play().catch(()=>{});
         }
       }
-      if (changed) { updateVolumeDisplay(); showVolumeIndicator(); }
-    };
+      if (changed) {
+        window.updateVolumeDisplay();
+        window.showVolumeIndicator();
+      }
+    }
+    // expose (optional)
+    window.applyVolumeSettings = applyVolumeSettings;
   </script>
 </body>
 </html>
