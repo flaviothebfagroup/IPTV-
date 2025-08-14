@@ -13,7 +13,7 @@
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>IPTV Remote — Liquid Glass (Admin picker)</title>
+  <title>IPTV Remote — Liquid Glass (Admin ready)</title>
 
   <style>
     :root { --bg:#0b0b0c; --fg:#fff; --muted:#9a9aa0; --panel:#121214; --border:rgba(255,255,255,.14); --accent:#ff9500; --tile:#17171a; --tileActive:#1d1d21; --shadow:0 18px 48px rgba(0,0,0,.45); }
@@ -34,13 +34,13 @@
     .link{margin-top:12px;font-size:14px;color:var(--muted)}
     .link a{color:var(--fg);text-decoration:none;border-bottom:1px dashed var(--border)}
 
-    /* Remote */
-    .remote{display:none;width:100%;max-width:clamp(360px,92vw,460px);background:var(--panel);border:1px solid var(--border);border-radius:42px;padding:18px 18px 22px;box-shadow:var(--shadow)}
+    /* Remote shell */
+    .remote{display:none;width:100%;max-width:clamp(360px,92vw,440px);background:var(--panel);border:1px solid var(--border);border-radius:42px;padding:18px 18px 22px;box-shadow:var(--shadow);position:relative;z-index:1}
 
     /* Header */
-    .hdr{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;position:relative;z-index:5}
+    .hdr{display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
     .pill{justify-self:start;height:34px;padding:0 14px;border-radius:9999px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer}
-    .display-name{justify-self:center;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+    .display-name{justify-self:center;font-size:13px;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:.8px}
     .theme-holder{justify-self:end}
     .theme-switch{position:relative;width:56px;height:30px;border-radius:999px;background:var(--tileActive);border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 8px;box-shadow:inset 0 -2px 8px rgba(0,0,0,.12),inset 0 2px 6px rgba(255,255,255,.06);cursor:pointer}
     .theme-switch .sun,.theme-switch .moon{font-size:14px;opacity:.55;transition:opacity .2s}
@@ -49,25 +49,20 @@
     .theme-switch.on{border-color:var(--accent);box-shadow:inset 0 -2px 8px rgba(0,0,0,.12),0 6px 18px rgba(255,149,0,.22)}
     .theme-switch.on .thumb{transform:translateX(26px)}
     .theme-switch.on .sun{opacity:1}.theme-switch.on .moon{opacity:.3}
+
     .rule{height:1px;background:var(--border);margin:12px 0 10px}
 
-    /* Admin picker */
-    .picker{display:none;grid-template-columns:1fr;gap:8px;margin-bottom:10px;position:relative;z-index:6}
-    .picker label{font-size:12px;color:var(--muted)}
-    .picker select{width:100%;appearance:none;background:var(--tile);border:1px solid var(--border);border-radius:12px;color:var(--fg);padding:10px 14px;font-size:14px;cursor:pointer}
-    .picker.show{display:grid}
-
     /* Dial */
-    .dial{width:min(78vw,360px);aspect-ratio:1/1;margin:0 auto 14px;position:relative;touch-action:none}
-    .dial-ring{position:absolute;inset:0;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02)),var(--tile);border:1px solid var(--border);box-shadow:none}
-    .dial-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:56%;height:56%;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02)),var(--panel);border:1px solid var(--border);display:grid;place-items:center;text-align:center;overflow:hidden;box-shadow:none}
+    .dial{width:min(78vw,360px);aspect-ratio:1/1;margin:0 auto 14px;position:relative;touch-action:none;z-index:0}
+    .dial-ring{position:absolute;inset:0;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02)),var(--tile);border:1px solid var(--border);}
+    .dial-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:56%;height:56%;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02)),var(--panel);border:1px solid var(--border);display:grid;place-items:center;text-align:center;overflow:hidden}
     .dial-center.flash{animation:ringFlash .22s ease-out; border-color: var(--accent);}
     @keyframes ringFlash{0%{border-color: var(--accent)}100%{border-color: var(--border)}}
     #dialContent{position:relative;width:100%;height:100%;display:grid;place-items:center}
     #dialContent.pulse{animation:dialPulse .26s ease-out;}
     @keyframes dialPulse{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
     .dial-num{font-size:clamp(68px,12vw,96px);font-weight:800;color:var(--accent);line-height:1}
-    .dial-name{font-size:12px;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;margin-top:-4px}
+    .dial-name{font-size:11px;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;margin-top:-2px}
     .dial-select{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:56%;height:56%;border-radius:50%;background:transparent;border:0;cursor:pointer}
 
     /* Quick grid */
@@ -86,12 +81,20 @@
     .vol-track{position:relative;height:14px;border-radius:999px;background:var(--tile);border:1px solid var(--border);overflow:hidden}
     .vol-fill{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg,var(--accent),#ffb866)}
 
+    /* Displays panel (the one you liked) */
+    .displays{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;flex-wrap:wrap;gap:10px;padding:10px 12px;background:var(--panel);border:1px solid var(--border);border-radius:28px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:5;max-width:92vw}
+    .displays.show{opacity:1;pointer-events:all}
+    .display-btn{padding:8px 14px;background:transparent;border:1px solid var(--border);border-radius:9999px;color:var(--fg);font-size:12px;cursor:pointer;white-space:nowrap}
+    .display-btn.active{color:var(--accent);border-color:var(--accent)}
+    .display-group{display:flex;gap:6px;flex-wrap:wrap}
+    .group-title{width:100%;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:4px 8px 0}
+
     /* Toast */
     .toast{position:fixed;top:50px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none}
     .toast.show{opacity:1}
 
-    /* Hint arrows around dial */
-    .hint{position:absolute;color:var(--muted);opacity:.55;font-size:13px;pointer-events:none;z-index:1}
+    /* Hint arrows (keep, but below panels) */
+    .hint{position:absolute;color:var(--muted);opacity:.55;font-size:13px;pointer-events:none;z-index:0}
     .hint.up{left:50%;top:9%;transform:translate(-50%,-50%)}
     .hint.down{left:50%;bottom:9%;transform:translate(-50%,50%)}
     .hint.left{left:9%;top:50%;transform:translate(-50%,-50%)}
@@ -116,16 +119,10 @@
   <div class="remote" id="remote" style="display:none;">
     <div class="hdr">
       <button class="pill" id="btnSignOut">Sign out</button>
-      <div class="display-name" id="headerStatus">Select a TV</div>
+      <div class="display-name" id="currentDisplay" title="Tap to pick TV">DISPLAY</div>
       <div class="theme-holder">
         <div id="hdrSwitch" class="theme-switch"><span class="sun">☀️</span><span class="moon">🌙</span><i class="thumb"></i></div>
       </div>
-    </div>
-
-    <!-- ADMIN DISPLAY PICKER (also shown for regular users with just their TVs) -->
-    <div class="picker" id="picker">
-      <label for="displayPicker" id="pickerLabel">Display</label>
-      <select id="displayPicker"><option value="">Loading…</option></select>
     </div>
 
     <div class="rule"></div>
@@ -164,6 +161,8 @@
     </div>
   </div>
 
+  <!-- Display selector panel + toast -->
+  <div class="displays" id="displays"></div>
   <div class="toast" id="toast"></div>
 
   <!-- Firebase + logic -->
@@ -187,145 +186,173 @@
     const db = getDatabase(app);
 
     // ---------- STATE ----------
-    let role = 'user';
-    let dealershipId = null;
-    let isAdmin = false;
-
-    let displayIds = [];            // list of strings (IDs)
-    let displaysMeta = {};          // id -> {dealership}
-    let currentDisplay = null;
-    let displayUnsub = null;
-
-    let currentChannel = 1, previewChannel = 1;
-    let volume = 50, muted = false;
+    let role='user', dealershipId=null, isAdmin=false;
+    let displayIds=[], displaysMeta={}; // id -> {dealership}
+    let currentDisplay=null, displayUnsub=null;
+    let currentChannel=1, previewChannel=1;
+    let volume=50, muted=false;
 
     const CHANNELS = {1:'News',2:'Sports',3:'Cooking',4:'Nature',5:'Kids'};
     const IDX_TO_ID = ['qch-1','qch-2','qch-3','qch-4','qch-5','q-mute'];
-    let focusedIndex = 0;
+    let focusedIndex=0;
 
     // ---------- helpers ----------
-    const $  = s => document.querySelector(s);
-    const $$ = s => document.querySelectorAll(s);
+    const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
     function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1400); }
-    function paintDial(ch){ $('#dialNumber').textContent = ch; $('#dialName').textContent = CHANNELS[ch] || `Channel ${ch}`; }
+    function paintDial(ch){ $('#dialNumber').textContent=ch; $('#dialName').textContent=CHANNELS[ch]||`Channel ${ch}`; }
     function updateVolumeUI(){ $('#volFill').style.width = volume + '%'; }
 
-    // Theme
+    // THEME
     const savedTheme = localStorage.getItem('iptv_theme') || 'light';
     document.body.classList.toggle('light', savedTheme==='light');
-    const hdrSwitch = $('#hdrSwitch');
-    syncThemeSwitch();
+    const hdrSwitch=$('#hdrSwitch'); syncThemeSwitch();
     hdrSwitch.addEventListener('click', ()=>{
-      const isLight = !document.body.classList.contains('light');
-      document.body.classList.toggle('light', isLight);
-      localStorage.setItem('iptv_theme', isLight ? 'light' : 'dark');
-      syncThemeSwitch(); toast(isLight ? 'White mode' : 'Dark mode');
+      const light = !document.body.classList.contains('light');
+      document.body.classList.toggle('light', light);
+      localStorage.setItem('iptv_theme', light ? 'light' : 'dark');
+      syncThemeSwitch(); toast(light?'White mode':'Dark mode');
     });
     function syncThemeSwitch(){ hdrSwitch.classList.toggle('on', document.body.classList.contains('light')); }
 
-    // Login (Enter key safe)
+    // LOGIN (Enter key fix)
     setPersistence(auth, browserLocalPersistence).catch(()=>{});
     $('#btnEnter').addEventListener('click', signIn);
-    ['#email','#password'].forEach(sel => $(sel).addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); signIn(); }}));
+    ['#email','#password'].forEach(sel=>$(sel).addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); signIn(); }}));
     async function signIn(){
-      const email = $('#email').value.trim();
-      const password = $('#password').value;
-      if(!email || !password){ toast('Enter email & password'); return; }
-      try { await signInWithEmailAndPassword(auth, email, password); }
-      catch(e){ console.error(e); toast('Invalid login'); }
+      const email=$('#email').value.trim(), password=$('#password').value;
+      if(!email||!password){ toast('Enter email & password'); return; }
+      try{ await signInWithEmailAndPassword(auth,email,password); }catch(e){ console.error(e); toast('Invalid login'); }
     }
     $('#btnSignOut').addEventListener('click', ()=>signOut(auth));
 
-    // Auth state
-    onAuthStateChanged(auth, async (user) => {
-      if (!user){ $('#login').style.display='block'; $('#remote').style.display='none'; detachDisplay(); return; }
+    // AUTH
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ $('#login').style.display='block'; $('#remote').style.display='none'; detachDisplay(); return; }
       $('#login').style.display='none'; $('#remote').style.display='block';
       await afterLogin(user);
     });
 
+    // LOAD PROFILE & DISPLAYS
     async function afterLogin(user){
-      // Profile (singular, fallback plural)
+      // profile: user/ then users/ fallback
       let uSnap = await get(ref(db, `user/${user.uid}`));
       if(!uSnap.exists()) uSnap = await get(ref(db, `users/${user.uid}`));
       const u = uSnap.val() || {};
       role = (u.role || 'user').toLowerCase();
       dealershipId = u.dealershipId || u.dealership || null;
-      isAdmin = (role === 'admin') || (String(dealershipId||'').toUpperCase()==='ADMIN');
+      isAdmin = role==='admin' || String(dealershipId||'').toUpperCase()==='ADMIN';
+      console.log('[profile]', {role, dealershipId, isAdmin});
 
-      // Build picker contents
-      buildPicker();
-    }
-
-    function buildPicker(){
-      const picker = $('#picker');
-      const select = $('#displayPicker');
-      picker.classList.add('show');
-      select.disabled = true;
-      select.innerHTML = '<option>Loading…</option>';
-
+      // Load displays
       if (isAdmin){
-        // Admin: list all displays
-        onValue(ref(db,'displays'), (snap)=>{
-          const map = snap.val() || {};
-          displayIds = Object.keys(map).sort();
-          displaysMeta = {};
-          displayIds.forEach(id => { displaysMeta[id] = { dealership: map[id]?.dealership || '—' }; });
-          renderSelect();
-        });
-        $('#pickerLabel').textContent = 'Pick a display (admin)';
-      }else{
-        // Regular: only dealership/{id}/displays
-        let base = `dealership/${dealershipId}/displays`;
-        onValue(ref(db, base), (snap)=>{
-          const map = snap.val() || {};
-          displayIds = Object.keys(map).filter(k => map[k]).sort();
-          displaysMeta = {}; displayIds.forEach(id=>{ displaysMeta[id] = { dealership: dealershipId }; });
-          renderSelect();
-        });
-        $('#pickerLabel').textContent = 'Pick a display';
+        loadDisplaysAdmin();
+      } else {
+        if(!dealershipId){ toast('No dealership assigned'); return; }
+        loadDisplaysForDealership(dealershipId);
       }
 
-      select.onchange = () => switchDisplay(select.value);
+      // tapping DISPLAY opens the chips panel
+      $('#currentDisplay').onclick = showDisplays;
     }
 
-    function renderSelect(){
-      const select = $('#displayPicker');
-      if (!displayIds.length){ select.innerHTML = '<option value="">No TVs found</option>'; select.disabled = true; return; }
-      const opts = displayIds.map(id=>{
-        const d = displaysMeta[id]?.dealership || '—';
-        const label = isAdmin ? `${d} • ${id}` : id;
-        return `<option value="${id}">${label}</option>`;
-      }).join('');
-      select.innerHTML = `<option value="">Select…</option>${opts}`;
-      select.disabled = false;
+    function loadDisplaysAdmin(){
+      // Admin: read /displays (requires admin rules in DB)
+      const dRef = ref(db, 'displays');
+      onValue(dRef, (snap)=>{
+        const map = snap.val() || {};
+        const ids = Object.keys(map).sort();
+        displayIds = ids;
+        displaysMeta = {};
+        ids.forEach(id => { displaysMeta[id] = { dealership: map[id]?.dealership || '—' }; });
+        renderDisplayButtons();
+      }, (err)=>{
+        console.warn('[admin read displays] denied?', err);
+        toast('Admin read denied — check rules');
+      });
+    }
 
-      // Restore last selection if available
+    function loadDisplaysForDealership(did){
+      // Regular user: dealership/{id}/displays (fallback to dealerships/)
+      let base = `dealership/${did}/displays`;
+      const tryPath = (path) => {
+        onValue(ref(db, path), (snap)=>{
+          const map = snap.val() || {};
+          displayIds = Object.keys(map).filter(k=>map[k]).sort();
+          displaysMeta = {}; displayIds.forEach(id => { displaysMeta[id] = { dealership: did }; });
+          renderDisplayButtons();
+        }, (err)=>{
+          console.warn('[user read displays] denied?', err);
+          toast('Displays not readable — rules');
+        });
+      };
+      tryPath(base);
+    }
+
+    function renderDisplayButtons(){
+      const wrap=$('#displays');
+      wrap.innerHTML='';
+      if (!displayIds.length){
+        wrap.innerHTML='<span class="group-title">No TVs found</span>';
+      } else {
+        if (isAdmin){
+          // group by dealership for admins
+          const byD = {};
+          displayIds.forEach(id=>{
+            const d = displaysMeta[id]?.dealership || '—';
+            (byD[d] ||= []).push(id);
+          });
+          Object.keys(byD).sort().forEach(d=>{
+            const title=document.createElement('div'); title.className='group-title'; title.textContent=d;
+            wrap.appendChild(title);
+            const row=document.createElement('div'); row.className='display-group';
+            byD[d].forEach(id=>{
+              const btn=document.createElement('button');
+              btn.className='display-btn'+(id===currentDisplay?' active':'');
+              btn.textContent=id;
+              btn.onclick=()=>switchDisplay(id, btn);
+              row.appendChild(btn);
+            });
+            wrap.appendChild(row);
+          });
+        } else {
+          // regular: flat list
+          displayIds.forEach(id=>{
+            const btn=document.createElement('button');
+            btn.className='display-btn'+(id===currentDisplay?' active':'');
+            btn.textContent=id;
+            btn.onclick=()=>switchDisplay(id, btn);
+            wrap.appendChild(btn);
+          });
+        }
+      }
+      // restore last selection if possible
       const last = localStorage.getItem('iptv_last_display');
-      if (last && displayIds.includes(last)){ select.value = last; switchDisplay(last); }
-      else { $('#headerStatus').textContent = 'Select a TV'; detachDisplay(); }
+      if (!currentDisplay && last && displayIds.includes(last)){ const btn=[...wrap.querySelectorAll('.display-btn')].find(b=>b.textContent===last); switchDisplay(last, btn); }
     }
 
-    async function switchDisplay(id){
-      if (!id){ detachDisplay(); return; }
+    function showDisplays(){ const d=$('#displays'); d.classList.add('show'); setTimeout(()=>d.classList.remove('show'), 5000); }
+
+    async function switchDisplay(id, btn){
+      if(!id) return;
       currentDisplay = id;
       localStorage.setItem('iptv_last_display', id);
-      $('#headerStatus').textContent = id;
+      $('#currentDisplay').textContent = id;
+      $$('.display-btn').forEach(b=>b.classList.remove('active'));
+      if(btn) btn.classList.add('active');
+      $('#displays').classList.remove('show');
+      toast(id);
 
-      // Attach live listener to this display
+      // attach live listener for this display
       detachDisplay();
       const dRef = ref(db, `displays/${id}`);
       displayUnsub = onValue(dRef, (snap)=>{
         const v = snap.val() || {};
-        if (typeof v.channel === 'number'){ currentChannel = v.channel; previewChannel = v.channel; paintDial(currentChannel); }
-        if (typeof v.volume  === 'number'){ volume = v.volume; updateVolumeUI(); }
-        if (typeof v.muted   === 'boolean'){
-          muted = v.muted;
-          $('#q-mute').classList.toggle('muted', muted);
-          $('#muteLabel').textContent = muted ? 'Muted' : 'Mute';
-        }
+        if (typeof v.channel === 'number'){ currentChannel=v.channel; previewChannel=v.channel; paintDial(currentChannel); }
+        if (typeof v.volume  === 'number'){ volume=v.volume; updateVolumeUI(); }
+        if (typeof v.muted   === 'boolean'){ muted=v.muted; $('#q-mute').classList.toggle('muted', muted); $('#muteLabel').textContent = muted ? 'Muted' : 'Mute'; }
       }, (err)=>{ console.warn('display read error', err); toast('Read denied'); });
     }
-    function detachDisplay(){ if (displayUnsub){ displayUnsub(); displayUnsub=null; } currentDisplay=null; }
+    function detachDisplay(){ if(displayUnsub){ displayUnsub(); displayUnsub=null; } }
 
     // ----- NAV + SELECT -----
     function setActiveTileByIndex(i, dir){
@@ -335,26 +362,25 @@
       IDX_TO_ID.forEach((id,idx)=>{ const el=document.getElementById(id); if(el){ el.classList.toggle('active', idx===focusedIndex); } });
       if (focusedIndex <= 4) {
         const nextCh = focusedIndex + 1;
-        if (nextCh !== previewChannel){ previewChannel = nextCh; animateDialTo(previewChannel, dir || 'right'); }
+        if (nextCh !== previewChannel){ previewChannel=nextCh; animateDialTo(previewChannel, dir || 'right'); }
       }
-      const dcEl = document.querySelector('.dial-center'); if (dcEl){ dcEl.classList.remove('flash'); void dcEl.offsetWidth; dcEl.classList.add('flash'); }
+      const dcEl=document.querySelector('.dial-center'); if(dcEl){ dcEl.classList.remove('flash'); void dcEl.offsetWidth; dcEl.classList.add('flash'); }
       if(navigator.vibrate) try{ navigator.vibrate(8); }catch{}
     }
     function animateDialTo(ch, dir){
-      const content = $('#dialContent'); if(!content){ paintDial(ch); return; }
+      const content=$('#dialContent'); if(!content){ paintDial(ch); return; }
       const axis=(dir==='up'||dir==='down')?'Y':'X'; const amt=(dir==='left'||dir==='up')?-26:26;
-      const out = content.animate([{transform:`translate${axis}(0px)`,opacity:1},{transform:`translate${axis}(${amt}px)`,opacity:.6}],{duration:130,easing:'ease-out'});
+      const out=content.animate([{transform:`translate${axis}(0px)`,opacity:1},{transform:`translate${axis}(${amt}px)`,opacity:.6}],{duration:130,easing:'ease-out'});
       out.finished.then(()=>{ paintDial(ch);
         content.animate([{transform:`translate${axis}(${-amt}px)`,opacity:.6},{transform:`translate${axis}(0px)`,opacity:1}],{duration:130,easing:'ease-out'});
       }).catch(()=>{});
     }
     function moveFocus(dx, dy){
-      let col = focusedIndex % 3, row = Math.floor(focusedIndex / 3);
-      let nCol = Math.max(0, Math.min(2, col + dx));
-      let nRow = Math.max(0, Math.min(1, row + dy));
-      let next = nRow*3 + nCol;
-      if(next >= IDX_TO_ID.length) next = IDX_TO_ID.length-1;
-      const dir = dx>0?'right':dx<0?'left':dy>0?'down':'up';
+      let col=focusedIndex%3, row=Math.floor(focusedIndex/3);
+      let nCol=Math.max(0,Math.min(2,col+dx));
+      let nRow=Math.max(0,Math.min(1,row+dy));
+      let next=nRow*3+nCol; if(next>=IDX_TO_ID.length) next=IDX_TO_ID.length-1;
+      const dir=dx>0?'right':dx<0?'left':dy>0?'down':'up';
       setActiveTileByIndex(next, dir);
     }
     function commitFocusedIfChannel(){
@@ -371,13 +397,14 @@
           if (dc) { dc.classList.add('pulse'); setTimeout(()=>dc.classList.remove('pulse'), 280); }
           toast(`CH ${currentChannel}`);
         }
-      } else { toggleMute(); if (tileEl){ tileEl.classList.add('pulsing'); setTimeout(()=>tileEl.classList.remove('pulsing'), 260); } }
+      } else {
+        if (tileEl) { tileEl.classList.add('pulsing'); setTimeout(()=>tileEl.classList.remove('pulsing'), 260); }
+        toggleMute();
+      }
     }
-    // Clicks
     for (let i=1;i<=5;i++){ document.getElementById(`qch-${i}`).addEventListener('click', ()=>{ setActiveTileByIndex(i-1,'right'); commitFocusedIfChannel(); }); }
     document.getElementById('q-mute').addEventListener('click', ()=>toggleMute());
     document.getElementById('dialSelect').addEventListener('click', ()=>commitFocusedIfChannel());
-    // Swipe on dial
     const dial=document.getElementById('dial'); let sx=0, sy=0, tracking=false; const TH=28;
     dial.addEventListener('pointerdown',(e)=>{ tracking=true; sx=e.clientX; sy=e.clientY; dial.setPointerCapture(e.pointerId); });
     dial.addEventListener('pointerup',(e)=>{ if(!tracking) return; tracking=false; const dx=e.clientX-sx, dy=e.clientY-sy;
@@ -386,23 +413,23 @@
     });
     dial.addEventListener('pointercancel',()=>{ tracking=false; });
 
-    // Volume & mute
+    // VOLUME & MUTE
     async function volUp(){ if(!currentDisplay){ toast('Select a TV'); return; } volume=Math.min(100,volume+10); updateVolumeUI(); await updateDisplay(); toast(`VOL ${volume}`); }
     async function volDown(){ if(!currentDisplay){ toast('Select a TV'); return; } volume=Math.max(0,volume-10); updateVolumeUI(); await updateDisplay(); toast(`VOL ${volume}`); }
     async function toggleMute(){ if(!currentDisplay){ toast('Select a TV'); return; } muted=!muted; $('#q-mute').classList.toggle('muted', muted); $('#muteLabel').textContent = muted? 'Muted' : 'Mute'; await updateDisplay(); toast(muted?'MUTED':'UNMUTED'); }
     document.getElementById('volPlus').addEventListener('click', volUp);
     document.getElementById('volMinus').addEventListener('click', volDown);
 
-    // Write to DB (admin vs user)
+    // WRITE (admin vs user)
     async function updateDisplay(){
       if(!currentDisplay){ console.warn('[update] no currentDisplay'); return; }
       const state = { channel: currentChannel, volume, muted, timestamp: Date.now() };
-      if (!isAdmin) state.dealership = dealershipId; // required by your rules for non-admin
+      if (!isAdmin) state.dealership = dealershipId; // users must include dealership per rules
       try { await update(ref(db, `displays/${currentDisplay}`), state); }
       catch (e){ console.error('Update denied', e); toast('Update denied (rules)'); }
     }
 
-    // Initial paint
+    // initial paint
     IDX_TO_ID.forEach((id,idx)=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active', idx===focusedIndex); });
     paintDial(currentChannel); updateVolumeUI();
     if(!localStorage.getItem('iptv_hints_seen')){ setTimeout(()=>{ document.querySelectorAll('.hint').forEach(h=>h.style.opacity=.0); localStorage.setItem('iptv_hints_seen','1'); }, 2600); }
