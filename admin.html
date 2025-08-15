@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>IPTV — Admin Console</title>
 
-  <!-- PWA bits to match your app (optional) -->
+  <!-- PWA bits (optional) -->
   <link rel="manifest" href="/IPTV-/manifest.webmanifest" />
   <meta name="theme-color" content="#000000" />
   <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png" />
@@ -27,8 +27,9 @@
     .wrap{max-width:1200px;margin:0 auto}
 
     /* Topbar */
-    .topbar{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap}
-    .lhs{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .topbar{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap}
+    .lhs{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .logo{width:40px;height:40px;border-radius:10px;background:var(--tile);border:1px solid var(--border);background-size:cover;background-position:center}
     .title{font-weight:900;letter-spacing:.3px}
     .chip{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);display:inline-flex;align-items:center;gap:8px}
     .btn-pill{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:13px;font-weight:800;cursor:pointer}
@@ -72,10 +73,9 @@
     .vol input[type="range"]{width:140px;accent-color:var(--accent)}
     @media (max-width:560px){ .vol input[type="range"]{width:100%} }
 
-    /* USERS: clearer cards */
-    .user-filters{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}
-    @media (max-width:860px){ .user-filters{grid-template-columns:1fr 1fr} }
-    @media (max-width:560px){ .user-filters{grid-template-columns:1fr} }
+    /* USERS (grouped) */
+    .group{margin:14px 0}
+    .group h3{margin:0 0 8px;font-size:14px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
     .user-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
     .user-card{background:var(--tile);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
     .user-header{display:flex;flex-direction:column;gap:4px}
@@ -87,15 +87,17 @@
     @media (max-width:420px){ .user-controls{grid-template-columns:1fr} }
 
     /* Apps / Quick Links */
-    .apps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .apps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
     @media (max-width:1060px){ .apps-grid{grid-template-columns:repeat(2,1fr)} }
     @media (max-width:560px){ .apps-grid{grid-template-columns:1fr} }
     .app-tile{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:16px;background:var(--tile);text-decoration:none;color:inherit;transition:transform .1s, box-shadow .2s, border-color .2s}
     .app-tile:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 8px 22px rgba(255,149,0,.15)}
     .app-emoji{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--tileActive);border:1px solid var(--border);font-size:20px}
+    .app-logo{width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:var(--tileActive) center/cover no-repeat}
     .app-info{display:flex;flex-direction:column;gap:2px}
     .app-title{font-weight:800}
     .app-desc{font-size:12px;color:var(--muted)}
+    .apps-note{margin-top:6px;font-size:12px;color:var(--muted)}
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
     .toast.show{opacity:1}
     .toast.err{background:#ff453a;color:#fff}
@@ -106,6 +108,8 @@
     <!-- Top -->
     <div class="topbar">
       <div class="lhs">
+        <!-- LOGO uses LOGO_URL (set in script) -->
+        <div id="brandLogo" class="logo" title="IPTV"></div>
         <div class="title">IPTV — Admin Console</div>
         <div class="chip">
           <span>Theme</span>
@@ -202,7 +206,7 @@
           <div id="displayEmpty" class="empty" style="display:none">Pick a dealership to list TVs.</div>
         </div>
 
-        <!-- Users -->
+        <!-- Users (grouped) -->
         <div class="card">
           <h2>
             Users
@@ -225,6 +229,7 @@
               <select id="userRole" class="select">
                 <option value="user">user</option>
                 <option value="admin">admin</option>
+                <option value="device">device</option>
               </select>
             </div>
             <div>
@@ -239,62 +244,77 @@
             <button id="inviteUserBtn" class="btn secondary">Send Reset (existing)</button>
           </div>
 
-          <div class="user-filters">
-            <input id="userSearch" class="input" placeholder="Search name or email…" />
-            <select id="filterDealer" class="select">
-              <option value="">All dealerships</option>
-            </select>
-            <select id="filterRole" class="select">
-              <option value="">All roles</option>
-              <option value="user">user</option>
-              <option value="admin">admin</option>
-              <option value="disabled">disabled</option>
-            </select>
-          </div>
-
-          <div id="userList" class="user-grid"></div>
-          <div id="userEmpty" class="empty" style="display:none">No users.</div>
-        </div>
-
-        <!-- Quick Tools -->
-        <div class="card">
-          <h2>Quick Tools</h2>
           <div class="row3">
             <div>
-              <div class="label">Display ID</div>
-              <input id="forceDisplayId" class="input" placeholder="e.g., GW-001" />
+              <div class="label">Search</div>
+              <input id="userSearch" class="input" placeholder="Search name or email…" />
             </div>
             <div>
-              <div class="label">Channel</div>
-              <select id="forceChannel" class="select">
-                <option value="">Set channel…</option>
-                <option value="1">Channel 1</option>
-                <option value="2">Channel 2</option>
-                <option value="3">Channel 3</option>
-                <option value="4">Channel 4</option>
-                <option value="5">Channel 5</option>
+              <div class="label">Filter dealership</div>
+              <select id="filterDealer" class="select">
+                <option value="">All dealerships</option>
               </select>
             </div>
-            <div style="display:flex;align-items:end">
-              <button id="applyForceBtn" class="btn" style="width:100%">Apply</button>
-            </div>
-          </div>
-          <div class="row2">
             <div>
-              <div class="label">Volume (0–100)</div>
-              <input id="forceVolume" class="input" type="number" min="0" max="100" placeholder="50" />
-            </div>
-            <div style="display:flex;align-items:end">
-              <button id="applyVolumeBtn" class="btn secondary" style="width:100%">Set Volume</button>
+              <div class="label">Filter role</div>
+              <select id="filterRole" class="select">
+                <option value="">All roles</option>
+                <option value="admin">admin</option>
+                <option value="device">device</option>
+                <option value="user">user</option>
+                <option value="disabled">disabled</option>
+              </select>
             </div>
           </div>
-          <div class="small muted">Writes to <code>/displays/{id}</code> (keeps its dealership field).</div>
+
+          <div id="groupAdmins"  class="group"><h3>Admins (<span id="countAdmins">0</span>)</h3><div class="user-grid" id="gridAdmins"></div></div>
+          <div id="groupDevices" class="group"><h3>Device Users (<span id="countDevices">0</span>)</h3><div class="user-grid" id="gridDevices"></div></div>
+          <div id="groupUsers"   class="group"><h3>Regular Users (<span id="countUsers">0</span>)</h3><div class="user-grid" id="gridUsers"></div></div>
+          <div id="groupDisabled"class="group"><h3>Disabled (<span id="countDisabled">0</span>)</h3><div class="user-grid" id="gridDisabled"></div></div>
+
+          <div id="userEmpty" class="empty" style="display:none">No users.</div>
         </div>
 
         <!-- Apps / Quick Links -->
         <div class="card">
           <h2>Apps / Quick Links</h2>
+
+          <!-- Manage links (add/remove) -->
+          <div class="row3">
+            <div>
+              <div class="label">Title</div>
+              <input id="qlTitle" class="input" placeholder="e.g., Firebase — Database" />
+            </div>
+            <div>
+              <div class="label">URL</div>
+              <input id="qlHref" class="input" placeholder="https://..." />
+            </div>
+            <div style="display:flex;align-items:end">
+              <button id="qlAddBtn" class="btn" style="width:100%">Add Link</button>
+            </div>
+          </div>
+          <div class="row2">
+            <div>
+              <div class="label">Emoji (optional)</div>
+              <input id="qlEmoji" class="input" placeholder="🔥 ✅ 📁 …" />
+            </div>
+            <div>
+              <div class="label">Logo image URL (optional)</div>
+              <input id="qlImg" class="input" placeholder="https://.../logo.png" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <div class="label">Description (optional)</div>
+              <input id="qlDesc" class="input" placeholder="Short label under the title" />
+            </div>
+            <div style="display:flex;align-items:end">
+              <button id="qlResetBtn" class="btn secondary" style="width:100%">Reset to defaults</button>
+            </div>
+          </div>
+
           <div id="appsGrid" class="apps-grid"></div>
+          <div class="apps-note muted small" id="qlStorageNote">Loading…</div>
         </div>
       </div>
     </div>
@@ -323,9 +343,11 @@
       appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
     };
 
-    // ========= QUICK LINKS =========
-    // Edit these if you need to add/remove links.
-    const QUICK_LINKS = [
+    // Change this one line to use your “nice” logo anywhere on the web
+    const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
+
+    // Default quick links (used on first load, or when “Reset to defaults”)
+    const DEFAULT_LINKS = [
       { emoji:'🔥', title:'Firebase — Overview', href:'https://console.firebase.google.com/project/iptv-bfa/overview', desc:'Console home' },
       { emoji:'🗄️', title:'Firebase — Database', href:'https://console.firebase.google.com/project/iptv-bfa/database/iptv-bfa-default-rtdb/data', desc:'Realtime DB data' },
       { emoji:'👤', title:'Firebase — Auth', href:'https://console.firebase.google.com/project/iptv-bfa/authentication/users', desc:'Users & providers' },
@@ -344,7 +366,7 @@
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    // ========= THEME =========
+    // ========= THEME & LOGO =========
     const savedTheme = localStorage.getItem('iptv_theme') || 'light';
     document.body.classList.toggle('light', savedTheme === 'light');
     document.getElementById('themeBtn').addEventListener('click', ()=>{
@@ -352,6 +374,7 @@
       document.body.classList.toggle('light', isLight);
       localStorage.setItem('iptv_theme', isLight ? 'light' : 'dark');
     });
+    document.getElementById('brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
 
     // ========= HELPERS =========
     const $ = s => document.querySelector(s);
@@ -359,28 +382,6 @@
     function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2000); }
     function htmlEscape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
     const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
-
-    // ========= RENDER QUICK LINKS =========
-    function renderApps(){
-      const grid = $('#appsGrid');
-      grid.innerHTML = '';
-      QUICK_LINKS.forEach(l=>{
-        const a = document.createElement('a');
-        a.className = 'app-tile';
-        a.href = l.href;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        a.innerHTML = `
-          <div class="app-emoji">${l.emoji}</div>
-          <div class="app-info">
-            <div class="app-title">${htmlEscape(l.title)}</div>
-            <div class="app-desc">${htmlEscape(l.desc || '')}</div>
-          </div>
-        `;
-        grid.appendChild(a);
-      });
-    }
-    renderApps();
 
     // ========= AUTH UI =========
     $('#loginBtn').addEventListener('click', doLogin);
@@ -430,9 +431,10 @@
     // ========= RELOAD EVERYTHING =========
     async function reloadAll(){
       await refreshDealers();   // fills dealer list + select boxes
-      await refreshUsers();     // fills users
+      await refreshUsers();     // grouped users
       const did = $('#dealerForDisplays').value;
       if(did) await watchDisplays(did);
+      await quickLinksLoadRender();
     }
 
     // ========= DEALERSHIPS =========
@@ -467,7 +469,6 @@
       const prevUserSel = selUsers.value;
       const prevFilter  = selFilter.value;
 
-      // prefer dealershipPublic (friendly names)
       let map = {};
       try{ const pub = await get(ref(db, 'dealershipPublic')); if(pub.exists()) map = pub.val(); }catch(e){}
       if(!map || Object.keys(map).length===0){
@@ -588,7 +589,7 @@
           ul.appendChild(li);
         });
 
-        // hook events
+        // wire events
         ul.querySelectorAll('.chsel').forEach(el=>{
           el.addEventListener('change', async (e)=>{
             const id = e.target.getAttribute('data-id');
@@ -613,7 +614,6 @@
         });
       };
 
-      // Live query by dealership
       const qRef = query(ref(db, 'displays'), orderByChild('dealership'), equalTo(did));
       const off = onValue(qRef, (snap)=> render(snap.val()||{}), (err)=>{ console.warn(err); });
       displaysUnsub = ()=> off();
@@ -701,7 +701,7 @@
       return max+1;
     }
 
-    // ========= USERS =========
+    // ========= USERS (Group: admin/device/user/disabled) =========
     $('#usersReload').addEventListener('click', refreshUsers);
     $('#inviteUserBtn').addEventListener('click', async ()=>{
       const email = $('#userEmail').value.trim();
@@ -729,7 +729,6 @@
         const cred = await createUserWithEmailAndPassword(tempAuth, email, tmpPass);
         const uid  = cred.user.uid;
 
-        // dealer name
         let dname = did;
         try{ const p=await get(ref(db, `dealershipPublic/${did}`)); if(p.exists()) dname=p.val()?.name||did; }catch(e){}
 
@@ -753,7 +752,6 @@
     }
 
     async function refreshUsers(){
-      const grid = $('#userList'); grid.innerHTML='';
       const search = ($('#userSearch').value || '').toLowerCase();
       const fDid   = $('#filterDealer').value;
       const fRole  = $('#filterRole').value;
@@ -766,7 +764,7 @@
       try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
       const rows = Object.entries(map).map(([uid,v])=>({uid,...v}));
 
-      rows.sort((a,b)=> (a.dealershipName||a.dealershipId||'').localeCompare(b.dealershipName||b.dealershipId||'') || (a.email||'').localeCompare(b.email||''));
+      // filters
       const filtered = rows.filter(r=>{
         if(fDid && r.dealershipId!==fDid) return false;
         if(fRole && (r.role||'user')!==fRole) return false;
@@ -774,78 +772,111 @@
         return true;
       });
 
-      $('#userEmpty').style.display = filtered.length? 'none':'block';
-
+      // split groups
+      const groups = {
+        admin:    [],
+        device:   [],
+        user:     [],
+        disabled: []
+      };
       filtered.forEach(r=>{
-        const dealer = r.dealershipName || r.dealershipId || '—';
-        const card = document.createElement('div');
-        card.className = 'user-card';
-        card.innerHTML = `
-          <div class="user-header">
-            <div class="user-name">${htmlEscape(r.name||'No name')}</div>
-            <div class="user-sub">
-              <span>${htmlEscape(r.email||'')}</span>
-              <span class="badge">${htmlEscape(r.role||'user')}</span>
-              <span class="badge">${htmlEscape(dealer)}</span>
-            </div>
-          </div>
-          <div class="user-controls">
-            <select data-uid="${r.uid}" class="select roleSel">
-              ${['user','admin','disabled'].map(v=>`<option value="${v}" ${v===(r.role||'user')?'selected':''}>${v}</option>`).join('')}
-            </select>
-            <select data-uid="${r.uid}" class="select dealerSel">
-              ${Object.entries(dealers).map(([id, nm])=>`<option value="${id}" ${id===(r.dealershipId||'')?'selected':''}>${nm}</option>`).join('')}
-            </select>
-          </div>
-          <div class="user-actions">
-            <button class="btn secondary small resetBtn" data-email="${htmlEscape(r.email||'')}">Reset password</button>
-            <button class="btn ${ (r.role==='disabled')?'secondary':'danger' } small toggleBtn" data-uid="${r.uid}" data-role="${r.role||'user'}">${ (r.role==='disabled')?'Enable':'Disable' }</button>
-          </div>
-        `;
-        grid.appendChild(card);
+        const role = (r.role||'user');
+        if(role === 'admin') groups.admin.push(r);
+        else if(role === 'device') groups.device.push(r);
+        else if(role === 'disabled') groups.disabled.push(r);
+        else groups.user.push(r);
       });
 
-      // wire role changes
-      grid.querySelectorAll('.roleSel').forEach(sel=>{
-        sel.addEventListener('change', async (e)=>{
-          const uid = e.target.getAttribute('data-uid');
-          const role = e.target.value;
-          try{ await update(ref(db,`user/${uid}`),{role}); toast('Role updated'); await refreshUsers(); }
-          catch(err){ console.error(err); toast('Update failed', true); }
+      // counts + empty state
+      $('#countAdmins').textContent   = groups.admin.length;
+      $('#countDevices').textContent  = groups.device.length;
+      $('#countUsers').textContent    = groups.user.length;
+      $('#countDisabled').textContent = groups.disabled.length;
+
+      const total = groups.admin.length + groups.device.length + groups.user.length + groups.disabled.length;
+      $('#userEmpty').style.display = total ? 'none' : 'block';
+
+      // render helper
+      const renderGroup = (arr, gridId) => {
+        const grid = document.getElementById(gridId);
+        grid.innerHTML = '';
+        arr.sort((a,b)=> (a.dealershipName||a.dealershipId||'').localeCompare(b.dealershipName||b.dealershipId||'') || (a.email||'').localeCompare(b.email||''));
+        arr.forEach(r=>{
+          const dealer = r.dealershipName || r.dealershipId || '—';
+          const card = document.createElement('div');
+          card.className = 'user-card';
+          card.innerHTML = `
+            <div class="user-header">
+              <div class="user-name">${htmlEscape(r.name||'No name')}</div>
+              <div class="user-sub">
+                <span>${htmlEscape(r.email||'')}</span>
+                <span class="badge">${htmlEscape(r.role||'user')}</span>
+                <span class="badge">${htmlEscape(dealer)}</span>
+              </div>
+            </div>
+            <div class="user-controls">
+              <select data-uid="${r.uid}" class="select roleSel">
+                ${['user','admin','device','disabled'].map(v=>`<option value="${v}" ${v===(r.role||'user')?'selected':''}>${v}</option>`).join('')}
+              </select>
+              <select data-uid="${r.uid}" class="select dealerSel">
+                ${Object.entries(dealers).map(([id, nm])=>`<option value="${id}" ${id===(r.dealershipId||'')?'selected':''}>${nm}</option>`).join('')}
+              </select>
+            </div>
+            <div class="user-actions">
+              <button class="btn secondary small resetBtn" data-email="${htmlEscape(r.email||'')}">Reset password</button>
+              <button class="btn ${ (r.role==='disabled')?'secondary':'danger' } small toggleBtn" data-uid="${r.uid}" data-role="${r.role||'user'}">${ (r.role==='disabled')?'Enable':'Disable' }</button>
+            </div>
+          `;
+          grid.appendChild(card);
         });
-      });
-      // wire dealer changes
-      grid.querySelectorAll('.dealerSel').forEach(sel=>{
-        sel.addEventListener('change', async (e)=>{
-          const uid = e.target.getAttribute('data-uid');
-          const did = e.target.value;
-          let name = dealers[did] || did;
-          try{ await update(ref(db,`user/${uid}`), { dealershipId: did, dealershipName: name }); toast('Moved'); }
-          catch(err){ console.error(err); toast('Move failed', true); }
+
+        // wire role changes
+        grid.querySelectorAll('.roleSel').forEach(sel=>{
+          sel.addEventListener('change', async (e)=>{
+            const uid = e.target.getAttribute('data-uid');
+            const role = e.target.value;
+            try{ await update(ref(db,`user/${uid}`),{role}); toast('Role updated'); await refreshUsers(); }
+            catch(err){ console.error(err); toast('Update failed', true); }
+          });
         });
-      });
-      // reset
-      grid.querySelectorAll('.resetBtn').forEach(btn=>{
-        btn.addEventListener('click', async ()=>{
-          const email = btn.getAttribute('data-email');
-          if(!email) return toast('No email', true);
-          try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }
-          catch(err){ console.error(err); toast('Reset failed', true); }
+        // wire dealer changes
+        grid.querySelectorAll('.dealerSel').forEach(sel=>{
+          sel.addEventListener('change', async (e)=>{
+            const uid = e.target.getAttribute('data-uid');
+            const did = e.target.value;
+            let name = dealers[did] || did;
+            try{ await update(ref(db,`user/${uid}`), { dealershipId: did, dealershipName: name }); toast('Moved'); }
+            catch(err){ console.error(err); toast('Move failed', true); }
+          });
         });
-      });
-      // disable/enable
-      grid.querySelectorAll('.toggleBtn').forEach(btn=>{
-        btn.addEventListener('click', async ()=>{
-          const uid = btn.getAttribute('data-uid');
-          const role= btn.getAttribute('data-role') || 'user';
-          const next = role==='disabled' ? 'user' : 'disabled';
-          try{
-            await update(ref(db,`user/${uid}`), { role: next, disabledAt: next==='disabled'?Date.now():null });
-            toast(next==='disabled'?'User disabled':'User enabled');
-            await refreshUsers();
-          }catch(err){ console.error(err); toast('Change failed', true); }
+        // reset
+        grid.querySelectorAll('.resetBtn').forEach(btn=>{
+          btn.addEventListener('click', async ()=>{
+            const email = btn.getAttribute('data-email');
+            if(!email) return toast('No email', true);
+            try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }
+            catch(err){ console.error(err); toast('Reset failed', true); }
+          });
         });
-      });
+        // disable/enable
+        grid.querySelectorAll('.toggleBtn').forEach(btn=>{
+          btn.addEventListener('click', async ()=>{
+            const uid = btn.getAttribute('data-uid');
+            const role= btn.getAttribute('data-role') || 'user';
+            const next = role==='disabled' ? 'user' : 'disabled';
+            try{
+              await update(ref(db,`user/${uid}`), { role: next, disabledAt: next==='disabled'?Date.now():null });
+              toast(next==='disabled'?'User disabled':'User enabled');
+              await refreshUsers();
+            }catch(err){ console.error(err); toast('Change failed', true); }
+          });
+        });
+      };
+
+      renderGroup(groups.admin,   'gridAdmins');
+      renderGroup(groups.device,  'gridDevices');
+      renderGroup(groups.user,    'gridUsers');
+      renderGroup(groups.disabled,'gridDisabled');
     }
 
     async function loadDealersMap(){
@@ -862,12 +893,11 @@
 
       selFilter.innerHTML = '<option value="">All dealerships</option>';
       selUserForm.innerHTML = '<option value="">Dealership…</option>';
-      if(!selDisp.value){ /* keep whatever was there */ }
+      if(!selDisp.value){ /* keep whatever was there; displays list filled by refreshDealers */ }
 
       for(const [id,name] of Object.entries(map).sort((a,b)=>a[1].localeCompare(b[1]))){
         const optF = document.createElement('option'); optF.value=id; optF.textContent=name; selFilter.appendChild(optF);
         const optU = document.createElement('option'); optU.value=id; optU.textContent=name; selUserForm.appendChild(optU);
-        // dealerForDisplays options are filled in refreshDealers()
       }
       selFilter.value = prevF || '';
       selUserForm.value = prevU || '';
@@ -875,29 +905,116 @@
       return map;
     }
 
-    // ========= QUICK TOOLS =========
-    $('#applyForceBtn').addEventListener('click', async ()=>{
-      const id = $('#forceDisplayId').value.trim();
-      const ch = parseInt($('#forceChannel').value,10);
-      if(!id||!ch) return toast('Fill display & channel', true);
-      try{
-        const snap = await get(ref(db,`displays/${id}`));
-        const cur  = snap.val()||{};
-        await update(ref(db,`displays/${id}`), { channel: ch, dealership: cur.dealership||cur.dealer||null, timestamp: Date.now() });
-        toast(`CH ${ch} pushed`);
-      }catch(e){ console.error(e); toast('Write failed', true); }
+    // ========= QUICK LINKS (DB with graceful fallback to localStorage) =========
+    const LINKS_DB_PATH = 'admin/quickLinks'; // Optional: add rules so only admins can write/read
+
+    let quickLinks = [];            // working list
+    let quickLinksSource = 'db';    // 'db' or 'local'
+
+    $('#qlAddBtn').addEventListener('click', async ()=>{
+      const title = $('#qlTitle').value.trim();
+      const href  = $('#qlHref').value.trim();
+      const emoji = $('#qlEmoji').value.trim();
+      const img   = $('#qlImg').value.trim();
+      const desc  = $('#qlDesc').value.trim();
+      if(!title || !href) return toast('Title and URL are required', true);
+      quickLinks.push({ title, href, emoji, img, desc });
+      await quickLinksSave();
+      clearQlForm();
+      renderApps();
+      toast('Link added');
     });
-    $('#applyVolumeBtn').addEventListener('click', async ()=>{
-      const id = $('#forceDisplayId').value.trim();
-      const v  = Math.max(0, Math.min(100, parseInt($('#forceVolume').value,10)||0));
-      if(!id) return toast('Fill display ID', true);
-      try{
-        const snap = await get(ref(db,`displays/${id}`));
-        const cur  = snap.val()||{};
-        await update(ref(db,`displays/${id}`), { volume: v, muted: v===0 ? true : (cur.muted||false), dealership: cur.dealership||null, timestamp: Date.now() });
-        toast(`VOL ${v} pushed`);
-      }catch(e){ console.error(e); toast('Write failed', true); }
+
+    $('#qlResetBtn').addEventListener('click', async ()=>{
+      quickLinks = [...DEFAULT_LINKS];
+      await quickLinksSave(true);
+      renderApps();
+      toast('Links reset');
     });
+
+    function clearQlForm(){
+      ['#qlTitle','#qlHref','#qlEmoji','#qlImg','#qlDesc'].forEach(s=>$(s).value='');
+    }
+
+    async function quickLinksLoadRender(){
+      try{
+        const s = await get(ref(db, LINKS_DB_PATH));
+        if(s.exists()){
+          quickLinks = Object.values(s.val());
+          quickLinksSource = 'db';
+          $('#qlStorageNote').textContent = 'Links are synced from database.';
+        }else{
+          throw new Error('empty');
+        }
+      }catch(e){
+        // fallback to localStorage
+        try{
+          quickLinks = JSON.parse(localStorage.getItem('admin_quick_links')||'[]');
+          if(!quickLinks.length) quickLinks = [...DEFAULT_LINKS];
+          quickLinksSource = 'local';
+          $('#qlStorageNote').textContent = 'Links are stored locally on this device (no DB permission).';
+        }catch(_){
+          quickLinks = [...DEFAULT_LINKS];
+          quickLinksSource = 'local';
+          $('#qlStorageNote').textContent = 'Links are stored locally on this device (no DB permission).';
+        }
+      }
+      renderApps();
+    }
+
+    async function quickLinksSave(forceLocal=false){
+      if(forceLocal || quickLinksSource==='local'){
+        localStorage.setItem('admin_quick_links', JSON.stringify(quickLinks));
+        quickLinksSource = 'local';
+        $('#qlStorageNote').textContent = 'Links are stored locally on this device (no DB permission).';
+        return;
+      }
+      try{
+        const data = {}; quickLinks.forEach((l,i)=> data[i] = l);
+        await set(ref(db, LINKS_DB_PATH), data);
+        quickLinksSource = 'db';
+        $('#qlStorageNote').textContent = 'Links are synced from database.';
+      }catch(e){
+        // fallback to local if permission denied
+        localStorage.setItem('admin_quick_links', JSON.stringify(quickLinks));
+        quickLinksSource = 'local';
+        $('#qlStorageNote').textContent = 'Links are stored locally on this device (no DB permission).';
+      }
+    }
+
+    function renderApps(){
+      const grid = $('#appsGrid');
+      grid.innerHTML = '';
+      quickLinks.forEach((l, idx)=>{
+        const a = document.createElement('a');
+        a.className = 'app-tile';
+        a.href = l.href;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        const left = l.img ? `<div class="app-logo" style="background-image:url('${l.img}')"></div>` :
+                             `<div class="app-emoji">${htmlEscape(l.emoji||'🔗')}</div>`;
+        a.innerHTML = `
+          ${left}
+          <div class="app-info">
+            <div class="app-title">${htmlEscape(l.title||'Link')}</div>
+            <div class="app-desc">${htmlEscape(l.desc||'')}</div>
+          </div>
+          <button type="button" title="Remove" style="margin-left:auto" class="btn danger small" data-remove="${idx}">×</button>
+        `;
+        grid.appendChild(a);
+      });
+      // remove handlers
+      grid.querySelectorAll('button[data-remove]').forEach(btn=>{
+        btn.addEventListener('click', async (e)=>{
+          e.preventDefault(); e.stopPropagation();
+          const i = parseInt(btn.getAttribute('data-remove'), 10);
+          quickLinks.splice(i,1);
+          await quickLinksSave();
+          renderApps();
+          toast('Link removed');
+        });
+      });
+    }
   </script>
 </body>
 </html>
