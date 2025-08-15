@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>IPTV — Admin Console</title>
 
-  <!-- (optional) PWA bits to match your app -->
+  <!-- PWA bits to match your app (optional) -->
   <link rel="manifest" href="/IPTV-/manifest.webmanifest" />
   <meta name="theme-color" content="#000000" />
   <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png" />
@@ -15,35 +15,43 @@
   <style>
     :root{
       --bg:#0b0b0c;--fg:#fff;--muted:#9a9aa0;--panel:#121214;--border:rgba(255,255,255,.14);
-      --accent:#ff9500;--tile:#17171a;--tileActive:#1d1d21;--shadow:0 18px 48px rgba(0,0,0,.45)
+      --accent:#ff9500;--tile:#17171a;--tileActive:#1d1d21;--shadow:0 18px 48px rgba(0,0,0,.45);
+      --gap:16px;--radius:18px;--radius-lg:22px;
     }
     body.light{
       --bg:#f5f5f7;--fg:#111;--muted:#6e6e73;--panel:#fff;--border:rgba(0,0,0,.12);
-      --tile:#f2f2f7;--tileActive:#eaeaef;--shadow:0 14px 36px rgba(0,0,0,.10)
+      --tile:#f2f2f7;--tileActive:#eaeaef;--shadow:0 14px 36px rgba(0,0,0,.10);
     }
     *{box-sizing:border-box}
     body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;margin:0;padding:18px}
     .wrap{max-width:1200px;margin:0 auto}
 
-    .topbar{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:14px}
-    .lhs{display:flex;align-items:center;gap:10px}
+    /* Topbar */
+    .topbar{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap}
+    .lhs{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
     .title{font-weight:900;letter-spacing:.3px}
     .chip{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);display:inline-flex;align-items:center;gap:8px}
     .btn-pill{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:13px;font-weight:800;cursor:pointer}
     .btn-ghost{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:700;cursor:pointer}
     .muted{color:var(--muted);font-size:12px}
 
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-    @media (max-width:1020px){.grid{grid-template-columns:1fr}}
+    /* Layout */
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+    @media (max-width:1060px){.grid{grid-template-columns:1fr}}
 
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:16px;box-shadow:var(--shadow)}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow)}
     .card h2{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px;font-size:16px}
-    .card h2 .actions{display:flex;gap:8px}
+    .card h2 .actions{display:flex;gap:8px;flex-wrap:wrap}
 
+    /* Inputs / controls */
     .row{display:grid;grid-template-columns:1fr auto;gap:10px;margin:10px 0}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
     .row3{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin:10px 0}
     .row4{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin:10px 0}
-
+    @media (max-width:680px){
+      .row,.row2,.row3,.row4{grid-template-columns:1fr;gap:8px}
+    }
+    .label{font-size:12px;color:var(--muted);margin-bottom:6px}
     .input,.select{width:100%;padding:12px 12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
     .input::placeholder{color:var(--muted)}
     .btn{padding:12px 14px;border-radius:12px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
@@ -51,17 +59,34 @@
     .btn.danger{background:#ff453a;color:#fff}
     .small{font-size:12px}
 
+    /* Lists */
     .list{margin:8px 0 0;padding:0;list-style:none}
-    .item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;margin:6px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px}
-    .split{display:flex;align-items:center;gap:8px}
-    .col{display:flex;flex-direction:column}
     .empty{padding:12px;border:1px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center}
 
-    .vol{display:flex;align-items:center;gap:8px}
-    .vol input[type="range"]{width:130px;accent-color:var(--accent)}
+    /* Display item */
+    .item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px;margin:8px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap}
+    .split{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .col{display:flex;flex-direction:column;gap:6px;min-width:200px}
     .tag{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:transparent;font-size:12px;color:var(--muted)}
-    .toggle{padding:8px 10px;border:1px solid var(--border);background:transparent;border-radius:10px;cursor:pointer}
+    .vol{display:flex;align-items:center;gap:8px}
+    .vol input[type="range"]{width:140px;accent-color:var(--accent)}
+    @media (max-width:560px){ .vol input[type="range"]{width:100%} }
 
+    /* USERS: clearer cards */
+    .user-filters{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}
+    @media (max-width:860px){ .user-filters{grid-template-columns:1fr 1fr} }
+    @media (max-width:560px){ .user-filters{grid-template-columns:1fr} }
+    .user-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+    .user-card{background:var(--tile);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+    .user-header{display:flex;flex-direction:column;gap:4px}
+    .user-name{font-weight:800}
+    .user-sub{color:var(--muted);font-size:12px;display:flex;gap:8px;flex-wrap:wrap}
+    .badge{border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:11px;color:var(--muted)}
+    .user-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .user-actions{display:flex;gap:8px;flex-wrap:wrap}
+    @media (max-width:420px){ .user-controls{grid-template-columns:1fr} }
+
+    /* Toast */
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
     .toast.show{opacity:1}
     .toast.err{background:#ff453a;color:#fff}
@@ -86,17 +111,23 @@
     </div>
 
     <!-- Login -->
-    <div id="loginBox" class="card" style="max-width:460px;margin:0 auto 12px;display:none">
+    <div id="loginBox" class="card" style="max-width:520px;margin:0 auto 12px;display:none">
       <h2>Admin Sign In</h2>
-      <div class="row">
-        <input id="email" class="input" type="email" placeholder="Email" autocomplete="email" />
-        <input id="password" class="input" type="password" placeholder="Password" autocomplete="current-password" />
+      <div class="row2">
+        <div>
+          <div class="label">Email</div>
+          <input id="email" class="input" type="email" placeholder="you@company.com" autocomplete="email" />
+        </div>
+        <div>
+          <div class="label">Password</div>
+          <input id="password" class="input" type="password" placeholder="••••••••" autocomplete="current-password" />
+        </div>
       </div>
-      <div class="row">
+      <div class="row2">
         <button id="loginBtn" class="btn">Sign in</button>
         <button id="resetBtn" class="btn secondary">Send reset link</button>
       </div>
-      <div class="small muted">Only accounts with <b>role: "admin"</b> in <code>/user/{uid}</code> can access.</div>
+      <div class="small muted">Requires <b>role: "admin"</b> in <code>/user/{uid}</code>.</div>
     </div>
 
     <!-- Not admin -->
@@ -117,10 +148,15 @@
             </span>
           </h2>
           <div class="row">
-            <input id="dealerName" class="input" placeholder="New dealership name (e.g., Genesis Winnipeg)" />
-            <button id="addDealerBtn" class="btn">Add</button>
+            <div>
+              <div class="label">New dealership name</div>
+              <input id="dealerName" class="input" placeholder="e.g., Genesis Winnipeg" />
+            </div>
+            <div style="display:flex;align-items:end">
+              <button id="addDealerBtn" class="btn" style="width:100%">Add</button>
+            </div>
           </div>
-          <div class="small muted">Creates <code>/dealership/{id}</code> and <code>/dealershipPublic/{id}</code>. ID auto-generated from name.</div>
+          <div class="small muted">Creates <code>/dealership/{id}</code> and <code>/dealershipPublic/{id}</code>. ID is generated from name.</div>
           <ul id="dealerList" class="list"></ul>
           <div id="dealerEmpty" class="empty" style="display:none">No dealerships.</div>
         </div>
@@ -138,11 +174,19 @@
           </h2>
 
           <div class="row3">
-            <select id="dealerForDisplays" class="select">
-              <option value="">Select dealership…</option>
-            </select>
-            <input id="newDisplayId" class="input" placeholder="Optional display ID (auto if empty)" />
-            <button id="addDisplayBtn" class="btn">Add TV</button>
+            <div>
+              <div class="label">Dealership</div>
+              <select id="dealerForDisplays" class="select">
+                <option value="">Select dealership…</option>
+              </select>
+            </div>
+            <div>
+              <div class="label">Optional display ID</div>
+              <input id="newDisplayId" class="input" placeholder="Auto if empty (e.g., GW-002)" />
+            </div>
+            <div style="display:flex;align-items:end">
+              <button id="addDisplayBtn" class="btn" style="width:100%">Add TV</button>
+            </div>
           </div>
 
           <ul id="displayList" class="list"></ul>
@@ -158,23 +202,37 @@
             </span>
           </h2>
 
+          <!-- Create user panel -->
           <div class="row4">
-            <input id="userEmail" class="input" placeholder="user@email.com" />
-            <input id="userName" class="input" placeholder="Name" />
-            <select id="userRole" class="select">
-              <option value="user">user</option>
-              <option value="admin">admin</option>
-            </select>
-            <select id="userDealer" class="select">
-              <option value="">Dealership…</option>
-            </select>
+            <div>
+              <div class="label">Email</div>
+              <input id="userEmail" class="input" placeholder="user@email.com" />
+            </div>
+            <div>
+              <div class="label">Name</div>
+              <input id="userName" class="input" placeholder="Full Name" />
+            </div>
+            <div>
+              <div class="label">Role</div>
+              <select id="userRole" class="select">
+                <option value="user">user</option>
+                <option value="admin">admin</option>
+              </select>
+            </div>
+            <div>
+              <div class="label">Dealership</div>
+              <select id="userDealer" class="select">
+                <option value="">Dealership…</option>
+              </select>
+            </div>
           </div>
-          <div class="row">
+          <div class="row2">
             <button id="createUserBtn" class="btn">Create User</button>
             <button id="inviteUserBtn" class="btn secondary">Send Reset (existing)</button>
           </div>
 
-          <div class="row3">
+          <!-- Filters -->
+          <div class="user-filters">
             <input id="userSearch" class="input" placeholder="Search name or email…" />
             <select id="filterDealer" class="select">
               <option value="">All dealerships</option>
@@ -187,7 +245,8 @@
             </select>
           </div>
 
-          <ul id="userList" class="list"></ul>
+          <!-- List -->
+          <div id="userList" class="user-grid"></div>
           <div id="userEmpty" class="empty" style="display:none">No users.</div>
         </div>
 
@@ -195,20 +254,33 @@
         <div class="card">
           <h2>Quick Tools</h2>
           <div class="row3">
-            <input id="forceDisplayId" class="input" placeholder="Display ID (e.g., GW-001)" />
-            <select id="forceChannel" class="select">
-              <option value="">Set channel…</option>
-              <option value="1">Channel 1</option>
-              <option value="2">Channel 2</option>
-              <option value="3">Channel 3</option>
-              <option value="4">Channel 4</option>
-              <option value="5">Channel 5</option>
-            </select>
-            <button id="applyForceBtn" class="btn">Apply</button>
+            <div>
+              <div class="label">Display ID</div>
+              <input id="forceDisplayId" class="input" placeholder="e.g., GW-001" />
+            </div>
+            <div>
+              <div class="label">Channel</div>
+              <select id="forceChannel" class="select">
+                <option value="">Set channel…</option>
+                <option value="1">Channel 1</option>
+                <option value="2">Channel 2</option>
+                <option value="3">Channel 3</option>
+                <option value="4">Channel 4</option>
+                <option value="5">Channel 5</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:end">
+              <button id="applyForceBtn" class="btn" style="width:100%">Apply</button>
+            </div>
           </div>
-          <div class="row">
-            <input id="forceVolume" class="input" type="number" min="0" max="100" placeholder="Volume 0–100" />
-            <button id="applyVolumeBtn" class="btn secondary">Set Volume</button>
+          <div class="row2">
+            <div>
+              <div class="label">Volume (0–100)</div>
+              <input id="forceVolume" class="input" type="number" min="0" max="100" placeholder="50" />
+            </div>
+            <div style="display:flex;align-items:end">
+              <button id="applyVolumeBtn" class="btn secondary" style="width:100%">Set Volume</button>
+            </div>
           </div>
           <div class="small muted">Writes to <code>/displays/{id}</code> (keeps its dealership field).</div>
         </div>
@@ -256,7 +328,7 @@
     // ========= HELPERS =========
     const $ = s => document.querySelector(s);
     const listEl = id => document.getElementById(id);
-    function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),1800); }
+    function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2000); }
     function htmlEscape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
     const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
 
@@ -334,6 +406,7 @@
       const base = (name||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24);
       return base || ('dealer_' + Date.now());
     }
+
     async function refreshDealers(keepSelection=false){
       const list = listEl('dealerList'); list.innerHTML='';
       const selDisplays = $('#dealerForDisplays');
@@ -459,8 +532,8 @@
                 <span class="muted small">VOL</span>
                 <input type="range" min="0" max="100" value="${st.volume ?? 0}" data-id="${id}" class="vslider"/>
               </div>
-              <button class="toggle" data-id="${id}" data-muted="${!!st.muted}">${st.muted?'Unmute':'Mute'}</button>
-              <button class="btn secondary small" onclick="removeDisplayPrompt('${did}','${id}')">Remove</button>
+              <button class="btn secondary small" data-id="${id}" data-muted="${!!st.muted}">${st.muted?'Unmute':'Mute'}</button>
+              <button class="btn danger small" onclick="removeDisplayPrompt('${did}','${id}')">Remove</button>
             </div>`;
           ul.appendChild(li);
         });
@@ -481,7 +554,7 @@
             debouncedWrite(id, v);
           });
         });
-        ul.querySelectorAll('.toggle').forEach(el=>{
+        ul.querySelectorAll('.btn.secondary.small[data-id]').forEach(el=>{
           el.addEventListener('click', async ()=>{
             const id = el.getAttribute('data-id');
             const cur = el.getAttribute('data-muted') === 'true';
@@ -490,7 +563,7 @@
         });
       };
 
-      // First try live query by dealership
+      // Live query by dealership
       const qRef = query(ref(db, 'displays'), orderByChild('dealership'), equalTo(did));
       const off = onValue(qRef, (snap)=> render(snap.val()||{}), (err)=>{ console.warn(err); });
       displaysUnsub = ()=> off();
@@ -630,12 +703,15 @@
     }
 
     async function refreshUsers(){
-      const list = listEl('userList'); list.innerHTML='';
+      const grid = $('#userList'); grid.innerHTML='';
       const search = ($('#userSearch').value || '').toLowerCase();
       const fDid   = $('#filterDealer').value;
       const fRole  = $('#filterRole').value;
 
-      // get users
+      // load dealers once for selects
+      const dealers = await loadDealersMap();
+
+      // load users
       let map={};
       try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
       const rows = Object.entries(map).map(([uid,v])=>({uid,...v}));
@@ -650,49 +726,105 @@
       });
 
       $('#userEmpty').style.display = filtered.length? 'none':'block';
+
       filtered.forEach(r=>{
-        const li=document.createElement('li'); li.className='item'+(r.role==='disabled'?' muted-row':'');
         const dealer = r.dealershipName || r.dealershipId || '—';
-        li.innerHTML=`
-          <div class="col">
-            <div class="split"><b>${htmlEscape(r.name||'No name')}</b><span class="muted">(${htmlEscape(r.email||'')})</span></div>
-            <span class="muted small">${htmlEscape(r.role||'user')} • ${htmlEscape(dealer)}</span>
+        const card = document.createElement('div');
+        card.className = 'user-card';
+        card.innerHTML = `
+          <div class="user-header">
+            <div class="user-name">${htmlEscape(r.name||'No name')}</div>
+            <div class="user-sub">
+              <span>${htmlEscape(r.email||'')}</span>
+              <span class="badge">${htmlEscape(r.role||'user')}</span>
+              <span class="badge">${htmlEscape(dealer)}</span>
+            </div>
           </div>
-          <div class="split">
-            <button class="btn secondary small" onclick="promoteUser('${r.uid}','user')">User</button>
-            <button class="btn secondary small" onclick="promoteUser('${r.uid}','admin')">Admin</button>
-            <button class="btn secondary small" onclick="moveUserDealerPrompt('${r.uid}','${htmlEscape(r.dealershipId||'')}')">Move</button>
-            <button class="btn secondary small" onclick="resetUser('${htmlEscape(r.email||'')}')">Reset</button>
-            <button class="btn ${r.role==='disabled'?'secondary':'danger'} small" onclick="toggleDisable('${r.uid}','${r.role||'user'}')">${r.role==='disabled'?'Enable':'Disable'}</button>
-          </div>`;
-        list.appendChild(li);
+          <div class="user-controls">
+            <select data-uid="${r.uid}" class="select roleSel">
+              ${['user','admin','disabled'].map(v=>`<option value="${v}" ${v===(r.role||'user')?'selected':''}>${v}</option>`).join('')}
+            </select>
+            <select data-uid="${r.uid}" class="select dealerSel">
+              ${Object.entries(dealers).map(([id, nm])=>`<option value="${id}" ${id===(r.dealershipId||'')?'selected':''}>${nm}</option>`).join('')}
+            </select>
+          </div>
+          <div class="user-actions">
+            <button class="btn secondary small resetBtn" data-email="${htmlEscape(r.email||'')}">Reset password</button>
+            <button class="btn ${ (r.role==='disabled')?'secondary':'danger' } small toggleBtn" data-uid="${r.uid}" data-role="${r.role||'user'}">${ (r.role==='disabled')?'Enable':'Disable' }</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      // wire role changes
+      grid.querySelectorAll('.roleSel').forEach(sel=>{
+        sel.addEventListener('change', async (e)=>{
+          const uid = e.target.getAttribute('data-uid');
+          const role = e.target.value;
+          try{ await update(ref(db,`user/${uid}`),{role}); toast('Role updated'); await refreshUsers(); }
+          catch(err){ console.error(err); toast('Update failed', true); }
+        });
+      });
+      // wire dealer changes
+      grid.querySelectorAll('.dealerSel').forEach(sel=>{
+        sel.addEventListener('change', async (e)=>{
+          const uid = e.target.getAttribute('data-uid');
+          const did = e.target.value;
+          let name = dealers[did] || did;
+          try{ await update(ref(db,`user/${uid}`), { dealershipId: did, dealershipName: name }); toast('Moved'); }
+          catch(err){ console.error(err); toast('Move failed', true); }
+        });
+      });
+      // reset
+      grid.querySelectorAll('.resetBtn').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const email = btn.getAttribute('data-email');
+          if(!email) return toast('No email', true);
+          try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }
+          catch(err){ console.error(err); toast('Reset failed', true); }
+        });
+      });
+      // disable/enable
+      grid.querySelectorAll('.toggleBtn').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const uid = btn.getAttribute('data-uid');
+          const role= btn.getAttribute('data-role') || 'user';
+          const next = role==='disabled' ? 'user' : 'disabled';
+          try{
+            await update(ref(db,`user/${uid}`), { role: next, disabledAt: next==='disabled'?Date.now():null });
+            toast(next==='disabled'?'User disabled':'User enabled');
+            await refreshUsers();
+          }catch(err){ console.error(err); toast('Change failed', true); }
+        });
       });
     }
 
-    window.promoteUser = async (uid, role)=>{
-      try{ await update(ref(db,`user/${uid}`),{role}); toast('Role updated'); await refreshUsers(); }
-      catch(e){ console.error(e); toast('Update failed', true); }
-    };
-    window.toggleDisable = async (uid, role)=>{
-      const next = role==='disabled' ? 'user' : 'disabled';
-      try{ await update(ref(db,`user/${uid}`), { role: next, disabledAt: next==='disabled'?Date.now():null }); toast(next==='disabled'?'User disabled':'User enabled'); await refreshUsers(); }
-      catch(e){ console.error(e); toast('Change failed', true); }
-    };
-    window.moveUserDealerPrompt = async (uid, cur)=>{
-      const did = prompt('Move to dealership ID:', cur||'');
-      if(!did || did===cur) return;
-      try{
-        let name = did;
-        const p = await get(ref(db,`dealershipPublic/${did}`)); if(p.exists()) name=p.val()?.name||did;
-        await update(ref(db,`user/${uid}`), { dealershipId: did, dealershipName: name });
-        toast('Moved'); await refreshUsers();
-      }catch(e){ console.error(e); toast('Move failed', true); }
-    };
-    window.resetUser = async (email)=>{
-      if(!email) return toast('No email', true);
-      try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }
-      catch(e){ console.error(e); toast('Reset failed', true); }
-    };
+    async function loadDealersMap(){
+      let map={};
+      try{ const pub = await get(ref(db,'dealershipPublic')); if(pub.exists()) map = Object.fromEntries(Object.entries(pub.val()).map(([k,v])=>[k, v?.name||k])); }catch(e){}
+      if(Object.keys(map).length===0){
+        try{ const d = await get(ref(db,'dealership')); if(d.exists()) map = Object.fromEntries(Object.entries(d.val()).map(([k,v])=>[k, v?.name||k])); }catch(e){}
+      }
+      // also refresh dropdown filters
+      const selFilter   = $('#filterDealer');
+      const selUserForm = $('#userDealer');
+      const selDisp     = $('#dealerForDisplays');
+      const prevF = selFilter.value, prevU = selUserForm.value, prevD = selDisp.value;
+
+      selFilter.innerHTML = '<option value="">All dealerships</option>';
+      selUserForm.innerHTML = '<option value="">Dealership…</option>';
+      if(!selDisp.value){ /* keep whatever was there */ }
+
+      for(const [id,name] of Object.entries(map).sort((a,b)=>a[1].localeCompare(b[1]))){
+        const optF = document.createElement('option'); optF.value=id; optF.textContent=name; selFilter.appendChild(optF);
+        const optU = document.createElement('option'); optU.value=id; optU.textContent=name; selUserForm.appendChild(optU);
+        // dealerForDisplays options are filled in refreshDealers()
+      }
+      selFilter.value = prevF || '';
+      selUserForm.value = prevU || '';
+
+      return map;
+    }
 
     // ========= QUICK TOOLS =========
     $('#applyForceBtn').addEventListener('click', async ()=>{
