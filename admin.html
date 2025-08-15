@@ -2,13 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no"
-  />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>IPTV — Admin Console</title>
 
-  <!-- (optional) manifest/icons to match your app -->
+  <!-- (optional) PWA bits to match your app -->
   <link rel="manifest" href="/IPTV-/manifest.webmanifest" />
   <meta name="theme-color" content="#000000" />
   <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png" />
@@ -18,55 +15,78 @@
   <style>
     :root{
       --bg:#0b0b0c;--fg:#fff;--muted:#9a9aa0;--panel:#121214;--border:rgba(255,255,255,.14);
-      --accent:#ff9500;--shadow:0 18px 48px rgba(0,0,0,.45);--tile:#17171a;--tileActive:#1d1d21
+      --accent:#ff9500;--tile:#17171a;--tileActive:#1d1d21;--shadow:0 18px 48px rgba(0,0,0,.45)
     }
+    body.light{
+      --bg:#f5f5f7;--fg:#111;--muted:#6e6e73;--panel:#fff;--border:rgba(0,0,0,.12);
+      --tile:#f2f2f7;--tileActive:#eaeaef;--shadow:0 14px 36px rgba(0,0,0,.10)
+    }
+    *{box-sizing:border-box}
     body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;margin:0;padding:18px}
-    .wrap{max-width:1100px;margin:0 auto}
-    .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .wrap{max-width:1200px;margin:0 auto}
+
+    .topbar{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:14px}
+    .lhs{display:flex;align-items:center;gap:10px}
     .title{font-weight:900;letter-spacing:.3px}
-    .pill{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer}
+    .chip{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);display:inline-flex;align-items:center;gap:8px}
+    .btn-pill{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:13px;font-weight:800;cursor:pointer}
+    .btn-ghost{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:700;cursor:pointer}
+    .muted{color:var(--muted);font-size:12px}
 
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-    @media (max-width:980px){ .grid{grid-template-columns:1fr} }
+    @media (max-width:1020px){.grid{grid-template-columns:1fr}}
 
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:16px 16px 12px;box-shadow:var(--shadow)}
-    .card h2{font-size:16px;margin:0 0 10px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:16px;box-shadow:var(--shadow)}
+    .card h2{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px;font-size:16px}
+    .card h2 .actions{display:flex;gap:8px}
+
     .row{display:grid;grid-template-columns:1fr auto;gap:10px;margin:10px 0}
     .row3{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin:10px 0}
     .row4{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin:10px 0}
+
     .input,.select{width:100%;padding:12px 12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
     .input::placeholder{color:var(--muted)}
-    .btn{padding:12px 14px;border-radius:12px;background:var(--accent);border:0;color:#000;font-weight:800;cursor:pointer}
+    .btn{padding:12px 14px;border-radius:12px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
     .btn.secondary{background:var(--tile);color:var(--fg);border:1px solid var(--border)}
-    .list{margin:8px 0 0;padding:0;list-style:none}
-    .item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin:6px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px}
-    .muted{color:var(--muted);font-size:12px}
-    .hint{font-size:12px;color:var(--muted);margin-top:4px}
+    .btn.danger{background:#ff453a;color:#fff}
+    .small{font-size:12px}
 
-    .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:800;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
+    .list{margin:8px 0 0;padding:0;list-style:none}
+    .item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;margin:6px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px}
+    .split{display:flex;align-items:center;gap:8px}
+    .col{display:flex;flex-direction:column}
+    .empty{padding:12px;border:1px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center}
+
+    .vol{display:flex;align-items:center;gap:8px}
+    .vol input[type="range"]{width:130px;accent-color:var(--accent)}
+    .tag{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:transparent;font-size:12px;color:var(--muted)}
+    .toggle{padding:8px 10px;border:1px solid var(--border);background:transparent;border-radius:10px;cursor:pointer}
+
+    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
     .toast.show{opacity:1}
     .toast.err{background:#ff453a;color:#fff}
-
-    .danger{color:#ff453a;border-color:#ff453a}
-    .danger-btn{background:#ff453a;color:#fff}
-    .muted-row{opacity:.6}
-
-    .empty{padding:12px;border:1px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center}
   </style>
 </head>
 <body>
   <div class="wrap">
     <!-- Top -->
     <div class="topbar">
-      <div class="title">IPTV — Admin Console</div>
-      <div>
+      <div class="lhs">
+        <div class="title">IPTV — Admin Console</div>
+        <div class="chip">
+          <span>Theme</span>
+          <button id="themeBtn" class="btn-ghost">🌙 / ☀️</button>
+        </div>
+        <button id="reloadBtn" class="btn-ghost">Reload</button>
+      </div>
+      <div class="rhs">
         <span id="adminEmail" class="muted"></span>
-        <button id="signOutBtn" class="pill">Sign out</button>
+        <button id="signOutBtn" class="btn-pill">Sign out</button>
       </div>
     </div>
 
     <!-- Login -->
-    <div id="loginBox" class="card" style="max-width:420px; margin:10px auto 0; display:none;">
+    <div id="loginBox" class="card" style="max-width:460px;margin:0 auto 12px;display:none">
       <h2>Admin Sign In</h2>
       <div class="row">
         <input id="email" class="input" type="email" placeholder="Email" autocomplete="email" />
@@ -76,13 +96,13 @@
         <button id="loginBtn" class="btn">Sign in</button>
         <button id="resetBtn" class="btn secondary">Send reset link</button>
       </div>
-      <div class="hint">This page is only usable by accounts with role: <b>admin</b>.</div>
+      <div class="small muted">Only accounts with <b>role: "admin"</b> in <code>/user/{uid}</code> can access.</div>
     </div>
 
     <!-- Not admin -->
-    <div id="notAdmin" class="card" style="display:none; max-width:700px; margin:0 auto;">
+    <div id="notAdmin" class="card" style="display:none;max-width:720px;margin:0 auto 12px">
       <h2>Not authorized</h2>
-      <div class="muted">This console is only for admins. Ask an admin to set your role to <b>admin</b> in the database.</div>
+      <div class="muted small">Ask an admin to set your role to <b>admin</b> in the database.</div>
     </div>
 
     <!-- Admin content -->
@@ -90,27 +110,38 @@
       <div class="grid">
         <!-- Dealerships -->
         <div class="card">
-          <h2>Dealerships</h2>
-
+          <h2>
+            Dealerships
+            <span class="actions">
+              <button id="dealersReload" class="btn secondary small">Reload</button>
+            </span>
+          </h2>
           <div class="row">
             <input id="dealerName" class="input" placeholder="New dealership name (e.g., Genesis Winnipeg)" />
             <button id="addDealerBtn" class="btn">Add</button>
           </div>
-          <div class="hint">Creates both <code>/dealership/{id}</code> and <code>/dealershipPublic/{id}</code>. ID is auto from name.</div>
-
+          <div class="small muted">Creates <code>/dealership/{id}</code> and <code>/dealershipPublic/{id}</code>. ID auto-generated from name.</div>
           <ul id="dealerList" class="list"></ul>
-          <div id="dealerEmpty" class="empty" style="display:none">No dealerships yet.</div>
+          <div id="dealerEmpty" class="empty" style="display:none">No dealerships.</div>
         </div>
 
         <!-- Displays -->
         <div class="card">
-          <h2>Displays</h2>
+          <h2>
+            Displays
+            <span class="actions">
+              <button id="bulkMute" class="btn secondary small">Mute all</button>
+              <button id="bulkUnmute" class="btn secondary small">Unmute all</button>
+              <button id="bulkCh1" class="btn secondary small">All → CH1</button>
+              <button id="displaysReload" class="btn secondary small">Reload</button>
+            </span>
+          </h2>
 
           <div class="row3">
             <select id="dealerForDisplays" class="select">
               <option value="">Select dealership…</option>
             </select>
-            <input id="newDisplayId" class="input" placeholder="Optional ID (auto if empty)" />
+            <input id="newDisplayId" class="input" placeholder="Optional display ID (auto if empty)" />
             <button id="addDisplayBtn" class="btn">Add TV</button>
           </div>
 
@@ -120,7 +151,12 @@
 
         <!-- Users -->
         <div class="card">
-          <h2>Users</h2>
+          <h2>
+            Users
+            <span class="actions">
+              <button id="usersReload" class="btn secondary small">Reload</button>
+            </span>
+          </h2>
 
           <div class="row4">
             <input id="userEmail" class="input" placeholder="user@email.com" />
@@ -137,13 +173,18 @@
             <button id="createUserBtn" class="btn">Create User</button>
             <button id="inviteUserBtn" class="btn secondary">Send Reset (existing)</button>
           </div>
-          <div class="hint">New user is created without logging you out (uses a temporary hidden Firebase app) and receives a password reset email.</div>
 
-          <div class="row">
+          <div class="row3">
+            <input id="userSearch" class="input" placeholder="Search name or email…" />
             <select id="filterDealer" class="select">
               <option value="">All dealerships</option>
             </select>
-            <button id="refreshUsersBtn" class="btn secondary">Refresh</button>
+            <select id="filterRole" class="select">
+              <option value="">All roles</option>
+              <option value="user">user</option>
+              <option value="admin">admin</option>
+              <option value="disabled">disabled</option>
+            </select>
           </div>
 
           <ul id="userList" class="list"></ul>
@@ -165,7 +206,11 @@
             </select>
             <button id="applyForceBtn" class="btn">Apply</button>
           </div>
-          <div class="hint">Writes to <code>/displays/{id}</code> (keeps its dealership).</div>
+          <div class="row">
+            <input id="forceVolume" class="input" type="number" min="0" max="100" placeholder="Volume 0–100" />
+            <button id="applyVolumeBtn" class="btn secondary">Set Volume</button>
+          </div>
+          <div class="small muted">Writes to <code>/displays/{id}</code> (keeps its dealership field).</div>
         </div>
       </div>
     </div>
@@ -177,12 +222,13 @@
     import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import {
       getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword,
-      onAuthStateChanged, sendPasswordResetEmail, signOut
+      onAuthStateChanged, sendPasswordResetEmail, signOut, createUserWithEmailAndPassword
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import {
       getDatabase, ref, get, set, update, remove, onValue, query, orderByChild, equalTo
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
+    // ========= CONFIG =========
     const firebaseConfig = {
       apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
       authDomain: "iptv-bfa.firebaseapp.com",
@@ -193,33 +239,42 @@
       appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
     };
 
-    // Main app
+    // ========= APP INIT =========
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    // UI helpers
-    const $ = s => document.querySelector(s);
-    const listEl = (id) => document.getElementById(id);
-    function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'), 2000); }
+    // ========= THEME =========
+    const savedTheme = localStorage.getItem('iptv_theme') || 'light';
+    document.body.classList.toggle('light', savedTheme === 'light');
+    document.getElementById('themeBtn').addEventListener('click', ()=>{
+      const isLight = !document.body.classList.contains('light');
+      document.body.classList.toggle('light', isLight);
+      localStorage.setItem('iptv_theme', isLight ? 'light' : 'dark');
+    });
 
-    // Auth UI
+    // ========= HELPERS =========
+    const $ = s => document.querySelector(s);
+    const listEl = id => document.getElementById(id);
+    function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),1800); }
+    function htmlEscape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+    const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+
+    // ========= AUTH UI =========
     $('#loginBtn').addEventListener('click', doLogin);
     $('#resetBtn').addEventListener('click', async ()=>{
       const email = $('#email').value.trim();
       if(!email) return toast('Enter email', true);
-      try{ await sendPasswordResetEmail(getAuth(app), email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed', true); }
+      try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed', true); }
     });
     $('#signOutBtn').addEventListener('click', ()=>signOut(auth));
+    $('#reloadBtn').addEventListener('click', reloadAll);
 
     async function doLogin(){
-      const email=$('#email').value.trim();
-      const pass=$('#password').value;
+      const email=$('#email').value.trim(), pass=$('#password').value;
       if(!email||!pass) return toast('Fill email & password', true);
-      try{
-        await setPersistence(auth, browserLocalPersistence);
-        await signInWithEmailAndPassword(auth, email, pass);
-      }catch(e){ console.error(e); toast('Sign-in failed', true); }
+      try{ await setPersistence(auth, browserLocalPersistence); await signInWithEmailAndPassword(auth,email,pass); }
+      catch(e){ console.error(e); toast('Sign-in failed', true); }
     }
 
     onAuthStateChanged(auth, async (user)=>{
@@ -232,7 +287,7 @@
       }
       $('#adminEmail').textContent = user.email || user.uid;
 
-      // Check admin
+      // check admin
       const uSnap = await get(ref(db, `user/${user.uid}`));
       const u = uSnap.val() || {};
       if(u.role !== 'admin'){
@@ -242,17 +297,23 @@
         return;
       }
 
-      // Admin OK
+      // admin OK
       $('#loginBox').style.display='none';
       $('#notAdmin').style.display='none';
       $('#adminContent').style.display='block';
 
-      // Load data
-      await refreshDealers(); // also populates selects for other sections
-      await refreshUsers();   // list users
+      await reloadAll();
     });
 
-    // ---------- Dealerships ----------
+    // ========= RELOAD EVERYTHING =========
+    async function reloadAll(){
+      await refreshDealers();   // fills dealer list + select boxes
+      await refreshUsers();     // fills users
+      const did = $('#dealerForDisplays').value;
+      if(did) await watchDisplays(did);
+    }
+
+    // ========= DEALERSHIPS =========
     $('#addDealerBtn').addEventListener('click', async ()=>{
       const name = $('#dealerName').value.trim();
       if(!name) return toast('Enter a name', true);
@@ -261,7 +322,18 @@
       await refreshDealers(true);
       toast('Dealership added');
     });
+    $('#dealersReload').addEventListener('click', ()=>refreshDealers(true));
 
+    async function createDealership(name){
+      const id = makeDealerId(name);
+      const dealer = { name, createdAt: Date.now(), createdBy: auth.currentUser?.email || 'admin', displays: {} };
+      await set(ref(db, `dealership/${id}`), dealer);
+      await set(ref(db, `dealershipPublic/${id}`), { name });
+    }
+    function makeDealerId(name){
+      const base = (name||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24);
+      return base || ('dealer_' + Date.now());
+    }
     async function refreshDealers(keepSelection=false){
       const list = listEl('dealerList'); list.innerHTML='';
       const selDisplays = $('#dealerForDisplays');
@@ -272,63 +344,47 @@
       const prevUserSel = selUsers.value;
       const prevFilter  = selFilter.value;
 
-      // read from dealershipPublic first (friendly names)
+      // prefer dealershipPublic (friendly names)
       let map = {};
-      try{
-        const pub = await get(ref(db, 'dealershipPublic'));
-        if(pub.exists()) map = pub.val();
-      }catch(e){}
-
-      // if empty, fall back to /dealership
+      try{ const pub = await get(ref(db, 'dealershipPublic')); if(pub.exists()) map = pub.val(); }catch(e){}
       if(!map || Object.keys(map).length===0){
-        try{
-          const d = await get(ref(db, 'dealership'));
-          if(d.exists()){
-            const raw = d.val();
-            Object.keys(raw).forEach(id => { map[id] = { name: raw[id]?.name || id }; });
-          }
-        }catch(e){}
+        try{ const d = await get(ref(db, 'dealership')); if(d.exists()){ const raw=d.val(); Object.keys(raw).forEach(id=>{ map[id]={name: raw[id]?.name||id}; }); } }catch(e){}
       }
 
-      const ids = Object.keys(map || {}).sort();
-      if(ids.length===0){ $('#dealerEmpty').style.display='block'; } else { $('#dealerEmpty').style.display='none'; }
+      const ids = Object.keys(map||{}).sort();
+      $('#dealerEmpty').style.display = ids.length? 'none':'block';
 
-      // fill selects
       selDisplays.innerHTML = '<option value="">Select dealership…</option>';
       selUsers.innerHTML    = '<option value="">Dealership…</option>';
       selFilter.innerHTML   = '<option value="">All dealerships</option>';
 
       for(const id of ids){
         const name = map[id]?.name || id;
-
-        // list row with counts
         const count = await countDisplaysForDealer(id);
+
         const li = document.createElement('li');
-        li.className='item';
+        li.className = 'item';
         li.innerHTML = `
-          <div>
-            <div><b>${name}</b></div>
-            <div class="muted">${id} • ${count} TV${count===1?'':'s'}</div>
+          <div class="col">
+            <b>${htmlEscape(name)}</b>
+            <span class="muted">${htmlEscape(id)} • ${count} TV${count===1?'':'s'}</span>
           </div>
-          <div>
-            <button data-id="${id}" class="btn secondary" style="margin-right:8px" onclick="renameDealerPrompt('${id}','${htmlEscape(name)}')">Rename</button>
-            <button data-id="${id}" class="btn danger-btn" onclick="deleteDealerPrompt('${id}')">Delete</button>
-          </div>
-        `;
+          <div class="split">
+            <button class="btn secondary small" onclick="renameDealerPrompt('${id}','${htmlEscape(name)}')">Rename</button>
+            <button class="btn danger small" onclick="deleteDealerPrompt('${id}')">Delete</button>
+          </div>`;
         list.appendChild(li);
 
-        // selects
         const opt1 = document.createElement('option'); opt1.value=id; opt1.textContent=name; selDisplays.appendChild(opt1);
         const opt2 = document.createElement('option'); opt2.value=id; opt2.textContent=name; selUsers.appendChild(opt2);
         const opt3 = document.createElement('option'); opt3.value=id; opt3.textContent=name; selFilter.appendChild(opt3);
       }
 
-      // restore selections
       if(keepSelection){
         selDisplays.value = prevDispSel || '';
         selUsers.value    = prevUserSel || '';
         selFilter.value   = prevFilter  || '';
-        if(selDisplays.value) await fillDisplays(selDisplays.value);
+        if(selDisplays.value) await watchDisplays(selDisplays.value);
       }else{
         listEl('displayList').innerHTML='';
         $('#displayEmpty').style.display='block';
@@ -336,10 +392,10 @@
     }
 
     async function countDisplaysForDealer(did){
-      let n = 0;
+      let n=0;
       try{
-        const map = await get(ref(db, `dealership/${did}/displays`));
-        if(map.exists()) n = Object.keys(map.val()||{}).length;
+        const m = await get(ref(db, `dealership/${did}/displays`));
+        if(m.exists()) n = Object.keys(m.val()||{}).length;
         if(n===0){
           const qRef = query(ref(db, 'displays'), orderByChild('dealership'), equalTo(did));
           const q = await get(qRef);
@@ -349,217 +405,225 @@
       return n;
     }
 
-    // create / rename / delete dealership
-    async function createDealership(name){
-      const id = makeDealerId(name);
-      const dealer = {
-        name, createdAt: Date.now(), createdBy: auth.currentUser?.email || 'admin', displays: {}
-      };
-      await set(ref(db, `dealership/${id}`), dealer);
-      await set(ref(db, `dealershipPublic/${id}`), { name });
-    }
-
     window.renameDealerPrompt = async (id, currentName) => {
-      const name = prompt('New dealership name:', currentName || '');
+      const name = prompt('New name:', currentName || '');
       if(!name || name.trim()===currentName) return;
-      // Just update names at both places (keep same ID)
       try{
         await update(ref(db, `dealership/${id}`), { name });
         await set(ref(db, `dealershipPublic/${id}`), { name });
-        toast('Renamed');
-        await refreshDealers(true);
+        toast('Renamed'); await refreshDealers(true);
       }catch(e){ console.error(e); toast('Rename failed', true); }
     };
-
     window.deleteDealerPrompt = async (id) => {
       const count = await countDisplaysForDealer(id);
-      if(count>0){
-        alert(`This dealership still has ${count} display(s). Remove them first.`);
-        return;
-      }
-      if(!confirm(`Delete dealership ${id}? This cannot be undone.`)) return;
+      if(count>0){ alert(`This dealership still has ${count} display(s). Remove them first.`); return; }
+      if(!confirm(`Delete ${id}?`)) return;
       try{
         await remove(ref(db, `dealership/${id}`));
         await remove(ref(db, `dealershipPublic/${id}`));
-        toast('Deleted dealership');
-        await refreshDealers();
+        toast('Deleted'); await refreshDealers();
       }catch(e){ console.error(e); toast('Delete failed', true); }
     };
 
-    function makeDealerId(name){
-      const base = (name||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24);
-      return base || ('dealer_' + Date.now());
+    // ========= DISPLAYS =========
+    let displaysUnsub = null;
+    $('#dealerForDisplays').addEventListener('change', e => watchDisplays(e.target.value));
+    $('#displaysReload').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(did) watchDisplays(did,true); });
+
+    async function watchDisplays(did, forceOnce=false){
+      const ul = listEl('displayList'); ul.innerHTML='';
+      if(!did){ $('#displayEmpty').style.display='block'; if(displaysUnsub) displaysUnsub(); displaysUnsub=null; return; }
+      $('#displayEmpty').style.display='none';
+      if(displaysUnsub){ displaysUnsub(); displaysUnsub=null; }
+
+      const render = (map) => {
+        ul.innerHTML='';
+        const ids = Object.keys(map||{}).sort();
+        if(ids.length===0){ $('#displayEmpty').style.display='block'; return; }
+        ids.forEach(id=>{
+          const st = map[id] || {};
+          const li = document.createElement('li'); li.className='item';
+          li.innerHTML = `
+            <div class="col">
+              <div class="split">
+                <b>${htmlEscape(id)}</b>
+                <span class="tag">${htmlEscape(did)}</span>
+              </div>
+              <span class="muted small">CH ${st.channel ?? 1} • VOL ${st.volume ?? 0} • ${st.muted ? 'Muted' : 'Unmuted'}</span>
+            </div>
+            <div class="split">
+              <select data-id="${id}" class="select small chsel">
+                ${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===(st.channel||1)?'selected':''}>CH ${n}</option>`).join('')}
+              </select>
+              <div class="vol">
+                <span class="muted small">VOL</span>
+                <input type="range" min="0" max="100" value="${st.volume ?? 0}" data-id="${id}" class="vslider"/>
+              </div>
+              <button class="toggle" data-id="${id}" data-muted="${!!st.muted}">${st.muted?'Unmute':'Mute'}</button>
+              <button class="btn secondary small" onclick="removeDisplayPrompt('${did}','${id}')">Remove</button>
+            </div>`;
+          ul.appendChild(li);
+        });
+
+        // hook events
+        ul.querySelectorAll('.chsel').forEach(el=>{
+          el.addEventListener('change', async (e)=>{
+            const id = e.target.getAttribute('data-id');
+            const ch = parseInt(e.target.value,10);
+            await writeDisplay(id, { channel: ch });
+          });
+        });
+        const debouncedWrite = debounce(async (id,val)=>{ await writeDisplay(id, { volume: val }); }, 180);
+        ul.querySelectorAll('.vslider').forEach(el=>{
+          el.addEventListener('input', (e)=>{
+            const id = e.target.getAttribute('data-id');
+            const v = parseInt(e.target.value,10);
+            debouncedWrite(id, v);
+          });
+        });
+        ul.querySelectorAll('.toggle').forEach(el=>{
+          el.addEventListener('click', async ()=>{
+            const id = el.getAttribute('data-id');
+            const cur = el.getAttribute('data-muted') === 'true';
+            await writeDisplay(id, { muted: !cur });
+          });
+        });
+      };
+
+      // First try live query by dealership
+      const qRef = query(ref(db, 'displays'), orderByChild('dealership'), equalTo(did));
+      const off = onValue(qRef, (snap)=> render(snap.val()||{}), (err)=>{ console.warn(err); });
+      displaysUnsub = ()=> off();
+
+      if(forceOnce){
+        const once = await get(qRef);
+        render(once.val()||{});
+      }
+    }
+
+    async function writeDisplay(id, patch){
+      try{
+        const snap = await get(ref(db, `displays/${id}`));
+        const cur  = snap.val() || {};
+        await update(ref(db, `displays/${id}`), {
+          ...patch,
+          dealership: cur.dealership || cur.dealer || null,
+          timestamp: Date.now()
+        });
+        toast(`${id}: updated`);
+      }catch(e){ console.error(e); toast('Write denied', true); }
+    }
+
+    // bulk controls
+    $('#bulkMute').addEventListener('click', ()=>bulkWrite({ muted:true }));
+    $('#bulkUnmute').addEventListener('click', ()=>bulkWrite({ muted:false }));
+    $('#bulkCh1').addEventListener('click', ()=>bulkWrite({ channel:1 }));
+    async function bulkWrite(patch){
+      const did = $('#dealerForDisplays').value;
+      if(!did) return toast('Pick a dealership', true);
+      try{
+        const qRef = query(ref(db,'displays'), orderByChild('dealership'), equalTo(did));
+        const s = await get(qRef);
+        const map = s.val()||{};
+        const ids = Object.keys(map);
+        for(const id of ids){ await writeDisplay(id, patch); }
+        toast('Applied to all TVs');
+      }catch(e){ console.error(e); toast('Bulk failed', true); }
+    }
+
+    // add/remove TV
+    $('#addDisplayBtn').addEventListener('click', async ()=>{
+      const did = $('#dealerForDisplays').value;
+      if(!did) return toast('Pick a dealership', true);
+      let id = $('#newDisplayId').value.trim();
+      if(!id){
+        const friendly = (await get(ref(db, `dealershipPublic/${did}`))).val()?.name || did;
+        const pref = initialsFromName(friendly);
+        const existing = await collectDisplays(did);
+        let n = nextSuffix(existing, pref);
+        id = `${pref}-${String(n).padStart(3,'0')}`;
+      }
+      try{
+        await set(ref(db, `dealership/${did}/displays/${id}`), true);
+        await update(ref(db, `displays/${id}`), { channel:1, volume:0, muted:true, dealership:did, timestamp:Date.now() });
+        $('#newDisplayId').value='';
+        toast('Display added');
+      }catch(e){ console.error(e); toast('Add failed', true); }
+    });
+    window.removeDisplayPrompt = async (did, id)=>{
+      if(!confirm(`Remove ${id}?`)) return;
+      try{
+        await remove(ref(db, `dealership/${did}/displays/${id}`));
+        await remove(ref(db, `displays/${id}`));
+        toast('Display removed');
+      }catch(e){ console.error(e); toast('Remove failed', true); }
+    };
+    async function collectDisplays(did){
+      const qRef = query(ref(db,'displays'), orderByChild('dealership'), equalTo(did));
+      const s = await get(qRef);
+      return Object.keys(s.val()||{});
     }
     function initialsFromName(name){
       const raw=(name||'').trim();
       if(!raw) return 'DS';
       let parts = raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g) || raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g) || [];
-      let first = parts[0]||'', second=parts[1]||'';
-      let pref = '';
-      if(first) pref += first[0];
-      if(second) pref += second[0];
-      if(pref.length<2 && first.length>=2) pref = first.slice(0,2);
-      return pref.toUpperCase();
+      let a=parts[0]||'', b=parts[1]||'';
+      let p = (a? a[0]:'') + (b? b[0]:'');
+      if(p.length<2 && a.length>=2) p = a.slice(0,2);
+      return p.toUpperCase();
     }
-
-    // ---------- Displays ----------
-    $('#dealerForDisplays').addEventListener('change', async (e)=>{
-      const did = e.target.value;
-      await fillDisplays(did);
-    });
-
-    async function fillDisplays(did){
-      const ul = listEl('displayList'); ul.innerHTML='';
-      if(!did){ $('#displayEmpty').style.display='block'; return; }
-      let ids=[];
-      try{
-        const m = await get(ref(db, `dealership/${did}/displays`));
-        if(m.exists()) ids = Object.keys(m.val()||{});
-        if(ids.length===0){
-          const qRef = query(ref(db, 'displays'), orderByChild('dealership'), equalTo(did));
-          const q = await get(qRef);
-          if(q.exists()) ids = Object.keys(q.val()||{});
-        }
-      }catch(e){}
-      if(ids.length===0){ $('#displayEmpty').style.display='block'; return; }
-      $('#displayEmpty').style.display='none';
-      ids.sort().forEach(id=>{
-        const li=document.createElement('li'); li.className='item';
-        li.innerHTML = `
-          <div>
-            <div><b>${id}</b></div>
-            <div class="muted">${did}</div>
-          </div>
-          <div>
-            <button class="btn secondary" onclick="nudgeChannel('${id}',-1)">CH −</button>
-            <button class="btn secondary" onclick="nudgeChannel('${id}',1)" style="margin-left:6px;margin-right:8px">CH +</button>
-            <button class="btn danger-btn" onclick="removeDisplayPrompt('${did}','${id}')">Remove</button>
-          </div>`;
-        ul.appendChild(li);
-      });
-    }
-
-    $('#addDisplayBtn').addEventListener('click', async ()=>{
-      const did = $('#dealerForDisplays').value;
-      if(!did) return toast('Pick a dealership', true);
-      let displayId = $('#newDisplayId').value.trim();
-      if(!displayId){
-        // auto-generate next ID
-        const nameSnap = await get(ref(db, `dealershipPublic/${did}`));
-        const friendly = nameSnap.exists() ? (nameSnap.val()?.name||did) : did;
-        const pref = initialsFromName(friendly);
-        const existing = await collectDisplaysForDealer(did);
-        let n = maxSuffix(existing, pref)+1;
-        displayId = `${pref}-${String(n).padStart(3,'0')}`;
-      }
-      try{
-        await set(ref(db, `dealership/${did}/displays/${displayId}`), true);
-        await update(ref(db, `displays/${displayId}`), {
-          channel: 1, volume: 0, muted: true, dealership: did, timestamp: Date.now()
-        });
-        $('#newDisplayId').value='';
-        toast('Display added');
-        await fillDisplays(did);
-      }catch(e){ console.error(e); toast('Add failed', true); }
-    });
-
-    window.removeDisplayPrompt = async (did, displayId) => {
-      if(!confirm(`Remove display ${displayId}?`)) return;
-      try{
-        await remove(ref(db, `dealership/${did}/displays/${displayId}`));
-        await remove(ref(db, `displays/${displayId}`));
-        toast('Display removed');
-        await fillDisplays(did);
-      }catch(e){ console.error(e); toast('Remove failed', true); }
-    };
-
-    async function collectDisplaysForDealer(did){
-      let ids=[];
-      try{
-        const m = await get(ref(db, `dealership/${did}/displays`));
-        if(m.exists()) ids = Object.keys(m.val()||{});
-        if(ids.length===0){
-          const qRef = query(ref(db, 'displays'), orderByChild('dealership'), equalTo(did));
-          const q = await get(qRef);
-          if(q.exists()) ids = Object.keys(q.val()||{});
-        }
-      }catch(e){}
-      return ids;
-    }
-    function maxSuffix(list, pref){
+    function nextSuffix(list, pref){
       let max=0;
-      list.forEach(id=>{
-        const m = id.match(new RegExp('^'+pref+'-(\\d{3})$'));
-        if(m){ const n=parseInt(m[1],10); if(n>max) max=n; }
-      });
-      return max;
+      list.forEach(id=>{ const m=id.match(new RegExp('^'+pref+'-(\\d{3})$')); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; }});
+      return max+1;
     }
 
-    window.nudgeChannel = async (displayId, delta)=>{
-      try{
-        const snap = await get(ref(db, `displays/${displayId}`));
-        const st = snap.val() || {};
-        const next = Math.max(1, Math.min(5, (st.channel||1)+delta));
-        await update(ref(db, `displays/${displayId}`), { channel: next, timestamp: Date.now() });
-        toast(`${displayId}: CH ${next}`);
-      }catch(e){ console.error(e); toast('Update failed', true); }
-    };
-
-    // ---------- Users ----------
-    $('#createUserBtn').addEventListener('click', createUserAdminSafe);
+    // ========= USERS =========
+    $('#usersReload').addEventListener('click', refreshUsers);
     $('#inviteUserBtn').addEventListener('click', async ()=>{
       const email = $('#userEmail').value.trim();
       if(!email) return toast('Enter email', true);
       try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed', true); }
     });
-    $('#refreshUsersBtn').addEventListener('click', refreshUsers);
+    $('#createUserBtn').addEventListener('click', createUserAdminSafe);
+    $('#userSearch').addEventListener('input', debounce(refreshUsers, 200));
     $('#filterDealer').addEventListener('change', refreshUsers);
+    $('#filterRole').addEventListener('change', refreshUsers);
 
     async function createUserAdminSafe(){
       const email = $('#userEmail').value.trim();
       const name  = $('#userName').value.trim();
       const role  = $('#userRole').value;
       const did   = $('#userDealer').value;
-      if(!email || !name || !role || !did) return toast('Fill all user fields', true);
+      if(!email||!name||!role||!did) return toast('Fill all user fields', true);
 
-      // create auth user in a SECONDARY APP so you don’t get logged out
+      // secondary app so you remain signed-in
       const tempName = 'admin-helper-'+Date.now();
-      const tempApp = initializeApp(firebaseConfig, tempName);
+      const tempApp  = initializeApp(firebaseConfig, tempName);
       const tempAuth = getAuth(tempApp);
       try{
-        // Use a random password (they’ll reset it)
         const tmpPass = Math.random().toString(36).slice(2) + Math.random().toString(36).toUpperCase().slice(2);
-        const cred = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js')
-          .then(mod => mod.createUserWithEmailAndPassword(tempAuth, email, tmpPass));
-        const uid = cred.user.uid;
+        const cred = await createUserWithEmailAndPassword(tempAuth, email, tmpPass);
+        const uid  = cred.user.uid;
 
-        // get dealer name
+        // dealer name
         let dname = did;
-        try{
-          const p = await get(ref(db, `dealershipPublic/${did}`));
-          if(p.exists()) dname = p.val()?.name || did;
-        }catch(e){}
+        try{ const p=await get(ref(db, `dealershipPublic/${did}`)); if(p.exists()) dname=p.val()?.name||did; }catch(e){}
 
-        // attach displays of dealer (if any)
+        // displays (if any)
         let displays = [];
         const ds = await get(ref(db, `dealership/${did}/displays`));
         if(ds.exists()) displays = Object.keys(ds.val()||{});
 
-        // write profile
         await set(ref(db, `user/${uid}`), {
-          email, name, role, dealershipId: did, dealershipName: dname,
-          displays, createdAt: Date.now()
+          email, name, role, dealershipId: did, dealershipName: dname, displays, createdAt: Date.now()
         });
 
-        // send reset email
         await sendPasswordResetEmail(tempAuth, email);
-
         toast('User created + reset sent');
         await refreshUsers();
-      }catch(e){
-        console.error(e);
-        toast('Create failed', true);
-      }finally{
+      }catch(e){ console.error(e); toast('Create failed', true); }
+      finally{
         try{ await signOut(tempAuth); }catch(e){}
         try{ await deleteApp(tempApp); }catch(e){}
       }
@@ -567,79 +631,92 @@
 
     async function refreshUsers(){
       const list = listEl('userList'); list.innerHTML='';
-      const filter = $('#filterDealer').value;
+      const search = ($('#userSearch').value || '').toLowerCase();
+      const fDid   = $('#filterDealer').value;
+      const fRole  = $('#filterRole').value;
 
-      let map = {};
-      try{
-        const u = await get(ref(db, 'user'));
-        if(u.exists()) map = u.val();
-      }catch(e){}
+      // get users
+      let map={};
+      try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
+      const rows = Object.entries(map).map(([uid,v])=>({uid,...v}));
 
-      const rows = Object.entries(map).map(([uid, v])=>({uid, ...v}));
+      // sort & filter
       rows.sort((a,b)=> (a.dealershipName||a.dealershipId||'').localeCompare(b.dealershipName||b.dealershipId||'') || (a.email||'').localeCompare(b.email||''));
+      const filtered = rows.filter(r=>{
+        if(fDid && r.dealershipId!==fDid) return false;
+        if(fRole && (r.role||'user')!==fRole) return false;
+        if(search && !((r.email||'').toLowerCase().includes(search) || (r.name||'').toLowerCase().includes(search))) return false;
+        return true;
+      });
 
-      const filtered = rows.filter(r => !filter || r.dealershipId===filter);
-
-      if(filtered.length===0){ $('#userEmpty').style.display='block'; return; }
-      $('#userEmpty').style.display='none';
-
+      $('#userEmpty').style.display = filtered.length? 'none':'block';
       filtered.forEach(r=>{
         const li=document.createElement('li'); li.className='item'+(r.role==='disabled'?' muted-row':'');
-
         const dealer = r.dealershipName || r.dealershipId || '—';
-        li.innerHTML = `
-          <div>
-            <div><b>${htmlEscape(r.name||'No name')}</b> <span class="muted">(${htmlEscape(r.email||'')})</span></div>
-            <div class="muted">${htmlEscape(r.role||'user')} • ${htmlEscape(dealer)}</div>
+        li.innerHTML=`
+          <div class="col">
+            <div class="split"><b>${htmlEscape(r.name||'No name')}</b><span class="muted">(${htmlEscape(r.email||'')})</span></div>
+            <span class="muted small">${htmlEscape(r.role||'user')} • ${htmlEscape(dealer)}</span>
           </div>
-          <div>
-            <button class="btn secondary" onclick="promoteUser('${r.uid}','user')">User</button>
-            <button class="btn secondary" onclick="promoteUser('${r.uid}','admin')" style="margin:0 6px">Admin</button>
-            <button class="btn secondary" onclick="moveUserDealerPrompt('${r.uid}','${htmlEscape(r.dealershipId||'')}')">Move</button>
-            <button class="btn danger-btn" onclick="disableUser('${r.uid}')">Disable</button>
-          </div>
-        `;
+          <div class="split">
+            <button class="btn secondary small" onclick="promoteUser('${r.uid}','user')">User</button>
+            <button class="btn secondary small" onclick="promoteUser('${r.uid}','admin')">Admin</button>
+            <button class="btn secondary small" onclick="moveUserDealerPrompt('${r.uid}','${htmlEscape(r.dealershipId||'')}')">Move</button>
+            <button class="btn secondary small" onclick="resetUser('${htmlEscape(r.email||'')}')">Reset</button>
+            <button class="btn ${r.role==='disabled'?'secondary':'danger'} small" onclick="toggleDisable('${r.uid}','${r.role||'user'}')">${r.role==='disabled'?'Enable':'Disable'}</button>
+          </div>`;
         list.appendChild(li);
       });
     }
 
-    window.promoteUser = async (uid, role) =>{
-      try{ await update(ref(db, `user/${uid}`), { role }); toast('Updated role'); await refreshUsers(); }
+    window.promoteUser = async (uid, role)=>{
+      try{ await update(ref(db,`user/${uid}`),{role}); toast('Role updated'); await refreshUsers(); }
       catch(e){ console.error(e); toast('Update failed', true); }
     };
-    window.disableUser = async (uid) =>{
-      if(!confirm('Disable this user?')) return;
-      try{ await update(ref(db, `user/${uid}`), { role:'disabled', disabledAt: Date.now() }); toast('User disabled'); await refreshUsers(); }
-      catch(e){ console.error(e); toast('Disable failed', true); }
+    window.toggleDisable = async (uid, role)=>{
+      const next = role==='disabled' ? 'user' : 'disabled';
+      try{ await update(ref(db,`user/${uid}`), { role: next, disabledAt: next==='disabled'?Date.now():null }); toast(next==='disabled'?'User disabled':'User enabled'); await refreshUsers(); }
+      catch(e){ console.error(e); toast('Change failed', true); }
     };
-    window.moveUserDealerPrompt = async (uid, currentDid) =>{
-      const newDid = prompt('Move user to dealership ID:', currentDid || '');
-      if(!newDid || newDid===currentDid) return;
+    window.moveUserDealerPrompt = async (uid, cur)=>{
+      const did = prompt('Move to dealership ID:', cur||'');
+      if(!did || did===cur) return;
       try{
-        // find name
-        let name=newDid;
-        const p = await get(ref(db, `dealershipPublic/${newDid}`));
-        if(p.exists()) name = p.val()?.name || newDid;
-        await update(ref(db, `user/${uid}`), { dealershipId:newDid, dealershipName:name });
+        let name = did;
+        const p = await get(ref(db,`dealershipPublic/${did}`)); if(p.exists()) name=p.val()?.name||did;
+        await update(ref(db,`user/${uid}`), { dealershipId: did, dealershipName: name });
         toast('Moved'); await refreshUsers();
       }catch(e){ console.error(e); toast('Move failed', true); }
     };
+    window.resetUser = async (email)=>{
+      if(!email) return toast('No email', true);
+      try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }
+      catch(e){ console.error(e); toast('Reset failed', true); }
+    };
 
-    // ---------- Quick Tools ----------
+    // ========= QUICK TOOLS =========
     $('#applyForceBtn').addEventListener('click', async ()=>{
       const id = $('#forceDisplayId').value.trim();
       const ch = parseInt($('#forceChannel').value,10);
-      if(!id || !ch) return toast('Fill display and channel', true);
+      if(!id||!ch) return toast('Fill display & channel', true);
       try{
-        const snap = await get(ref(db, `displays/${id}`));
-        const cur  = snap.val() || {};
-        await update(ref(db, `displays/${id}`), { channel: ch, dealership: cur.dealership || cur.dealer || null, timestamp: Date.now() });
+        const snap = await get(ref(db,`displays/${id}`));
+        const cur  = snap.val()||{};
+        await update(ref(db,`displays/${id}`), { channel: ch, dealership: cur.dealership||cur.dealer||null, timestamp: Date.now() });
         toast(`CH ${ch} pushed`);
       }catch(e){ console.error(e); toast('Write failed', true); }
     });
-
-    // small utils
-    function htmlEscape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+    $('#applyVolumeBtn').addEventListener('click', async ()=>{
+      const id = $('#forceDisplayId').value.trim();
+      const v  = Math.max(0, Math.min(100, parseInt($('#forceVolume').value,10)||0));
+      if(!id) return toast('Fill display ID', true);
+      try{
+        const snap = await get(ref(db,`displays/${id}`));
+        const cur  = snap.val()||{};
+        await update(ref(db,`displays/${id}`), { volume: v, muted: v===0 ? true : (cur.muted||false), dealership: cur.dealership||null, timestamp: Date.now() });
+        toast(`VOL ${v} pushed`);
+      }catch(e){ console.error(e); toast('Write failed', true); }
+    });
   </script>
 </body>
 </html>
