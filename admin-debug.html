@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>IPTV Admin – Connectivity Tester</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#0b0b0c;color:#fff;margin:0;padding:24px}
+  .card{background:#121214;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:16px;max-width:820px;margin:0 auto 16px}
+  h1{font-size:20px;margin:0 0 12px}
+  code{background:rgba(255,255,255,.08);padding:2px 6px;border-radius:6px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .pill{padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.14)}
+  .ok{background:rgba(67,233,123,.2);border-color:#43e97b}
+  .bad{background:rgba(245,87,108,.15);border-color:#f5576c}
+  .btn{background:#ff9500;border:0;color:#000;font-weight:700;padding:10px 14px;border-radius:999px;cursor:pointer}
+  .muted{opacity:.7}
+  pre{white-space:pre-wrap;background:#0f0f10;border-radius:12px;padding:12px;overflow:auto}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>IPTV Admin – Connectivity Tester</h1>
+  <div id="authInfo" class="row"></div>
+  <div style="margin-top:12px" class="row">
+    <button class="btn" id="btnReload">Hard reload</button>
+    <button class="btn" id="btnSignOut">Sign out</button>
+  </div>
+</div>
+
+<div class="card">
+  <h1>Checks</h1>
+  <div id="checks" class="row"></div>
+  <pre id="log"></pre>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getDatabase, ref, get, child } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+  authDomain: "iptv-bfa.firebaseapp.com",
+  databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+  projectId: "iptv-bfa",
+  storageBucket: "iptv-bfa.firebasestorage.app",
+  messagingSenderId: "838790935867",
+  appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getDatabase(app);
+
+const $ = s => document.querySelector(s);
+const log = (m) => { const el = $('#log'); el.textContent += m + '\n'; };
+
+$('#btnReload').onclick = () => { if ('serviceWorker' in navigator) { caches && caches.keys().then(keys=>keys.forEach(k=>caches.delete(k))).finally(()=>location.reload(true)); } else { location.reload(true);} };
+$('#btnSignOut').onclick = () => signOut(auth);
+
+function pill(label, ok, detail=''){
+  const span = document.createElement('span');
+  span.className = 'pill ' + (ok ? 'ok':'bad');
+  span.textContent = label + (detail ? ` — ${detail}` : '');
+  return span;
+}
+
+async function tryRead(path){
+  try{
+    const snap = await get(ref(db, path));
+    if (snap.exists() || snap.val() === null) return { ok:true, detail:'OK' };
+    return { ok:true, detail:'(empty)' };
+  }catch(e){
+    return { ok:false, detail:(e?.code || e?.message || 'error') };
+  }
+}
+
+onAuthStateChanged(auth, async (user)=>{
+  const ai = $('#authInfo');
+  ai.innerHTML = '';
+  if(!user){
+    ai.append(pill('Not signed in', false));
+    log('Not signed in. Open your remote or admin page and sign in, then reopen this tester.');
+    return;
+  }
+  const uid = user.uid;
+  ai.append(pill('Signed in', true, user.email || '(no email)'));
+  ai.append(pill('UID', true, uid));
+
+  // read your role
+  let role = '(unknown)';
+  let dsId = '(unknown)';
+  try {
+    const u = await get(ref(db, 'user/'+uid));
+    if (u.exists()) {
+      role = u.val().role || '(no role)';
+      dsId = u.val().dealershipId || '(no dealershipId)';
+    }
+  } catch(e){ /* ignore */ }
+  ai.append(pill('role', role==='admin', role));
+  ai.append(pill('dealershipId', true, dsId));
+
+  // Now run the path checks the admin page needs
+  const checks = $('#checks'); checks.innerHTML = '';
+  for (const path of ['dealership','dealershipPublic','displays','user']){
+    const r = await tryRead(path);
+    checks.append(pill('/'+path, r.ok, r.detail));
+    log(`GET /${path}: ${r.ok?'OK':'FAIL'} ${r.detail}`);
+  }
+
+  // Also test a single display read using your dealershipId (common failure)
+  if (dsId && dsId !== '(unknown)'){
+    // guess a display under your dealership: /dealership/{dsId}/displays
+    try{
+      const dlist = await get(ref(db, `dealership/${dsId}/displays`));
+      if (dlist.exists()){
+        const first = Object.keys(dlist.val())[0];
+        if (first){
+          const r = await tryRead(`displays/${first}`);
+          $('#checks').append(pill(`/displays/${first}`, r.ok, r.detail));
+          log(`GET /displays/${first}: ${r.ok?'OK':'FAIL'} ${r.detail}`);
+        }
+      }
+    }catch(e){}
+  }
+});
+</script>
+</body>
+</html>
