@@ -86,7 +86,16 @@
     .user-actions{display:flex;gap:8px;flex-wrap:wrap}
     @media (max-width:420px){ .user-controls{grid-template-columns:1fr} }
 
-    /* Toast */
+    /* Apps / Quick Links */
+    .apps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    @media (max-width:1060px){ .apps-grid{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:560px){ .apps-grid{grid-template-columns:1fr} }
+    .app-tile{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:16px;background:var(--tile);text-decoration:none;color:inherit;transition:transform .1s, box-shadow .2s, border-color .2s}
+    .app-tile:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 8px 22px rgba(255,149,0,.15)}
+    .app-emoji{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--tileActive);border:1px solid var(--border);font-size:20px}
+    .app-info{display:flex;flex-direction:column;gap:2px}
+    .app-title{font-weight:800}
+    .app-desc{font-size:12px;color:var(--muted)}
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
     .toast.show{opacity:1}
     .toast.err{background:#ff453a;color:#fff}
@@ -202,7 +211,6 @@
             </span>
           </h2>
 
-          <!-- Create user panel -->
           <div class="row4">
             <div>
               <div class="label">Email</div>
@@ -231,7 +239,6 @@
             <button id="inviteUserBtn" class="btn secondary">Send Reset (existing)</button>
           </div>
 
-          <!-- Filters -->
           <div class="user-filters">
             <input id="userSearch" class="input" placeholder="Search name or email…" />
             <select id="filterDealer" class="select">
@@ -245,7 +252,6 @@
             </select>
           </div>
 
-          <!-- List -->
           <div id="userList" class="user-grid"></div>
           <div id="userEmpty" class="empty" style="display:none">No users.</div>
         </div>
@@ -284,6 +290,12 @@
           </div>
           <div class="small muted">Writes to <code>/displays/{id}</code> (keeps its dealership field).</div>
         </div>
+
+        <!-- Apps / Quick Links -->
+        <div class="card">
+          <h2>Apps / Quick Links</h2>
+          <div id="appsGrid" class="apps-grid"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -311,6 +323,22 @@
       appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
     };
 
+    // ========= QUICK LINKS =========
+    // Edit these if you need to add/remove links.
+    const QUICK_LINKS = [
+      { emoji:'🔥', title:'Firebase — Overview', href:'https://console.firebase.google.com/project/iptv-bfa/overview', desc:'Console home' },
+      { emoji:'🗄️', title:'Firebase — Database', href:'https://console.firebase.google.com/project/iptv-bfa/database/iptv-bfa-default-rtdb/data', desc:'Realtime DB data' },
+      { emoji:'👤', title:'Firebase — Auth', href:'https://console.firebase.google.com/project/iptv-bfa/authentication/users', desc:'Users & providers' },
+      { emoji:'🐙', title:'GitHub Repo', href:'https://github.com/flaviothebfagroup/IPTV-', desc:'Source code' },
+      { emoji:'🌐', title:'GitHub Pages (Remote)', href:'https://flaviothebfagroup.github.io/IPTV-/remote-control.html', desc:'Open remote' },
+      { emoji:'📧', title:'Gmail', href:'https://mail.google.com/mail/u/0/#inbox', desc:'Primary inbox' },
+      { emoji:'📧', title:'Outlook', href:'https://outlook.office.com/mail/', desc:'Office 365 inbox' },
+      { emoji:'✅', title:'Trello — Digital Team', href:'https://trello.com/b/jHjTIrZG/digital-team', desc:'Board' },
+      { emoji:'🎛️', title:'BSN.cloud', href:'https://app.bsn.cloud/#/dashboard', desc:'BrightSign dashboard' },
+      { emoji:'🖥️', title:'Signagelive', href:'https://login.signagelive.com/', desc:'CMS login' },
+      { emoji:'📁', title:'Google Drive', href:'https://drive.google.com/drive/u/0/', desc:'My Drive' }
+    ];
+
     // ========= APP INIT =========
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -331,6 +359,28 @@
     function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2000); }
     function htmlEscape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
     const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+
+    // ========= RENDER QUICK LINKS =========
+    function renderApps(){
+      const grid = $('#appsGrid');
+      grid.innerHTML = '';
+      QUICK_LINKS.forEach(l=>{
+        const a = document.createElement('a');
+        a.className = 'app-tile';
+        a.href = l.href;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.innerHTML = `
+          <div class="app-emoji">${l.emoji}</div>
+          <div class="app-info">
+            <div class="app-title">${htmlEscape(l.title)}</div>
+            <div class="app-desc">${htmlEscape(l.desc || '')}</div>
+          </div>
+        `;
+        grid.appendChild(a);
+      });
+    }
+    renderApps();
 
     // ========= AUTH UI =========
     $('#loginBtn').addEventListener('click', doLogin);
@@ -716,7 +766,6 @@
       try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
       const rows = Object.entries(map).map(([uid,v])=>({uid,...v}));
 
-      // sort & filter
       rows.sort((a,b)=> (a.dealershipName||a.dealershipId||'').localeCompare(b.dealershipName||b.dealershipId||'') || (a.email||'').localeCompare(b.email||''));
       const filtered = rows.filter(r=>{
         if(fDid && r.dealershipId!==fDid) return false;
