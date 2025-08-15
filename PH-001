@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Signage - Live Stream Channels</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#000;color:#fff;overflow:hidden;position:relative;height:100vh;width:100vw}
+
+    /* Video */
+    .video-container{position:absolute;inset:0;background:#000}
+    video{width:100%;height:100%;object-fit:cover;background:#000}
+
+    /* Loading */
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .3s}
+    .loading-overlay.active{opacity:1;pointer-events:all}
+    .spinner{width:60px;height:60px;border:4px solid rgba(255,255,255,.1);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Channel info */
+    .channel-info{position:absolute;top:20px;left:20px;background:linear-gradient(135deg,rgba(0,0,0,.8),rgba(0,0,0,.6));backdrop-filter:blur(20px);padding:15px 25px;border-radius:15px;border:1px solid rgba(255,255,255,.1);z-index:50;opacity:0;transform:translateY(-20px);transition:all .5s cubic-bezier(.4,0,.2,1)}
+    .channel-info.show{opacity:1;transform:translateY(0)}
+    .channel-name{font-size:24px;font-weight:700;margin-bottom:5px;text-shadow:0 2px 10px rgba(0,0,0,.5)}
+    .channel-number{font-size:14px;opacity:.8;display:flex;align-items:center;gap:8px}
+    .live-indicator{display:inline-block;width:8px;height:8px;background:#ff0000;border-radius:50%;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(255,0,0,.7)}50%{opacity:.7;box-shadow:0 0 0 5px rgba(255,0,0,0)}}
+
+    /* Status */
+    .status-bar{position:absolute;bottom:20px;right:20px;background:rgba(0,0,0,.7);backdrop-filter:blur(20px);padding:12px 20px;border-radius:100px;display:flex;align-items:center;gap:12px;z-index:50;border:1px solid rgba(255,255,255,.1);font-size:13px}
+    .status-dot{width:10px;height:10px;background:#43e97b;border-radius:50%;animation:statusPulse 3s infinite}
+    .status-dot.disconnected{background:#f5576c;animation:none}
+    @keyframes statusPulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+    /* Display ID */
+    .display-id{position:absolute;bottom:20px;left:20px;background:rgba(255,255,255,.05);backdrop-filter:blur(20px);padding:10px 18px;border-radius:10px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.1);opacity:.7;transition:opacity .3s}
+
+    /* Error */
+    .error-message{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(245,87,108,.1);border:1px solid rgba(245,87,108,.3);padding:20px 30px;border-radius:15px;text-align:center;display:none;z-index:200}
+    .error-message.show{display:block}
+    .error-title{font-size:18px;margin-bottom:10px;color:#f5576c}
+    .error-text{font-size:14px;opacity:.8}
+
+    /* Transition */
+    .transition-overlay{position:absolute;inset:0;background:#000;z-index:90;opacity:0;pointer-events:none;transition:opacity .3s}
+    .transition-overlay.active{opacity:1}
+
+    /* Volume HUD */
+    .volume-control-panel{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);backdrop-filter:blur(20px);padding:15px 20px;border-radius:60px;display:flex;align-items:center;gap:15px;z-index:1000;border:1px solid rgba(255,255,255,.1);transition:opacity .3s,transform .3s;opacity:0;pointer-events:none}
+    .volume-control-panel.show{opacity:1;pointer-events:all}
+    .volume-btn{width:45px;height:45px;border-radius:50%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.2);color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s}
+    .volume-btn#muteToggle{font-size:20px}
+    .volume-btn#muteToggle.unmuted{background:rgba(67,233,123,.2);border-color:#43e97b}
+    .volume-bar{width:150px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;position:relative;overflow:hidden}
+    .volume-level{height:100%;background:linear-gradient(90deg,#43e97b,#38f9d7);border-radius:4px;width:0%;transition:width .3s;box-shadow:0 0 10px rgba(67,233,123,.5)}
+    .volume-percent{position:absolute;top:-25px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:700;color:#fff;background:rgba(0,0,0,.8);padding:2px 8px;border-radius:4px;white-space:nowrap}
+    .remote-volume-indicator{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.9);color:#fff;padding:30px 50px;border-radius:20px;font-size:48px;font-weight:700;z-index:9999;pointer-events:none;animation:fadeInOut 2s ease}
+    @keyframes fadeInOut{0%{opacity:0;transform:translate(-50%,-50%) scale(.8)}20%{opacity:1;transform:translate(-50%,-50%) scale(1)}80%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.9)}}
+  </style>
+</head>
+<body>
+  <!-- Volume HUD -->
+  <div class="volume-control-panel" id="volumeControlPanel">
+    <button class="volume-btn" onclick="toggleMute()" id="muteToggle"><span id="volumeIcon">Volume</span></button>
+    <button class="volume-btn" onclick="volumeDown()"><span>−</span></button>
+    <div class="volume-bar">
+      <div class="volume-level" id="volumeLevel"></div>
+      <span class="volume-percent" id="volumePercent">0%</span>
+    </div>
+    <button class="volume-btn" onclick="volumeUp()"><span>+</span></button>
+  </div>
+
+  <!-- Video -->
+  <div class="video-container">
+    <video id="videoPlayer" autoplay muted playsinline></video>
+  </div>
+
+  <!-- Overlays -->
+  <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
+
+  <div class="channel-info" id="channelInfo">
+    <div class="channel-name" id="channelName">News</div>
+    <div class="channel-number"><span class="live-indicator"></span><span>LIVE • Channel <span id="channelNumber">1</span></span></div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Connected</span>
+    <span>•</span>
+    <span id="currentTime">00:00</span>
+  </div>
+
+  <div class="display-id">Display ID: <strong id="displayId">DISPLAY-001</strong></div>
+
+  <div class="error-message" id="errorMessage">
+    <div class="error-title">Stream Unavailable</div>
+    <div class="error-text" id="errorText">Attempting to reconnect...</div>
+  </div>
+
+  <div class="transition-overlay" id="transitionOverlay"></div>
+
+  <!-- HLS.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
+
+  <!-- Player logic (non-module so helpers are global) -->
+  <script>
+    // =========================
+    // CONFIG (EDIT THESE TWO)
+    // =========================
+    const CONFIG = {
+      displayId: 'PH-001',               // <— change for this TV
+      dealershipName: 'PerformanceHyundai', // <— MUST match in Firebase
+     
+      channels: [
+        { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
+        { id:2, name:'Sports', url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8', type:'hls' },
+        { id:3, name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
+        { id:4, name:'Nature', url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8', type:'hls' },
+        { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
+      ]
+    };
+
+    // =========================
+    // STATE
+    // =========================
+    window.currentChannel = 1;
+    let hls = null, retryCount = 0, isTransitioning = false;
+    window.currentVolume = 0;
+    window.isMuted = true;
+    let lastVolume = 50;
+
+    document.addEventListener('DOMContentLoaded', function () {
+      initializeDisplay();
+      initVolumeControl();
+      startClock();
+      loadChannel(1);
+    });
+
+    function initializeDisplay() {
+      document.getElementById('displayId').textContent = CONFIG.displayId;
+      const video = document.getElementById('videoPlayer');
+      video.volume = 0;
+      video.addEventListener('loadstart', () => showLoading(true));
+      video.addEventListener('canplay',   () => showLoading(false));
+      video.addEventListener('error',     handleVideoError);
+      video.addEventListener('stalled',   handleStalled);
+    }
+
+    // ---------- VOLUME ----------
+    function initVolumeControl() {
+      const video = document.getElementById('videoPlayer');
+      const savedVolume = localStorage.getItem('displayVolume');
+      const savedMuted  = localStorage.getItem('displayMuted');
+      if (savedVolume !== null) { window.currentVolume = parseInt(savedVolume,10); lastVolume = window.currentVolume || 50; }
+      if (savedMuted  !== null) { window.isMuted = savedMuted === 'true'; }
+      video.volume = window.currentVolume / 100;
+      video.muted  = window.isMuted;
+      updateVolumeDisplay();
+    }
+    function toggleMute(){ window.isMuted ? mute() : unmute(); }
+    function mute(){ const v=document.getElementById('videoPlayer'); window.isMuted=true; v.muted=true; updateVolumeDisplay(); localStorage.setItem('displayMuted','true'); }
+    function unmute(){
+      const v=document.getElementById('videoPlayer');
+      if (window.currentVolume===0) window.currentVolume = lastVolume || 50;
+      window.isMuted=false; v.muted=false; v.volume=window.currentVolume/100;
+      v.play().catch(()=>{ /* ignored */ });
+      updateVolumeDisplay(); localStorage.setItem('displayMuted','false');
+    }
+    function volumeUp(){ window.currentVolume=Math.min(100,window.currentVolume+10); setVolume(window.currentVolume); if(window.currentVolume>0 && window.isMuted) unmute(); }
+    function volumeDown(){ window.currentVolume=Math.max(0,window.currentVolume-10); setVolume(window.currentVolume); if(window.currentVolume===0) window.isMuted=true; }
+    function setVolume(vol){
+      const v=document.getElementById('videoPlayer'); window.currentVolume=vol; if(vol>0) lastVolume=vol; v.volume=vol/100; updateVolumeDisplay(); localStorage.setItem('displayVolume',vol);
+      if(vol===0){ window.isMuted=true; v.muted=true; }
+    }
+    function updateVolumeDisplay(){
+      const level=document.getElementById('volumeLevel'); const percent=document.getElementById('volumePercent'); const icon=document.getElementById('volumeIcon'); const muteBtn=document.getElementById('muteToggle');
+      if(level)   level.style.width = window.currentVolume + '%';
+      if(percent) percent.textContent = window.currentVolume + '%';
+      if(icon){
+        if(window.isMuted || window.currentVolume===0){ icon.textContent='🔇'; muteBtn.classList.remove('unmuted'); }
+        else if(window.currentVolume<30){ icon.textContent='🔈'; muteBtn.classList.add('unmuted'); }
+        else if(window.currentVolume<70){ icon.textContent='🔉'; muteBtn.classList.add('unmuted'); }
+        else { icon.textContent='🔊'; muteBtn.classList.add('unmuted'); }
+      }
+    }
+    function showVolumeIndicator(){
+      let indicator = document.querySelector('.remote-volume-indicator'); if(indicator) indicator.remove();
+      const text = window.isMuted ? '🔇 Muted' : `🔊 ${window.currentVolume}%`;
+      indicator = document.createElement('div'); indicator.className='remote-volume-indicator'; indicator.textContent=text; document.body.appendChild(indicator);
+      const panel=document.getElementById('volumeControlPanel'); panel.classList.add('show'); setTimeout(()=>{ indicator.remove(); panel.classList.remove('show'); },2000);
+    }
+
+    // Expose for the realtime module to call
+    window.applyVolumeSettings = function(volume, muted){
+      const video = document.getElementById('videoPlayer');
+      let changed = false;
+      if (typeof volume === 'number' && volume !== window.currentVolume) {
+        window.currentVolume = volume;
+        video.volume = volume / 100;
+        changed = true;
+      }
+      if (typeof muted === 'boolean' && muted !== window.isMuted) {
+        window.isMuted = muted; changed = true;
+        video.muted = muted;
+        if (!muted) {
+          video.volume = window.currentVolume / 100;
+          video.play().catch(()=>{});
+        }
+      }
+      if (changed) { updateVolumeDisplay(); showVolumeIndicator(); }
+    };
+
+    // ---------- CHANNEL ----------
+    function loadChannel(channelNumber){
+      if(isTransitioning) return;
+      const channel = CONFIG.channels.find(ch=>ch.id===channelNumber);
+      if(!channel){ console.error('Channel not found:', channelNumber); return; }
+
+      isTransitioning = true;
+      const transitionOverlay = document.getElementById('transitionOverlay');
+      transitionOverlay.classList.add('active');
+
+      setTimeout(()=>{
+        window.currentChannel = channelNumber;
+        updateChannelInfo(channel);
+        const video = document.getElementById('videoPlayer');
+
+        if(Hls.isSupported()){
+          if(hls) hls.destroy();
+          hls = new Hls({
+            enableWorker:true, lowLatencyMode:true, backBufferLength:90,
+            maxBufferSize:60*1000*1000, maxBufferLength:30,
+            manifestLoadingTimeOut:10000, manifestLoadingMaxRetry:3,
+            levelLoadingTimeOut:10000, levelLoadingMaxRetry:4
+          });
+          hls.loadSource(channel.url);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, function(){
+            video.play().then(()=>{ video.volume=window.currentVolume/100; video.muted=window.isMuted; }).catch(()=>{});
+          });
+          hls.on(Hls.Events.ERROR, handleHlsError);
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')){
+          video.src = channel.url;
+          video.play().then(()=>{ video.volume=window.currentVolume/100; video.muted=window.isMuted; }).catch(()=>{});
+        } else {
+          showError('HLS not supported on this device');
+        }
+
+        setTimeout(()=>{ transitionOverlay.classList.remove('active'); isTransitioning=false; },300);
+      },300);
+    }
+
+    function updateChannelInfo(channel){
+      document.getElementById('channelName').textContent = channel.name;
+      document.getElementById('channelNumber').textContent = channel.id;
+      const info = document.getElementById('channelInfo');
+      info.classList.add('show'); setTimeout(()=>info.classList.remove('show'),5000);
+    }
+
+    // ---------- ERRORS/STATUS/UI ----------
+    function handleHlsError(event,data){
+      if (data.fatal){
+        switch(data.type){
+          case Hls.ErrorTypes.NETWORK_ERROR:
+            if(retryCount<3){ retryCount++; setTimeout(()=>{ hls.startLoad(); },2000); }
+            else { showError('Network error - Unable to load stream'); }
+            break;
+          case Hls.ErrorTypes.MEDIA_ERROR:
+            hls.recoverMediaError(); break;
+          default:
+            showError('Stream error - Reconnecting'); setTimeout(()=>{ loadChannel(window.currentChannel); },5000);
+        }
+      }
+    }
+    function handleVideoError(){ showError('Video playback error'); setTimeout(()=>{ loadChannel(window.currentChannel); },5000); }
+    function handleStalled(){ showLoading(true); }
+    function showLoading(show){ const o=document.getElementById('loadingOverlay'); if(show) o.classList.add('active'); else { o.classList.remove('active'); hideError(); } }
+    function showError(msg){ document.getElementById('errorText').textContent=msg; document.getElementById('errorMessage').classList.add('show'); }
+    function hideError(){ document.getElementById('errorMessage').classList.remove('show'); }
+    function setStatus(connected, msg) {
+      const dot = document.getElementById('statusDot');
+      const txt = document.getElementById('statusText');
+      if (!dot || !txt) return;
+      dot.classList.toggle('disconnected', !connected);
+      txt.textContent = connected ? 'Connected' : ('Disconnected — ' + (msg || 'rule denied'));
+    }
+    function startClock(){ function t(){ const now=new Date(); const time=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false}); document.getElementById('currentTime').textContent=time; } t(); setInterval(t,1000); }
+
+    document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(hls) hls.stopLoad(); } else { if(hls) hls.startLoad(); } });
+    if(navigator.userAgent.includes('BrightSign')){ setTimeout(()=>{ const v=document.getElementById('videoPlayer'); if(window.currentVolume>0 && !window.isMuted){ v.muted=false; v.volume=window.currentVolume/100; } },2000); }
+  </script>
+
+  <!-- Firebase AUTH + REALTIME (secure self-healing) -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+      authDomain: "iptv-bfa.firebaseapp.com",
+      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+      projectId: "iptv-bfa",
+      storageBucket: "iptv-bfa.firebasestorage.app",
+      messagingSenderId: "838790935867",
+      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
+
+    signInAnonymously(auth).catch(e => {
+      console.error('[auth]', e);
+      window.setStatus(false, 'anon auth failed');
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+      const displayId      = CONFIG.displayId;
+      const dealershipName = CONFIG.dealershipName;
+
+      // (a) register/update device profile so rules can read
+      try {
+        await update(ref(db, `user/${user.uid}`), {
+          role: 'device',
+          name: displayId,
+          dealershipId: dealershipName,
+          updatedAt: Date.now()
+        });
+      } catch (e) {
+        console.warn('[user write denied]', e);
+        window.setStatus(false, 'cannot write user profile'); return;
+      }
+
+      // (b) ensure displays/{displayId}.dealership == dealershipName
+      try {
+        const dRef = ref(db, `displays/${displayId}`);
+        const snap = await get(dRef);
+        if (!snap.exists()) {
+          await update(dRef, {
+            channel: 1,
+            volume: 50,
+            muted: true,
+            dealership: dealershipName,
+            timestamp: Date.now()
+          });
+        } else {
+          const cur = snap.val() || {};
+          if (cur.dealership !== dealershipName) {
+            await update(dRef, { dealership: dealershipName });
+          }
+        }
+      } catch (e) {
+        console.warn('[display setup denied]', e);
+        window.setStatus(false, 'display/dealership mismatch'); return;
+      }
+
+      // (c) live subscribe (green dot turns on if this succeeds)
+      const dref = ref(db, `displays/${displayId}`);
+      onValue(dref, (snap) => {
+        const data = snap.val();
+        if (!data) return;
+
+        if (typeof data.channel === 'number' && data.channel !== window.currentChannel) {
+          window.loadChannel(data.channel);
+        }
+        if (data.volume !== undefined || data.muted !== undefined) {
+          window.applyVolumeSettings(data.volume, data.muted);
+        }
+        window.setStatus(true, '');
+      }, (err) => {
+        console.error('[listener]', err);
+        window.setStatus(false, err?.code === 'PERMISSION_DENIED' ? 'permission denied (check dealership)' : 'listener error');
+      });
+    });
+   
+  </script>
+</body>
+</html>
