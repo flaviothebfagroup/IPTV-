@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no"
   />
   <title>IPTV Remote</title>
 
-  <!-- PWA (optional) -->
+  <!-- PWA / Icons -->
   <link rel="manifest" href="/IPTV-/manifest.webmanifest" />
   <meta name="theme-color" content="#000000" />
   <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png" />
@@ -44,24 +44,28 @@
     .link{margin-top:12px;font-size:14px;color:var(--muted)}
     .link a{color:var(--fg);text-decoration:none;border-bottom:1px dashed var(--border)}
 
-    /* Remote */
+    /* Remote shell */
     .remote{display:none;width:100%;max-width:clamp(360px,92vw,460px);background:var(--panel);border:1px solid var(--border);border-radius:42px;padding:18px;box-shadow:var(--shadow)}
 
     /* Header */
     .hdr{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
     .pill{justify-self:start;height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer}
     .selectors{justify-self:center;display:flex;gap:8px;align-items:center}
-    .select{height:34px;min-width:140px;padding:0 12px;border-radius:10px;background:var(--tile);border:1px solid var(--border);color:var(--fg);font-size:12px}
+    .select{height:34px;min-width:160px;padding:0 12px;border-radius:10px;background:var(--tile);border:1px solid var(--border);color:var(--fg);font-size:12px}
+    .select:disabled{opacity:.7}
     .theme-holder{justify-self:end}
     .theme-switch{position:relative;width:56px;height:30px;border-radius:999px;background:var(--tileActive);border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 8px;cursor:pointer}
+    .theme-switch .sun,.theme-switch .moon{font-size:14px;opacity:.55;transition:opacity .2s}
     .theme-switch .thumb{position:absolute;top:2px;left:2px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.25);transition:transform .25s}
     body.light .theme-switch .thumb{background:#000}
     .theme-switch.on{border-color:var(--accent);box-shadow:0 6px 18px rgba(255,149,0,.22)}
     .theme-switch.on .thumb{transform:translateX(26px)}
+    .theme-switch.on .sun{opacity:1}
+    .theme-switch.on .moon{opacity:.3}
 
     .rule{height:1px;background:var(--border);margin:12px 0 8px}
 
-    /* Dial */
+    /* Dial (with swipe + orange glow) */
     .dial{width:min(78vw,360px);aspect-ratio:1/1;margin:0 auto 10px;position:relative;touch-action:none}
     .dial-ring{position:absolute;inset:0;border-radius:50%;background:var(--tile);border:1px solid var(--border)}
 
@@ -70,7 +74,6 @@
       width:56%;height:56%;border-radius:50%;background:var(--panel);border:1px solid var(--border);
       display:grid;place-items:center;text-align:center;overflow:hidden;transition:box-shadow .18s,border-color .18s
     }
-    /* Strong orange blur */
     .dial-center.glow{
       box-shadow:0 0 42px rgba(255,149,0,.65),0 0 160px rgba(255,149,0,.28), inset 0 0 0 1px var(--accent);
       border-color:var(--accent)
@@ -80,7 +83,7 @@
     .dial-name{font-size:11px;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;margin-top:-2px}
     .dial-select{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:56%;height:56%;border-radius:50%;background:transparent;border:0;cursor:pointer}
 
-    /* Arrow buttons – NO border, clean icons only */
+    /* Borderless arrow buttons */
     .nav-btn{
       position:absolute;width:54px;height:54px;border:0;background:transparent;color:var(--fg);
       font-size:20px;cursor:pointer;display:grid;place-items:center;opacity:.82;transition:opacity .12s, text-shadow .12s
@@ -131,18 +134,21 @@
       <button class="pill" id="btnSignOut">Sign out</button>
 
       <div class="selectors">
-        <!-- ADMIN ONLY -->
+        <!-- ADMIN: interactive; USER: disabled with own dealership -->
         <select id="dealerPicker" class="select" style="display:none">
           <option value="">Dealership…</option>
         </select>
-        <!-- Only appears if chosen dealership has 2+ TVs -->
         <select id="displayPicker" class="select" style="display:none">
           <option value="">Display…</option>
         </select>
       </div>
 
       <div class="theme-holder">
-        <div id="hdrSwitch" class="theme-switch"><i class="thumb"></i></div>
+        <div id="hdrSwitch" class="theme-switch">
+          <span class="sun">☀️</span>
+          <span class="moon">🌙</span>
+          <i class="thumb"></i>
+        </div>
       </div>
     </div>
 
@@ -152,7 +158,7 @@
     <div class="dial" id="dial" aria-label="Ring navigation">
       <div class="dial-ring"></div>
 
-      <!-- Clean, borderless, clickable arrows -->
+      <!-- Borderless clickable arrows -->
       <button class="nav-btn nav-up"    id="btnUp">▲</button>
       <button class="nav-btn nav-down"  id="btnDown">▼</button>
       <button class="nav-btn nav-left"  id="btnLeft">◀︎</button>
@@ -220,7 +226,8 @@
     let focusedIndex = 0;
 
     let isAdmin = false;
-    let dealershipId = null;
+    let myDealershipId = null;        // user's own dealer
+    let currentDealerForControl = null; // the dealer currently controlling (admin: chosen, user: own)
     let currentDisplay = null;
     let currentDisplayDealership = null;
 
@@ -230,12 +237,12 @@
 
     let displayUnsub = null;
 
-    // Shorthands / UI helpers
+    // UI helpers
     const $  = s => document.querySelector(s);
     const $$ = s => document.querySelectorAll(s);
     const toast = (m)=>{ const t=$('#toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1300); };
 
-    // Theme
+    // Theme (icons on)
     (function(){
       const saved = localStorage.getItem('iptv_theme') || 'light';
       document.body.classList.toggle('light', saved==='light');
@@ -283,37 +290,46 @@
       const uSnap = await get(ref(db, `user/${user.uid}`));
       const u = uSnap.val() || {};
       isAdmin = (u.role === 'admin');
-      dealershipId = u.dealershipId || null;
+      myDealershipId = u.dealershipId || null;
 
-      // ADMIN: show dealer picker
+      const dealerSel = $('#dealerPicker');
+      const displaySel = $('#displayPicker');
+
       if(isAdmin){
-        $('#dealerPicker').style.display = '';
+        // Admin sees all dealers (from dealershipPublic, fallback by scanning displays)
+        dealerSel.style.display = '';
+        dealerSel.disabled = false;
         await loadDealershipsForAdmin();
         const lastDid = localStorage.getItem('iptv_admin_last_dealer');
-        if(lastDid){
-          $('#dealerPicker').value = lastDid;
-          await onDealerPicked(lastDid);
-        }
+        if(lastDid){ dealerSel.value = lastDid; await onDealerPicked(lastDid); }
       }else{
-        // USER: hide dealer picker, load their dealer
-        $('#dealerPicker').style.display = 'none';
-        if(!dealershipId){ toast('No dealership'); return; }
-        await loadDisplaysForDealer(dealershipId);
+        // User: show only their dealer in a disabled select
+        dealerSel.style.display = '';
+        dealerSel.innerHTML = '';
+        let name = myDealershipId || 'Dealership';
+        try{
+          const p = await get(ref(db, `dealershipPublic/${myDealershipId}`));
+          if(p.exists()){ name = p.val()?.name || name; }
+        }catch(e){}
+        const opt=document.createElement('option'); opt.value=myDealershipId||''; opt.textContent=name;
+        dealerSel.appendChild(opt);
+        dealerSel.disabled = true;
+        currentDealerForControl = myDealershipId;
+        await loadDisplaysForDealer(myDealershipId);
       }
 
-      // Restore last TV if present and visible
+      // Restore last TV if present & still available
       const lastDisp = localStorage.getItem('iptv_last_display');
-      if(lastDisp && $('#displayPicker').querySelector(`option[value="${lastDisp}"]`)){
-        $('#displayPicker').value = lastDisp;
+      if(lastDisp && displaySel.querySelector(`option[value="${lastDisp}"]`)){
+        displaySel.value = lastDisp;
         await switchDisplay(lastDisp);
       }
     }
 
-    // Admin: dealerships from dealershipPublic (nice names), fallback to unique from displays
+    // Admin: load dealers
     async function loadDealershipsForAdmin(){
       const sel = $('#dealerPicker');
       sel.innerHTML = '<option value="">Dealership…</option>';
-
       let added = false;
       try{
         const p = await get(ref(db, 'dealershipPublic'));
@@ -325,7 +341,7 @@
             sel.appendChild(opt); added = true;
           });
         }
-      }catch(e){ /* ignore */ }
+      }catch(e){}
 
       if(!added){
         try{
@@ -340,58 +356,44 @@
               opt.value = id; opt.textContent = id; sel.appendChild(opt);
             });
           }
-        }catch(e){ /* ignore */ }
+        }catch(e){}
       }
-
       sel.onchange = async (e)=>{ await onDealerPicked(e.target.value); };
     }
 
     async function onDealerPicked(did){
-      if(!did) { $('#displayPicker').style.display='none'; return; }
+      if(!did){ $('#displayPicker').style.display='none'; currentDealerForControl=null; return; }
       localStorage.setItem('iptv_admin_last_dealer', did);
+      currentDealerForControl = did;
       await loadDisplaysForDealer(did);
     }
 
     // Load TVs for a dealer. If 1 TV -> auto-select + hide dropdown. If 2+ -> show dropdown.
     async function loadDisplaysForDealer(did){
-      dealershipId = did;
       const dispSel = $('#displayPicker');
       dispSel.innerHTML = '<option value="">Display…</option>';
 
-      // Prefer mapping under dealership/{did}/displays
       let ids = [];
       try{
         const m = await get(ref(db, `dealership/${did}/displays`));
         if (m.exists()) ids = Object.keys(m.val() || {});
-      }catch(e){ /* ignore */ }
+      }catch(e){}
 
-      // Fallback: query displays by dealership (needs rules to allow admin read)
       if(ids.length===0){
         try{
           const qRef = query(ref(db, 'displays'), orderByChild('dealership'), equalTo(did));
           const snap = await get(qRef);
-          if (snap.exists()){
-            ids = Object.keys(snap.val() || {});
-          }
-        }catch(e){ /* ignore */ }
+          if (snap.exists()){ ids = Object.keys(snap.val() || {}); }
+        }catch(e){}
       }
 
-      // UI behavior
       if (ids.length <= 1){
-        // Hide dropdown, auto-pick if one
         dispSel.style.display = 'none';
-        if (ids.length === 1){
-          await switchDisplay(ids[0]);
-        } else {
-          currentDisplay = null;
-          toast('No TVs for this dealer');
-        }
+        if (ids.length === 1){ await switchDisplay(ids[0]); }
+        else { currentDisplay = null; toast('No TVs for this dealer'); }
       } else {
-        // Show dropdown
         ids.sort().forEach(id=>{
-          const opt=document.createElement('option');
-          opt.value=id; opt.textContent=id;
-          dispSel.appendChild(opt);
+          const opt=document.createElement('option'); opt.value=id; opt.textContent=id; dispSel.appendChild(opt);
         });
         dispSel.style.display = '';
         dispSel.onchange = async (e)=>{ if(e.target.value) await switchDisplay(e.target.value); };
@@ -403,17 +405,14 @@
       currentDisplay = id;
       localStorage.setItem('iptv_last_display', id);
 
-      // Detach previous
       if (displayUnsub) { displayUnsub(); displayUnsub=null; }
 
-      // read its dealership (never overwrite)
       try{
         const snap = await get(ref(db, `displays/${id}`));
         const v = snap.val() || {};
-        currentDisplayDealership = v.dealership || dealershipId || null;
-      }catch(e){ currentDisplayDealership = dealershipId; }
+        currentDisplayDealership = v.dealership || currentDealerForControl || myDealershipId || null;
+      }catch(e){ currentDisplayDealership = currentDealerForControl || myDealershipId; }
 
-      // live updates
       const dRef = ref(db, `displays/${id}`);
       const off = onValue(dRef, (snap)=>{
         const v = snap.val() || {};
@@ -426,7 +425,7 @@
       toast(id);
     }
 
-    // ==== DIAL / NAV ====
+    // ===== DIAL: preview + glow =====
     function previewTo(ch){
       $('#dialNumber').textContent = ch;
       $('#dialName').textContent = CHANNELS[ch] || `Channel ${ch}`;
@@ -471,6 +470,20 @@
     // Center commit
     $('#dialSelect').addEventListener('click', commitCenter);
 
+    // Swipe on dial
+    (function(){
+      const dial = $('#dial');
+      let sx=0, sy=0, tracking=false; const TH=28;
+      dial.addEventListener('pointerdown',(e)=>{ tracking=true; sx=e.clientX; sy=e.clientY; dial.setPointerCapture(e.pointerId); });
+      dial.addEventListener('pointerup',(e)=>{
+        if(!tracking) return; tracking=false;
+        const dx=e.clientX-sx, dy=e.clientY-sy;
+        if(Math.abs(dx)>Math.abs(dy) && Math.abs(dx)>TH){ moveFocus(dx>0?+1:-1,0); }
+        else if(Math.abs(dy)>TH){ moveFocus(0, dy<0?-1:+1); }
+      });
+      dial.addEventListener('pointercancel',()=>{ tracking=false; });
+    })();
+
     // Quick tiles
     for (let i=1;i<=5;i++){
       document.getElementById(`qch-${i}`).addEventListener('click', async ()=>{
@@ -500,7 +513,7 @@
       volume = Math.max(0, volume - 10); updateVolumeUI(); await writeDisplay(); toast(`VOL ${volume}`);
     });
 
-    // Write state (don’t change display.dealership)
+    // Write state (preserve display.dealership)
     async function writeDisplay(){
       if(!currentDisplay) return;
       const state = {
@@ -521,5 +534,4 @@
     previewTo(currentChannel);
   </script>
 </body>
-  
 </html>
