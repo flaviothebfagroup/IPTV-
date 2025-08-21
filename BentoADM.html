@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IPTV Admin – Firebase + GitHub</title>
+  <style>
+    :root{
+      --bg:#0b0c10;--card:#111218;--soft:#161823;--ink:#ebecf1;--muted:#a9aabb;--accent:#7aa6ff;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;--info:#38bdf8;
+      --radius:18px;--gap:14px;--shadow:0 10px 30px rgba(0,0,0,.25)
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:radial-gradient(1200px 600px at 10% -10%,#182140 0%, rgba(24,33,64,0) 60%),
+                     radial-gradient(1000px 600px at 110% 10%,#1a2a3a 0%, rgba(26,42,58,0) 55%),
+                     var(--bg);
+         color:var(--ink);font:16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
+    h1{font-weight:700;font-size:28px;letter-spacing:.2px;margin:0}
+    h2{font-weight:600;font-size:18px;margin:0 0 6px}
+    .app{max-width:1200px;margin:24px auto;padding:20px}
+    .top{display:flex;gap:var(--gap);align-items:center;justify-content:space-between;margin-bottom:18px}
+    .badge{padding:6px 10px;border-radius:999px;background:var(--soft);color:var(--muted);font-size:12px}
+    .grid{display:grid;gap:var(--gap)}
+    .grid.cols-3{grid-template-columns:1fr 1fr 1fr}
+    .grid.cols-2{grid-template-columns:1fr 1fr}
+    @media (max-width:1100px){.grid.cols-3{grid-template-columns:1fr 1fr}}
+    @media (max-width:820px){.grid.cols-3,.grid.cols-2{grid-template-columns:1fr}}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.05), transparent 30%), var(--card); border:1px solid rgba(255,255,255,.08); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow)}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    label{font-size:13px;color:var(--muted)}
+    input, select, textarea{width:100%;background:#0f1016;border:1px solid rgba(255,255,255,.12);color:var(--ink);border-radius:12px;padding:10px 12px;outline:0}
+    input:focus, select:focus, textarea:focus{border-color:var(--accent)}
+    .hint{font-size:12px;color:var(--muted)}
+    .btn{appearance:none;cursor:pointer;border:0;border-radius:12px;padding:10px 14px;background:#1c2233;color:#e9eefb;font-weight:600}
+    .btn.primary{background:linear-gradient(180deg,#7aa6ff,#5c84f9)}
+    .btn.ghost{background:#12141b;border:1px solid rgba(255,255,255,.12)}
+    .btn.warn{background:linear-gradient(180deg,#ffb454,#f08b17)}
+    .btn.ok{background:linear-gradient(180deg,#4ade80,#16a34a)}
+    .btn.info{background:linear-gradient(180deg,#60c4ff,#2ea4f3)}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .list{display:grid;gap:10px}
+    .divider{height:1px;background:linear-gradient(90deg,transparent, rgba(255,255,255,.12), transparent);margin:12px 0}
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{border-bottom:1px solid rgba(255,255,255,.08);padding:8px 6px;text-align:left;font-size:14px}
+    .table th{color:#c7c8d5;font-weight:600}
+    .pill{display:inline-flex;gap:8px;align-items:center;background:#0f1117;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.08)}
+    .status{display:inline-flex;gap:8px;align-items:center}
+    .dot{width:10px;height:10px;border-radius:50%}
+    .dot.ok{background:var(--ok)}
+    .dot.warn{background:var(--warn)}
+    .dot.err{background:var(--err)}
+    .dot.info{background:var(--info)}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    .kbd{font:12px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;background:#0f1117;border:1px solid rgba(255,255,255,.12);padding:3px 6px;border-radius:6px}
+    dialog{border:0;border-radius:16px;padding:0}
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <div class="top">
+      <div>
+        <h1>IPTV Admin</h1>
+        <div class="hint">Bento admin for <strong>Dealerships</strong>, <strong>Displays</strong>, and <strong>Users</strong> using <strong>Firebase</strong>. Optional: export snapshot to <strong>GitHub</strong>.</div>
+      </div>
+      <div class="row">
+        <span class="badge" id="fbBadge">Firebase: not connected</span>
+        <span class="badge" id="ghBadge">GitHub: not set</span>
+        <button class="btn ghost" id="btnAuth">Sign in</button>
+        <button class="btn" id="btnSettings">Settings</button>
+        <button class="btn info" id="btnExport">Sync → GitHub</button>
+      </div>
+    </div>
+
+    <!-- Bento -->
+    <div class="grid cols-3" id="bento">
+      <section class="card">
+        <h2>Dealerships</h2>
+        <div class="hint">Add and edit dealerships. Stored in Firestore collection <span class="mono">dealerships</span>.</div>
+        <div class="divider"></div>
+        <div class="list">
+          <label>Name<input id="dlrName" placeholder="e.g., Thornhill Toyota"/></label>
+          <label>Code<input id="dlrCode" placeholder="short code (optional)"/></label>
+          <label>City / Province<div class="row"><input id="dlrCity" placeholder="Toronto"/><input id="dlrProv" placeholder="ON" style="max-width:140px"/></div></label>
+          <label>Contact name<input id="dlrContact" placeholder="Jane Doe"/></label>
+          <label>Contact email<input id="dlrEmail" type="email" placeholder="manager@example.com"/></label>
+          <label>Notes<textarea id="dlrNotes" rows="2" placeholder="Any extra info"></textarea></label>
+          <div class="row"><button class="btn primary" id="btnAddDealership">Add dealership</button><span id="dlrStatus" class="status"></span></div>
+        </div>
+        <div class="divider"></div>
+        <table class="table" id="dlrTable"><thead><tr><th>Name</th><th>City</th><th>Contact</th><th>ID</th><th></th></tr></thead><tbody></tbody></table>
+      </section>
+
+      <section class="card">
+        <h2>Displays</h2>
+        <div class="hint">Attach screens to a dealership. Stored in <span class="mono">displays</span>.</div>
+        <div class="divider"></div>
+        <div class="list">
+          <label>Dealership<div><select id="dispDealership"></select></div></label>
+          <label>Screen name<input id="dispName" placeholder="Showroom TV 1"/></label>
+          <label>Device ID<input id="dispDevice" placeholder="serial or player id"/></label>
+          <label>Location<input id="dispLocation" placeholder="Front Lobby"/></label>
+          <label>Content URL<input id="dispUrl" type="url" placeholder="https://... (HLS/MP4/playlist)"/></label>
+          <label>Resolution<div class="row"><select id="dispRes"><option>1920x1080</option><option>3840x2160</option><option>1280x720</option></select><input id="dispTags" placeholder="tags (comma separated)"/></div></label>
+          <div class="row"><button class="btn primary" id="btnAddDisplay">Add display</button><span id="dispStatus" class="status"></span></div>
+        </div>
+        <div class="divider"></div>
+        <table class="table" id="dispTable"><thead><tr><th>Dealership</th><th>Name</th><th>Device</th><th>Location</th><th>URL</th><th>ID</th><th></th></tr></thead><tbody></tbody></table>
+      </section>
+
+      <section class="card">
+        <h2>Users</h2>
+        <div class="hint">Lightweight user management without Admin SDK. Creates <span class="mono">invites</span> & <span class="mono">roles</span> docs.</div>
+        <div class="divider"></div>
+        <div class="list">
+          <label>Email to invite<input id="usrEmail" type="email" placeholder="user@example.com"/></label>
+          <label>Role<select id="usrRole"><option value="viewer">viewer</option><option value="editor">editor</option><option value="admin">admin</option></select></label>
+          <div id="usrDealerships" class="list"></div>
+          <div class="row"><button class="btn primary" id="btnInvite">Save invite/role</button><span id="usrStatus" class="status"></span></div>
+        </div>
+        <div class="divider"></div>
+        <table class="table" id="inviteTable"><thead><tr><th>Email</th><th>Role</th><th>Dealerships</th><th>ID</th><th></th></tr></thead><tbody></tbody></table>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:14px">
+      <h2>Shortcuts</h2>
+      <div class="hint">Press <span class="kbd">G</span> to export to GitHub, <span class="kbd">/</span> to focus search, <span class="kbd">R</span> to refresh lists.</div>
+    </section>
+  </div>
+
+  <!-- Settings modal -->
+  <dialog id="settingsDlg">
+    <form method="dialog" class="card" style="min-width:min(720px,96vw)">
+      <h2>Settings</h2>
+      <div class="divider"></div>
+      <div class="grid cols-2">
+        <div>
+          <h3>Firebase</h3>
+          <div class="list">
+            <label>apiKey<input id="fb_apiKey"/></label>
+            <label>authDomain<input id="fb_authDomain"/></label>
+            <label>projectId<input id="fb_projectId"/></label>
+            <label>storageBucket<input id="fb_storageBucket"/></label>
+          </div>
+        </div>
+        <div>
+          <h3>GitHub (optional)</h3>
+          <div class="list">
+            <label>Owner<input id="gh_owner" placeholder="org-or-user"/></label>
+            <label>Repo<input id="gh_repo" placeholder="my-repo"/></label>
+            <label>Branch<input id="gh_branch" placeholder="main"/></label>
+            <label>Path to JSON<input id="gh_path" placeholder="config/iptv-config.json"/></label>
+            <label>Token<input id="gh_token" type="password" placeholder="ghp_… (contents:write)"/></label>
+          </div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn ghost" value="cancel">Cancel</button>
+        <button class="btn primary right" id="btnSaveSettings" value="default">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Firebase SDKs (compat for simplicity) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+  <script>
+    // ===== STATE & SETTINGS =====
+    const $ = s=>document.querySelector(s);
+    const els = q=>Array.from(document.querySelectorAll(q));
+
+    const settings = {
+      fb: JSON.parse(localStorage.getItem('iptv.fb') || '{}'),
+      gh: JSON.parse(localStorage.getItem('iptv.gh') || '{}')
+    };
+
+    let app=null, auth=null, db=null, user=null;
+    const colDealerships = ()=> db.collection('dealerships');
+    const colDisplays = ()=> db.collection('displays');
+    const colInvites = ()=> db.collection('invites'); // {email, role, dealershipIds}
+
+    function setBadges(){
+      // Firebase badge
+      const fbOk = !!(settings.fb && settings.fb.apiKey && app);
+      $('#fbBadge').textContent = fbOk ? 'Firebase: ' + settings.fb.projectId : 'Firebase: not connected';
+      $('#fbBadge').style.background = fbOk ? '#14261a' : '#2a1a1a';
+
+      // GitHub badge
+      const ghOk = !!(settings.gh && settings.gh.owner && settings.gh.repo && settings.gh.branch && settings.gh.path && settings.gh.token);
+      $('#ghBadge').textContent = ghOk ? `GitHub: ${settings.gh.owner}/${settings.gh.repo}@${settings.gh.branch}` : 'GitHub: not set';
+      $('#ghBadge').style.background = ghOk ? '#14223a' : '#2a1a1a';
+
+      // Auth button
+      $('#btnAuth').textContent = user ? `Sign out (${user.email})` : 'Sign in';
+    }
+
+    function saveSettings(){
+      settings.fb = {
+        apiKey: $('#fb_apiKey').value.trim(),
+        authDomain: $('#fb_authDomain').value.trim(),
+        projectId: $('#fb_projectId').value.trim(),
+        storageBucket: $('#fb_storageBucket').value.trim()
+      };
+      settings.gh = {
+        owner: $('#gh_owner').value.trim(),
+        repo: $('#gh_repo').value.trim(),
+        branch: $('#gh_branch').value.trim()||'main',
+        path: $('#gh_path').value.trim()||'config/iptv-config.json',
+        token: $('#gh_token').value.trim()
+      };
+      localStorage.setItem('iptv.fb', JSON.stringify(settings.fb));
+      localStorage.setItem('iptv.gh', JSON.stringify(settings.gh));
+    }
+
+    function hydrateSettings(){
+      // Fill inputs
+      $('#fb_apiKey').value = settings.fb.apiKey || '';
+      $('#fb_authDomain').value = settings.fb.authDomain || '';
+      $('#fb_projectId').value = settings.fb.projectId || '';
+      $('#fb_storageBucket').value = settings.fb.storageBucket || '';
+
+      $('#gh_owner').value = settings.gh.owner || '';
+      $('#gh_repo').value = settings.gh.repo || '';
+      $('#gh_branch').value = settings.gh.branch || 'main';
+      $('#gh_path').value = settings.gh.path || 'config/iptv-config.json';
+      $('#gh_token').value = settings.gh.token || '';
+    }
+
+    function initFirebase(){
+      if(!settings.fb?.apiKey) return;
+      try{
+        app = firebase.apps.length ? firebase.app() : firebase.initializeApp(settings.fb);
+        auth = firebase.auth();
+        db = firebase.firestore();
+        auth.onAuthStateChanged(u=>{ user=u; setBadges(); if(u){ loadAll(); } });
+      }catch(e){ alert('Firebase init failed: '+e.message); }
+    }
+
+    // ===== AUTH =====
+    async function signInOrOut(){
+      if(!auth){ alert('Configure Firebase first.'); return; }
+      if(user){ await auth.signOut(); return; }
+      const provider = new firebase.auth.GoogleAuthProvider();
+      try{ await auth.signInWithPopup(provider); }
+      catch(e){ alert('Sign-in failed: '+e.message); }
+    }
+
+    // ===== DEALERSHIPS =====
+    let unsubDealers=null;
+    function watchDealerships(){
+      if(!db) return; if(unsubDealers) unsubDealers();
+      unsubDealers = colDealerships().orderBy('name').onSnapshot(snap=>{
+        const tbody = $('#dlrTable tbody'); tbody.innerHTML='';
+        const pick = $('#dispDealership'); pick.innerHTML = '<option value="">— Select —</option>';
+        const perms = $('#usrDealerships'); perms.innerHTML='';
+        snap.forEach(doc=>{
+          const d = { id: doc.id, ...doc.data() };
+          // table row
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${d.name||''}</td><td>${d.city||''}</td><td>${d.contactName||''}</td><td class="mono">${d.id}</td><td><button class="btn ghost" data-del="${d.id}">Delete</button></td>`;
+          tbody.appendChild(tr);
+          // select
+          const opt = document.createElement('option'); opt.value=d.id; opt.textContent=d.name; pick.appendChild(opt);
+          // checkbox for user perms
+          const wrap = document.createElement('label'); wrap.className='row';
+          wrap.innerHTML = `<input type="checkbox" value="${d.id}"> <span>${d.name}</span>`;
+          perms.appendChild(wrap);
+        });
+      });
+      $('#dlrTable').addEventListener('click', async (e)=>{
+        const id = e.target?.dataset?.del; if(!id) return;
+        if(confirm('Delete dealership and its displays?')){
+          // delete displays under this dealership first
+          const q = await colDisplays().where('dealershipId','==',id).get();
+          const batch = db.batch();
+          q.forEach(doc=> batch.delete(doc.ref));
+          batch.delete(colDealerships().doc(id));
+          await batch.commit();
+        }
+      });
+    }
+
+    async function addDealership(){
+      if(!db) return alert('Connect Firebase in Settings.');
+      const name=$('#dlrName').value.trim(); if(!name) return alert('Name required');
+      const data={
+        name,
+        code: $('#dlrCode').value.trim()||null,
+        city: $('#dlrCity').value.trim()||null,
+        province: $('#dlrProv').value.trim()||null,
+        contactName: $('#dlrContact').value.trim()||null,
+        contactEmail: $('#dlrEmail').value.trim()||null,
+        notes: $('#dlrNotes').value.trim()||null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      const ref = await colDealerships().add(data);
+      await colDealerships().doc(ref.id).update({ id: ref.id });
+      clearDealerForm();
+      setStatus('#dlrStatus','Added','ok');
+    }
+    function clearDealerForm(){ ['#dlrName','#dlrCode','#dlrCity','#dlrProv','#dlrContact','#dlrEmail','#dlrNotes'].forEach(s=>$(s).value=''); }
+
+    // ===== DISPLAYS =====
+    let unsubDisplays=null;
+    function watchDisplays(){
+      if(!db) return; if(unsubDisplays) unsubDisplays();
+      unsubDisplays = colDisplays().orderBy('name').onSnapshot(snap=>{
+        const tbody = $('#dispTable tbody'); tbody.innerHTML='';
+        snap.forEach(doc=>{
+          const d = { id: doc.id, ...doc.data() };
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${d.dealershipName||d.dealershipId||''}</td><td>${d.name||''}</td><td>${d.deviceId||''}</td><td>${d.location||''}</td><td class="mono" title="${d.url||''}">${(d.url||'').slice(0,26)}${(d.url||'').length>26?'…':''}</td><td class="mono">${d.id}</td><td><button class="btn ghost" data-del="${d.id}">Delete</button></td>`;
+          tbody.appendChild(tr);
+        });
+      });
+      $('#dispTable').addEventListener('click', async (e)=>{
+        const id = e.target?.dataset?.del; if(!id) return;
+        if(confirm('Delete this display?')) await colDisplays().doc(id).delete();
+      });
+    }
+
+    async function addDisplay(){
+      if(!db) return alert('Connect Firebase in Settings.');
+      const dealershipId = $('#dispDealership').value; if(!dealershipId) return alert('Select a dealership');
+      const dlrDoc = await colDealerships().doc(dealershipId).get();
+      if(!dlrDoc.exists) return alert('Dealership not found');
+      const data={
+        dealershipId,
+        dealershipName: dlrDoc.data().name,
+        name: $('#dispName').value.trim()||'Unnamed Screen',
+        deviceId: $('#dispDevice').value.trim()||null,
+        location: $('#dispLocation').value.trim()||null,
+        url: $('#dispUrl').value.trim()||null,
+        resolution: $('#dispRes').value,
+        tags: ($('#dispTags').value||'').split(',').map(s=>s.trim()).filter(Boolean),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      const ref = await colDisplays().add(data);
+      await colDisplays().doc(ref.id).update({ id: ref.id });
+      clearDisplayForm();
+      setStatus('#dispStatus','Added','ok');
+    }
+    function clearDisplayForm(){ ['#dispName','#dispDevice','#dispLocation','#dispUrl','#dispTags'].forEach(s=>$(s).value=''); $('#dispDealership').value=''; }
+
+    // ===== USERS (invites & roles) =====
+    let unsubInvites=null;
+    function watchInvites(){
+      if(!db) return; if(unsubInvites) unsubInvites();
+      unsubInvites = colInvites().orderBy('email').onSnapshot(snap=>{
+        const tbody = $('#inviteTable tbody'); tbody.innerHTML='';
+        snap.forEach(doc=>{
+          const d = { id: doc.id, ...doc.data() };
+          const tr = document.createElement('tr');
+          const list = (d.dealershipIds||[]).map(x=>`<span class="pill">${x}</span>`).join(' ');
+          tr.innerHTML = `<td>${d.email}</td><td>${d.role}</td><td>${list}</td><td class="mono">${d.id}</td><td><button class="btn ghost" data-del="${d.id}">Delete</button></td>`;
+          tbody.appendChild(tr);
+        });
+      });
+      $('#inviteTable').addEventListener('click', async (e)=>{
+        const id = e.target?.dataset?.del; if(!id) return;
+        if(confirm('Delete this invite/role?')) await colInvites().doc(id).delete();
+      });
+    }
+
+    async function saveInvite(){
+      const email = $('#usrEmail').value.trim(); if(!email) return alert('Email required');
+      const role = $('#usrRole').value;
+      const checked = els('#usrDealerships input[type="checkbox"]:checked').map(i=>i.value);
+      const payload = { email, role, dealershipIds: checked, updatedAt: new Date().toISOString() };
+      // upsert by email as id for convenience
+      await colInvites().doc(email).set(payload, { merge:true });
+      $('#usrEmail').value='';
+      setStatus('#usrStatus','Saved','ok');
+    }
+
+    // ===== EXPORT TO GITHUB =====
+    async function exportToGitHub(){
+      if(!settings.gh?.owner){ return alert('Set GitHub settings first.'); }
+      if(!db) return alert('Connect Firebase first.');
+      setBusy('#btnExport', true);
+      try{
+        // Pull data
+        const [dlrSnap, dispSnap] = await Promise.all([colDealerships().get(), colDisplays().get()]);
+        const dealerships = dlrSnap.docs.map(d=>({id:d.id, ...d.data()}));
+        const displays = dispSnap.docs.map(d=>({id:d.id, ...d.data()}));
+        // Merge displays under dealerships
+        const byDealer = {};
+        dealerships.forEach(d=> byDealer[d.id]= { ...d, displays: [] });
+        displays.forEach(s=>{ if(byDealer[s.dealershipId]) byDealer[s.dealershipId].displays.push(s); });
+        const snapshot = {
+          generatedAt: new Date().toISOString(),
+          projectId: settings.fb.projectId||null,
+          dealerships: Object.values(byDealer)
+        };
+        const contentB64 = btoa(unescape(encodeURIComponent(JSON.stringify(snapshot,null,2))));
+        // Get existing SHA (if file exists)
+        const base = `https://api.github.com/repos/${settings.gh.owner}/${settings.gh.repo}/contents/${settings.gh.path}`;
+        const headers = { 'Authorization': `Bearer ${settings.gh.token}`, 'Accept':'application/vnd.github+json' };
+        let sha=null;
+        const getRes = await fetch(`${base}?ref=${encodeURIComponent(settings.gh.branch)}`, { headers });
+        if(getRes.ok){ const j = await getRes.json(); sha = j.sha; }
+        // Put new content
+        const putRes = await fetch(base, {
+          method:'PUT', headers: { ...headers, 'Content-Type':'application/json' },
+          body: JSON.stringify({
+            message: `chore: export IPTV config ${new Date().toISOString()}`,
+            content: contentB64,
+            branch: settings.gh.branch,
+            sha
+          })
+        });
+        if(!putRes.ok){ const txt = await putRes.text(); throw new Error('GitHub PUT failed: '+txt); }
+        setStatus('#ghBadge','Exported','ok');
+        alert('Exported snapshot to GitHub.');
+      }catch(e){ alert(e.message); }
+      finally{ setBusy('#btnExport', false); }
+    }
+
+    // ===== UTILS =====
+    function setBusy(btnSel, on){ const b=$(btnSel); if(!b) return; b.disabled=!!on; b.textContent = on? 'Working…' : (b.dataset.label||b.textContent); }
+    function setStatus(sel, text, mode){ const s=$(sel); if(!s) return; s.innerHTML = `<span class="dot ${mode||'info'}"></span> ${text}`; }
+
+    // ===== WIRE UI =====
+    $('#btnSettings').addEventListener('click', ()=>{ hydrateSettings(); $('#settingsDlg').showModal(); });
+    $('#btnSaveSettings').addEventListener('click', ()=>{ saveSettings(); setBadges(); initFirebase(); });
+    $('#btnAuth').addEventListener('click', signInOrOut);
+
+    $('#btnAddDealership').addEventListener('click', addDealership);
+    $('#btnAddDisplay').addEventListener('click', addDisplay);
+    $('#btnInvite').addEventListener('click', saveInvite);
+    $('#btnExport').addEventListener('click', exportToGitHub);
+
+    document.addEventListener('keydown', (e)=>{
+      if(e.key.toLowerCase()==='g') exportToGitHub();
+      if(e.key.toLowerCase()==='r') loadAll();
+    });
+
+    function loadAll(){ watchDealerships(); watchDisplays(); watchInvites(); }
+
+    // Init
+    (function(){ ['#btnExport'].forEach(s=>{ const b=$(s); if(b) b.dataset.label=b.textContent; }); setBadges(); initFirebase(); })();
+  </script>
+</body>
+</html>
