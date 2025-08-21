@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>IPTV — Admin Console</title>
 
-  <!-- PWA bits (optional) -->
+  <!-- PWA bits -->
   <link rel="manifest" href="/IPTV-/manifest.webmanifest" />
   <meta name="theme-color" content="#000000" />
   <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png" />
@@ -16,7 +16,7 @@
     :root{
       --bg:#0b0b0c;--fg:#fff;--muted:#9a9aa0;--panel:#121214;--border:rgba(255,255,255,.14);
       --accent:#ff9500;--tile:#17171a;--tileActive:#1d1d21;--shadow:0 18px 48px rgba(0,0,0,.45);
-      --gap:16px;--radius:18px;--radius-lg:22px;
+      --gap:16px;--radius:18px;--radius-lg:22px;--ok:#22c55e;--off:#b0b0b8;
     }
     body.light{
       --bg:#f5f5f7;--fg:#111;--muted:#6e6e73;--panel:#fff;--border:rgba(0,0,0,.12);
@@ -67,10 +67,13 @@
     /* Display item */
     .item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px;margin:8px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap}
     .split{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .col{display:flex;flex-direction:column;gap:6px;min-width:200px}
+    .col{display:flex;flex-direction:column;gap:6px;min-width:220px}
     .tag{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:transparent;font-size:12px;color:var(--muted)}
     .vol{display:flex;align-items:center;gap:8px}
     .vol input[type="range"]{width:140px;accent-color:var(--accent)}
+    .dot{width:8px;height:8px;border-radius:50%}
+    .dot.ok{background:var(--ok)}
+    .dot.off{background:var(--off)}
     @media (max-width:560px){ .vol input[type="range"]{width:100%} }
 
     /* USERS (grouped) */
@@ -101,6 +104,11 @@
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
     .toast.show{opacity:1}
     .toast.err{background:#ff453a;color:#fff}
+
+    /* Settings dialog */
+    dialog{border:0;border-radius:16px;padding:0;background:transparent}
+    dialog::backdrop{background:rgba(0,0,0,.4)}
+    .dlg{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px;min-width:min(720px,96vw);box-shadow:var(--shadow)}
   </style>
 </head>
 <body>
@@ -108,7 +116,6 @@
     <!-- Top -->
     <div class="topbar">
       <div class="lhs">
-        <!-- LOGO uses LOGO_URL (set in script) -->
         <div id="brandLogo" class="logo" title="IPTV"></div>
         <div class="title">IPTV — Admin Console</div>
         <div class="chip">
@@ -117,11 +124,11 @@
         </div>
         <button id="reloadBtn" class="btn-ghost">Reload</button>
       </div>
-      <div class="rhs">
+      <div class="rhs" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <span id="adminEmail" class="muted"></span>
-        <button id="signOutBtn" class="btn-pill">Sign out</button>
         <button id="settingsBtn" class="btn-pill">Settings</button>
         <button id="exportBtn" class="btn-pill">Sync → GitHub</button>
+        <button id="signOutBtn" class="btn-pill">Sign out</button>
       </div>
     </div>
 
@@ -162,6 +169,8 @@
               <button id="dealersReload" class="btn secondary small">Reload</button>
             </span>
           </h2>
+
+          <!-- Add -->
           <div class="row">
             <div>
               <div class="label">New dealership name</div>
@@ -172,6 +181,24 @@
             </div>
           </div>
           <div class="small muted">Creates <code>/dealership/{id}</code> and <code>/dealershipPublic/{id}</code>. ID is generated from name.</div>
+
+          <!-- Rename ID (migrate) -->
+          <div class="row3" style="margin-top:8px">
+            <div>
+              <div class="label">Select dealership to rename (ID)</div>
+              <select id="renameSelect" class="select"><option value="">Choose…</option></select>
+            </div>
+            <div>
+              <div class="label">New dealership ID</div>
+              <input id="renameNewId" class="input" placeholder="letters/numbers only, e.g., KiaYorkdale2" />
+            </div>
+            <div style="display:flex;align-items:end">
+              <button id="renameBtn" class="btn secondary" style="width:100%">Rename ID (migrate)</button>
+            </div>
+          </div>
+          <div class="small muted">Migrates displays’ <code>dealership</code>, users’ <code>dealershipId</code>, <code>/dealership</code> & <code>/dealershipPublic</code>.</div>
+
+          <!-- List -->
           <ul id="dealerList" class="list"></ul>
           <div id="dealerEmpty" class="empty" style="display:none">No dealerships.</div>
         </div>
@@ -280,8 +307,6 @@
         <!-- Apps / Quick Links -->
         <div class="card">
           <h2>Apps / Quick Links</h2>
-
-          <!-- Manage links (add/remove) -->
           <div class="row3">
             <div>
               <div class="label">Title</div>
@@ -322,8 +347,48 @@
     </div>
   </div>
 
+  <!-- Settings modal -->
+  <dialog id="settingsDlg">
+    <form class="dlg" method="dialog">
+      <h2 style="margin:0 0 8px">Settings</h2>
+      <div class="row2">
+        <div>
+          <div class="label">GitHub owner</div>
+          <input id="gh_owner" class="input" placeholder="flaviothebfagroup" />
+        </div>
+        <div>
+          <div class="label">Repo</div>
+          <input id="gh_repo" class="input" placeholder="IPTV-" />
+        </div>
+      </div>
+      <div class="row2">
+        <div>
+          <div class="label">Branch</div>
+          <input id="gh_branch" class="input" value="main" />
+        </div>
+        <div>
+          <div class="label">Path (JSON)</div>
+          <input id="gh_path" class="input" placeholder="config/iptv-config.json" />
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <div class="label">Token (fine-grained PAT, Contents: Read & Write)</div>
+          <input id="gh_token" class="input" type="password" placeholder="ghp_…" />
+        </div>
+        <div style="display:flex;align-items:end">
+          <button id="ghSave" class="btn" style="width:100%">Save</button>
+        </div>
+      </div>
+      <div class="row">
+        <button id="dlgClose" class="btn secondary" value="cancel">Close</button>
+      </div>
+    </form>
+  </dialog>
+
   <div id="toast" class="toast"></div>
 
+  <!-- Firebase (modules) -->
   <script type="module">
     import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import {
@@ -345,10 +410,9 @@
       appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
     };
 
-    // Change this one line to use your “nice” logo anywhere on the web
     const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
+    const REMOTE_URL = "https://flaviothebfagroup.github.io/IPTV-/remote-control.html";
 
-    // Default quick links (used on first load, or when “Reset to defaults”)
     const DEFAULT_LINKS = [
       { emoji:'🔥', title:'Firebase — Overview', href:'https://console.firebase.google.com/project/iptv-bfa/overview', desc:'Console home' },
       { emoji:'🗄️', title:'Firebase — Database', href:'https://console.firebase.google.com/project/iptv-bfa/database/iptv-bfa-default-rtdb/data', desc:'Realtime DB data' },
@@ -381,9 +445,34 @@
     // ========= HELPERS =========
     const $ = s => document.querySelector(s);
     const listEl = id => document.getElementById(id);
-    function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2000); }
+    function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
     function htmlEscape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
     const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+
+    // ========= GITHUB SETTINGS =========
+    const GH_KEY = 'admin_gh';
+    function loadGh(){ try{ return JSON.parse(localStorage.getItem(GH_KEY)||'{}'); }catch{ return {}; } }
+    function saveGh(obj){ localStorage.setItem(GH_KEY, JSON.stringify(obj||{})); }
+    $('#settingsBtn').addEventListener('click', ()=>{
+      const gh = loadGh();
+      $('#gh_owner').value  = gh.owner  || 'flaviothebfagroup';
+      $('#gh_repo').value   = gh.repo   || 'IPTV-';
+      $('#gh_branch').value = gh.branch || 'main';
+      $('#gh_path').value   = gh.path   || 'config/iptv-config.json';
+      $('#gh_token').value  = gh.token  || '';
+      $('#settingsDlg').showModal();
+    });
+    $('#ghSave').addEventListener('click', (e)=>{ e.preventDefault();
+      const gh = {
+        owner:  $('#gh_owner').value.trim(),
+        repo:   $('#gh_repo').value.trim(),
+        branch: $('#gh_branch').value.trim()||'main',
+        path:   $('#gh_path').value.trim()||'config/iptv-config.json',
+        token:  $('#gh_token').value.trim()
+      };
+      saveGh(gh); toast('GitHub settings saved');
+    });
+    $('#dlgClose').addEventListener('click', (e)=>{ e.preventDefault(); $('#settingsDlg').close(); });
 
     // ========= AUTH UI =========
     $('#loginBtn').addEventListener('click', doLogin);
@@ -452,23 +541,39 @@
     });
     $('#dealersReload').addEventListener('click', ()=>refreshDealers(true));
 
-    async function uniqueDealerId(name){
-      const base = makeDealerId(name);
-      let id = base; let i = 2;
-      const exists = async (x)=> (await get(ref(db, `dealership/${x}`))).exists() || (await get(ref(db, `dealershipPublic/${x}`))).exists();
-      while(await exists(id)) id = `${base}${i++}`;
-      return id;
-    }
+    // Rename ID (migrate)
+    $('#renameBtn').addEventListener('click', async ()=>{
+      const oldId = $('#renameSelect').value;
+      const newId = ($('#renameNewId').value||'').trim();
+      if(!oldId) return toast('Pick a dealership', true);
+      if(!newId) return toast('Enter new ID', true);
+      if(!/^[a-z0-9]+$/i.test(newId)) return toast('Letters/numbers only', true);
+      if(oldId===newId) return toast('Same ID', true);
+      if(!confirm(`Rename ID ${oldId} → ${newId}? This migrates displays and users.`)) return;
+      try{
+        await migrateDealerId(oldId, newId);
+        $('#renameNewId').value=''; $('#renameSelect').value='';
+        toast('ID migrated');
+        await refreshDealers(true);
+      }catch(e){ console.error(e); toast('Migration failed', true); }
+    });
 
     async function createDealership(name){
-      const id = await uniqueDealerId(name);
+      const id = makeDealerIdUnique(await makeDealerId(name));
       const dealer = { name, createdAt: Date.now(), createdBy: auth.currentUser?.email || 'admin', displays: {} };
       await set(ref(db, `dealership/${id}`), dealer);
       await set(ref(db, `dealershipPublic/${id}`), { name });
     }
-    function makeDealerId(name){
-      const base = (name||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24);
-      return base || ('dealer_' + Date.now());
+    async function makeDealerId(name){
+      const base = (name||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24) || ('dealer_' + Date.now());
+      return base;
+    }
+    async function makeDealerIdUnique(base){
+      let id = base, i=2;
+      while((await get(ref(db, `dealership/${id}`))).exists() || (await get(ref(db, `dealershipPublic/${id}`))).exists()){
+        id = `${base}${i++}`;
+      }
+      return id;
     }
 
     async function refreshDealers(keepSelection=false){
@@ -476,10 +581,12 @@
       const selDisplays = $('#dealerForDisplays');
       const selUsers    = $('#userDealer');
       const selFilter   = $('#filterDealer');
+      const selRename   = $('#renameSelect');
 
       const prevDispSel = selDisplays.value;
       const prevUserSel = selUsers.value;
       const prevFilter  = selFilter.value;
+      const prevRename  = selRename.value;
 
       let map = {};
       try{ const pub = await get(ref(db, 'dealershipPublic')); if(pub.exists()) map = pub.val(); }catch(e){}
@@ -493,6 +600,7 @@
       selDisplays.innerHTML = '<option value="">Select dealership…</option>';
       selUsers.innerHTML    = '<option value="">Dealership…</option>';
       selFilter.innerHTML   = '<option value="">All dealerships</option>';
+      selRename.innerHTML   = '<option value="">Choose…</option>';
 
       for(const id of ids){
         const name = map[id]?.name || id;
@@ -506,7 +614,8 @@
             <span class="muted">${htmlEscape(id)} • ${count} TV${count===1?'':'s'}</span>
           </div>
           <div class="split">
-            <button class="btn secondary small" onclick="renameDealerPrompt('${id}','${htmlEscape(name)}')">Rename</button>
+            <button class="btn secondary small" onclick="renameDealerPrompt('${id}','${htmlEscape(name)}')">Rename name</button>
+            <button class="btn secondary small" onclick="migrateDealerPrompt('${id}')">Rename ID</button>
             <button class="btn danger small" onclick="deleteDealerPrompt('${id}')">Delete</button>
           </div>`;
         list.appendChild(li);
@@ -514,12 +623,14 @@
         const opt1 = document.createElement('option'); opt1.value=id; opt1.textContent=name; selDisplays.appendChild(opt1);
         const opt2 = document.createElement('option'); opt2.value=id; opt2.textContent=name; selUsers.appendChild(opt2);
         const opt3 = document.createElement('option'); opt3.value=id; opt3.textContent=name; selFilter.appendChild(opt3);
+        const opt4 = document.createElement('option'); opt4.value=id; opt4.textContent=`${name} (${id})`; selRename.appendChild(opt4);
       }
 
       if(keepSelection){
         selDisplays.value = prevDispSel || '';
         selUsers.value    = prevUserSel || '';
         selFilter.value   = prevFilter  || '';
+        selRename.value   = prevRename  || '';
         if(selDisplays.value) await watchDisplays(selDisplays.value);
       }else{
         listEl('displayList').innerHTML='';
@@ -550,6 +661,14 @@
         toast('Renamed'); await refreshDealers(true);
       }catch(e){ console.error(e); toast('Rename failed', true); }
     };
+    window.migrateDealerPrompt = async (id) => {
+      const newId = prompt('New dealership ID (letters/numbers only):', id);
+      if(!newId) return; if(!/^[a-z0-9]+$/i.test(newId)) return toast('Letters/numbers only', true);
+      if(newId===id) return;
+      if(!confirm(`Rename ID ${id} → ${newId}?`)) return;
+      try{ await migrateDealerId(id,newId); toast('ID migrated'); await refreshDealers(true); }
+      catch(e){ console.error(e); toast('Migration failed', true); }
+    };
     window.deleteDealerPrompt = async (id) => {
       const count = await countDisplaysForDealer(id);
       if(count>0){ alert(`This dealership still has ${count} display(s). Remove them first.`); return; }
@@ -566,11 +685,13 @@
     $('#dealerForDisplays').addEventListener('change', e => watchDisplays(e.target.value));
     $('#displaysReload').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(did) watchDisplays(did,true); });
 
+    function onlineFromTimestamp(ts){ return (Date.now() - (ts||0)) < 70_000; }
+
     async function watchDisplays(did, forceOnce=false){
       const ul = listEl('displayList'); ul.innerHTML='';
-      if(!did){ $('#displayEmpty').style.display='block'; if(displaysUnsub) { displaysUnsub(); displaysUnsub=null; } return; }
+      if(!did){ $('#displayEmpty').style.display='block'; if(displaysUnsub) displaysUnsub(); displaysUnsub=null; return; }
       $('#displayEmpty').style.display='none';
-      if(displaysUnsub){ try{ displaysUnsub(); }catch(_){} displaysUnsub=null; }
+      if(displaysUnsub){ displaysUnsub(); displaysUnsub=null; }
 
       const render = (map) => {
         ul.innerHTML='';
@@ -578,12 +699,14 @@
         if(ids.length===0){ $('#displayEmpty').style.display='block'; return; }
         ids.forEach(id=>{
           const st = map[id] || {};
+          const online = onlineFromTimestamp(st.timestamp);
           const li = document.createElement('li'); li.className='item';
           li.innerHTML = `
             <div class="col">
               <div class="split">
                 <b>${htmlEscape(id)}</b>
                 <span class="tag">${htmlEscape(did)}</span>
+                <span class="split small"><span class="dot ${online?'ok':'off'}"></span>${online?'ONLINE':'OFFLINE'}</span>
               </div>
               <span class="muted small">CH ${st.channel ?? 1} • VOL ${st.volume ?? 0} • ${st.muted ? 'Muted' : 'Unmuted'}</span>
             </div>
@@ -596,6 +719,7 @@
                 <input type="range" min="0" max="100" value="${st.volume ?? 0}" data-id="${id}" class="vslider"/>
               </div>
               <button class="btn secondary small" data-id="${id}" data-muted="${!!st.muted}">${st.muted?'Unmute':'Mute'}</button>
+              <a class="btn secondary small" href="${REMOTE_URL}?tv=${encodeURIComponent(id)}" target="_blank" rel="noopener">Open in remote</a>
               <button class="btn danger small" onclick="removeDisplayPrompt('${did}','${id}')">Remove</button>
             </div>`;
           ul.appendChild(li);
@@ -627,7 +751,8 @@
       };
 
       const qRef = query(ref(db, 'displays'), orderByChild('dealership'), equalTo(did));
-      displaysUnsub = onValue(qRef, (snap)=> render(snap.val()||{}), (err)=>{ console.warn(err); });
+      const off = onValue(qRef, (snap)=> render(snap.val()||{}), (err)=>{ console.warn(err); });
+      displaysUnsub = ()=> off();
 
       if(forceOnce){
         const once = await get(qRef);
@@ -900,11 +1025,11 @@
       const selFilter   = $('#filterDealer');
       const selUserForm = $('#userDealer');
       const selDisp     = $('#dealerForDisplays');
-      const prevF = selFilter.value, prevU = selUserForm.value, prevD = selDisp.value;
+      const prevF = selFilter.value, prevU = selUserForm.value;
 
       selFilter.innerHTML = '<option value="">All dealerships</option>';
       selUserForm.innerHTML = '<option value="">Dealership…</option>';
-      if(!selDisp.value){ /* keep whatever was there; displays list filled by refreshDealers */ }
+      if(!selDisp.value){ /* keep; displays list filled by refreshDealers */ }
 
       for(const [id,name] of Object.entries(map).sort((a,b)=>a[1].localeCompare(b[1]))){
         const optF = document.createElement('option'); optF.value=id; optF.textContent=name; selFilter.appendChild(optF);
@@ -1027,41 +1152,13 @@
       });
     }
 
-    // ========= SETTINGS (GitHub) =========
-    const GH_KEY = 'admin_gh';
-    function loadGh(){ try{ return JSON.parse(localStorage.getItem(GH_KEY)||'{}'); }catch{ return {}; } }
-    function saveGh(obj){ localStorage.setItem(GH_KEY, JSON.stringify(obj||{})); }
-
-    const settingsDlg = document.getElementById('settingsDlg');
-    document.getElementById('settingsBtn').addEventListener('click', ()=>{
-      const gh = loadGh();
-      document.getElementById('gh_owner').value  = gh.owner  || 'flaviothebfagroup';
-      document.getElementById('gh_repo').value   = gh.repo   || 'IPTV-';
-      document.getElementById('gh_branch').value = gh.branch || 'main';
-      document.getElementById('gh_path').value   = gh.path   || 'config/iptv-config.json';
-      document.getElementById('gh_token').value  = gh.token  || '';
-      settingsDlg.showModal();
-    });
-    document.getElementById('dlgClose')?.addEventListener('click', ()=> settingsDlg.close());
-    document.getElementById('ghSave')?.addEventListener('click', ()=>{
-      const gh = {
-        owner:  document.getElementById('gh_owner').value.trim(),
-        repo:   document.getElementById('gh_repo').value.trim(),
-        branch: document.getElementById('gh_branch').value.trim()||'main',
-        path:   document.getElementById('gh_path').value.trim()||'config/iptv-config.json',
-        token:  document.getElementById('gh_token').value.trim()
-      };
-      saveGh(gh);
-      toast('GitHub settings saved');
-    });
-
     // ========= EXPORT TO GITHUB (RTDB snapshot) =========
-    document.getElementById('exportBtn').addEventListener('click', exportSnapshot);
+    $('#exportBtn').addEventListener('click', exportSnapshot);
 
     async function exportSnapshot(){
       const gh = loadGh();
       if(!gh.owner || !gh.repo || !gh.branch || !gh.path || !gh.token){
-        settingsDlg.showModal();
+        $('#settingsDlg').showModal();
         return alert('Fill GitHub settings first, then click Save.');
       }
       try{
@@ -1099,7 +1196,6 @@
           });
         }
 
-        // Compose snapshot
         const dealershipsOut = Object.keys(names).sort().map(id=>({
           id, name: names[id],
           displays: (dispMap[id]||[]).sort((a,b)=>a.id.localeCompare(b.id))
@@ -1139,6 +1235,63 @@
         console.error(e);
         alert(e.message||e);
       }
+    }
+
+    // ========= MIGRATE DEALERSHIP ID =========
+    async function migrateDealerId(oldId, newId){
+      // Abort if target exists
+      const exists = (await get(ref(db, `dealership/${newId}`))).exists() ||
+                     (await get(ref(db, `dealershipPublic/${newId}`))).exists();
+      if(exists) throw new Error('New ID already exists');
+
+      // Load old nodes
+      const [dealerSnap, pubSnap] = await Promise.all([
+        get(ref(db, `dealership/${oldId}`)),
+        get(ref(db, `dealershipPublic/${oldId}`))
+      ]);
+      const dealer = dealerSnap.val()||{};
+      const pub    = pubSnap.val()||{};
+
+      // Displays under /displays that reference oldId
+      const qRef = query(ref(db,'displays'), orderByChild('dealership'), equalTo(oldId));
+      const dispQ = await get(qRef);
+      const dispMap = dispQ.val()||{};
+
+      // Users with dealershipId = oldId
+      const usersSnap = await get(ref(db,'user'));
+      const usersMap  = usersSnap.val()||{};
+
+      // Build fan-out update
+      const upd = {};
+      // move dealership + public name
+      upd[`dealership/${newId}`] = dealer;
+      upd[`dealershipPublic/${newId}`] = { name: pub?.name || dealer?.name || newId };
+      // remove old nodes
+      upd[`dealership/${oldId}`] = null;
+      upd[`dealershipPublic/${oldId}`] = null;
+
+      // move /dealership/{id}/displays map (if it exists)
+      const oldDispMapSnap = await get(ref(db, `dealership/${oldId}/displays`)).catch(()=>null);
+      const oldDispMap = oldDispMapSnap?.val()||{};
+      if(Object.keys(oldDispMap).length){
+        upd[`dealership/${newId}/displays`] = oldDispMap;
+        upd[`dealership/${oldId}/displays`] = null;
+      }
+
+      // rewrite each /displays/{tv}/dealership
+      Object.keys(dispMap).forEach(tvId=>{
+        upd[`displays/${tvId}/dealership`] = newId;
+      });
+
+      // rewrite each /user/{uid}/dealershipId (+name)
+      Object.entries(usersMap).forEach(([uid, u])=>{
+        if((u?.dealershipId||'') === oldId){
+          upd[`user/${uid}/dealershipId`] = newId;
+          upd[`user/${uid}/dealershipName`] = pub?.name || dealer?.name || newId;
+        }
+      });
+
+      await update(ref(db), upd);
     }
 
     // ========= INIT =========
