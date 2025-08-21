@@ -3,11 +3,20 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>IPTV Admin – Firebase + GitHub</title>
+  <title>BFA IPTV Admin – Firebase + GitHub</title>
+  <!-- PWA bits (optional) -->
+  <link rel="manifest" href="/IPTV-/manifest.webmanifest" />
+  <meta name="theme-color" content="#000000" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png" />
+  <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png" />
   <style>
     :root{
       --bg:#0b0c10;--card:#111218;--soft:#161823;--ink:#ebecf1;--muted:#a9aabb;--accent:#7aa6ff;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;--info:#38bdf8;
       --radius:18px;--gap:14px;--shadow:0 10px 30px rgba(0,0,0,.25)
+    }
+    [data-theme="light"]{
+      --bg:#f6f7fb;--card:#ffffff;--soft:#eef0f7;--ink:#0b0c10;--muted:#3a3c48;--accent:#335cff;--ok:#16a34a;--warn:#b45309;--err:#b91c1c;--info:#0ea5e9;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -58,9 +67,22 @@
 <body>
   <div class="app" id="app">
     <div class="top">
-      <div>
-        <h1>IPTV Admin</h1>
-        <div class="hint">Bento admin for <strong>Dealerships</strong>, <strong>Displays</strong>, and <strong>Users</strong> using <strong>Firebase</strong>. Optional: export snapshot to <strong>GitHub</strong>.</div>
+      <div class="row" style="gap:12px">
+        <img id="brandLogo" alt="BFA" style="width:40px;height:40px;border-radius:10px;object-fit:cover"/>
+        <div>
+          <h1>BFA IPTV Admin</h1>
+          <div class="hint">Bento admin for <strong>Dealerships</strong>, <strong>Displays</strong>, and <strong>Users</strong> using <strong>Firebase</strong>. Optional: export snapshot to <strong>GitHub</strong>.</div>
+        </div>
+      </div>
+      <div class="row">
+        <span class="badge" id="fbBadge">Firebase: not connected</span>
+        <span class="badge" id="ghBadge">GitHub: not set</span>
+        <button class="btn ghost" id="btnTheme">Toggle theme</button>
+        <button class="btn ghost" id="btnAuth">Sign in</button>
+        <button class="btn" id="btnSettings">Settings</button>
+        <button class="btn info" id="btnExport">Sync → GitHub</button>
+      </div>
+    </div>
       </div>
       <div class="row">
         <span class="badge" id="fbBadge">Firebase: not connected</span>
@@ -123,8 +145,19 @@
     </div>
 
     <section class="card" style="margin-top:14px">
+      <h2>Quick Links</h2>
+      <div class="hint">Handy shortcuts — configurable and saved locally. Use the three dots to remove; reset to defaults anytime.</div>
+      <div class="divider"></div>
+      <div id="quickLinks" class="grid cols-3"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn ghost" id="btnResetLinks">Reset to defaults</button>
+        <span class="hint">Tip: middle‑click to open in a new tab.</span>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:14px">
       <h2>Shortcuts</h2>
-      <div class="hint">Press <span class="kbd">G</span> to export to GitHub, <span class="kbd">/</span> to focus search, <span class="kbd">R</span> to refresh lists.</div>
+      <div class="hint">Press <span class="kbd">G</span> to export to GitHub, <span class="kbd">R</span> to refresh, <span class="kbd">T</span> to toggle theme.</div>
     </section>
   </div>
 
@@ -166,13 +199,27 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
   <script>
+    // ===== THEME / BRAND =====
+    const THEME_KEY = 'iptv.theme';
+    function applyTheme(theme){
+      const root = document.documentElement; root.setAttribute('data-theme', theme);
+      const meta = document.querySelector('meta[name="theme-color"]');
+      meta && meta.setAttribute('content', theme==='light' ? '#ffffff' : '#000000');
+      localStorage.setItem(THEME_KEY, theme);
+    }
+    function initTheme(){
+      const saved = localStorage.getItem(THEME_KEY);
+      if(saved){ applyTheme(saved);} else { const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches; applyTheme(prefersLight?'light':'dark'); }
+    }
+
     // ===== STATE & SETTINGS =====
     const $ = s=>document.querySelector(s);
     const els = q=>Array.from(document.querySelectorAll(q));
 
     const settings = {
-      fb: JSON.parse(localStorage.getItem('iptv.fb') || '{}'),
-      gh: JSON.parse(localStorage.getItem('iptv.gh') || '{}')
+      fb: JSON.parse(localStorage.getItem('iptv.fb') || 'null') || firebaseConfig,
+      gh: JSON.parse(localStorage.getItem('iptv.gh') || '{}'),
+      links: JSON.parse(localStorage.getItem('iptv.links') || 'null') || DEFAULT_LINKS
     };
 
     let app=null, auth=null, db=null, user=null;
@@ -181,14 +228,14 @@
     const colInvites = ()=> db.collection('invites'); // {email, role, dealershipIds}
 
     function setBadges(){
-      // Firebase badge
       const fbOk = !!(settings.fb && settings.fb.apiKey && app);
       $('#fbBadge').textContent = fbOk ? 'Firebase: ' + settings.fb.projectId : 'Firebase: not connected';
       $('#fbBadge').style.background = fbOk ? '#14261a' : '#2a1a1a';
-
-      // GitHub badge
       const ghOk = !!(settings.gh && settings.gh.owner && settings.gh.repo && settings.gh.branch && settings.gh.path && settings.gh.token);
       $('#ghBadge').textContent = ghOk ? `GitHub: ${settings.gh.owner}/${settings.gh.repo}@${settings.gh.branch}` : 'GitHub: not set';
+      $('#ghBadge').style.background = ghOk ? '#14223a' : '#2a1a1a';
+      $('#btnAuth').textContent = user ? `Sign out (${user.email})` : 'Sign in';
+    }/${settings.gh.repo}@${settings.gh.branch}` : 'GitHub: not set';
       $('#ghBadge').style.background = ghOk ? '#14223a' : '#2a1a1a';
 
       // Auth button
@@ -214,17 +261,19 @@
     }
 
     function hydrateSettings(){
-      // Fill inputs
+      // Fill inputs (Firebase)
       $('#fb_apiKey').value = settings.fb.apiKey || '';
       $('#fb_authDomain').value = settings.fb.authDomain || '';
       $('#fb_projectId').value = settings.fb.projectId || '';
       $('#fb_storageBucket').value = settings.fb.storageBucket || '';
-
+      // GitHub
       $('#gh_owner').value = settings.gh.owner || '';
       $('#gh_repo').value = settings.gh.repo || '';
       $('#gh_branch').value = settings.gh.branch || 'main';
       $('#gh_path').value = settings.gh.path || 'config/iptv-config.json';
       $('#gh_token').value = settings.gh.token || '';
+      // Brand logo in header
+      const logo = document.getElementById('brandLogo'); if(logo) logo.src = LOGO_URL;
     }
 
     function initFirebase(){
@@ -423,6 +472,23 @@
     function setBusy(btnSel, on){ const b=$(btnSel); if(!b) return; b.disabled=!!on; b.textContent = on? 'Working…' : (b.dataset.label||b.textContent); }
     function setStatus(sel, text, mode){ const s=$(sel); if(!s) return; s.innerHTML = `<span class="dot ${mode||'info'}"></span> ${text}`; }
 
+    // Quick Links render & reset
+    function renderLinks(){
+      const wrap = document.getElementById('quickLinks'); if(!wrap) return; wrap.innerHTML='';
+      (settings.links||[]).forEach((l,idx)=>{
+        const card = document.createElement('a');
+        card.href = l.href; card.target = '_blank'; card.rel = 'noopener';
+        card.className='card';
+        card.innerHTML = `<div class="row" style="justify-content:space-between"><div class="row" style="gap:8px"><div style="font-size:22px">${l.emoji||'🔗'}</div><div><div style="font-weight:600">${l.title||'Untitled'}</div><div class="hint">${l.desc||''}</div></div></div><button class="btn ghost" data-del="${idx}">⋯</button></div>`;
+        wrap.appendChild(card);
+      });
+      wrap.addEventListener('click', (e)=>{
+        const idx = e.target?.dataset?.del; if(idx==null) return; e.preventDefault();
+        if(confirm('Remove this quick link?')){ settings.links.splice(Number(idx),1); localStorage.setItem('iptv.links', JSON.stringify(settings.links)); renderLinks(); }
+      }, { once:true });
+    }
+    function resetLinks(){ settings.links = DEFAULT_LINKS.slice(); localStorage.setItem('iptv.links', JSON.stringify(settings.links)); renderLinks(); }
+
     // ===== WIRE UI =====
     $('#btnSettings').addEventListener('click', ()=>{ hydrateSettings(); $('#settingsDlg').showModal(); });
     $('#btnSaveSettings').addEventListener('click', ()=>{ saveSettings(); setBadges(); initFirebase(); });
@@ -436,12 +502,26 @@
     document.addEventListener('keydown', (e)=>{
       if(e.key.toLowerCase()==='g') exportToGitHub();
       if(e.key.toLowerCase()==='r') loadAll();
+      if(e.key.toLowerCase()==='t') toggleTheme();
+    });
+      if(e.key.toLowerCase()==='r') loadAll();
     });
 
-    function loadAll(){ watchDealerships(); watchDisplays(); watchInvites(); }
+    function loadAll(){ watchDealerships(); watchDisplays(); watchInvites(); renderLinks(); }
 
     // Init
-    (function(){ ['#btnExport'].forEach(s=>{ const b=$(s); if(b) b.dataset.label=b.textContent; }); setBadges(); initFirebase(); })();
+    (function(){
+      ['#btnExport'].forEach(s=>{ const b=$(s); if(b) b.dataset.label=b.textContent; });
+      initTheme();
+      setBadges();
+      hydrateSettings();
+      initFirebase();
+      // wire buttons added in this revision
+      document.getElementById('btnTheme')?.addEventListener('click', toggleTheme);
+      document.getElementById('btnResetLinks')?.addEventListener('click', resetLinks);
+    })();
+
+    function toggleTheme(){ const current = document.documentElement.getAttribute('data-theme')==='light' ? 'dark':'light'; applyTheme(current); }
   </script>
 </body>
 </html>
