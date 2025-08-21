@@ -7,45 +7,29 @@
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#000;color:#fff;overflow:hidden;position:relative;height:100vh;width:100vw}
-
-    /* Video */
     .video-container{position:absolute;inset:0;background:#000}
     video{width:100%;height:100%;object-fit:cover;background:#000}
-
-    /* Loading */
     .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .3s}
     .loading-overlay.active{opacity:1;pointer-events:all}
     .spinner{width:60px;height:60px;border:4px solid rgba(255,255,255,.1);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
-
-    /* Channel info */
     .channel-info{position:absolute;top:20px;left:20px;background:linear-gradient(135deg,rgba(0,0,0,.8),rgba(0,0,0,.6));backdrop-filter:blur(20px);padding:15px 25px;border-radius:15px;border:1px solid rgba(255,255,255,.1);z-index:50;opacity:0;transform:translateY(-20px);transition:all .5s cubic-bezier(.4,0,.2,1)}
     .channel-info.show{opacity:1;transform:translateY(0)}
     .channel-name{font-size:24px;font-weight:700;margin-bottom:5px;text-shadow:0 2px 10px rgba(0,0,0,.5)}
     .channel-number{font-size:14px;opacity:.8;display:flex;align-items:center;gap:8px}
     .live-indicator{display:inline-block;width:8px;height:8px;background:#ff0000;border-radius:50%;animation:pulse 2s infinite}
     @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(255,0,0,.7)}50%{opacity:.7;box-shadow:0 0 0 5px rgba(255,0,0,0)}}
-
-    /* Status */
     .status-bar{position:absolute;bottom:20px;right:20px;background:rgba(0,0,0,.7);backdrop-filter:blur(20px);padding:12px 20px;border-radius:100px;display:flex;align-items:center;gap:12px;z-index:50;border:1px solid rgba(255,255,255,.1);font-size:13px}
     .status-dot{width:10px;height:10px;background:#43e97b;border-radius:50%;animation:statusPulse 3s infinite}
     .status-dot.disconnected{background:#f5576c;animation:none}
     @keyframes statusPulse{0%,100%{opacity:1}50%{opacity:.5}}
-
-    /* Display ID */
     .display-id{position:absolute;bottom:20px;left:20px;background:rgba(255,255,255,.05);backdrop-filter:blur(20px);padding:10px 18px;border-radius:10px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.1);opacity:.7;transition:opacity .3s}
-
-    /* Error */
     .error-message{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(245,87,108,.1);border:1px solid rgba(245,87,108,.3);padding:20px 30px;border-radius:15px;text-align:center;display:none;z-index:200}
     .error-message.show{display:block}
     .error-title{font-size:18px;margin-bottom:10px;color:#f5576c}
     .error-text{font-size:14px;opacity:.8}
-
-    /* Transition */
     .transition-overlay{position:absolute;inset:0;background:#000;z-index:90;opacity:0;pointer-events:none;transition:opacity .3s}
     .transition-overlay.active{opacity:1}
-
-    /* Volume HUD */
     .volume-control-panel{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);backdrop-filter:blur(20px);padding:15px 20px;border-radius:60px;display:flex;align-items:center;gap:15px;z-index:1000;border:1px solid rgba(255,255,255,.1);transition:opacity .3s,transform .3s;opacity:0;pointer-events:none}
     .volume-control-panel.show{opacity:1;pointer-events:all}
     .volume-btn{width:45px;height:45px;border-radius:50%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.2);color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s}
@@ -110,7 +94,6 @@
     const CONFIG = {
       displayId: 'PH-001',               // <— change for this TV
       dealershipName: 'PerformanceHyundai', // <— MUST match in Firebase
-     
       channels: [
         { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
         { id:2, name:'Sports', url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8', type:'hls' },
@@ -294,7 +277,7 @@
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    import { getDatabase, ref, onValue, update, get, set, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
@@ -309,6 +292,54 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getDatabase(app);
+
+    // ---- Single-active session (lease + heartbeat) --------------------------
+    async function startSingleSessionRTDB(displayId){
+      const user = auth.currentUser;
+      if(!user) throw new Error('Not signed in');
+
+      const sessionId = (crypto.randomUUID ? crypto.randomUUID()
+                       : Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));
+
+      const sessRef = ref(db, `sessions/${displayId}`);
+      const dispRef = ref(db, `displays/${displayId}`);
+
+      // Take over: delete old lease, then set ours
+      await remove(sessRef).catch(()=>{});
+      await set(sessRef, {
+        displayId,
+        uid: user.uid,
+        email: user.email || null,
+        sessionId,
+        loginAt: Date.now(),
+        lastSeen: Date.now()
+      });
+
+      // Mirror timestamps into displays (for admin/remote ONLINE)
+      await update(dispRef, {
+        lastLoginAt: Date.now(),
+        lastSeenAt:  Date.now(),
+        lastSessionId: sessionId,
+        lastUser: { uid: user.uid, email: user.email || null }
+      }).catch(()=>{});
+
+      // Heartbeat
+      const timer = setInterval(async ()=>{
+        try{
+          await update(sessRef, { lastSeen: Date.now() });
+          await update(dispRef, { lastSeenAt: Date.now() }).catch(()=>{});
+          window.setStatus?.(true, '');
+        }catch(e){
+          // Lost the lease (another login took over)
+          clearInterval(timer);
+          window.setStatus?.(false, 'session lost');
+          console.log('Session lease lost; another device signed in.');
+        }
+      }, 15000);
+
+      return { stop(){ clearInterval(timer); } };
+    }
+    // ------------------------------------------------------------------------
 
     signInAnonymously(auth).catch(e => {
       console.error('[auth]', e);
@@ -338,7 +369,7 @@
         const dRef = ref(db, `displays/${displayId}`);
         const snap = await get(dRef);
         if (!snap.exists()) {
-          await update(dRef, {
+          await set(dRef, {
             channel: 1,
             volume: 50,
             muted: true,
@@ -356,12 +387,15 @@
         window.setStatus(false, 'display/dealership mismatch'); return;
       }
 
-      // (c) live subscribe (green dot turns on if this succeeds)
+      // (c) claim session + heartbeat
+      try { await startSingleSessionRTDB(displayId); }
+      catch(e){ console.warn('lease failed', e); }
+
+      // (d) live subscribe (green dot if succeeds)
       const dref = ref(db, `displays/${displayId}`);
       onValue(dref, (snap) => {
         const data = snap.val();
         if (!data) return;
-
         if (typeof data.channel === 'number' && data.channel !== window.currentChannel) {
           window.loadChannel(data.channel);
         }
