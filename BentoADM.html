@@ -77,16 +77,6 @@
       <div class="row">
         <span class="badge" id="fbBadge">Firebase: not connected</span>
         <span class="badge" id="ghBadge">GitHub: not set</span>
-        <button class="btn ghost" id="btnTheme">Toggle theme</button>
-        <button class="btn ghost" id="btnAuth">Sign in</button>
-        <button class="btn" id="btnSettings">Settings</button>
-        <button class="btn info" id="btnExport">Sync → GitHub</button>
-      </div>
-    </div>
-      </div>
-      <div class="row">
-        <span class="badge" id="fbBadge">Firebase: not connected</span>
-        <span class="badge" id="ghBadge">GitHub: not set</span>
         <button class="btn ghost" id="btnAuth">Sign in</button>
         <button class="btn" id="btnSettings">Settings</button>
         <button class="btn info" id="btnExport">Sync → GitHub</button>
@@ -199,6 +189,31 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
   <script>
+    // ========= CONFIG =========
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+      authDomain: "iptv-bfa.firebaseapp.com",
+      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+      projectId: "iptv-bfa",
+      storageBucket: "iptv-bfa.firebasestorage.app",
+      messagingSenderId: "838790935867",
+      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    };
+    const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
+    const DEFAULT_LINKS = [
+      { emoji:'🔥', title:'Firebase — Overview', href:'https://console.firebase.google.com/project/iptv-bfa/overview', desc:'Console home' },
+      { emoji:'🗄️', title:'Firebase — Database', href:'https://console.firebase.google.com/project/iptv-bfa/database/iptv-bfa-default-rtdb/data', desc:'Realtime DB data' },
+      { emoji:'👤', title:'Firebase — Auth', href:'https://console.firebase.google.com/project/iptv-bfa/authentication/users', desc:'Users & providers' },
+      { emoji:'🐙', title:'GitHub Repo', href:'https://github.com/flaviothebfagroup/IPTV-', desc:'Source code' },
+      { emoji:'🌐', title:'GitHub Pages (Remote)', href:'https://flaviothebfagroup.github.io/IPTV-/remote-control.html', desc:'Open remote' },
+      { emoji:'📧', title:'Gmail', href:'https://mail.google.com/mail/u/0/#inbox', desc:'Primary inbox' },
+      { emoji:'📧', title:'Outlook', href:'https://outlook.office.com/mail/', desc:'Office 365 inbox' },
+      { emoji:'✅', title:'Trello — Digital Team', href:'https://trello.com/b/jHjTIrZG/digital-team', desc:'Board' },
+      { emoji:'🎛️', title:'BSN.cloud', href:'https://app.bsn.cloud/#/dashboard', desc:'BrightSign dashboard' },
+      { emoji:'🖥️', title:'Signagelive', href:'https://login.signagelive.com/', desc:'CMS login' },
+      { emoji:'📁', title:'Google Drive', href:'https://drive.google.com/drive/u/0/', desc:'My Drive' }
+    ];
+
     // ===== THEME / BRAND =====
     const THEME_KEY = 'iptv.theme';
     function applyTheme(theme){
@@ -229,10 +244,13 @@
 
     function setBadges(){
       const fbOk = !!(settings.fb && settings.fb.apiKey && app);
-      $('#fbBadge').textContent = fbOk ? 'Firebase: ' + settings.fb.projectId : 'Firebase: not connected';
+      $('#fbBadge').textContent = fbOk ? 'Firebase: ' + (settings.fb.projectId||'configured') : 'Firebase: not connected';
       $('#fbBadge').style.background = fbOk ? '#14261a' : '#2a1a1a';
       const ghOk = !!(settings.gh && settings.gh.owner && settings.gh.repo && settings.gh.branch && settings.gh.path && settings.gh.token);
       $('#ghBadge').textContent = ghOk ? `GitHub: ${settings.gh.owner}/${settings.gh.repo}@${settings.gh.branch}` : 'GitHub: not set';
+      $('#ghBadge').style.background = ghOk ? '#14223a' : '#2a1a1a';
+      $('#btnAuth').textContent = user ? `Sign out (${user.email})` : 'Sign in';
+    }/${settings.gh.repo}@${settings.gh.branch}` : 'GitHub: not set';
       $('#ghBadge').style.background = ghOk ? '#14223a' : '#2a1a1a';
       $('#btnAuth').textContent = user ? `Sign out (${user.email})` : 'Sign in';
     }/${settings.gh.repo}@${settings.gh.branch}` : 'GitHub: not set';
@@ -282,7 +300,10 @@
         app = firebase.apps.length ? firebase.app() : firebase.initializeApp(settings.fb);
         auth = firebase.auth();
         db = firebase.firestore();
+        setBadges();
         auth.onAuthStateChanged(u=>{ user=u; setBadges(); if(u){ loadAll(); } });
+      }catch(e){ alert('Firebase init failed: '+e.message); }
+    } });
       }catch(e){ alert('Firebase init failed: '+e.message); }
     }
 
@@ -501,6 +522,9 @@
 
     document.addEventListener('keydown', (e)=>{
       if(e.key.toLowerCase()==='g') exportToGitHub();
+      if(e.key.toLowerCase()==='r') loadAll();
+      if(e.key.toLowerCase()==='t') toggleTheme();
+    });
       if(e.key.toLowerCase()==='r') loadAll();
       if(e.key.toLowerCase()==='t') toggleTheme();
     });
