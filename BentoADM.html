@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>BFA IPTV — Admin</title>
 
+  <!-- PWA bits -->
   <link rel="manifest" href="/IPTV-/manifest.webmanifest" />
   <meta name="theme-color" content="#000000" />
   <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png" />
@@ -12,49 +13,65 @@
   <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png" />
 
   <style>
-    :root{--bg:#0b0b0c;--fg:#fff;--muted:#9a9aa0;--panel:#121214;--border:rgba(255,255,255,.14);
-      --accent:#ff9500;--tile:#17171a;--tileActive:#1d1d21;--shadow:0 18px 48px rgba(0,0,0,.45);
-      --gap:16px;--radius:18px;--radius-lg:22px;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444}
-    body.light{--bg:#f5f5f7;--fg:#111;--muted:#6e6e73;--panel:#fff;--border:rgba(0,0,0,.12);
-      --tile:#f2f2f7;--tileActive:#eaeaef;--shadow:0 14px 36px rgba(0,0,0,.10)}
+    /* ========= Minimal monochrome + orange accent ========= */
+    :root{
+      --bg:#000; --fg:#fff; --muted:#b3b3b3;
+      --panel:rgba(255,255,255,.05); --tile:rgba(255,255,255,.06); --tileActive:rgba(255,255,255,.1);
+      --border:rgba(255,255,255,.18); --accent:#ff9500;
+      --ok:#22c55e; --err:#ef4444; --warn:#f59e0b;
+      --gap:16px; --radius:18px; --radius-lg:22px; --shadow:0 18px 48px rgba(0,0,0,.55);
+    }
+    body.light{
+      --bg:#f5f5f7; --fg:#111; --muted:#6e6e73;
+      --panel:#fff; --tile:#f2f2f7; --tileActive:#eaeaef; --border:rgba(0,0,0,.14);
+      --shadow:0 14px 36px rgba(0,0,0,.08)
+    }
     *{box-sizing:border-box}
+    html,body{height:100%}
     body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;margin:0;padding:18px}
-    .wrap{max-width:1200px;margin:0 auto}
+    .wrap{max-width:1100px;margin:0 auto}
 
+    /* Topbar */
     .topbar{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap}
     .lhs{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-    .logo{width:40px;height:40px;border-radius:10px;background:var(--tile);border:1px solid var(--border);background-size:cover;background-position:center}
+    .logo{width:40px;height:40px;border-radius:10px;background:var(--tile) center/cover no-repeat;border:1px solid var(--border)}
     .title{font-weight:900;letter-spacing:.3px}
-    .chip{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);display:inline-flex;align-items:center;gap:8px}
-    .btn-pill{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:13px;font-weight:800;cursor:pointer}
-    .btn-ghost{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:700;cursor:pointer}
+    .btn-ghost,.btn-pill{height:34px;padding:0 14px;border-radius:9999px;background:transparent;font-size:13px;font-weight:800;cursor:pointer}
+    .btn-ghost{border:1px solid var(--border);color:var(--fg)}
+    .btn-pill{border:1px solid var(--accent);color:var(--accent)}
     .muted{color:var(--muted);font-size:12px}
 
-    details.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:0;box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
-    summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)}
+    /* Fold (folder) */
+    details.fold{margin:10px 0;border:1px solid var(--border);border-radius:18px;background:var(--panel);box-shadow:var(--shadow);overflow:hidden}
+    summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;user-select:none}
     summary::-webkit-details-marker{display:none}
     .sum-left{display:flex;align-items:center;gap:10px}
-    .folder{width:28px;height:24px;border-radius:6px;background:var(--tile);border:1px solid var(--border);display:grid;place-items:center}
-    .sum-title{font-weight:900}
-    .sum-right{display:flex;gap:8px;align-items:center}
-    .card-body{padding:16px}
+    .chev{width:16px;height:16px;border:1px solid var(--border);border-radius:4px;display:grid;place-items:center;opacity:.8}
+    details[open] .chev{border-color:var(--accent);color:var(--accent)}
+    .sum-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .body{padding:12px 16px 16px;border-top:1px solid var(--border);background:var(--tile)}
+    details.fold:focus-within{outline:2px solid var(--accent);outline-offset:2px}
 
+    /* Inputs / controls */
     .row{display:grid;grid-template-columns:1fr auto;gap:10px;margin:10px 0}
     .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
     .row3{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin:10px 0}
     .row4{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin:10px 0}
-    @media (max-width:680px){.row,.row2,.row3,.row4{grid-template-columns:1fr;gap:8px}}
+    @media (max-width:700px){.row,.row2,.row3,.row4{grid-template-columns:1fr;gap:8px}}
     .label{font-size:12px;color:var(--muted);margin-bottom:6px}
-    .input,.select{width:100%;padding:12px 12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
+    .input,.select{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
+    .input::placeholder{color:var(--muted)}
     .btn{padding:12px 14px;border-radius:12px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
-    .btn.secondary{background:var(--tile);color:var(--fg);border:1px solid var(--border)}
+    .btn.secondary{background:transparent;color:var(--fg);border:1px solid var(--border)}
     .btn.danger{background:#ff453a;color:#fff}
     .small{font-size:12px}
+    .input:focus,.select:focus,.btn:focus{outline:2px solid var(--accent);outline-offset:2px}
 
+    /* Lists / tiles */
     .list{margin:8px 0 0;padding:0;list-style:none}
     .empty{padding:12px;border:1px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center}
-
     .item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px;margin:8px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap}
+    .item.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(255,149,0,.25)}
     .split{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .col{display:flex;flex-direction:column;gap:6px;min-width:200px}
     .tag{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:transparent;font-size:12px;color:var(--muted)}
@@ -65,12 +82,7 @@
     .dot{width:8px;height:8px;border-radius:999px;background:#999}
     .dot.ok{background:var(--ok)} .dot.err{background:var(--err)}
 
-    .qa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-    @media (max-width:980px){.qa-grid{grid-template-columns:repeat(2,1fr)}}
-    .qa{display:flex;flex-direction:column;gap:6px;align-items:flex-start;justify-content:center;padding:16px;border:1px solid var(--border);border-radius:16px;background:var(--tile);cursor:pointer;transition:transform .08s,border-color .2s,box-shadow .2s}
-    .qa:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 8px 22px rgba(255,149,0,.15)}
-    .qa b{font-size:14px} .qa small{color:var(--muted)}
-
+    /* Users */
     .group{margin:14px 0}
     .group h3{margin:0 0 8px;font-size:14px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
     .user-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
@@ -82,186 +94,275 @@
     .user-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .user-actions{display:flex;gap:8px;flex-wrap:wrap}
 
+    /* Quick Links */
     .apps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
-    @media (max-width:1060px){ .apps-grid{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:900px){ .apps-grid{grid-template-columns:repeat(2,1fr)} }
     @media (max-width:560px){ .apps-grid{grid-template-columns:1fr} }
-    .app-tile{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:16px;background:var(--tile);text-decoration:none;color:inherit;transition:transform .1s, box-shadow .2s, border-color .2s}
-    .app-tile:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 8px 22px rgba(255,149,0,.15)}
+    .app-tile{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:16px;background:var(--tile);text-decoration:none;color:inherit;transition:transform .08s, border-color .2s}
+    .app-tile:hover{transform:translateY(-1px);border-color:var(--accent)}
     .app-emoji{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--tileActive);border:1px solid var(--border);font-size:20px}
     .app-logo{width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:var(--tileActive) center/cover no-repeat}
     .app-info{display:flex;flex-direction:column;gap:2px}
-    .app-title{font-weight:800} .app-desc{font-size:12px;color:var(--muted)}
+    .app-title{font-weight:800}
+    .app-desc{font-size:12px;color:var(--muted)}
     .apps-note{margin-top:6px;font-size:12px;color:var(--muted)}
 
+    /* Toast */
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
-    .toast.show{opacity:1} .toast.err{background:#ff453a;color:#fff}
+    .toast.show{opacity:1}
+    .toast.err{background:#ff453a;color:#fff}
+
+    /* Simple 2-col grid */
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+    @media (max-width:1060px){.grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <div class="wrap">
+    <!-- Top -->
     <div class="topbar">
       <div class="lhs">
-        <div id="brandLogo" class="logo"></div>
+        <div id="brandLogo" class="logo" title="IPTV"></div>
         <div class="title">BFA IPTV — Admin</div>
-        <div class="chip"><span>Theme</span><button id="themeBtn" class="btn-ghost">🌙 / ☀️</button></div>
+        <button id="themeBtn" class="btn-ghost" title="Toggle theme">🌙 / ☀️</button>
         <button id="reloadBtn" class="btn-ghost">Reload</button>
       </div>
       <div class="rhs">
         <span id="adminEmail" class="muted"></span>
         <button id="signOutBtn" class="btn-pill">Sign out</button>
-        <button id="settingsBtn" class="btn-pill">Settings</button>
-        <button id="syncBtn" class="btn-pill">Sync → GitHub</button>
       </div>
     </div>
 
     <!-- Login -->
-    <div id="loginBox" class="card-body" style="max-width:520px;margin:0 auto 12px;display:none;border:1px solid var(--border);border-radius:18px;background:var(--panel)">
-      <h2 style="margin:0 0 12px">Admin Sign In</h2>
-      <div class="row2">
-        <div><div class="label">Email</div><input id="email" class="input" type="email" placeholder="you@company.com" autocomplete="email" /></div>
-        <div><div class="label">Password</div><input id="password" class="input" type="password" placeholder="••••••••" autocomplete="current-password" /></div>
+    <details class="fold" id="loginFold" open style="max-width:520px;margin:0 auto 12px;display:none">
+      <summary>
+        <div class="sum-left"><span class="chev">▶</span><b>Admin Sign In</b></div>
+        <div class="sum-actions"></div>
+      </summary>
+      <div class="body">
+        <div class="row2">
+          <div><div class="label">Email</div><input id="email" class="input" type="email" placeholder="you@company.com" autocomplete="email" /></div>
+          <div><div class="label">Password</div><input id="password" class="input" type="password" placeholder="••••••••" autocomplete="current-password" /></div>
+        </div>
+        <div class="row2">
+          <button id="loginBtn" class="btn">Sign in</button>
+          <button id="resetBtn" class="btn secondary">Send reset link</button>
+        </div>
+        <div class="small muted">Requires <b>role: "admin"</b> in <code>/user/{uid}</code>.</div>
       </div>
-      <div class="row2">
-        <button id="loginBtn" class="btn">Sign in</button>
-        <button id="resetBtn" class="btn secondary">Send reset link</button>
-      </div>
-      <div class="small muted">Requires <b>role:"admin"</b> in <code>/user/{uid}</code>.</div>
-    </div>
+    </details>
 
     <!-- Not admin -->
-    <div id="notAdmin" class="card-body" style="display:none;max-width:720px;margin:0 auto 12px;border:1px solid var(--border);border-radius:18px;background:var(--panel)">
-      <h2 style="margin:0 0 8px">Not authorized</h2>
-      <div class="muted small">Ask an admin to set your role to <b>admin</b> in the database.</div>
-    </div>
+    <details class="fold" id="notAdmin" style="display:none;max-width:720px;margin:0 auto 12px">
+      <summary>
+        <div class="sum-left"><span class="chev">▶</span><b>Not authorized</b></div>
+        <div class="sum-actions"></div>
+      </summary>
+      <div class="body"><div class="muted small">Ask an admin to set your role to <b>admin</b> in the database.</div></div>
+    </details>
 
     <!-- Admin content -->
     <div id="adminContent" style="display:none">
-
-      <!-- Dealerships -->
-      <details id="secDealers" class="card" open>
+      <!-- Quick actions -->
+      <details class="fold" open>
         <summary>
-          <div class="sum-left"><div class="folder">🏢</div><div class="sum-title">Dealerships <span class="muted small" id="countDealersWrap">( <span id="countDealers">0</span> )</span></div></div>
-          <div class="sum-right"><button id="dealersReload" class="btn-ghost small">Reload</button></div>
-        </summary>
-        <div class="card-body">
-          <div class="qa-grid" style="margin-bottom:8px"><div class="qa" id="qaAddDealer"><b>➕ Add dealership</b><small>Create + public name</small></div></div>
-          <div class="row">
-            <div><div class="label">New dealership name</div><input id="dealerName" class="input" placeholder="e.g., Genesis Winnipeg" /></div>
-            <div style="display:flex;align-items:end"><button id="addDealerBtn" class="btn" style="width:100%">Add</button></div>
-          </div>
-          <div class="small muted">“Edit Name” changes the friendly name. “Rename ID” migrates displays & users.</div>
-          <ul id="dealerList" class="list"></ul>
-          <div id="dealerEmpty" class="empty" style="display:none">No dealerships.</div>
-        </div>
-      </details>
-
-      <!-- Displays -->
-      <details id="secDisplays" class="card" open>
-        <summary>
-          <div class="sum-left"><div class="folder">🖥️</div><div class="sum-title">Displays <span class="muted small" id="selDealerLabel"></span></div></div>
-          <div class="sum-right">
-            <button id="bulkMute" class="btn-ghost small">Mute all</button>
-            <button id="bulkUnmute" class="btn-ghost small">Unmute all</button>
-            <button id="bulkCh1" class="btn-ghost small">All → CH1</button>
-            <button id="displaysReload" class="btn-ghost small">Reload</button>
+          <div class="sum-left"><span class="chev">▶</span><b>Quick actions</b></div>
+          <div class="sum-actions">
+            <button class="btn secondary small" id="qaAddDealer">➕ Dealership</button>
+            <button class="btn secondary small" id="qaAddDisplay">➕ Screen</button>
+            <button class="btn secondary small" id="qaCreateUser">👤 User</button>
           </div>
         </summary>
-        <div class="card-body">
-          <div class="row3">
-            <div><div class="label">Dealership</div><select id="dealerForDisplays" class="select"><option value="">Select dealership…</option></select></div>
-            <div><div class="label">Optional display ID</div><input id="newDisplayId" class="input" placeholder="Auto if empty (e.g., GW-002)" /></div>
-            <div style="display:flex;align-items:end"><button id="addDisplayBtn" class="btn" style="width:100%">Add TV</button></div>
-          </div>
-          <ul id="displayList" class="list"></ul>
-          <div id="displayEmpty" class="empty" style="display:none">Pick a dealership to list TVs.</div>
-        </div>
+        <div class="body small muted">One-tap shortcuts to the most common tasks.</div>
       </details>
 
-      <!-- Users -->
-      <details id="secUsers" class="card">
-        <summary>
-          <div class="sum-left"><div class="folder">👤</div><div class="sum-title">Users</div></div>
-          <div class="sum-right">
-            <button id="cleanDupBtn" class="btn-ghost small">🧹 Clean duplicates</button>
-            <button id="usersReload" class="btn-ghost small">Reload</button>
+      <div class="grid">
+        <!-- Dealerships -->
+        <details class="fold" open id="foldDealers">
+          <summary>
+            <div class="sum-left"><span class="chev">▶</span><b>Dealerships</b></div>
+            <div class="sum-actions"><button id="dealersReload" class="btn secondary small">Reload</button></div>
+          </summary>
+          <div class="body">
+            <div class="row">
+              <div>
+                <div class="label">New dealership name</div>
+                <input id="dealerName" class="input" placeholder="e.g., Genesis Winnipeg" />
+              </div>
+              <div style="display:flex;align-items:end">
+                <button id="addDealerBtn" class="btn" style="width:100%">Add</button>
+              </div>
+            </div>
+            <div class="small muted">Creates <code>/dealership/{id}</code> and <code>/dealershipPublic/{id}</code>. ID is generated from name. “Rename ID” migrates displays & users.</div>
+            <ul id="dealerList" class="list"></ul>
+            <div id="dealerEmpty" class="empty" style="display:none">No dealerships.</div>
           </div>
-        </summary>
-        <div class="card-body">
-          <div class="qa-grid" style="margin-bottom:8px"><div class="qa" id="qaCreateUser"><b>➕ Create user</b><small>Email + role</small></div></div>
-          <div class="row4">
-            <div><div class="label">Email</div><input id="userEmail" class="input" placeholder="user@email.com" /></div>
-            <div><div class="label">Name</div><input id="userName" class="input" placeholder="Full Name" /></div>
-            <div><div class="label">Role</div><select id="userRole" class="select"><option value="user">user</option><option value="admin">admin</option><option value="device">device</option></select></div>
-            <div><div class="label">Dealership</div><select id="userDealer" class="select"><option value="">Dealership…</option></select></div>
-          </div>
-          <div class="row2"><button id="createUserBtn" class="btn">Create User</button><button id="inviteUserBtn" class="btn secondary">Send Reset (existing)</button></div>
-          <div class="row3">
-            <div><div class="label">Search</div><input id="userSearch" class="input" placeholder="Search name or email…" /></div>
-            <div><div class="label">Filter dealership</div><select id="filterDealer" class="select"><option value="">All dealerships</option></select></div>
-            <div><div class="label">Filter role</div><select id="filterRole" class="select"><option value="">All roles</option><option value="admin">admin</option><option value="device">device</option><option value="user">user</option><option value="disabled">disabled</option></select></div>
-          </div>
-          <div id="groupAdmins"  class="group"><h3>Admins (<span id="countAdmins">0</span>)</h3><div class="user-grid" id="gridAdmins"></div></div>
-          <div id="groupDevices" class="group"><h3>Device Users (<span id="countDevices">0</span>)</h3><div class="user-grid" id="gridDevices"></div></div>
-          <div id="groupUsers"   class="group"><h3>Regular Users (<span id="countUsers">0</span>)</h3><div class="user-grid" id="gridUsers"></div></div>
-          <div id="groupDisabled" class="group"><h3>Disabled (<span id="countDisabled">0</span>)</h3><div class="user-grid" id="gridDisabled"></div></div>
-          <div id="userEmpty" class="empty" style="display:none">No users.</div>
-        </div>
-      </details>
+        </details>
 
-      <!-- Apps / Quick Links -->
-      <details id="secApps" class="card">
-        <summary><div class="sum-left"><div class="folder">🧭</div><div class="sum-title">Apps / Quick Links</div></div></summary>
-        <div class="card-body">
-          <div class="row3">
-            <div><div class="label">Title</div><input id="qlTitle" class="input" placeholder="e.g., Firebase — Database" /></div>
-            <div><div class="label">URL</div><input id="qlHref" class="input" placeholder="https://..." /></div>
-            <div style="display:flex;align-items:end"><button id="qlAddBtn" class="btn" style="width:100%">Add Link</button></div>
+        <!-- Displays -->
+        <details class="fold" open id="foldDisplays">
+          <summary>
+            <div class="sum-left"><span class="chev">▶</span><b>Displays</b></div>
+            <div class="sum-actions">
+              <button id="bulkMute" class="btn secondary small">Mute all</button>
+              <button id="bulkUnmute" class="btn secondary small">Unmute all</button>
+              <button id="bulkCh1" class="btn secondary small">All → CH1</button>
+              <button id="displaysReload" class="btn secondary small">Reload</button>
+            </div>
+          </summary>
+          <div class="body">
+            <div class="row3">
+              <div>
+                <div class="label">Dealership</div>
+                <select id="dealerForDisplays" class="select">
+                  <option value="">Select dealership…</option>
+                </select>
+              </div>
+              <div>
+                <div class="label">Optional display ID</div>
+                <input id="newDisplayId" class="input" placeholder="Auto if empty (e.g., GW-002)" />
+              </div>
+              <div style="display:flex;align-items:end">
+                <button id="addDisplayBtn" class="btn" style="width:100%">Add TV</button>
+              </div>
+            </div>
+            <ul id="displayList" class="list"></ul>
+            <div id="displayEmpty" class="empty" style="display:none">Pick a dealership to list TVs.</div>
           </div>
-          <div class="row2">
-            <div><div class="label">Emoji (optional)</div><input id="qlEmoji" class="input" placeholder="🔥 ✅ 📁 …" /></div>
-            <div><div class="label">Logo image URL (optional)</div><input id="qlImg" class="input" placeholder="https://.../logo.png" /></div>
+        </details>
+
+        <!-- Users -->
+        <details class="fold" open id="foldUsers">
+          <summary>
+            <div class="sum-left"><span class="chev">▶</span><b>Users</b></div>
+            <div class="sum-actions"><button id="usersReload" class="btn secondary small">Reload</button></div>
+          </summary>
+          <div class="body">
+            <div class="row4">
+              <div><div class="label">Email</div><input id="userEmail" class="input" placeholder="user@email.com" /></div>
+              <div><div class="label">Name</div><input id="userName" class="input" placeholder="Full Name" /></div>
+              <div>
+                <div class="label">Role</div>
+                <select id="userRole" class="select">
+                  <option value="user">user</option>
+                  <option value="admin">admin</option>
+                  <option value="device">device</option>
+                </select>
+              </div>
+              <div>
+                <div class="label">Dealership</div>
+                <select id="userDealer" class="select"><option value="">Dealership…</option></select>
+              </div>
+            </div>
+            <div class="row2">
+              <button id="createUserBtn" class="btn">Create User</button>
+              <button id="inviteUserBtn" class="btn secondary">Send Reset (existing)</button>
+            </div>
+
+            <div class="row3">
+              <div><div class="label">Search</div><input id="userSearch" class="input" placeholder="Search name or email…" /></div>
+              <div>
+                <div class="label">Filter dealership</div>
+                <select id="filterDealer" class="select"><option value="">All dealerships</option></select>
+              </div>
+              <div>
+                <div class="label">Filter role</div>
+                <select id="filterRole" class="select">
+                  <option value="">All roles</option>
+                  <option value="admin">admin</option>
+                  <option value="device">device</option>
+                  <option value="user">user</option>
+                  <option value="disabled">disabled</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="groupAdmins"  class="group"><h3>Admins (<span id="countAdmins">0</span>)</h3><div class="user-grid" id="gridAdmins"></div></div>
+            <div id="groupDevices" class="group"><h3>Device Users (<span id="countDevices">0</span>)</h3><div class="user-grid" id="gridDevices"></div></div>
+            <div id="groupUsers"   class="group"><h3>Regular Users (<span id="countUsers">0</span>)</h3><div class="user-grid" id="gridUsers"></div></div>
+            <div id="groupDisabled" class="group"><h3>Disabled (<span id="countDisabled">0</span>)</h3><div class="user-grid" id="gridDisabled"></div></div>
+
+            <div id="userEmpty" class="empty" style="display:none">No users.</div>
           </div>
-          <div class="row">
-            <div><div class="label">Description (optional)</div><input id="qlDesc" class="input" placeholder="Short label under the title" /></div>
-            <div style="display:flex;align-items:end"><button id="qlResetBtn" class="btn secondary" style="width:100%">Reset to defaults</button></div>
+        </details>
+
+        <!-- Maintenance: Duplicates review (suggest, then delete) -->
+        <details class="fold" open id="foldDupes">
+          <summary>
+            <div class="sum-left"><span class="chev">▶</span><b>Maintenance — Duplicates</b></div>
+            <div class="sum-actions"><button id="scanDupesBtn" class="btn secondary small">Scan</button></div>
+          </summary>
+          <div class="body">
+            <div class="small muted" style="margin-bottom:6px">
+              Finds duplicate <b>device users</b> that share the same <b>Display Name</b> (we keep the newest entry; older ones are suggested for deletion).
+              This <b>does not</b> touch <code>/displays</code> and will <b>not stop</b> any active player.
+            </div>
+            <div id="dupeResults" class="list"></div>
+            <div id="dupeEmpty" class="empty" style="display:none">No duplicates found.</div>
+            <div class="row" id="dupeActions" style="display:none">
+              <div class="small muted">Review checkboxes, then delete selected:</div>
+              <div style="display:flex;align-items:end;gap:8px">
+                <button id="selectAllStale" class="btn secondary">Select all stale</button>
+                <button id="deleteSelectedDupes" class="btn danger">Delete selected</button>
+              </div>
+            </div>
           </div>
-          <div id="appsGrid" class="apps-grid"></div>
-          <div class="apps-note muted small" id="qlStorageNote">Loading…</div>
-        </div>
-      </details>
+        </details>
+
+        <!-- Apps / Quick Links -->
+        <details class="fold" open id="foldLinks">
+          <summary>
+            <div class="sum-left"><span class="chev">▶</span><b>Apps / Quick Links</b></div>
+            <div class="sum-actions"></div>
+          </summary>
+          <div class="body">
+            <div class="row3">
+              <div><div class="label">Title</div><input id="qlTitle" class="input" placeholder="e.g., Firebase — Database" /></div>
+              <div><div class="label">URL</div><input id="qlHref" class="input" placeholder="https://..." /></div>
+              <div style="display:flex;align-items:end"><button id="qlAddBtn" class="btn" style="width:100%">Add</button></div>
+            </div>
+            <div class="row2">
+              <div><div class="label">Emoji (optional)</div><input id="qlEmoji" class="input" placeholder="🔥 ✅ 📁 …" /></div>
+              <div><div class="label">Logo image URL (optional)</div><input id="qlImg" class="input" placeholder="https://.../logo.png" /></div>
+            </div>
+            <div class="row">
+              <div><div class="label">Description (optional)</div><input id="qlDesc" class="input" placeholder="Short label under the title" /></div>
+              <div style="display:flex;align-items:end"><button id="qlResetBtn" class="btn secondary" style="width:100%">Reset defaults</button></div>
+            </div>
+
+            <div id="appsGrid" class="apps-grid"></div>
+            <div class="apps-note muted small" id="qlStorageNote">Loading…</div>
+          </div>
+        </details>
+      </div>
     </div>
   </div>
 
   <div id="toast" class="toast"></div>
 
-  <dialog id="settingsDlg" style="border:0;padding:0;border-radius:18px;max-width:720px;width:96vw">
-    <form method="dialog" class="card-body" style="margin:0;border:1px solid var(--border);border-radius:18px;background:var(--panel)">
-      <h2 style="margin:0 0 12px">Settings</h2>
-      <div class="row2">
-        <div><div class="label">GitHub Owner</div><input id="ghOwner" class="input" placeholder="org-or-user" /></div>
-        <div><div class="label">Repo</div><input id="ghRepo" class="input" placeholder="repo" /></div>
-      </div>
-      <div class="row3">
-        <div><div class="label">Branch</div><input id="ghBranch" class="input" placeholder="main" /></div>
-        <div><div class="label">Path</div><input id="ghPath" class="input" placeholder="config/iptv-config.json" /></div>
-        <div><div class="label">Token</div><input id="ghToken" class="input" type="password" placeholder="ghp_… (contents:write)" /></div>
-      </div>
-      <div class="row2"><button class="btn secondary" value="cancel">Close</button><button id="saveSettingsBtn" class="btn" value="default">Save</button></div>
-    </form>
-  </dialog>
-
   <script type="module">
     import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import { getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword,
-      onAuthStateChanged, sendPasswordResetEmail, signOut, createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import { getDatabase, ref, get, set, update, remove, onValue, query, orderByChild, equalTo } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    import {
+      getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword,
+      onAuthStateChanged, sendPasswordResetEmail, signOut, createUserWithEmailAndPassword
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import {
+      getDatabase, ref, get, set, update, remove, onValue, query, orderByChild, equalTo
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    const firebaseConfig = { apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
-      authDomain:"iptv-bfa.firebaseapp.com", databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",
-      projectId:"iptv-bfa", storageBucket:"iptv-bfa.firebasestorage.app",
-      messagingSenderId:"838790935867", appId:"1:838790935867:web:1860eac7dbeb7159e1b31e" };
+    // ========= CONFIG =========
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+      authDomain: "iptv-bfa.firebaseapp.com",
+      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+      projectId: "iptv-bfa",
+      storageBucket: "iptv-bfa.firebasestorage.app",
+      messagingSenderId: "838790935867",
+      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    };
 
     const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
+
     const DEFAULT_LINKS = [
       { emoji:'🔥', title:'Firebase — Overview', href:'https://console.firebase.google.com/project/iptv-bfa/overview', desc:'Console home' },
       { emoji:'🗄️', title:'Firebase — Database', href:'https://console.firebase.google.com/project/iptv-bfa/database/iptv-bfa-default-rtdb/data', desc:'Realtime DB data' },
@@ -276,347 +377,739 @@
       { emoji:'📁', title:'Google Drive', href:'https://drive.google.com/drive/u/0/', desc:'My Drive' }
     ];
 
+    // ========= STATE / helpers =========
     const $ = s => document.querySelector(s);
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    document.body.classList.toggle('light', (localStorage.getItem('iptv_theme')||'light')==='light');
-    $('#themeBtn').addEventListener('click', ()=>{ const on=!document.body.classList.contains('light'); document.body.classList.toggle('light', on); localStorage.setItem('iptv_theme', on?'light':'dark'); });
+    const savedTheme = localStorage.getItem('iptv_theme') || 'dark';
+    document.body.classList.toggle('light', savedTheme === 'light');
+    $('#themeBtn').addEventListener('click', ()=>{
+      const isLight = !document.body.classList.contains('light');
+      document.body.classList.toggle('light', isLight);
+      localStorage.setItem('iptv_theme', isLight ? 'light' : 'dark');
+    });
     $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
 
     const toastEl = $('#toast');
-    function toast(msg, err=false){ toastEl.textContent=msg; toastEl.className='toast show'+(err?' err':''); setTimeout(()=>toastEl.classList.remove('show'),2000); }
+    function toast(msg, err=false){ if(!toastEl) return; toastEl.textContent=msg; toastEl.className='toast show'+(err?' err':''); setTimeout(()=>toastEl.classList.remove('show'),2000); }
     function htmlEscape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[m])); }
     const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
 
+    // ========= AUTH UI =========
+    function showLogin(){ $('#loginFold').style.display='block'; $('#notAdmin').style.display='none'; $('#adminContent').style.display='none'; }
+    function showNotAdmin(){ $('#loginFold').style.display='none'; $('#notAdmin').style.display='block'; $('#adminContent').style.display='none'; }
+    function showAdmin(){ $('#loginFold').style.display='none'; $('#notAdmin').style.display='none'; $('#adminContent').style.display='block'; }
+
     $('#loginBtn').addEventListener('click', doLogin);
-    $('#resetBtn').addEventListener('click', async ()=>{ const email=$('#email').value.trim(); if(!email) return toast('Enter email',true);
-      try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(e){ toast('Reset failed',true); }});
+    $('#resetBtn').addEventListener('click', async ()=>{
+      const email = $('#email').value.trim();
+      if(!email) return toast('Enter email', true);
+      try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed', true); }
+    });
     $('#signOutBtn').addEventListener('click', ()=>signOut(auth));
     $('#reloadBtn').addEventListener('click', reloadAll);
 
-    async function doLogin(){ const email=$('#email').value.trim(), pass=$('#password').value;
-      if(!email||!pass) return toast('Fill email & password',true);
-      try{ await setPersistence(auth,browserLocalPersistence); await signInWithEmailAndPassword(auth,email,pass); }
-      catch(e){ toast('Sign-in failed',true); } }
+    async function doLogin(){
+      const email=$('#email').value.trim(), pass=$('#password').value;
+      if(!email||!pass) return toast('Fill email & password', true);
+      try{ await setPersistence(auth, browserLocalPersistence); await signInWithEmailAndPassword(auth,email,pass); }
+      catch(e){ console.error(e); toast('Sign-in failed', true); }
+    }
 
     onAuthStateChanged(auth, async (user)=>{
-      if(!user){ $('#adminEmail').textContent=''; $('#adminContent').style.display='none'; $('#notAdmin').style.display='none'; $('#loginBox').style.display='block'; return; }
+      if(!user){ $('#adminEmail').textContent=''; showLogin(); return; }
       $('#adminEmail').textContent = user.email || user.uid;
-      const uSnap = await get(ref(db, `user/${user.uid}`)); const u = uSnap.val()||{};
-      if(u.role !== 'admin'){ $('#loginBox').style.display='none'; $('#notAdmin').style.display='block'; $('#adminContent').style.display='none'; return; }
-      $('#loginBox').style.display='none'; $('#notAdmin').style.display='none'; $('#adminContent').style.display='block';
+
+      // check admin
+      const uSnap = await get(ref(db, `user/${user.uid}`));
+      const u = uSnap.val() || {};
+      if(u.role !== 'admin'){ showNotAdmin(); return; }
+
+      showAdmin();
       await reloadAll();
     });
 
-    // SETTINGS (GitHub)
-    const LS_GH='iptv_admin_gh'; const gh = JSON.parse(localStorage.getItem(LS_GH)||'{}');
-    function openSettings(){ $('#ghOwner').value=gh.owner||''; $('#ghRepo').value=gh.repo||''; $('#ghBranch').value=gh.branch||'main'; $('#ghPath').value=gh.path||'config/iptv-config.json'; $('#ghToken').value=gh.token||''; $('#settingsDlg').showModal(); }
-    function saveSettings(){ gh.owner=$('#ghOwner').value.trim(); gh.repo=$('#ghRepo').value.trim(); gh.branch=$('#ghBranch').value.trim()||'main'; gh.path=$('#ghPath').value.trim()||'config/iptv-config.json'; gh.token=$('#ghToken').value.trim(); localStorage.setItem(LS_GH,JSON.stringify(gh)); toast('Settings saved'); }
-    $('#settingsBtn').addEventListener('click', openSettings);
-    $('#saveSettingsBtn').addEventListener('click', (e)=>{ e.preventDefault(); saveSettings(); document.getElementById('settingsDlg').close(); });
-    $('#syncBtn').addEventListener('click', ()=> exportToGitHub());
+    // ========= RELOAD EVERYTHING =========
+    async function reloadAll(){
+      await refreshDealers();   // fills dealer list + select boxes
+      await refreshUsers();     // grouped users
+      const did = $('#dealerForDisplays').value;
+      if(did) await watchDisplays(did);
+      await quickLinksLoadRender();
+    }
 
-    // Quick actions
-    document.getElementById('qaAddDealer').addEventListener('click', async ()=>{ const name=prompt('Dealership name'); if(!name) return; await createDealership(name).catch(()=>toast('Create failed',true)); await refreshDealers(true); toast('Dealership added'); document.getElementById('secDealers')?.scrollIntoView({behavior:'smooth'}); });
-    document.getElementById('qaCreateUser').addEventListener('click', ()=>{ document.getElementById('secUsers')?.setAttribute('open','open'); document.getElementById('secUsers')?.scrollIntoView({behavior:'smooth'}); });
+    // ========= QUICK ACTIONS =========
+    $('#qaAddDealer').addEventListener('click', async ()=>{
+      const name = prompt('Dealership name'); if(!name) return;
+      await createDealership(name).catch(()=>toast('Create failed',true));
+      await refreshDealers(true); toast('Dealership added');
+      $('#foldDealers')?.scrollIntoView({behavior:'smooth'});
+    });
+    $('#qaAddDisplay').addEventListener('click', ()=>{
+      $('#foldDisplays')?.scrollIntoView({behavior:'smooth'});
+      toast('Pick a dealership, then “Add TV”');
+    });
+    $('#qaCreateUser').addEventListener('click', ()=>{
+      $('#foldUsers')?.scrollIntoView({behavior:'smooth'});
+    });
 
-    async function reloadAll(){ await refreshDealers(); await refreshUsers(); const did=$('#dealerForDisplays').value; if(did) await watchDisplays(did); await quickLinksLoadRender(); }
-
-    // DEALERSHIPS
-    $('#addDealerBtn').addEventListener('click', async ()=>{ const name=$('#dealerName').value.trim(); if(!name) return toast('Enter a name',true); await createDealership(name); $('#dealerName').value=''; await refreshDealers(true); toast('Dealership added'); });
+    // ========= DEALERSHIPS =========
+    $('#addDealerBtn').addEventListener('click', async ()=>{
+      const name = $('#dealerName').value.trim();
+      if(!name) return toast('Enter a name', true);
+      await createDealership(name);
+      $('#dealerName').value='';
+      await refreshDealers(true);
+      toast('Dealership added');
+    });
     $('#dealersReload').addEventListener('click', ()=>refreshDealers(true));
 
-    async function createDealership(name){ const id=makeDealerId(name); const dealer={ name, createdAt:Date.now(), createdBy:auth.currentUser?.email||'admin', displays:{} };
-      await set(ref(db,`dealership/${id}`), dealer); await set(ref(db,`dealershipPublic/${id}`), { name }); }
-    function makeDealerId(name){ const base=(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24); return base || ('dealer_'+Date.now()); }
+    async function createDealership(name){
+      const id = makeDealerId(name);
+      const dealer = { name, createdAt: Date.now(), createdBy: auth.currentUser?.email || 'admin', displays: {} };
+      await set(ref(db, `dealership/${id}`), dealer);
+      await set(ref(db, `dealershipPublic/${id}`), { name });
+    }
+    function makeDealerId(name){
+      const base = (name||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24);
+      return base || ('dealer_' + Date.now());
+    }
 
-    async function refreshDealers(keep=false){
-      const list=$('#dealerList'); list.innerHTML='';
-      const selDisplays=$('#dealerForDisplays'), selUsers=$('#userDealer'), selFilter=$('#filterDealer');
-      const prevDispSel=selDisplays.value, prevUserSel=selUsers.value, prevFilter=selFilter.value;
-      let map={}; try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=pub.val(); }catch(e){}
-      if(!map || !Object.keys(map).length){ try{ const d=await get(ref(db,'dealership')); if(d.exists()){ const raw=d.val(); Object.keys(raw).forEach(id=>{ map[id]={name:raw[id]?.name||id}; }); } }catch(e){} }
-      const ids=Object.keys(map||{}).sort(); $('#dealerEmpty').style.display=ids.length?'none':'block'; $('#countDealers').textContent=ids.length;
-      selDisplays.innerHTML='<option value="">Select dealership…</option>'; selUsers.innerHTML='<option value="">Dealership…</option>'; selFilter.innerHTML='<option value="">All dealerships</option>';
+    async function refreshDealers(keepSelection=false){
+      const list = document.getElementById('dealerList'); list.innerHTML='';
+      const selDisplays = $('#dealerForDisplays');
+      const selUsers    = $('#userDealer');
+      const selFilter   = $('#filterDealer');
+
+      const prevDispSel = selDisplays.value;
+      const prevUserSel = selUsers.value;
+      const prevFilter  = selFilter.value;
+
+      let map = {};
+      try{ const pub = await get(ref(db, 'dealershipPublic')); if(pub.exists()) map = pub.val(); }catch(e){}
+      if(!map || Object.keys(map).length===0){
+        try{ const d = await get(ref(db, 'dealership')); if(d.exists()){ const raw=d.val(); Object.keys(raw).forEach(id=>{ map[id]={name: raw[id]?.name||id}; }); } }catch(e){}
+      }
+
+      const ids = Object.keys(map||{}).sort();
+      $('#dealerEmpty').style.display = ids.length? 'none':'block';
+
+      selDisplays.innerHTML = '<option value="">Select dealership…</option>';
+      selUsers.innerHTML    = '<option value="">Dealership…</option>';
+      selFilter.innerHTML   = '<option value="">All dealerships</option>';
+
       for(const id of ids){
-        const name = map[id]?.name || id; const count = await countDisplaysForDealer(id);
-        const li=document.createElement('li'); li.className='item';
-        li.innerHTML=`<div class="col"><div class="split"><b>${htmlEscape(name)}</b><span class="muted">${htmlEscape(id)} • ${count} TV${count===1?'':'s'}</span></div></div>
+        const name = map[id]?.name || id;
+        const count = await countDisplaysForDealer(id);
+
+        const li = document.createElement('li');
+        li.className = 'item';
+        li.innerHTML = `
+          <div class="col">
+            <div class="split">
+              <b>${htmlEscape(name)}</b>
+              <span class="muted small">${htmlEscape(id)} • ${count} TV${count===1?'':'s'}</span>
+            </div>
+          </div>
           <div class="split">
-            <button class="btn secondary small" onclick="window.editDealerNamePrompt('${id}','${htmlEscape(name)}')">Edit Name</button>
-            <button class="btn secondary small" onclick="window.renameDealerPrompt('${id}','${htmlEscape(name)}')">Rename ID</button>
-            <button class="btn secondary small" onclick="window.openDisplaysFor('${id}')">Open Displays</button>
-            <button class="btn danger small"   onclick="window.deleteDealerPrompt('${id}')">Delete</button>
+            <button class="btn secondary small" onclick="renameDealerPrompt('${id}','${htmlEscape(name)}')">Rename ID</button>
+            <button class="btn danger small" onclick="deleteDealerPrompt('${id}')">Delete</button>
           </div>`;
         list.appendChild(li);
-        for(const sel of [selDisplays,selUsers,selFilter]){ const opt=document.createElement('option'); opt.value=id; opt.textContent=name; sel.appendChild(opt); }
+
+        const opt1 = document.createElement('option'); opt1.value=id; opt1.textContent=name; selDisplays.appendChild(opt1);
+        const opt2 = document.createElement('option'); opt2.value=id; opt2.textContent=name; selUsers.appendChild(opt2);
+        const opt3 = document.createElement('option'); opt3.value=id; opt3.textContent=name; selFilter.appendChild(opt3);
       }
-      if(keep){ selDisplays.value=prevDispSel||''; selUsers.value=prevUserSel||''; selFilter.value=prevFilter||''; if(selDisplays.value) await watchDisplays(selDisplays.value); }
-      else { $('#displayList').innerHTML=''; $('#displayEmpty').style.display='block'; }
+
+      if(keepSelection){
+        selDisplays.value = prevDispSel || '';
+        selUsers.value    = prevUserSel || '';
+        selFilter.value   = prevFilter  || '';
+        if(selDisplays.value) await watchDisplays(selDisplays.value);
+      }else{
+        document.getElementById('displayList').innerHTML='';
+        $('#displayEmpty').style.display='block';
+      }
     }
 
-    async function countDisplaysForDealer(did){ let n=0; try{ const m=await get(ref(db,`dealership/${did}/displays`)); if(m.exists()) n=Object.keys(m.val()||{}).length;
-      if(n===0){ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const q=await get(qRef); if(q.exists()) n=Object.keys(q.val()||{}).length; } }catch(e){} return n; }
-
-    window.openDisplaysFor = (did)=>{ $('#dealerForDisplays').value=did; $('#selDealerLabel').textContent=`• ${did}`; document.getElementById('secDisplays').setAttribute('open','open'); watchDisplays(did,true); document.getElementById('secDisplays').scrollIntoView({behavior:'smooth'}); };
-
-    window.editDealerNamePrompt = async (id,currentName)=>{ const name=prompt('New public name:',currentName||''); if(!name||name.trim()===currentName) return;
-      try{ await update(ref(db,`dealership/${id}`),{name}); await set(ref(db,`dealershipPublic/${id}`),{name}); toast('Name updated'); await refreshDealers(true); }catch(e){ toast('Update failed',true); } };
-
-    window.renameDealerPrompt = async (id,currentName)=>{ let newId=prompt('New dealership ID (letters/numbers only):',id); if(!newId||newId===id) return; newId=newId.toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24);
-      if(!confirm(`Migrate ${id} → ${newId}?`)) return;
-      try{ await migrateDealerId(id,newId,currentName); toast('Dealer ID renamed'); await refreshDealers(true); }catch(e){ toast(e.message||'Rename failed',true); } };
-
-    async function migrateDealerId(oldId,newId,name){
-      const exists=await get(ref(db,`dealership/${newId}`)); if(exists.exists()) throw new Error('Target ID exists');
-      const pubName=name || (await get(ref(db,`dealershipPublic/${oldId}`))).val()?.name || oldId;
-      await set(ref(db,`dealershipPublic/${newId}`),{name:pubName});
-      const idxSnap=await get(ref(db,`dealership/${oldId}/displays`)); const idxMap=idxSnap.val()||{}; if(Object.keys(idxMap).length){ await set(ref(db,`dealership/${newId}/displays`),idxMap); }
-      const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(oldId)); const ds=await get(qRef); const dispMap=ds.val()||{};
-      for(const did of Object.keys(dispMap)){ await update(ref(db,`displays/${did}`),{dealership:newId,timestamp:Date.now()}); }
-      const us=await get(ref(db,'user')); const users=us.val()||{};
-      for(const uid of Object.keys(users)){ if(users[uid]?.dealershipId===oldId){ await update(ref(db,`user/${uid}`),{dealershipId:newId,dealershipName:pubName}); } }
-      const oldBase=await get(ref(db,`dealership/${oldId}`)); if(oldBase.exists()){ const base=oldBase.val(); base.name=pubName; await set(ref(db,`dealership/${newId}`),base); }
-      await remove(ref(db,`dealership/${oldId}`)); await remove(ref(db,`dealershipPublic/${oldId}`));
+    async function countDisplaysForDealer(did){
+      let n=0;
+      try{
+        const m = await get(ref(db, `dealership/${did}/displays`));
+        if(m.exists()) n = Object.keys(m.val()||{}).length;
+        if(n===0){
+          const qRef = query(ref(db, 'displays'), orderByChild('dealership'), equalTo(did));
+          const q = await get(qRef);
+          if(q.exists()) n = Object.keys(q.val()||{}).length;
+        }
+      }catch(e){}
+      return n;
     }
 
-    window.deleteDealerPrompt = async (id)=>{ const count=await countDisplaysForDealer(id); if(count>0){ alert(`This dealership still has ${count} display(s). Remove/migrate first.`); return; }
-      if(!confirm(`Delete ${id}?`)) return; try{ await remove(ref(db,`dealership/${id}`)); await remove(ref(db,`dealershipPublic/${id}`)); toast('Deleted'); await refreshDealers(); }catch(e){ toast('Delete failed',true); } };
+    window.renameDealerPrompt = async (id, currentName) => {
+      const newId = prompt('New dealership ID (letters/numbers only):', id);
+      if(!newId || newId===id) return;
+      const ok = confirm(`Migrate ${id} → ${newId}? Displays and users will be updated.`);
+      if(!ok) return;
+      try{ await migrateDealerId(id, newId, currentName); toast('Dealer ID renamed'); await refreshDealers(true); }
+      catch(e){ console.error(e); toast('Rename failed', true); }
+    };
 
-    // DISPLAYS
-    let displaysUnsub=null;
-    $('#dealerForDisplays').addEventListener('change', e=>{ $('#selDealerLabel').textContent=e.target.value?`• ${e.target.value}`:''; watchDisplays(e.target.value); });
+    async function migrateDealerId(oldId, newId, name){
+      const exists = await get(ref(db, `dealership/${newId}`));
+      if(exists.exists()) throw new Error('Target ID exists');
+
+      const pubName = name || (await get(ref(db, `dealershipPublic/${oldId}`))).val()?.name || oldId;
+      await set(ref(db, `dealershipPublic/${newId}`), { name: pubName });
+
+      const idxSnap = await get(ref(db, `dealership/${oldId}/displays`));
+      const idxMap = idxSnap.val()||{};
+      if(Object.keys(idxMap).length){ await set(ref(db, `dealership/${newId}/displays`), idxMap); }
+
+      const qRef = query(ref(db,'displays'), orderByChild('dealership'), equalTo(oldId));
+      const ds = await get(qRef);
+      const dispMap = ds.val()||{};
+      for(const did of Object.keys(dispMap)){
+        await update(ref(db, `displays/${did}`), { dealership:newId, timestamp: Date.now() });
+      }
+
+      const us = await get(ref(db,'user'));
+      const users = us.val()||{};
+      for(const uid of Object.keys(users)){
+        if(users[uid]?.dealershipId === oldId){ await update(ref(db,`user/${uid}`), { dealershipId:newId, dealershipName: pubName }); }
+      }
+
+      await remove(ref(db, `dealership/${oldId}`));
+      await remove(ref(db, `dealershipPublic/${oldId}`));
+    }
+
+    window.deleteDealerPrompt = async (id) => {
+      const count = await countDisplaysForDealer(id);
+      if(count>0){ alert(`This dealership still has ${count} display(s). Remove them first or migrate.`); return; }
+      if(!confirm(`Delete ${id}?`)) return;
+      try{
+        await remove(ref(db, `dealership/${id}`));
+        await remove(ref(db, `dealershipPublic/${id}`));
+        toast('Deleted'); await refreshDealers();
+      }catch(e){ console.error(e); toast('Delete failed', true); }
+    };
+
+    // ========= DISPLAYS =========
+    let displaysUnsub = null;
+    $('#dealerForDisplays').addEventListener('change', e => watchDisplays(e.target.value));
     $('#displaysReload').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(did) watchDisplays(did,true); });
 
-    let cachedDealersMap={}; async function ensureDealersMap(){ if(Object.keys(cachedDealersMap).length) return cachedDealersMap; cachedDealersMap=await loadDealersMap(); return cachedDealersMap; }
+    async function watchDisplays(did, forceOnce=false){
+      const ul = document.getElementById('displayList'); ul.innerHTML='';
+      if(!did){ $('#displayEmpty').style.display='block'; if(displaysUnsub) displaysUnsub(); displaysUnsub=null; return; }
+      $('#displayEmpty').style.display='none';
+      if(displaysUnsub){ displaysUnsub(); displaysUnsub=null; }
 
-    async function watchDisplays(did,forceOnce=false){
-      const ul=$('#displayList'); ul.innerHTML=''; if(!did){ $('#displayEmpty').style.display='block'; if(displaysUnsub) displaysUnsub(); displaysUnsub=null; return; }
-      $('#displayEmpty').style.display='none'; if(displaysUnsub){ displaysUnsub(); displaysUnsub=null; }
-      const dealersMap=await ensureDealersMap();
-      const render=(map)=>{ ul.innerHTML=''; const ids=Object.keys(map||{}).sort(); if(!ids.length){ $('#displayEmpty').style.display='block'; return; }
-        const now=Date.now();
-        ids.forEach(id=>{ const st=map[id]||{}; const online=(st.lastSeenAt && (now-st.lastSeenAt)<60000) || (st.timestamp && (now-st.timestamp)<120000);
-          const li=document.createElement('li'); li.className='item';
-          li.innerHTML=`<div class="col">
-              <div class="split"><b>${htmlEscape(id)}</b><span class="tag">${htmlEscape(st.dealership||did)}</span><span class="online"><i class="dot ${online?'ok':'err'}"></i>${online?'Online':'Offline'}</span></div>
-              <span class="muted small">CH ${st.channel??1} • VOL ${st.volume??0} • ${st.muted?'Muted':'Unmuted'}</span>
+      const render = (map) => {
+        ul.innerHTML='';
+        const ids = Object.keys(map||{}).sort();
+        if(ids.length===0){ $('#displayEmpty').style.display='block'; return; }
+        const now = Date.now();
+        ids.forEach(id=>{
+          const st = map[id] || {};
+          const online = (st.lastSeenAt && (now - st.lastSeenAt) < 60000) || (st.timestamp && (now-st.timestamp)<120000);
+          const li = document.createElement('li'); li.className='item';
+          li.tabIndex = 0; // focus ring
+          li.addEventListener('focus', ()=> li.classList.add('selected'));
+          li.addEventListener('blur',  ()=> li.classList.remove('selected'));
+          li.innerHTML = `
+            <div class="col">
+              <div class="split">
+                <b>${htmlEscape(id)}</b>
+                <span class="tag">${htmlEscape(did)}</span>
+                <span class="online"><i class="dot ${online?'ok':'err'}"></i>${online?'Online':'Offline'}</span>
+              </div>
+              <span class="muted small">CH ${st.channel ?? 1} • VOL ${st.volume ?? 0} • ${st.muted ? 'Muted' : 'Unmuted'}</span>
             </div>
             <div class="split">
-              <select data-id="${id}" class="select small chsel">${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===(st.channel||1)?'selected':''}>CH ${n}</option>`).join('')}</select>
-              <div class="vol"><span class="muted small">VOL</span><input type="range" min="0" max="100" value="${st.volume??0}" data-id="${id}" class="vslider"/></div>
+              <select data-id="${id}" class="select small chsel">
+                ${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===(st.channel||1)?'selected':''}>CH ${n}</option>`).join('')}
+              </select>
+              <div class="vol">
+                <span class="muted small">VOL</span>
+                <input type="range" min="0" max="100" value="${st.volume ?? 0}" data-id="${id}" class="vslider"/>
+              </div>
               <button class="btn secondary small" data-id="${id}" data-muted="${!!st.muted}">${st.muted?'Unmute':'Mute'}</button>
-              <select data-id="${id}" class="select small moveSel">${Object.entries(dealersMap).map(([k,v])=>`<option value="${k}" ${k===(st.dealership||did)?'selected':''}>${v}</option>`).join('')}</select>
-              <button class="btn secondary small" onclick="window.renameDisplayPrompt('${did}','${id}')">Rename ID</button>
-              <button class="btn danger small" onclick="window.removeDisplayPrompt('${did}','${id}')">Remove</button>
+              <button class="btn danger small" onclick="removeDisplayPrompt('${did}','${id}')">Remove</button>
             </div>`;
-          ul.appendChild(li); });
-        ul.querySelectorAll('.chsel').forEach(el=> el.addEventListener('change', async e=>{ const id=e.target.getAttribute('data-id'); await writeDisplay(id,{channel:parseInt(e.target.value,10)}); }));
-        const deb=debounce(async (id,val)=>{ await writeDisplay(id,{volume:val}); },180);
-        ul.querySelectorAll('.vslider').forEach(el=> el.addEventListener('input', e=>{ deb(e.target.getAttribute('data-id'), parseInt(e.target.value,10)); }));
-        ul.querySelectorAll('.btn.secondary.small[data-id]').forEach(el=> el.addEventListener('click', async ()=>{ const id=el.getAttribute('data-id'); const cur=el.getAttribute('data-muted')==='true'; await writeDisplay(id,{muted:!cur}); }));
-        ul.querySelectorAll('.moveSel').forEach(sel=> sel.addEventListener('change', async e=>{ await moveDisplayToDealer(e.target.getAttribute('data-id'), e.target.value); }));
+          ul.appendChild(li);
+        });
+
+        // wire events
+        ul.querySelectorAll('.chsel').forEach(el=>{
+          el.addEventListener('change', async (e)=>{
+            const id = e.target.getAttribute('data-id');
+            const ch = parseInt(e.target.value,10);
+            await writeDisplay(id, { channel: ch });
+          });
+        });
+        const debouncedWrite = debounce(async (id,val)=>{ await writeDisplay(id, { volume: val }); }, 180);
+        ul.querySelectorAll('.vslider').forEach(el=>{
+          el.addEventListener('input', (e)=>{
+            const id = e.target.getAttribute('data-id');
+            const v = parseInt(e.target.value,10);
+            debouncedWrite(id, v);
+          });
+        });
+        ul.querySelectorAll('.btn.secondary.small[data-id]').forEach(el=>{
+          el.addEventListener('click', async ()=>{
+            const id = el.getAttribute('data-id');
+            const cur = el.getAttribute('data-muted') === 'true';
+            await writeDisplay(id, { muted: !cur });
+          });
+        });
       };
-      const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
-      const off=onValue(qRef, s=>render(s.val()||{}), err=>console.warn(err)); displaysUnsub=()=>off();
-      if(forceOnce){ const once=await get(qRef); render(once.val()||{}); }
+
+      const qRef = query(ref(db, 'displays'), orderByChild('dealership'), equalTo(did));
+      const off = onValue(qRef, (snap)=> render(snap.val()||{}), (err)=>{ console.warn(err); });
+      displaysUnsub = ()=> off();
+
+      if(forceOnce){
+        const once = await get(qRef);
+        render(once.val()||{});
+      }
     }
 
-    async function writeDisplay(id,patch){
-      try{ const snap=await get(ref(db,`displays/${id}`)); const cur=snap.val()||{};
-        await update(ref(db,`displays/${id}`),{...patch, dealership: cur.dealership || cur.dealer || $('#dealerForDisplays').value || null, timestamp: Date.now()});
-        toast(`${id}: updated`);
-      }catch(e){ toast('Write denied',true); }
-    }
-
-    async function moveDisplayToDealer(id,targetDid){
+    async function writeDisplay(id, patch){
       try{
-        await update(ref(db,`displays/${id}`),{dealership:targetDid,timestamp:Date.now()});
-        try{ const allDealers=await get(ref(db,'dealership')); const map=allDealers.val()||{}; for(const did of Object.keys(map)){ const idxRef=ref(db,`dealership/${did}/displays/${id}`); const isIn=await get(idxRef); if(isIn.exists()) await remove(idxRef); } }catch(e){}
-        await set(ref(db,`dealership/${targetDid}/displays/${id}`),true);
-        toast(`Moved ${id} → ${targetDid}`);
-      }catch(e){ toast('Move failed',true); }
+        const snap = await get(ref(db, `displays/${id}`));
+        const cur  = snap.val() || {};
+        await update(ref(db, `displays/${id}`), {
+          ...patch,
+          dealership: cur.dealership || cur.dealer || $('#dealerForDisplays').value || null,
+          timestamp: Date.now()
+        });
+        toast(`${id}: updated`);
+      }catch(e){ console.error(e); toast('Write denied', true); }
     }
 
-    window.renameDisplayPrompt = async (currentDealerId,oldId)=>{ const newIdRaw=prompt('New display ID:',oldId); if(!newIdRaw||newIdRaw===oldId) return;
-      try{ await renameDisplayId(currentDealerId,oldId,newIdRaw.trim()); toast('Display ID renamed'); await watchDisplays($('#dealerForDisplays').value,true); }
-      catch(e){ toast('Rename failed',true); } };
-
-    async function renameDisplayId(did,oldId,newId){
-      const oldRef=ref(db,`displays/${oldId}`); const oldSnap=await get(oldRef); if(!oldSnap.exists()) throw new Error('Old display not found'); const cur=oldSnap.val()||{};
-      await set(ref(db,`displays/${newId}`),{...cur,dealership:cur.dealership||did,timestamp:Date.now()});
-      try{ await remove(ref(db,`dealership/${did}/displays/${oldId}`)); }catch(e){}
-      await set(ref(db,`dealership/${did}/displays/${newId}`),true);
-      try{ const us=await get(ref(db,'user')); const users=us.val()||{}; for(const uid of Object.keys(users)){ const arr=Array.isArray(users[uid]?.displays)?users[uid].displays:null;
-        if(arr && arr.includes(oldId)){ const next=arr.map(x=>x===oldId?newId:x); await update(ref(db,`user/${uid}`),{displays:next}); } } }catch(e){}
-      await remove(oldRef);
-    }
-
-    $('#bulkMute').addEventListener('click', ()=>bulkWrite({muted:true}));
-    $('#bulkUnmute').addEventListener('click', ()=>bulkWrite({muted:false}));
-    $('#bulkCh1').addEventListener('click', ()=>bulkWrite({channel:1}));
+    // bulk controls
+    $('#bulkMute').addEventListener('click', ()=>bulkWrite({ muted:true }));
+    $('#bulkUnmute').addEventListener('click', ()=>bulkWrite({ muted:false }));
+    $('#bulkCh1').addEventListener('click', ()=>bulkWrite({ channel:1 }));
     async function bulkWrite(patch){
-      const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
-      try{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const s=await get(qRef); const map=s.val()||{}; const ids=Object.keys(map);
-        for(const id of ids){ await writeDisplay(id,patch); } toast('Applied to all TVs'); }catch(e){ toast('Bulk failed',true); }
+      const did = $('#dealerForDisplays').value;
+      if(!did) return toast('Pick a dealership', true);
+      try{
+        const qRef = query(ref(db,'displays'), orderByChild('dealership'), equalTo(did));
+        const s = await get(qRef);
+        const map = s.val()||{};
+        const ids = Object.keys(map);
+        for(const id of ids){ await writeDisplay(id, patch); }
+        toast('Applied to all TVs');
+      }catch(e){ console.error(e); toast('Bulk failed', true); }
     }
 
+    // add/remove TV
     $('#addDisplayBtn').addEventListener('click', async ()=>{
-      const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
-      let id=$('#newDisplayId').value.trim();
-      if(!id){ const friendly=(await get(ref(db,`dealershipPublic/${did}`))).val()?.name || did; const pref=initialsFromName(friendly); const existing=await collectDisplays(did); let n=nextSuffix(existing,pref); id=`${pref}-${String(n).padStart(3,'0')}`; }
-      try{ await set(ref(db,`dealership/${did}/displays/${id}`),true); await update(ref(db,`displays/${id}`),{channel:1,volume:0,muted:true,dealership:did,timestamp:Date.now()});
-        $('#newDisplayId').value=''; toast('Display added'); }catch(e){ toast('Add failed',true); }
+      const did = $('#dealerForDisplays').value;
+      if(!did) return toast('Pick a dealership', true);
+      let id = $('#newDisplayId').value.trim();
+      if(!id){
+        const friendly = (await get(ref(db, `dealershipPublic/${did}`))).val()?.name || did;
+        const pref = initialsFromName(friendly);
+        const existing = await collectDisplays(did);
+        let n = nextSuffix(existing, pref);
+        id = `${pref}-${String(n).padStart(3,'0')}`;
+      }
+      try{
+        await set(ref(db, `dealership/${did}/displays/${id}`), true);
+        await update(ref(db, `displays/${id}`), { channel:1, volume:0, muted:true, dealership:did, timestamp:Date.now() });
+        $('#newDisplayId').value='';
+        toast('Display added');
+      }catch(e){ console.error(e); toast('Add failed', true); }
     });
-    window.removeDisplayPrompt = async (did,id)=>{ if(!confirm(`Remove ${id}?`)) return;
-      try{ await remove(ref(db,`dealership/${did}/displays/${id}`)); await remove(ref(db,`displays/${id}`)); toast('Display removed'); }catch(e){ toast('Remove failed',true); } };
-    async function collectDisplays(did){ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const s=await get(qRef); return Object.keys(s.val()||{}); }
-    function initialsFromName(name){ const raw=(name||'').trim(); if(!raw) return 'DS'; let parts=raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g)||raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g)||[]; let a=parts[0]||'',b=parts[1]||''; let p=(a?a[0]:'')+(b?b[0]:''); if(p.length<2&&a.length>=2) p=a.slice(0,2); return p.toUpperCase(); }
-    function nextSuffix(list,pref){ let max=0; list.forEach(id=>{ const parts=String(id||'').split('-'); const num=parts[1]||''; const ok=parts[0]===pref && num.length===3 && [...num].every(c=>c>='0'&&c<='9'); if(ok){ const n=parseInt(num,10); if(n>max) max=n; } }); return max+1; }
+    window.removeDisplayPrompt = async (did, id)=>{
+      if(!confirm(`Remove ${id}?`)) return;
+      try{
+        await remove(ref(db, `dealership/${did}/displays/${id}`));
+        await remove(ref(db, `displays/${id}`));
+        toast('Display removed');
+      }catch(e){ console.error(e); toast('Remove failed', true); }
+    };
+    async function collectDisplays(did){
+      const qRef = query(ref(db,'displays'), orderByChild('dealership'), equalTo(did));
+      const s = await get(qRef);
+      return Object.keys(s.val()||{});
+    }
+    function initialsFromName(name){
+      const raw=(name||'').trim();
+      if(!raw) return 'DS';
+      let parts = raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g) || raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g) || [];
+      let a=parts[0]||'', b=parts[1]||'';
+      let p = (a? a[0]:'') + (b? b[0]:'');
+      if(p.length<2 && a.length>=2) p = a.slice(0,2);
+      return p.toUpperCase();
+    }
+    function nextSuffix(list, pref){
+      let max=0;
+      list.forEach(id=>{ const m=id.match(new RegExp('^'+pref+'-(\\d{3})$')); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; }});
+      return max+1;
+    }
 
-    // USERS
+    // ========= USERS =========
     $('#usersReload').addEventListener('click', refreshUsers);
-    $('#inviteUserBtn').addEventListener('click', async ()=>{ const email=$('#userEmail').value.trim(); if(!email) return toast('Enter email',true); try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(e){ toast('Reset failed',true); } });
+    $('#inviteUserBtn').addEventListener('click', async ()=>{
+      const email = $('#userEmail').value.trim();
+      if(!email) return toast('Enter email', true);
+      try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed', true); }
+    });
     $('#createUserBtn').addEventListener('click', createUserAdminSafe);
-    $('#userSearch').addEventListener('input', debounce(refreshUsers,200));
+    $('#userSearch').addEventListener('input', debounce(refreshUsers, 200));
     $('#filterDealer').addEventListener('change', refreshUsers);
     $('#filterRole').addEventListener('change', refreshUsers);
-    document.getElementById('cleanDupBtn').addEventListener('click', cleanDeviceDuplicates);
 
     async function createUserAdminSafe(){
-      const email=$('#userEmail').value.trim(), name=$('#userName').value.trim(), role=$('#userRole').value, did=$('#userDealer').value;
-      if(!email||!name||!role||!did) return toast('Fill all user fields',true);
-      const tempName='admin-helper-'+Date.now(); const tempApp=initializeApp(firebaseConfig,tempName); const tempAuth=getAuth(tempApp);
+      const email = $('#userEmail').value.trim();
+      const name  = $('#userName').value.trim();
+      const role  = $('#userRole').value;
+      const did   = $('#userDealer').value;
+      if(!email||!name||!role||!did) return toast('Fill all user fields', true);
+
+      const tempName = 'admin-helper-'+Date.now();
+      const tempApp  = initializeApp(firebaseConfig, tempName);
+      const tempAuth = getAuth(tempApp);
       try{
-        const tmpPass=Math.random().toString(36).slice(2)+Math.random().toString(36).toUpperCase().slice(2);
-        const cred=await createUserWithEmailAndPassword(tempAuth,email,tmpPass); const uid=cred.user.uid;
-        let dname=did; try{ const p=await get(ref(db,`dealershipPublic/${did}`)); if(p.exists()) dname=p.val()?.name||did; }catch(e){}
-        let displays=[]; const ds=await get(ref(db,`dealership/${did}/displays`)); if(ds.exists()) displays=Object.keys(ds.val()||{});
-        await set(ref(db,`user/${uid}`),{ email,name,role,dealershipId:did,dealershipName:dname,displays,createdAt:Date.now() });
-        await sendPasswordResetEmail(tempAuth,email); toast('User created + reset sent'); await refreshUsers();
-      }catch(e){ toast('Create failed',true); }
-      finally{ try{ await signOut(tempAuth);}catch(e){} try{ await deleteApp(tempApp);}catch(e){} }
+        const tmpPass = Math.random().toString(36).slice(2) + Math.random().toString(36).toUpperCase().slice(2);
+        const cred = await createUserWithEmailAndPassword(tempAuth, email, tmpPass);
+        const uid  = cred.user.uid;
+
+        let dname = did;
+        try{ const p=await get(ref(db, `dealershipPublic/${did}`)); if(p.exists()) dname=p.val()?.name||did; }catch(e){}
+
+        let displays = [];
+        const ds = await get(ref(db, `dealership/${did}/displays`));
+        if(ds.exists()) displays = Object.keys(ds.val()||{});
+
+        await set(ref(db, `user/${uid}`), {
+          email, name, role, dealershipId: did, dealershipName: dname, displays, createdAt: Date.now()
+        });
+
+        await sendPasswordResetEmail(tempAuth, email);
+        toast('User created + reset sent');
+        await refreshUsers();
+      }catch(e){ console.error(e); toast('Create failed', true); }
+      finally{
+        try{ await signOut(tempAuth); }catch(e){}
+        try{ await deleteApp(tempApp); }catch(e){}
+      }
     }
 
     async function refreshUsers(){
-      const search=($('#userSearch').value||'').toLowerCase(), fDid=$('#filterDealer').value, fRole=$('#filterRole').value;
-      const dealers=await loadDealersMap();
-      let map={}; try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
-      const rows=Object.entries(map).map(([uid,v])=>({uid,...v}));
-      const filtered=rows.filter(r=>{ if(fDid && r.dealershipId!==fDid) return false; if(fRole && (r.role||'user')!==fRole) return false;
-        if(search && !((r.email||'').toLowerCase().includes(search)||(r.name||'').toLowerCase().includes(search))) return false; return true; });
-      const groups={admin:[],device:[],user:[],disabled:[]};
-      filtered.forEach(r=>{ const role=(r.role||'user'); groups[role==='admin'?'admin':role==='device'?'device':role==='disabled'?'disabled':'user'].push(r); });
-      $('#countAdmins').textContent=groups.admin.length; $('#countDevices').textContent=groups.device.length; $('#countUsers').textContent=groups.user.length; $('#countDisabled').textContent=groups.disabled.length;
-      const total=groups.admin.length+groups.device.length+groups.user.length+groups.disabled.length; $('#userEmpty').style.display=total?'none':'block';
-      const renderGroup=(arr,gridId)=>{ const grid=document.getElementById(gridId); grid.innerHTML=''; arr.sort((a,b)=>(a.dealershipName||a.dealershipId||'').localeCompare(b.dealershipName||b.dealershipId||'')||(a.email||'').localeCompare(b.email||'')); arr.forEach(r=>{
-          const dealer=r.dealershipName||r.dealershipId||'—';
-          const card=document.createElement('div'); card.className='user-card';
-          card.innerHTML=`<div class="user-header"><div class="user-name">${htmlEscape(r.name||'No name')}</div>
-              <div class="user-sub"><span>${htmlEscape(r.email||'')}</span><span class="badge">${htmlEscape(r.role||'user')}</span><span class="badge">${htmlEscape(dealer)}</span></div></div>
-            <div class="user-controls">
-              <select data-uid="${r.uid}" class="select roleSel">${['user','admin','device','disabled'].map(v=>`<option value="${v}" ${v===(r.role||'user')?'selected':''}>${v}</option>`).join('')}</select>
-              <select data-uid="${r.uid}" class="select dealerSel">${Object.entries(dealers).map(([id,nm])=>`<option value="${id}" ${id===(r.dealershipId||'')?'selected':''}>${nm}</option>`).join('')}</select>
-            </div>
-            <div class="user-actions"><button class="btn secondary small resetBtn" data-email="${htmlEscape(r.email||'')}">Reset password</button>
-              <button class="btn ${(r.role==='disabled')?'secondary':'danger'} small toggleBtn" data-uid="${r.uid}" data-role="${r.role||'user'}">${(r.role==='disabled')?'Enable':'Disable'}</button></div>`;
-          grid.appendChild(card); });
-        grid.querySelectorAll('.roleSel').forEach(sel=> sel.addEventListener('change', async e=>{ const uid=e.target.getAttribute('data-uid'); const role=e.target.value;
-          try{ await update(ref(db,`user/${uid}`),{role}); toast('Role updated'); await refreshUsers(); }catch(err){ toast('Update failed',true); } }));
-        grid.querySelectorAll('.dealerSel').forEach(sel=> sel.addEventListener('change', async e=>{ const uid=e.target.getAttribute('data-uid'); const did=e.target.value; const name=dealers[did]||did;
-          try{ await update(ref(db,`user/${uid}`),{dealershipId:did,dealershipName:name}); toast('Moved'); }catch(err){ toast('Move failed',true); } }));
-        grid.querySelectorAll('.resetBtn').forEach(btn=> btn.addEventListener('click', async ()=>{ const email=btn.getAttribute('data-email'); if(!email) return toast('No email',true);
-          try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(err){ toast('Reset failed',true); } }));
-        grid.querySelectorAll('.toggleBtn').forEach(btn=> btn.addEventListener('click', async ()=>{ const uid=btn.getAttribute('data-uid'); const role=btn.getAttribute('data-role')||'user'; const next=role==='disabled'?'user':'disabled';
-          try{ await update(ref(db,`user/${uid}`),{role:next,disabledAt: next==='disabled'?Date.now():null}); toast(next==='disabled'?'User disabled':'User enabled'); await refreshUsers(); }catch(err){ toast('Change failed',true); } }));
-      };
-      renderGroup(groups.admin,'gridAdmins'); renderGroup(groups.device,'gridDevices'); renderGroup(groups.user,'gridUsers'); renderGroup(groups.disabled,'gridDisabled');
-    }
+      const search = ($('#userSearch').value || '').toLowerCase();
+      const fDid   = $('#filterDealer').value;
+      const fRole  = $('#filterRole').value;
 
-    async function cleanDeviceDuplicates(){
-      try{
-        const s=await get(ref(db,'user')); if(!s.exists()) return toast('No users');
-        const map=s.val()||{};
-        const groups={}; // key = dealershipId::DISPLAYID
-        for(const [uid,u] of Object.entries(map)){
-          if((u.role||'user')!=='device') continue;
-          const did = (u.dealershipId||'').trim();
-          const disp= (u.name||'').trim(); // name holds displayId from player
-          if(!disp) continue;
-          const key = `${did}::${disp.toUpperCase()}`;
-          (groups[key]||(groups[key]=[])).push({uid, ...u});
-        }
-        let removed=0, kept=0;
-        for(const key of Object.keys(groups)){
-          const arr = groups[key];
-          if(arr.length<=1){ kept++; continue; }
-          // newest first
-          arr.sort((a,b)=> (b.updatedAt||b.createdAt||0) - (a.updatedAt||a.createdAt||0));
-          const keep = arr[0]; kept++;
-          for(let i=1;i<arr.length;i++){
-            const dead = arr[i];
-            try{ await remove(ref(db, `user/${dead.uid}`)); removed++; }catch(e){}
-          }
-        }
-        toast(removed ? `Removed ${removed} duplicate device user(s)` : 'No duplicates found');
-        await refreshUsers();
-      }catch(e){ toast('Cleanup failed',true); }
+      const dealers = await loadDealersMap();
+
+      let map={};
+      try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
+      const rows = Object.entries(map).map(([uid,v])=>({uid,...v}));
+
+      const filtered = rows.filter(r=>{
+        if(fDid && r.dealershipId!==fDid) return false;
+        if(fRole && (r.role||'user')!==fRole) return false;
+        if(search && !((r.email||'').toLowerCase().includes(search) || (r.name||'').toLowerCase().includes(search))) return false;
+        return true;
+      });
+
+      const groups = { admin:[], device:[], user:[], disabled:[] };
+      filtered.forEach(r=>{
+        const role = (r.role||'user');
+        if(role === 'admin') groups.admin.push(r);
+        else if(role === 'device') groups.device.push(r);
+        else if(role === 'disabled') groups.disabled.push(r);
+        else groups.user.push(r);
+      });
+
+      $('#countAdmins').textContent   = groups.admin.length;
+      $('#countDevices').textContent  = groups.device.length;
+      $('#countUsers').textContent    = groups.user.length;
+      $('#countDisabled').textContent = groups.disabled.length;
+
+      const total = groups.admin.length + groups.device.length + groups.user.length + groups.disabled.length;
+      $('#userEmpty').style.display = total ? 'none' : 'block';
+
+      const renderGroup = (arr, gridId) => {
+        const grid = document.getElementById(gridId);
+        grid.innerHTML = '';
+        arr.sort((a,b)=> (a.dealershipName||a.dealershipId||'').localeCompare(b.dealershipName||b.dealershipId||'') || (a.email||'').localeCompare(b.email||''));
+        arr.forEach(r=>{
+          const dealer = r.dealershipName || r.dealershipId || '—';
+          const card = document.createElement('div');
+          card.className = 'user-card';
+          card.tabIndex = 0;
+          card.innerHTML = `
+            <div class="user-header">
+              <div class="user-name">${htmlEscape(r.name||'No name')}</div>
+              <div class="user-sub">
+                <span>${htmlEscape(r.email||'')}</span>
+                <span class="badge">${htmlEscape(r.role||'user')}</span>
+                <span class="badge">${htmlEscape(dealer)}</span>
+              </div>
+            </div>
+            <div class="user-controls">
+              <select data-uid="${r.uid}" class="select roleSel">
+                ${['user','admin','device','disabled'].map(v=>`<option value="${v}" ${v===(r.role||'user')?'selected':''}>${v}</option>`).join('')}
+              </select>
+              <select data-uid="${r.uid}" class="select dealerSel">
+                ${Object.entries(dealers).map(([id, nm])=>`<option value="${id}" ${id===(r.dealershipId||'')?'selected':''}>${nm}</option>`).join('')}
+              </select>
+            </div>
+            <div class="user-actions">
+              <button class="btn secondary small resetBtn" data-email="${htmlEscape(r.email||'')}">Reset password</button>
+              <button class="btn ${ (r.role==='disabled')?'secondary':'danger' } small toggleBtn" data-uid="${r.uid}" data-role="${r.role||'user'}">${ (r.role==='disabled')?'Enable':'Disable' }</button>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+
+        grid.querySelectorAll('.roleSel').forEach(sel=>{
+          sel.addEventListener('change', async (e)=>{
+            const uid = e.target.getAttribute('data-uid');
+            const role = e.target.value;
+            try{ await update(ref(db,`user/${uid}`),{role}); toast('Role updated'); await refreshUsers(); }
+            catch(err){ console.error(err); toast('Update failed', true); }
+          });
+        });
+        grid.querySelectorAll('.dealerSel').forEach(sel=>{
+          sel.addEventListener('change', async (e)=>{
+            const uid = e.target.getAttribute('data-uid');
+            const did = e.target.value;
+            let name = dealers[did] || did;
+            try{ await update(ref(db,`user/${uid}`), { dealershipId: did, dealershipName: name }); toast('Moved'); }
+            catch(err){ console.error(err); toast('Move failed', true); }
+          });
+        });
+        grid.querySelectorAll('.resetBtn').forEach(btn=>{
+          btn.addEventListener('click', async ()=>{
+            const email = btn.getAttribute('data-email');
+            if(!email) return toast('No email', true);
+            try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }
+            catch(err){ console.error(err); toast('Reset failed', true); }
+          });
+        });
+        grid.querySelectorAll('.toggleBtn').forEach(btn=>{
+          btn.addEventListener('click', async ()=>{
+            const uid = btn.getAttribute('data-uid');
+            const role= btn.getAttribute('data-role') || 'user';
+            const next = role==='disabled' ? 'user' : 'disabled';
+            try{
+              await update(ref(db,`user/${uid}`), { role: next, disabledAt: next==='disabled'?Date.now():null });
+              toast(next==='disabled'?'User disabled':'User enabled');
+              await refreshUsers();
+            }catch(err){ console.error(err); toast('Change failed', true); }
+          });
+        });
+      };
+
+      renderGroup(groups.admin,   'gridAdmins');
+      renderGroup(groups.device,  'gridDevices');
+      renderGroup(groups.user,    'gridUsers');
+      renderGroup(groups.disabled,'gridDisabled');
     }
 
     async function loadDealersMap(){
-      let map={}; try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=Object.fromEntries(Object.entries(pub.val()).map(([k,v])=>[k,v?.name||k])); }catch(e){}
-      if(!Object.keys(map).length){ try{ const d=await get(ref(db,'dealership')); if(d.exists()) map=Object.fromEntries(Object.entries(d.val()).map(([k,v])=>[k,v?.name||k])); }catch(e){} }
-      const selFilter=$('#filterDealer'), selUserForm=$('#userDealer'); const prevF=selFilter.value, prevU=selUserForm.value;
-      selFilter.innerHTML='<option value="">All dealerships</option>'; selUserForm.innerHTML='<option value="">Dealership…</option>';
-      for(const [id,name] of Object.entries(map).sort((a,b)=>a[1].localeCompare(b[1]))){ const optF=document.createElement('option'); optF.value=id; optF.textContent=name; selFilter.appendChild(optF);
-        const optU=document.createElement('option'); optU.value=id; optU.textContent=name; selUserForm.appendChild(optU); }
-      selFilter.value=prevF||''; selUserForm.value=prevU||'';
+      let map={};
+      try{ const pub = await get(ref(db,'dealershipPublic')); if(pub.exists()) map = Object.fromEntries(Object.entries(pub.val()).map(([k,v])=>[k, v?.name||k])); }catch(e){}
+      if(Object.keys(map).length===0){
+        try{ const d = await get(ref(db,'dealership')); if(d.exists()) map = Object.fromEntries(Object.entries(d.val()).map(([k,v])=>[k, v?.name||k])); }catch(e){}
+      }
+      const selFilter   = $('#filterDealer');
+      const selUserForm = $('#userDealer');
+      const prevF = selFilter.value, prevU = selUserForm.value;
+
+      selFilter.innerHTML = '<option value="">All dealerships</option>';
+      selUserForm.innerHTML = '<option value="">Dealership…</option>';
+
+      for(const [id,name] of Object.entries(map).sort((a,b)=>a[1].localeCompare(b[1]))){
+        const optF = document.createElement('option'); optF.value=id; optF.textContent=name; selFilter.appendChild(optF);
+        const optU = document.createElement('option'); optU.value=id; optU.textContent=name; selUserForm.appendChild(optU);
+      }
+      selFilter.value = prevF || '';
+      selUserForm.value = prevU || '';
+
       return map;
     }
 
-    // QUICK LINKS
-    const LINKS_DB_PATH='admin/quickLinks'; let quickLinks=[]; let quickLinksSource='db';
-    $('#qlAddBtn').addEventListener('click', async ()=>{ const title=$('#qlTitle').value.trim(), href=$('#qlHref').value.trim(), emoji=$('#qlEmoji').value.trim(), img=$('#qlImg').value.trim(), desc=$('#qlDesc').value.trim();
-      if(!title||!href) return toast('Title and URL are required',true);
-      quickLinks.push({title,href,emoji,img,desc}); await quickLinksSave(); ['#qlTitle','#qlHref','#qlEmoji','#qlImg','#qlDesc'].forEach(s=>$(s).value=''); renderApps(); toast('Link added'); });
-    $('#qlResetBtn').addEventListener('click', async ()=>{ quickLinks=[...DEFAULT_LINKS]; await quickLinksSave(true); renderApps(); toast('Links reset'); });
-
-    async function quickLinksLoadRender(){ try{ const s=await get(ref(db,LINKS_DB_PATH)); if(s.exists()){ quickLinks=Object.values(s.val()); quickLinksSource='db'; $('#qlStorageNote').textContent='Links are synced from database.'; } else throw new Error('empty'); }
-      catch(e){ try{ quickLinks=JSON.parse(localStorage.getItem('admin_quick_links')||'[]'); if(!quickLinks.length) quickLinks=[...DEFAULT_LINKS]; quickLinksSource='local'; $('#qlStorageNote').textContent='Links are stored locally on this device (no DB permission).'; }
-      catch(_){ quickLinks=[...DEFAULT_LINKS]; quickLinksSource='local'; $('#qlStorageNote').textContent='Links are stored locally on this device (no DB permission).'; } }
-      renderApps(); }
-    async function quickLinksSave(forceLocal=false){
-      if(forceLocal || quickLinksSource==='local'){ localStorage.setItem('admin_quick_links', JSON.stringify(quickLinks)); quickLinksSource='local'; $('#qlStorageNote').textContent='Links are stored locally on this device (no DB permission).'; return; }
-      try{ const data={}; quickLinks.forEach((l,i)=>data[i]=l); await set(ref(db,LINKS_DB_PATH),data); quickLinksSource='db'; $('#qlStorageNote').textContent='Links are synced from database.'; }
-      catch(e){ localStorage.setItem('admin_quick_links', JSON.stringify(quickLinks)); quickLinksSource='local'; $('#qlStorageNote').textContent='Links are stored locally on this device (no DB permission).'; }
-    }
-    function renderApps(){ const grid=$('#appsGrid'); grid.innerHTML=''; quickLinks.forEach((l,idx)=>{ const a=document.createElement('a'); a.className='app-tile'; a.href=l.href; a.target='_blank'; a.rel='noopener noreferrer';
-        const left = l.img ? `<div class="app-logo" style="background-image:url('${l.img}')"></div>` : `<div class="app-emoji">${htmlEscape(l.emoji||'🔗')}</div>`;
-        a.innerHTML=`${left}<div class="app-info"><div class="app-title">${htmlEscape(l.title||'Link')}</div><div class="app-desc">${htmlEscape(l.desc||'')}</div></div>
-          <button type="button" title="Remove" style="margin-left:auto" class="btn danger small" data-remove="${idx}">×</button>`;
-        grid.appendChild(a); });
-      grid.querySelectorAll('button[data-remove]').forEach(btn=> btn.addEventListener('click', async e=>{ e.preventDefault(); e.stopPropagation(); const i=parseInt(btn.getAttribute('data-remove'),10);
-        quickLinks.splice(i,1); await quickLinksSave(); renderApps(); toast('Link removed'); })); }
-
-    // GitHub Sync
-    function b64(str){ return btoa(unescape(encodeURIComponent(str))); }
-    async function buildSnapshot(){ const [dealersPubSnap,displaysSnap,usersSnap]=await Promise.all([ get(ref(db,'dealershipPublic')), get(ref(db,'displays')), get(ref(db,'user')) ]);
-      return { meta:{exportedAt:new Date().toISOString(), by:auth.currentUser?.email||'admin'}, dealerships: dealersPubSnap.exists()?dealersPubSnap.val():{}, displays: displaysSnap.exists()?displaysSnap.val():{}, users: usersSnap.exists()?usersSnap.val():{} }; }
-    async function exportToGitHub(){
-      if(!gh.owner||!gh.repo||!gh.token){ openSettings(); toast('Fill GitHub settings',true); return; }
+    // ========= Duplicates Review (device users) =========
+    $('#scanDupesBtn').addEventListener('click', scanDeviceDuplicates);
+    $('#selectAllStale')?.addEventListener('click', ()=> {
+      document.querySelectorAll('.dupe-checkbox[data-stale="1"]').forEach(cb=> cb.checked = true);
+    });
+    $('#deleteSelectedDupes')?.addEventListener('click', async ()=>{
+      const ids = [...document.querySelectorAll('.dupe-checkbox:checked')].map(cb=> cb.value);
+      if(!ids.length) return toast('Nothing selected', true);
+      if(!confirm(`Delete ${ids.length} old device user(s)? This does NOT stop players.`)) return;
       try{
-        const payload=await buildSnapshot(); const content=JSON.stringify(payload,null,2); const path=gh.path||'config/iptv-config.json';
-        const api=`https://api.github.com/repos/${encodeURIComponent(gh.owner)}/${encodeURIComponent(gh.repo)}/contents/${encodeURIComponent(path)}`;
-        let sha; try{ const r=await fetch(`${api}?ref=${encodeURIComponent(gh.branch||'main')}`,{headers:{Authorization:`Bearer ${gh.token}`,Accept:'application/vnd.github+json'}}); if(r.status===200){ sha=(await r.json()).sha; } }catch(e){}
-        const body={ message:`IPTV admin snapshot ${new Date().toISOString()}`, content:b64(content), branch: gh.branch||'main' }; if(sha) body.sha=sha;
-        const put=await fetch(api,{method:'PUT', headers:{Authorization:`Bearer ${gh.token}`,Accept:'application/vnd.github+json','Content-Type':'application/json'}, body:JSON.stringify(body)});
-        if(!put.ok) throw new Error(await put.text());
-        toast('Synced to GitHub');
-      }catch(e){ toast('Sync failed',true); }
+        for(const uid of ids){ await remove(ref(db, `user/${uid}`)); }
+        toast('Deleted');
+        await scanDeviceDuplicates();
+        await refreshUsers();
+      }catch(e){ console.error(e); toast('Delete failed', true); }
+    });
+
+    async function scanDeviceDuplicates(){
+      const box = $('#dupeResults'); box.innerHTML='';
+      $('#dupeEmpty').style.display='none';
+      $('#dupeActions').style.display='none';
+
+      let map={};
+      try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
+      const rows = Object.entries(map).map(([uid,v])=>({uid,...v}));
+
+      // group only device users by name (displayId stored in name)
+      const groups = new Map();
+      rows.filter(r=> (r.role==='device') && (r.name||'').trim())
+          .forEach(r=>{
+            const key = (r.name||'').trim();
+            if(!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(r);
+          });
+
+      let dupeCount = 0;
+      for(const [name, list] of groups){
+        if(list.length <= 1) continue;
+        dupeCount++;
+
+        // newest first by updatedAt (fallback createdAt)
+        list.sort((a,b)=> (b.updatedAt||b.createdAt||0) - (a.updatedAt||a.createdAt||0));
+        const keep = list[0];
+        const stale = list.slice(1);
+
+        const block = document.createElement('div');
+        block.className = 'item';
+        block.innerHTML = `
+          <div class="col">
+            <b>${htmlEscape(name)}</b>
+            <span class="muted small">Keep newest UID: ${htmlEscape(keep.uid)} • ${new Date(keep.updatedAt||keep.createdAt||0).toLocaleString()}</span>
+          </div>
+          <div class="col">
+            ${stale.map(r=>`
+              <label class="small" style="display:flex;align-items:center;gap:8px;margin:4px 0">
+                <input type="checkbox" class="dupe-checkbox" data-stale="1" value="${htmlEscape(r.uid)}">
+                Delete UID: <code>${htmlEscape(r.uid)}</code> • ${new Date(r.updatedAt||r.createdAt||0).toLocaleString()}
+              </label>
+            `).join('')}
+          </div>`;
+        box.appendChild(block);
+      }
+
+      if(dupeCount===0){
+        $('#dupeEmpty').style.display='block';
+      }else{
+        $('#dupeActions').style.display='grid';
+      }
+    }
+
+    // ========= QUICK LINKS =========
+    const LINKS_DB_PATH = 'admin/quickLinks';
+    let quickLinks = [];            // working list
+    let quickLinksSource = 'db';    // 'db' or 'local'
+
+    $('#qlAddBtn').addEventListener('click', async ()=>{
+      const title = $('#qlTitle').value.trim();
+      const href  = $('#qlHref').value.trim();
+      const emoji = $('#qlEmoji').value.trim();
+      const img   = $('#qlImg').value.trim();
+      const desc  = $('#qlDesc').value.trim();
+      if(!title || !href) return toast('Title and URL are required', true);
+      quickLinks.push({ title, href, emoji, img, desc });
+      await quickLinksSave();
+      clearQlForm();
+      renderApps();
+      toast('Link added');
+    });
+
+    $('#qlResetBtn').addEventListener('click', async ()=>{
+      quickLinks = [...DEFAULT_LINKS];
+      await quickLinksSave(true);
+      renderApps();
+      toast('Links reset');
+    });
+
+    function clearQlForm(){ ['#qlTitle','#qlHref','#qlEmoji','#qlImg','#qlDesc'].forEach(s=>$(s).value=''); }
+
+    async function quickLinksLoadRender(){
+      try{
+        const s = await get(ref(db, LINKS_DB_PATH));
+        if(s.exists()){
+          quickLinks = Object.values(s.val());
+          quickLinksSource = 'db';
+          $('#qlStorageNote').textContent = 'Links are synced from database.';
+        }else{ throw new Error('empty'); }
+      }catch(e){
+        try{
+          quickLinks = JSON.parse(localStorage.getItem('admin_quick_links')||'[]');
+          if(!quickLinks.length) quickLinks = [...DEFAULT_LINKS];
+          quickLinksSource = 'local';
+          $('#qlStorageNote').textContent = 'Links are stored locally on this device (no DB permission).';
+        }catch(_){
+          quickLinks = [...DEFAULT_LINKS];
+          quickLinksSource = 'local';
+          $('#qlStorageNote').textContent = 'Links are stored locally on this device (no DB permission).';
+        }
+      }
+      renderApps();
+    }
+
+    async function quickLinksSave(forceLocal=false){
+      if(forceLocal || quickLinksSource==='local'){
+        localStorage.setItem('admin_quick_links', JSON.stringify(quickLinks));
+        quickLinksSource = 'local';
+        $('#qlStorageNote').textContent = 'Links are stored locally on this device (no DB permission).';
+        return;
+      }
+      try{
+        const data = {}; quickLinks.forEach((l,i)=> data[i] = l);
+        await set(ref(db, LINKS_DB_PATH), data);
+        quickLinksSource = 'db';
+        $('#qlStorageNote').textContent = 'Links are synced from database.';
+      }catch(e){
+        localStorage.setItem('admin_quick_links', JSON.stringify(quickLinks));
+        quickLinksSource = 'local';
+        $('#qlStorageNote').textContent = 'Links are stored locally on this device (no DB permission).';
+      }
+    }
+
+    function renderApps(){
+      const grid = $('#appsGrid');
+      grid.innerHTML = '';
+      quickLinks.forEach((l, idx)=>{
+        const a = document.createElement('a');
+        a.className = 'app-tile';
+        a.href = l.href; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        const left = l.img ? `<div class="app-logo" style="background-image:url('${l.img}')"></div>` :
+                             `<div class="app-emoji">${htmlEscape(l.emoji||'🔗')}</div>`;
+        a.innerHTML = `
+          ${left}
+          <div class="app-info">
+            <div class="app-title">${htmlEscape(l.title||'Link')}</div>
+            <div class="app-desc">${htmlEscape(l.desc||'')}</div>
+          </div>
+          <button type="button" title="Remove" style="margin-left:auto" class="btn danger small" data-remove="${idx}">×</button>
+        `;
+        grid.appendChild(a);
+      });
+      grid.querySelectorAll('button[data-remove]').forEach(btn=>{
+        btn.addEventListener('click', async (e)=>{
+          e.preventDefault(); e.stopPropagation();
+          const i = parseInt(btn.getAttribute('data-remove'), 10);
+          quickLinks.splice(i,1);
+          await quickLinksSave();
+          renderApps();
+          toast('Link removed');
+        });
+      });
     }
   </script>
 </body>
 </html>
-
