@@ -13,11 +13,10 @@
 <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png"/>
 
 <style>
-  /* ===== Light, monochrome + orange accent, mobile-first ===== */
+  /* ===== Light, monochrome + orange accent ===== */
   :root{
-    --bg:#f7f8fa; --fg:#0b0b0c; --muted:#6f6f76;
-    --card:#ffffff; --panel:#ffffff; --border:rgba(0,0,0,.12);
-    --accent:#ff9500; --ok:#16a34a; --err:#dc2626;
+    --bg:#f7f8fa; --fg:#0b0b0c; --muted:#6f6f76; --card:#ffffff; --panel:#ffffff;
+    --border:rgba(0,0,0,.12); --accent:#ff9500; --ok:#16a34a; --err:#dc2626;
     --r:20px; --gap:14px; --pad:14px;
   }
   *{box-sizing:border-box}
@@ -25,7 +24,7 @@
   body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,system-ui,'SF Pro Display',sans-serif}
 
   /* Shell + topbar */
-  .shell{max-width:1120px;margin:0 auto;padding:var(--pad)}
+  .shell{max-width:1140px;margin:0 auto;padding:var(--pad)}
   .top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
   .brand{display:flex;align-items:center;gap:10px}
   .logo{width:36px;height:36px;border-radius:10px;background:#eee center/cover no-repeat;border:1px solid var(--border)}
@@ -35,39 +34,34 @@
   .btn.danger{border-color:var(--err);color:var(--err)}
   .muted{color:var(--muted);font-size:12px}
 
-  /* ===== HOME FLOW (6 buttons) ===== */
+  /* ===== HOME (Bento) ===== */
   .home{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
-  @media (min-width:900px){ .home{grid-template-columns:repeat(3,1fr)} }
+  @media (min-width:920px){ .home{grid-template-columns:repeat(3,1fr)} }
   .app-btn{
     position:relative; display:grid; place-items:center; aspect-ratio:1/1;
     background:var(--card); border:1px solid var(--border); border-radius:22px; cursor:pointer;
-    transition:transform .18s ease,border-color .2s ease,box-shadow .2s ease, background .2s ease;
-    overflow:hidden;
+    transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease, background .18s ease;
+    view-transition-name: tile;
   }
   .app-btn:hover{transform:translateY(-2px); border-color:var(--accent); box-shadow:0 12px 28px rgba(0,0,0,.08)}
   .app-btn.grow{transform:scale(1.06); box-shadow:0 0 0 2px rgba(255,149,0,.25)}
-  .app-ico{width:42px;height:42px}
+  .app-ico{width:44px;height:44px}
   .app-title{margin-top:8px;font-weight:900}
   .app-sub{font-size:12px;color:var(--muted)}
-  .ink{position:absolute; inset:0; background:radial-gradient(120px 120px at var(--x,50%) var(--y,50%), rgba(255,149,0,.1), transparent 60%); opacity:0; transition:opacity .25s}
-  .app-btn:hover .ink{opacity:1}
 
-  /* ===== PAGES (one at a time on mobile) ===== */
+  /* ===== PAGES ===== */
   .pages{position:relative;overflow:hidden}
-  .page{
-    display:none; opacity:0; transform:translateY(8px) scale(.98);
-    transition:opacity .24s ease, transform .24s ease;
-  }
-  .page.show{display:block; opacity:1; transform:translateY(0) scale(1)}
+  .page{display:none; opacity:0; transform:translateX(16px); transition:opacity .22s ease, transform .22s ease}
+  .page.show{display:block; opacity:1; transform:translateX(0)}
   .page-head{display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px}
   .page-title{font-weight:900}
   .flow-dots{display:flex;gap:6px}
   .dot{width:8px;height:8px;border-radius:999px;background:var(--border)}
   .dot.on{background:var(--accent)}
 
-  /* ===== Cards / inputs ===== */
+  /* Layout + cards + inputs */
   .grid{display:grid;grid-template-columns:1fr;gap:var(--gap)}
-  @media (min-width:900px){ .grid.two{grid-template-columns:1fr 1fr} .grid.three{grid-template-columns:1fr 1fr 1fr}}
+  @media (min-width:920px){ .grid.two{grid-template-columns:1fr 1fr} .grid.three{grid-template-columns:1fr 1fr 1fr} }
   .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:var(--pad)}
   .row{display:grid;grid-template-columns:1fr auto;gap:10px;margin:8px 0}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0}
@@ -79,6 +73,9 @@
   .list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
   .item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border:1px solid var(--border);border-radius:14px;background:#fff;flex-wrap:wrap}
   .tag{padding:2px 8px;border:1px solid var(--border);border-radius:999px;font-size:11px;color:var(--muted)}
+  .inline-edit{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .inline-edit .input{max-width:220px}
+
   .online{display:inline-flex;align-items:center;gap:6px;font-size:12px}
   .dotstat{width:8px;height:8px;border-radius:50%;background:#bbb}
   .ok{background:var(--ok)} .err{background:var(--err)}
@@ -95,8 +92,9 @@
   .day .n{font-weight:800}
   .pill{display:inline-block;padding:2px 6px;border-radius:999px;border:1px solid var(--border);font-size:10px;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-  /* Simple SVG charts */
-  .chart{width:100%;height:220px;border:1px solid var(--border);border-radius:14px;background:#fff}
+  /* Charts (Insights) */
+  .chart-wrap{background:#fff;border:1px solid var(--border);border-radius:14px;padding:10px}
+  canvas{display:block;width:100%;height:220px}
 
   /* Auth */
   .auth{max-width:560px;margin:10px auto 0}
@@ -121,7 +119,7 @@
     </div>
   </div>
 
-  <!-- ===== AUTH (shown if not admin) ===== -->
+  <!-- ===== AUTH ===== -->
   <div id="authPane" class="auth card" style="display:none">
     <div class="row2">
       <div><div class="label">Email</div><input id="email" class="input" placeholder="you@company.com"/></div>
@@ -134,81 +132,44 @@
     </div>
   </div>
 
-  <!-- ===== HOME FLOW (first screen) ===== -->
+  <!-- ===== HOME (6 tiles) ===== -->
   <div id="home" class="home">
     <div class="app-btn" data-go="dealers">
-      <div class="ink"></div>
-      <!-- building icon -->
-      <svg class="app-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="3"></rect>
-        <path d="M8 7h.01M12 7h.01M16 7h.01M8 11h.01M12 11h.01M16 11h.01M8 15h8M12 21v-6"></path>
-      </svg>
+      <svg class="app-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M7 20v-6h4v6M13 20v-4h4v4"/><path d="M3 10h18M7 8V4h10v4"/></svg>
       <div class="app-title">Dealerships</div>
       <div class="app-sub">Create • rename</div>
     </div>
-
     <div class="app-btn" data-go="displays">
-      <div class="ink"></div>
-      <!-- monitor icon -->
-      <svg class="app-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="4" width="18" height="12" rx="2"></rect>
-        <path d="M8 20h8M12 16v4"></path>
-      </svg>
+      <svg class="app-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
       <div class="app-title">Displays</div>
       <div class="app-sub">Channel • volume</div>
     </div>
-
     <div class="app-btn" data-go="users">
-      <div class="ink"></div>
-      <!-- user icon -->
-      <svg class="app-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="7.5" r="3.5"></circle>
-        <path d="M4 20c0-4 4-6 8-6s8 2 8 6"></path>
-      </svg>
+      <svg class="app-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
       <div class="app-title">Users</div>
       <div class="app-sub">Invite • duplicates</div>
     </div>
-
     <div class="app-btn" data-go="calendar">
-      <div class="ink"></div>
-      <!-- calendar icon -->
-      <svg class="app-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="4" width="18" height="17" rx="2"></rect>
-        <path d="M8 2v4M16 2v4M3 9h18"></path>
-      </svg>
+      <svg class="app-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>
       <div class="app-title">Calendar</div>
       <div class="app-sub">Installations</div>
     </div>
-
     <div class="app-btn" data-go="links">
-      <div class="ink"></div>
-      <!-- link icon -->
-      <svg class="app-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10 13a5 5 0 0 1 0-7l1.5-1.5a5 5 0 0 1 7 7L17 12"></path>
-        <path d="M14 11a5 5 0 0 1 0 7L12.5 19.5a5 5 0 1 1-7-7L7 8"></path>
-      </svg>
+      <svg class="app-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg>
       <div class="app-title">Links</div>
       <div class="app-sub">Quick access</div>
     </div>
-
-    <div class="app-btn" data-go="analytics">
-      <div class="ink"></div>
-      <!-- chart icon -->
-      <svg class="app-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 20h18"></path>
-        <rect x="5" y="11" width="3" height="6" rx="1"></rect>
-        <rect x="10.5" y="8" width="3" height="9" rx="1"></rect>
-        <rect x="16" y="5" width="3" height="12" rx="1"></rect>
-      </svg>
-      <div class="app-title">Analytics</div>
-      <div class="app-sub">Live insights</div>
+    <div class="app-btn" data-go="insights">
+      <svg class="app-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="3" height="10" rx="1"/><rect x="10.5" y="6" width="3" height="14" rx="1"/><rect x="17" y="3" width="3" height="17" rx="1"/></svg>
+      <div class="app-title">Insights</div>
+      <div class="app-sub">Usage & health</div>
     </div>
   </div>
 
-  <!-- ===== PAGES ===== -->
-  <div class="pages">
+  <!-- ===== PAGES (swipeable) ===== -->
+  <div class="pages" id="pages">
 
-    <!-- Page: Dealerships -->
+    <!-- Dealers -->
     <section id="page-dealers" class="page">
       <div class="page-head">
         <div style="display:flex;gap:8px;align-items:center">
@@ -223,12 +184,12 @@
         <div class="card">
           <div class="row">
             <div>
-              <div class="label">Add dealership</div>
+              <div class="label">Add dealership (public name)</div>
               <input id="dealerName" class="input" placeholder="e.g., Genesis Winnipeg"/>
             </div>
             <div style="display:flex;align-items:end"><button id="addDealerBtn" class="btn primary">Add</button></div>
           </div>
-          <div class="muted">Creates <code>/dealership/{id}</code> and <code>/dealershipPublic/{id}</code>.</div>
+          <div class="muted">Creates <code>/dealership/{id}</code> and <code>/dealershipPublic/{id}</code>. ID is derived from the name (letters/numbers).</div>
         </div>
         <div class="card">
           <div style="display:flex;align-items:center;justify-content:space-between">
@@ -244,16 +205,14 @@
       </div>
     </section>
 
-    <!-- Page: Displays -->
+    <!-- Displays -->
     <section id="page-displays" class="page">
       <div class="page-head">
         <div style="display:flex;gap:8px;align-items:center">
           <button class="btn" data-back>◀ Home</button>
           <div class="page-title">Displays</div>
         </div>
-        <div class="flow-dots">
-          <i class="dot on"></i><i class="dot on"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i>
-        </div>
+        <div class="flow-dots"><i class="dot on"></i><i class="dot on"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
       </div>
       <div class="grid two">
         <div class="card">
@@ -280,16 +239,14 @@
       </div>
     </section>
 
-    <!-- Page: Users -->
+    <!-- Users -->
     <section id="page-users" class="page">
       <div class="page-head">
         <div style="display:flex;gap:8px;align-items:center">
           <button class="btn" data-back>◀ Home</button>
           <div class="page-title">Users</div>
         </div>
-        <div class="flow-dots">
-          <i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i>
-        </div>
+        <div class="flow-dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
       </div>
       <div class="grid two">
         <div class="card">
@@ -329,16 +286,14 @@
       </div>
     </section>
 
-    <!-- Page: Calendar -->
+    <!-- Calendar with Reminders -->
     <section id="page-calendar" class="page">
       <div class="page-head">
         <div style="display:flex;gap:8px;align-items:center">
           <button class="btn" data-back>◀ Home</button>
           <div class="page-title">Calendar — Installations</div>
         </div>
-        <div class="flow-dots">
-          <i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i><i class="dot"></i>
-        </div>
+        <div class="flow-dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i><i class="dot"></i></div>
       </div>
       <div class="grid two">
         <div class="card">
@@ -355,88 +310,105 @@
           <div class="row3">
             <div><div class="label">Title</div><input id="evTitle" class="input" placeholder="Installation — showroom TV"/></div>
             <div><div class="label">Dealership</div><select id="evDealer" class="select"><option value="">—</option></select></div>
-            <div>
-              <div class="label">Reminder</div>
-              <select id="evRemind" class="select">
-                <option value="">No reminder</option>
-                <option value="day-1-09:00">1 day before, 9:00</option>
-                <option value="day0-09:00">same day, 9:00</option>
-              </select>
-            </div>
+            <div><div class="label">Time</div><input id="evTime" class="input" type="time"/></div>
           </div>
-          <div class="row">
+          <div class="row2">
             <div><div class="label">Notes</div><textarea id="evNotes" class="textarea" placeholder="Address, contact, equipment, etc."></textarea></div>
-            <div style="display:flex;align-items:end"><button id="addEventBtn" class="btn primary">Add</button></div>
+            <div>
+              <div class="label">Reminder (minutes before)</div>
+              <input id="evRemMin" class="input" type="number" min="0" step="5" placeholder="30"/>
+              <button id="addEventBtn" class="btn primary" style="margin-top:10px;width:100%">Add</button>
+            </div>
           </div>
           <ul id="evList" class="list"></ul>
           <div id="evEmpty" class="muted">No events.</div>
         </div>
       </div>
-      <div style="display:flex;justify-content:flex-start;margin-top:10px">
+      <div style="display:flex;justify-content:space-between;margin-top:10px">
         <button class="btn" data-prev="users">◀ Back</button>
+        <button class="btn primary" data-next="links">Next ▶</button>
       </div>
     </section>
 
-    <!-- Page: Links -->
+    <!-- Links (Quick Access) -->
     <section id="page-links" class="page">
       <div class="page-head">
         <div style="display:flex;gap:8px;align-items:center">
           <button class="btn" data-back>◀ Home</button>
           <div class="page-title">Links</div>
         </div>
-        <div class="flow-dots">
-          <i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i>
-        </div>
+        <div class="flow-dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i></div>
       </div>
       <div class="grid two">
         <div class="card">
           <div class="row3">
-            <div><div class="label">Title</div><input id="qlTitle" class="input" placeholder="e.g., Firebase — Database"/></div>
+            <div><div class="label">Title</div><input id="qlTitle" class="input" placeholder="Firebase — Database"/></div>
             <div><div class="label">URL</div><input id="qlHref" class="input" placeholder="https://..."/></div>
-            <div style="display:flex;align-items:end"><button id="qlAddBtn" class="btn primary" style="width:100%">Add link</button></div>
+            <div style="display:flex;align-items:end"><button id="qlAddBtn" class="btn primary" style="width:100%">Add</button></div>
           </div>
           <div class="row2">
             <div><div class="label">Emoji (optional)</div><input id="qlEmoji" class="input" placeholder="🔗"/></div>
             <div><div class="label">Logo URL (optional)</div><input id="qlImg" class="input" placeholder="https://.../logo.png"/></div>
           </div>
-          <div><span id="qlStorageNote" class="muted">Loading…</span></div>
+          <div class="row">
+            <div><div class="label">Description (optional)</div><input id="qlDesc" class="input" placeholder="Short label under the title"/></div>
+            <div style="display:flex;align-items:end"><button id="qlResetBtn" class="btn" style="width:100%">Reset defaults</button></div>
+          </div>
         </div>
         <div class="card">
-          <b>Saved links</b>
+          <b>Quick Links</b>
           <div id="appsGrid" class="list" style="margin-top:8px"></div>
-          <div class="muted" id="linksEmpty">No links yet.</div>
+          <div class="muted" id="qlStorageNote">Loading…</div>
         </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:10px">
+        <button class="btn" data-prev="calendar">◀ Back</button>
+        <button class="btn primary" data-next="insights">Next ▶</button>
       </div>
     </section>
 
-    <!-- Page: Analytics -->
-    <section id="page-analytics" class="page">
+    <!-- Insights (Charts) -->
+    <section id="page-insights" class="page">
       <div class="page-head">
         <div style="display:flex;gap:8px;align-items:center">
           <button class="btn" data-back>◀ Home</button>
-          <div class="page-title">Analytics (live)</div>
+          <div class="page-title">Insights</div>
         </div>
-        <div class="flow-dots">
-          <i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i>
-        </div>
+        <div class="flow-dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i></div>
       </div>
       <div class="grid two">
         <div class="card">
-          <b>Channel share (now)</b>
-          <svg id="barChart" class="chart" viewBox="0 0 600 220" preserveAspectRatio="none"></svg>
-          <div class="muted" id="barNote">Shows distribution of channels across all screens right now.</div>
+          <div class="row">
+            <div>
+              <div class="label">Dealership (for breakdown)</div>
+              <select id="insDealer" class="select"><option value="">All</option></select>
+            </div>
+            <div style="display:flex;align-items:end"><button id="insReload" class="btn">Refresh</button></div>
+          </div>
+          <div class="chart-wrap"><canvas id="chChannels" width="640" height="220"></canvas></div>
+          <div class="muted" id="insNote" style="margin-top:6px">Shows current channel distribution across displays. “Changes” requires optional logging.</div>
         </div>
         <div class="card">
-          <b>Players online (this session)</b>
-          <svg id="lineChart" class="chart" viewBox="0 0 600 220" preserveAspectRatio="none"></svg>
-          <div class="muted" id="lineNote">Samples once per minute while this page is open.</div>
+          <div class="row2">
+            <div class="item" style="background:#fff">
+              <div><b id="statOnline">0</b><div class="muted">Online now</div></div>
+            </div>
+            <div class="item" style="background:#fff">
+              <div><b id="statTotal">0</b><div class="muted">Total displays</div></div>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="item" style="background:#fff">
+              <div><b id="statChanges">0</b><div class="muted">Channel changes (today)</div></div>
+            </div>
+            <div class="item" style="background:#fff">
+              <div><b id="statTop">—</b><div class="muted">Most played channel</div></div>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="card" style="margin-top:var(--gap)">
-        <b>Channel changes (since you opened)</b>
-        <div class="muted" style="margin-top:6px">We count live channel property changes while this admin is open.</div>
-        <ul id="changeList" class="list" style="margin-top:8px"></ul>
-        <div class="muted" id="changeEmpty">No changes yet.</div>
+      <div style="display:flex;justify-content:flex-start;margin-top:10px">
+        <button class="btn" data-prev="links">◀ Back</button>
       </div>
     </section>
 
@@ -476,34 +448,50 @@
   const toast=(m,e=false)=>{const t=$("#toast");t.textContent=m;t.className="toast show"+(e?" err":"");setTimeout(()=>t.classList.remove('show'),1800);}
   const html=(s)=>String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
   const deb=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}}
+  const todayISO=()=>{const d=new Date();const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,'0');const dy=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${dy}`};
+
+  // Brand
   $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
 
-  // ===== Home tile animation (ink + grow) =====
-  $$('.app-btn').forEach(btn=>{
-    btn.addEventListener('pointermove',e=>{
-      const r=btn.getBoundingClientRect();
-      btn.style.setProperty('--x', (e.clientX-r.left)+'px');
-      btn.style.setProperty('--y', (e.clientY-r.top)+'px');
-    });
-    btn.addEventListener('click', ()=>{
-      const key = btn.getAttribute('data-go');
-      btn.classList.add('grow');
-      setTimeout(()=>{ btn.classList.remove('grow'); goTo(key); }, 160);
-    });
-  });
-
-  // ===== FLOW NAV =====
+  // ===== FLOW NAV (with swipe + view transitions) =====
+  const ORDER = ['dealers','displays','users','calendar','links','insights'];
   function goHome(){ $('#home').style.display='grid'; $$('.page').forEach(p=>p.classList.remove('show')); }
   function goTo(key){
-    $('#home').style.display='none';
-    $$('.page').forEach(p=>p.classList.remove('show'));
-    const el = document.getElementById(`page-${key}`);
-    if(el){ el.classList.add('show'); el.scrollIntoView({behavior:'smooth',block:'start'}); }
-    if(key==='analytics'){ startAnalytics(); }
+    const run=()=>{ $('#home').style.display='none'; $$('.page').forEach(p=>p.classList.remove('show')); const el=document.getElementById(`page-${key}`); if(el){ el.classList.add('show'); el.scrollIntoView({behavior:'smooth',block:'start'}); } };
+    if (document.startViewTransition){ document.startViewTransition(()=>run()); } else { run(); }
+    currentKey = key;
   }
+  let currentKey = null;
+
+  // Home buttons with grow/morph
+  $$('.app-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const key=btn.getAttribute('data-go');
+      btn.classList.add('grow');
+      setTimeout(()=>{ btn.classList.remove('grow'); goTo(key); }, 140);
+    });
+  });
+  // In-page flow buttons
   $$('[data-back]').forEach(b=> b.addEventListener('click', goHome));
   $$('[data-next]').forEach(b=> b.addEventListener('click', ()=> goTo(b.getAttribute('data-next'))));
   $$('[data-prev]').forEach(b=> b.addEventListener('click', ()=> goTo(b.getAttribute('data-prev'))));
+
+  // Swipe left/right across pages
+  (()=>{
+    const host = $('#pages');
+    let sx=0, sy=0, tracking=false;
+    host.addEventListener('pointerdown', e=>{ tracking=true; sx=e.clientX; sy=e.clientY; host.setPointerCapture(e.pointerId); });
+    host.addEventListener('pointerup', e=>{
+      if(!tracking) return; tracking=false;
+      const dx=e.clientX-sx, dy=e.clientY-sy;
+      if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)){
+        const idx = ORDER.indexOf(currentKey||'dealers');
+        if(dx<0 && idx < ORDER.length-1) goTo(ORDER[idx+1]);
+        if(dx>0 && idx > 0) goTo(ORDER[idx-1]);
+      }
+    });
+    host.addEventListener('pointercancel', ()=>{ tracking=false; });
+  })();
 
   // ===== AUTH =====
   $('#reloadBtn').addEventListener('click', reloadAll);
@@ -513,6 +501,12 @@
     const email=$('#email').value.trim(); if(!email) return toast('Enter email',true);
     try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed', true); }
   });
+  async function doLogin(){
+    const email=$('#email').value.trim(), pass=$('#password').value;
+    if(!email||!pass) return toast('Fill email & password', true);
+    try{ await setPersistence(auth,browserLocalPersistence); await signInWithEmailAndPassword(auth,email,pass); }
+    catch(e){ console.error(e); toast('Sign-in failed', true); }
+  }
   onAuthStateChanged(auth, async (user)=>{
     if(!user){
       $('#who').textContent=''; $('#authPane').style.display='block';
@@ -524,23 +518,12 @@
     if(role!=='admin'){ toast('Not an admin', true); $('#authPane').style.display='block'; return; }
     await reloadAll();
   });
-  async function doLogin(){
-    const email=$('#email').value.trim(), pass=$('#password').value;
-    if(!email||!pass) return toast('Fill email & password', true);
-    try{ await setPersistence(auth,browserLocalPersistence); await signInWithEmailAndPassword(auth,email,pass); }
-    catch(e){ console.error(e); toast('Sign-in failed', true); }
-  }
   async function reloadAll(){
-    await loadDealers();
-    await buildDisplaysDealerSelect();
-    await loadUsers();
-    buildCalendar();
-    await quickLinksLoadRender();
+    await loadDealers(); await buildDisplaysDealerSelect(); await loadUsers(); buildCalendar(); await quickLinksLoadRender(); await refreshInsights();
   }
 
-  // ===== Dealerships =====
+  // ===== Dealers =====
   const dealerIdFromName = (name)=> (name||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24) || ('dealer_'+Date.now());
-
   $('#addDealerBtn').addEventListener('click', async ()=>{
     const name=$('#dealerName').value.trim(); if(!name) return toast('Name?',true);
     const id=dealerIdFromName(name);
@@ -565,35 +548,27 @@
       const name=map[id]?.name||id;
       const li=document.createElement('li'); li.className='item';
       li.innerHTML=`
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div class="inline-edit">
           <b>${html(name)}</b> <span class="tag">${html(id)}</span>
+          <input class="input" style="display:none" data-edit-name="${id}" value="${html(name)}"/>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn" data-act="renameName" data-id="${id}" data-name="${html(name)}">✎ Rename Name</button>
-          <button class="btn" data-act="rename" data-id="${id}" data-name="${html(name)}">↔ Rename ID</button>
+          <button class="btn" data-act="editname" data-id="${id}">✎ Edit name</button>
           <button class="btn" data-act="open" data-id="${id}">Open Displays</button>
+          <button class="btn" data-act="rename" data-id="${id}" data-name="${html(name)}">Rename ID</button>
           <button class="btn danger" data-act="delete" data-id="${id}">Delete</button>
         </div>`;
       list.appendChild(li);
     }
-    // actions
-    list.querySelectorAll('button[data-act="renameName"]').forEach(b=>{
+    // wire actions
+    list.querySelectorAll('button[data-act="editname"]').forEach(b=>{
       b.addEventListener('click', async ()=>{
-        const id=b.getAttribute('data-id'); const cur=b.getAttribute('data-name');
-        const newName=prompt('New public name:', cur||'');
-        if(!newName || newName===cur) return;
-        try{
-          await update(ref(db,`dealershipPublic/${id}`), { name:newName });
-          try{ await update(ref(db,`dealership/${id}`), { name:newName }); }catch(e){}
-          // update all users that carry dealershipName
-          try{
-            const us=await get(ref(db,'user')); const map=us.val()||{};
-            await Promise.all(Object.keys(map).map(uid=>{
-              if(map[uid]?.dealershipId===id){ return update(ref(db,`user/${uid}`), { dealershipName:newName }); }
-            }));
-          }catch(e){}
-          toast('Name updated'); await loadDealers();
-        }catch(e){ console.error(e); toast('Rename failed', true); }
+        const id=b.getAttribute('data-id'); const input=list.querySelector(`input[data-edit-name="${id}"]`);
+        if(!input) return; input.style.display='inline-block'; input.focus();
+        input.addEventListener('keydown', async (e)=>{
+          if(e.key==='Enter'){ const newName=input.value.trim(); if(!newName) return; try{ await set(ref(db,`dealershipPublic/${id}`), { name:newName }); await update(ref(db,`dealership/${id}`), { name:newName }); toast('Name updated'); await loadDealers(); }catch(err){ console.error(err); toast('Update failed', true); } }
+          if(e.key==='Escape'){ input.style.display='none'; }
+        }, {once:true});
       });
     });
     list.querySelectorAll('button[data-act="rename"]').forEach(b=>{
@@ -602,8 +577,7 @@
         const newId=prompt('New dealership ID (letters/numbers only):', oldId);
         if(!newId||newId===oldId||!/^[a-z0-9]+$/i.test(newId)) return;
         if(!confirm(`Migrate ${oldId} → ${newId}? Displays & users will be updated.`)) return;
-        try{ await migrateDealerId(oldId,newId,cur); toast('Renamed'); await loadDealers(); }
-        catch(e){ console.error(e); toast('Rename failed', true); }
+        try{ await migrateDealerId(oldId,newId,cur); toast('Renamed'); await loadDealers(); }catch(e){ console.error(e); toast('Rename failed', true); }
       });
     });
     list.querySelectorAll('button[data-act="open"]').forEach(b=>{
@@ -620,8 +594,8 @@
       });
     });
 
-    // refresh selects (users, displays, calendar, links)
-    const selects = [$('#userDealer'), $('#filterDealer'), $('#dispDealer'), $('#evDealer')];
+    // refresh selects (users, displays, calendar, insights)
+    const selects = [$('#userDealer'), $('#filterDealer'), $('#dispDealer'), $('#evDealer'), $('#insDealer')];
     selects.forEach(sel=>{
       if(!sel) return;
       const keep = sel.value;
@@ -654,8 +628,8 @@
     await remove(ref(db,`dealershipPublic/${oldId}`));
   }
   async function countDisplaysForDealer(did){
-    let n=0; try{
-      const m=await get(ref(db,`dealership/${did}/displays`)); if(m.exists()) n=Object.keys(m.val()||{}).length;
+    let n=0;
+    try{ const m=await get(ref(db,`dealership/${did}/displays`)); if(m.exists()) n=Object.keys(m.val()||{}).length;
       if(n===0){ const qRef=query(ref(db,'displays'), orderByChild('dealership'), equalTo(did)); const s=await get(qRef); if(s.exists()) n=Object.keys(s.val()||{}).length; }
     }catch(e){}
     return n;
@@ -741,7 +715,7 @@
   function initialsFromName(name){ const raw=(name||'').trim(); if(!raw) return 'DS'; const m=raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g)||[]; let a=m[0]||'', b=m[1]||''; let p=(a[0]||'')+(b[0]||''); if(p.length<2&&a.length>=2)p=a.slice(0,2); return p.toUpperCase(); }
   function nextSuffix(list,pref){ let max=0; list.forEach(id=>{ const m=id.match(new RegExp('^'+pref+'-(\\d{3})$')); if(m){ const n=parseInt(m[1],10); if(n>max)max=n; } }); return max+1; }
 
-  // ===== Users =====
+  // ===== Users (with duplicate suggestion) =====
   $('#inviteUserBtn').addEventListener('click', async ()=>{
     const email=$('#userEmail').value.trim(); if(!email) return toast('Enter email',true);
     try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed', true); }
@@ -867,15 +841,14 @@
     });
   }
 
-  // ===== Calendar + reminders =====
+  // ===== Calendar + Reminders (local) =====
   const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const calDow = document.getElementById('calDow'); const calDays = document.getElementById('calDays');
   DOW.forEach(d=>{ const el=document.createElement('div'); el.className='dow'; el.textContent=d; calDow.appendChild(el); });
 
   let cur = new Date(); cur.setDate(1);
-  let selectedDayISO = isoOf(new Date());
+  let selectedDayISO = todayISO();
   document.getElementById('selDateLabel').textContent = selectedDayISO;
-
   document.getElementById('calPrev').addEventListener('click', ()=>{ cur.setMonth(cur.getMonth()-1); buildCalendar(); });
   document.getElementById('calNext').addEventListener('click', ()=>{ cur.setMonth(cur.getMonth()+1); buildCalendar(); });
   document.getElementById('addEventBtn').addEventListener('click', addCalendarEvent);
@@ -884,15 +857,13 @@
     const y=cur.getFullYear(), m=cur.getMonth();
     document.getElementById('calMonthLabel').textContent = cur.toLocaleString('default',{month:'long',year:'numeric'});
     calDays.innerHTML='';
-
     const firstDow = new Date(y,m,1).getDay();
     const daysInMonth = new Date(y,m+1,0).getDate();
-
     for(let i=0;i<firstDow;i++){ const pad=document.createElement('div'); calDays.appendChild(pad); }
     for(let d=1; d<=daysInMonth; d++){
       const dt = new Date(y,m,d);
-      const iso = isoOf(dt);
-      const el = document.createElement('div'); el.className='day'+(iso===isoOf(new Date())?' today':''); el.dataset.iso=iso;
+      const iso = dt.toISOString().slice(0,10);
+      const el = document.createElement('div'); el.className='day'+(iso===todayISO()?' today':''); el.dataset.iso=iso;
       el.innerHTML = `<div class="n">${d}</div><div class="chips" id="chips-${iso}" style="display:flex;gap:4px;flex-wrap:wrap"></div>`;
       el.addEventListener('click', ()=> selectDate(iso));
       calDays.appendChild(el);
@@ -900,7 +871,6 @@
     }
     selectDate(selectedDayISO);
   }
-  function isoOf(d){ const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
   async function loadEventChips(iso){
     const wrap = document.getElementById(`chips-${iso}`); if(!wrap) return;
     wrap.innerHTML='';
@@ -914,15 +884,16 @@
       document.getElementById('evEmpty').style.display = ids.length? 'none':'block';
       ids.forEach(id=>{
         const ev=map[id];
-        const when = ev.remindAt ? new Date(ev.remindAt).toLocaleString() : '—';
         const li=document.createElement('li'); li.className='item';
+        const timeStr = ev.time || '';
+        const bell = ev.remindAt ? '🔔' : '';
         li.innerHTML=`<div style="display:flex;flex-direction:column;gap:4px;min-width:220px">
-            <b>${html(ev.title||'Event')}</b>
-            <div class="muted">${html(ev.dealer||'')}</div>
+            <b>${html(ev.title||'Event')} ${bell}</b>
+            <div class="muted">${html(ev.dealer||'')} ${timeStr?('• '+timeStr):''}</div>
             <div class="muted">${html(ev.notes||'')}</div>
-            <div class="muted">Reminder: ${html(when)}</div>
           </div>
-          <div style="display:flex;gap:6px;align-items:center">
+          <div style="display:flex;gap:6px">
+            <button class="btn" data-remind="${id}">Reminder</button>
             <button class="btn danger" data-del="${id}">Delete</button>
           </div>`;
         list.appendChild(li);
@@ -930,83 +901,89 @@
       list.querySelectorAll('button[data-del]').forEach(btn=>{
         btn.addEventListener('click', async ()=>{ const id=btn.getAttribute('data-del'); try{ await remove(ref(db,`admin/calendar/${iso}/${id}`)); toast('Event deleted'); selectDate(iso); loadEventChips(iso); }catch(e){ console.error(e); toast('Delete failed', true); } });
       });
+      list.querySelectorAll('button[data-remind]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const id=btn.getAttribute('data-remind');
+          const evSnap=await get(ref(db,`admin/calendar/${iso}/${id}`)); const ev=evSnap.val()||{};
+          if(!ev.time){ return toast('Add a time first', true); }
+          const remindMin = Number(prompt('Minutes before to remind?', String(ev.remMin||30)))||30;
+          const [hh,mm] = String(ev.time).split(':').map(x=>parseInt(x,10)||0);
+          const when = new Date(`${iso}T${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:00`);
+          when.setMinutes(when.getMinutes()-remindMin);
+          await update(ref(db,`admin/calendar/${iso}/${id}`), { remMin:remindMin, remindAt: when.getTime() });
+          scheduleLocalReminder(ev.title||'Event', iso, when.getTime());
+          toast('Reminder set');
+          selectDate(iso);
+        });
+      });
     }catch(e){}
   }
-  function computeRemindAt(iso, choice){
-    if(!choice) return null;
-    const [dayPart, timePart] = choice.split('-'); // e.g., "day-1-09:00" or "day0-09:00"
-    let date = new Date(iso+'T00:00:00');
-    if(dayPart==='day'){ date.setDate(date.getDate()-parseInt(timePart.split(':')[0],10)); } // legacy guard
-    if(choice.startsWith('day-1')){ date.setDate(date.getDate()-1); }
-    // time
-    const hm = choice.endsWith('09:00') ? [9,0] : [9,0];
-    date.setHours(hm[0],hm[1],0,0);
-    return date.getTime();
-  }
   async function addCalendarEvent(){
-    const title=document.getElementById('evTitle').value.trim(); if(!title) return toast('Title? ',true);
-    const dealer=document.getElementById('evDealer').value; const notes=document.getElementById('evNotes').value.trim();
-    const remindChoice=document.getElementById('evRemind').value;
-    const remindAt = remindChoice ? computeRemindAt(selectedDayISO, remindChoice) : null;
+    const title=$('#evTitle').value.trim(); if(!title) return toast('Title? ',true);
+    const dealer=$('#evDealer').value; const notes=$('#evNotes').value.trim(); const time=$('#evTime').value.trim();
+    const remMin= Number($('#evRemMin').value||0);
     try{
-      await push(ref(db,`admin/calendar/${selectedDayISO}`), { title, dealer, notes, remindAt, createdAt:Date.now(), createdBy:auth.currentUser?.email||'admin' });
-      document.getElementById('evTitle').value=''; document.getElementById('evNotes').value=''; document.getElementById('evRemind').value='';
+      let remindAt=null;
+      if(time && remMin>0){
+        const [hh,mm]=time.split(':').map(x=>parseInt(x,10)||0);
+        const when = new Date(`${selectedDayISO}T${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:00`);
+        when.setMinutes(when.getMinutes()-remMin); remindAt= when.getTime();
+      }
+      const refPush = await push(ref(db,`admin/calendar/${selectedDayISO}`), { title, dealer, notes, time: time||null, remMin: remMin||null, remindAt, createdAt:Date.now(), createdBy:auth.currentUser?.email||'admin' });
+      $('#evTitle').value=''; $('#evNotes').value=''; $('#evTime').value=''; $('#evRemMin').value='';
       toast('Added'); selectDate(selectedDayISO); loadEventChips(selectedDayISO);
+      if(remindAt){ scheduleLocalReminder(title, selectedDayISO, remindAt); }
     }catch(e){ console.error(e); toast('Add failed', true); }
   }
-  // simple reminder watcher (fires while admin is open)
-  let reminded = new Set(JSON.parse(localStorage.getItem('admin_reminded')||'[]'));
-  async function reminderTick(){
-    const today = new Date(); const iso = isoOf(today);
-    const paths = [iso, (new Date(today.getTime()+86400000)).toISOString().slice(0,10), (new Date(today.getTime()-86400000)).toISOString().slice(0,10)];
-    for(const p of paths){
+
+  // Local reminders (works while tab is open; optional Web Notifications)
+  const localTimers = new Map();
+  async function scheduleLocalReminder(title, iso, whenMs){
+    if(Notification && Notification.permission==='default'){ try{ await Notification.requestPermission(); }catch(e){} }
+    const key = `${iso}:${title}:${whenMs}`;
+    if(localTimers.has(key)){ clearTimeout(localTimers.get(key)); localTimers.delete(key); }
+    const delay = Math.max(0, whenMs-Date.now());
+    const t = setTimeout(()=>{
       try{
-        const s=await get(ref(db,`admin/calendar/${p}`)); const map=s.val()||{};
-        Object.entries(map).forEach(([id,ev])=>{
-          if(!ev.remindAt) return;
-          if(reminded.has(id)) return;
-          if(Date.now() >= ev.remindAt){
-            reminded.add(id);
-            localStorage.setItem('admin_reminded', JSON.stringify(Array.from(reminded)));
-            toast(`Reminder: ${ev.title||'Event'}`);
-            if('Notification' in window){
-              if(Notification.permission==='granted'){ new Notification(ev.title||'Event', { body: ev.notes||p }); }
-              else if(Notification.permission!=='denied'){ Notification.requestPermission().then(res=>{ if(res==='granted'){ new Notification(ev.title||'Event', { body: ev.notes||p }); } }); }
-            }
-          }
-        });
-      }catch(e){}
-    }
+        if(Notification && Notification.permission==='granted'){
+          new Notification('IPTV — Reminder', { body: `${title} (${iso})` });
+        }else{
+          toast(`Reminder: ${title}`, false);
+        }
+      }catch(e){ toast(`Reminder: ${title}`, false); }
+      localTimers.delete(key);
+    }, delay);
+    localTimers.set(key,t);
   }
-  setInterval(reminderTick, 30000);
 
-  buildCalendar(); // draw DOW
-
-  // ===== Links =====
+  // ===== Links (Quick Access) =====
   const DEFAULT_LINKS = [
-    { emoji:'🔥', title:'Firebase — Overview', href:'https://console.firebase.google.com/project/iptv-bfa/overview' },
-    { emoji:'🗄️', title:'Firebase — Database', href:'https://console.firebase.google.com/project/iptv-bfa/database/iptv-bfa-default-rtdb/data' },
-    { emoji:'👤', title:'Firebase — Auth', href:'https://console.firebase.google.com/project/iptv-bfa/authentication/users' },
-    { emoji:'🐙', title:'GitHub Repo', href:'https://github.com/flaviothebfagroup/IPTV-' },
-    { emoji:'🌐', title:'Remote Control', href:'https://flaviothebfagroup.github.io/IPTV-/remote-control.html' }
+    { emoji:'🔥', title:'Firebase — Overview', href:'https://console.firebase.google.com/project/iptv-bfa/overview', desc:'Console home' },
+    { emoji:'🗄️', title:'Firebase — Database', href:'https://console.firebase.google.com/project/iptv-bfa/database/iptv-bfa-default-rtdb/data', desc:'Realtime DB data' },
+    { emoji:'👤', title:'Firebase — Auth', href:'https://console.firebase.google.com/project/iptv-bfa/authentication/users', desc:'Users & providers' },
+    { emoji:'🐙', title:'GitHub Repo', href:'https://github.com/flaviothebfagroup/IPTV-', desc:'Source code' }
   ];
   const LINKS_DB_PATH = 'admin/quickLinks';
-  let quickLinks = []; let quickLinksSource='db';
+  let quickLinks=[], quickLinksSource='db';
 
   $('#qlAddBtn').addEventListener('click', async ()=>{
     const title=$('#qlTitle').value.trim(); const href=$('#qlHref').value.trim();
-    const emoji=$('#qlEmoji').value.trim(); const img=$('#qlImg').value.trim();
+    const emoji=$('#qlEmoji').value.trim(); const img=$('#qlImg').value.trim(); const desc=$('#qlDesc').value.trim();
     if(!title||!href) return toast('Title & URL', true);
-    quickLinks.push({ title, href, emoji, img });
+    quickLinks.push({title,href,emoji,img,desc});
     await quickLinksSave();
-    ['#qlTitle','#qlHref','#qlEmoji','#qlImg'].forEach(s=>$(s).value='');
-    renderLinks();
+    ['#qlTitle','#qlHref','#qlEmoji','#qlImg','#qlDesc'].forEach(s=>$(s).value='');
+    renderApps();
+    toast('Link added');
+  });
+  $('#qlResetBtn').addEventListener('click', async ()=>{
+    quickLinks=[...DEFAULT_LINKS]; await quickLinksSave(true); renderApps(); toast('Links reset');
   });
 
   async function quickLinksLoadRender(){
     try{
-      const s=await get(ref(db,LINKS_DB_PATH));
-      if(s.exists()){ quickLinks=Object.values(s.val()); quickLinksSource='db'; $('#qlStorageNote').textContent='Links synced from DB.'; }
+      const s=await get(ref(db, LINKS_DB_PATH));
+      if(s.exists()){ quickLinks=Object.values(s.val()); quickLinksSource='db'; $('#qlStorageNote').textContent='Links are synced from database.'; }
       else throw new Error('empty');
     }catch(e){
       try{
@@ -1014,159 +991,103 @@
         if(!quickLinks.length) quickLinks=[...DEFAULT_LINKS];
         quickLinksSource='local'; $('#qlStorageNote').textContent='Links stored locally (no DB permission).';
       }catch(_){
-        quickLinks=[...DEFAULT_LINKS]; quickLinksSource='local'; $('#qlStorageNote').textContent='Links stored locally (no DB permission).';
+        quickLinks=[...DEFAULT_LINKS]; quickLinksSource='local'; $('#qlStorageNote').textContent='Links stored locally.';
       }
     }
-    renderLinks();
+    renderApps();
   }
-  async function quickLinksSave(){
-    if(quickLinksSource==='local'){
+  async function quickLinksSave(forceLocal=false){
+    if(forceLocal || quickLinksSource==='local'){
       localStorage.setItem('admin_quick_links', JSON.stringify(quickLinks));
-      $('#qlStorageNote').textContent='Links stored locally (no DB permission).';
-      return;
+      quickLinksSource='local'; $('#qlStorageNote').textContent='Links stored locally (no DB permission).'; return;
     }
-    try{
-      const data={}; quickLinks.forEach((l,i)=> data[i]=l);
-      await set(ref(db,LINKS_DB_PATH), data);
-      $('#qlStorageNote').textContent='Links synced from DB.';
-    }catch(e){
-      localStorage.setItem('admin_quick_links', JSON.stringify(quickLinks));
-      quickLinksSource='local';
-      $('#qlStorageNote').textContent='Links stored locally (no DB permission).';
-    }
+    try{ const data={}; quickLinks.forEach((l,i)=>data[i]=l); await set(ref(db,LINKS_DB_PATH), data); quickLinksSource='db'; $('#qlStorageNote').textContent='Links are synced from database.'; }
+    catch(e){ localStorage.setItem('admin_quick_links', JSON.stringify(quickLinks)); quickLinksSource='local'; $('#qlStorageNote').textContent='Links stored locally (no DB permission).'; }
   }
-  function renderLinks(){
+  function renderApps(){
     const grid=$('#appsGrid'); grid.innerHTML='';
-    if(!quickLinks.length){ $('#linksEmpty').style.display='block'; return; }
-    $('#linksEmpty').style.display='none';
-    quickLinks.forEach((l, idx)=>{
-      const row=document.createElement('div');
-      row.className='item';
-      const left = l.img ? `<div style="width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:#fff center/cover no-repeat;background-image:url('${l.img}')"></div>` :
-                           `<div style="width:40px;height:40px;border-radius:12px;border:1px solid var(--border);display:grid;place-items:center">${html(l.emoji||'🔗')}</div>`;
+    quickLinks.forEach((l,idx)=>{
+      const row=document.createElement('div'); row.className='item';
       row.innerHTML = `
-        <div style="display:flex;align-items:center;gap:10px;min-width:220px">${left}
+        <a href="${l.href}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit">
+          ${ l.img ? `<div style="width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:#fff center/cover no-repeat;background-image:url('${l.img}')"></div>` :
+                      `<div style="width:32px;height:32px;border:1px solid var(--border);border-radius:8px;display:grid;place-items:center;background:#fff">${html(l.emoji||'🔗')}</div>` }
           <div style="display:flex;flex-direction:column">
             <b>${html(l.title||'Link')}</b>
-            <span class="muted" style="max-width:420px;overflow:hidden;text-overflow:ellipsis">${html(l.href||'')}</span>
+            <span class="muted" style="font-size:12px">${html(l.desc||'')}</span>
           </div>
-        </div>
-        <div style="display:flex;gap:6px">
-          <a class="btn" href="${html(l.href||'#')}" target="_blank" rel="noopener noreferrer">Open</a>
-          <button class="btn danger" data-remove="${idx}">Remove</button>
-        </div>`;
+        </a>
+        <button class="btn danger" data-remove="${idx}">Remove</button>`;
       grid.appendChild(row);
     });
     grid.querySelectorAll('button[data-remove]').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
-        const i=parseInt(btn.getAttribute('data-remove'),10);
-        quickLinks.splice(i,1); await quickLinksSave(); renderLinks(); toast('Link removed');
+        const i=parseInt(btn.getAttribute('data-remove'),10); quickLinks.splice(i,1); await quickLinksSave(); renderApps(); toast('Link removed');
       });
     });
   }
 
-  // ===== Analytics =====
-  let analyticsStarted=false;
-  let channelCounts={1:0,2:0,3:0,4:0,5:0};
-  let channelChangeLog=[]; // {id, from, to, at}
-  let lastChannelById={};
-  let onlineSeries=[]; // [{t, n}]
-  let sampleTimer=null;
-  function startAnalytics(){
-    if(analyticsStarted) return;
-    analyticsStarted=true;
-    // subscribe all displays
-    const off = onValue(ref(db,'displays'), snap=>{
-      const map=snap.val()||{};
-      // recompute channel counts
-      channelCounts={1:0,2:0,3:0,4:0,5:0};
-      const now=Date.now();
-      let online=0;
-      Object.entries(map).forEach(([id,v])=>{
-        const ch = (typeof v.channel==='number' && v.channel>=1 && v.channel<=5) ? v.channel : 1;
-        channelCounts[ch] = (channelCounts[ch]||0)+1;
-        const was = lastChannelById[id];
-        if(was!==undefined && was!==ch){
-          channelChangeLog.unshift({id, from:was, to:ch, at:now});
-          if(channelChangeLog.length>30) channelChangeLog.pop();
-        }
-        lastChannelById[id]=ch;
-        if( (v.lastSeenAt && now-v.lastSeenAt<60000) || (v.timestamp && now-v.timestamp<120000) ) online++;
-      });
-      drawBarChart();
-      // update change list
-      const ul=$('#changeList'); ul.innerHTML='';
-      if(!channelChangeLog.length){ $('#changeEmpty').style.display='block'; }
-      else{
-        $('#changeEmpty').style.display='none';
-        channelChangeLog.forEach(x=>{
-          const li=document.createElement('li'); li.className='item';
-          const t = new Date(x.at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-          li.innerHTML = `<div><b>${html(x.id)}</b> <span class="muted">from CH ${x.from} to CH ${x.to}</span></div><div class="muted">${t}</div>`;
-          ul.appendChild(li);
-        });
-      }
-    }, err=>console.warn(err));
-
-    // start online sampling (every minute)
-    const sample = async ()=>{
-      try{
-        const s=await get(ref(db,'displays'));
-        const map=s.val()||{}; const now=Date.now(); let online=0;
-        Object.values(map).forEach(v=>{
-          if( (v.lastSeenAt && now-v.lastSeenAt<60000) || (v.timestamp && now-v.timestamp<120000) ) online++;
-        });
-        onlineSeries.push({t:now,n:online});
-        if(onlineSeries.length>60) onlineSeries.shift();
-        drawLineChart();
-      }catch(e){}
-    };
-    sample(); // first
-    sampleTimer = setInterval(sample, 60000);
-  }
-  function drawBarChart(){
-    const svg = $('#barChart'); if(!svg) return;
-    const w=600,h=220, pad=36, max=Math.max(1,...Object.values(channelCounts));
-    const bars=Object.entries(channelCounts);
-    const bw = (w-2*pad)/bars.length - 10;
-    let x=pad;
-    let out = `<rect x="0" y="0" width="${w}" height="${h}" fill="#fff"/>`;
-    out += `<line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" stroke="rgba(0,0,0,.2)" stroke-width="1"/>`;
-    bars.forEach(([ch,count])=>{
-      const bh = Math.round((h-2*pad) * (count/max));
-      const y = (h-pad) - bh;
-      out += `<rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="6" fill="url(#g)"/>`;
-      out += `<text x="${x+bw/2}" y="${h-pad+16}" text-anchor="middle" font-size="12" fill="#6f6f76">CH ${ch}</text>`;
-      out += `<text x="${x+bw/2}" y="${y-6}" text-anchor="middle" font-size="12" fill="#0b0b0c" font-weight="700">${count}</text>`;
-      x += bw + 10;
+  // ===== Insights =====
+  $('#insReload').addEventListener('click', refreshInsights);
+  async function refreshInsights(){
+    const did = $('#insDealer').value || null;
+    let map={}; try{ const s= await get(ref(db,'displays')); if(s.exists()) map=s.val(); }catch(e){}
+    const ids = Object.keys(map||{});
+    // metrics
+    const now=Date.now();
+    let online=0,total=ids.length;
+    const counts={1:0,2:0,3:0,4:0,5:0};
+    ids.forEach(id=>{
+      const d=map[id]||{};
+      if(did && d.dealership!==did) return;
+      if((d.lastSeenAt && (now-d.lastSeenAt)<60000) || (d.timestamp && (now-d.timestamp)<120000)) online++;
+      const ch = (typeof d.channel==='number')? d.channel : 1; if(counts[ch]!=null) counts[ch]++;
     });
-    // gradient def (orange)
-    out = `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff9500"/><stop offset="100%" stop-color="#ffd6a3"/></linearGradient></defs>` + out;
-    svg.innerHTML = out;
+    $('#statOnline').textContent=online;
+    $('#statTotal').textContent=did ? ids.filter(id=>map[id]?.dealership===did).length : total;
+    // optional change counter (if you later write logs under /analytics/channelChanges/yyyy-mm-dd)
+    let changes = 0;
+    try{
+      const day=todayISO();
+      const cs = await get(ref(db,`analytics/channelChanges/${day}${did?('/'+did):''}`));
+      if(cs.exists()){ const v=cs.val(); if(typeof v==='number') changes=v; else if(typeof v==='object'){ changes = Object.values(v).reduce((a,b)=>a+(+b||0),0);} }
+    }catch(e){}
+    $('#statChanges').textContent=changes;
+
+    // most played
+    const pairs = Object.entries(counts); pairs.sort((a,b)=>b[1]-a[1]);
+    $('#statTop').textContent = pairs[0][1] ? `CH ${pairs[0][0]}` : '—';
+
+    drawBarChart('chChannels', counts);
   }
-  function drawLineChart(){
-    const svg = $('#lineChart'); if(!svg) return;
-    const w=600,h=220,pad=36; const data=onlineSeries.slice(-30);
-    if(!data.length){ svg.innerHTML=''; return; }
-    const xs = data.map(d=>d.t), ys = data.map(d=>d.n);
-    const minx=Math.min(...xs), maxx=Math.max(...xs);
-    const miny=0, maxy=Math.max(1,...ys);
-    const X=t=> pad + ( (t-minx) / Math.max(1,(maxx-minx)) ) * (w-2*pad);
-    const Y=n=> (h-pad) - ( (n-miny)/(maxy-miny) ) * (h-2*pad);
-    let d="M "+X(xs[0])+" "+Y(ys[0]);
-    for(let i=1;i<data.length;i++){ d+=" L "+X(xs[i])+" "+Y(ys[i]); }
-    let out = `<rect x="0" y="0" width="${w}" height="${h}" fill="#fff"/>`;
-    out += `<line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" stroke="rgba(0,0,0,.2)" stroke-width="1"/>`;
-    out += `<path d="${d}" fill="none" stroke="#ff9500" stroke-width="2.5"/>`;
-    out += `<text x="${w-pad}" y="${pad-8}" text-anchor="end" font-size="12" fill="#6f6f76">${data.length} samples</text>`;
-    svg.innerHTML = out;
+  function drawBarChart(canvasId, counts){
+    const c = document.getElementById(canvasId); if(!c) return; const ctx = c.getContext('2d');
+    const W=c.width, H=c.height; ctx.clearRect(0,0,W,H);
+    const keys=[1,2,3,4,5]; const vals=keys.map(k=>counts[k]||0); const max=Math.max(1,...vals);
+    const pad=24; const barW=(W - pad*2) / keys.length * 0.6; const gap=(W - pad*2) / keys.length * 0.4;
+    const base=H-30;
+    // axis
+    ctx.strokeStyle='rgba(0,0,0,0.15)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad,base); ctx.lineTo(W-pad,base); ctx.stroke();
+    // bars
+    const maxVal=Math.max(...vals); const maxIndex = vals.indexOf(maxVal);
+    keys.forEach((k,i)=>{
+      const v=vals[i]; const x=pad + i*((barW+gap)) + gap/2; const h=(v/max)*(H-60);
+      ctx.fillStyle = (i===maxIndex)? '#ff9500' : '#0b0b0c';
+      ctx.fillRect(x, base-h, barW, h);
+      // labels
+      ctx.fillStyle='#0b0b0c'; ctx.font='12px system-ui'; ctx.textAlign='center';
+      ctx.fillText(`CH ${k}`, x+barW/2, base+14);
+      ctx.fillText(String(v), x+barW/2, base-h-6);
+    });
   }
 
-  // ===== Helpers for displays/users already above =====
+  // ===== helpers used earlier =====
+  async function migrateDealerId(oldId,newId,name){ /* (already defined above) */ }
+  async function countDisplaysForDealer(did){ /* (already defined above) */ }
 
-  // ===== Initial load =====
-  await quickLinksLoadRender();
-
+  // ===== Init =====
+  buildCalendar(); // draw DOW
+  goHome(); // default view
 </script>
 </body>
 </html>
