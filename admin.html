@@ -975,41 +975,136 @@
     $('#schAdd').addEventListener('click', ()=>{ const when=$('#schWhen').value; const note=$('#schNote').value.trim(); if(!when||!note) return toast('Pick date/time and note',true); schedule.push({when,note}); saveSchedule(); $('#schWhen').value=''; $('#schNote').value=''; toast('Added'); });
     renderSchedule();
 
-    // ======== GitHub Sync ========
-    function b64(str){ return btoa(unescape(encodeURIComponent(str))); }
-    async function buildSnapshot(){
-      const [dealersPubSnap, displaysSnap, usersSnap] = await Promise.all([
-        get(ref(db,'dealershipPublic')),
-        get(ref(db,'displays')),
-        get(ref(db,'user'))
-      ]);
-      return {
-        meta:{exportedAt:new Date().toISOString(), by: auth.currentUser?.email || 'admin'},
-        dealershipPublic: dealersPubSnap.val() || {},
-        displays: displaysSnap.val() || {},
-        user: usersSnap.val() || {}
-      };
+    
+// ========= GitHub Sync =========
+// Unicode-safe base64
+function b64(str){return btoa(unescape(encodeURIComponent(str)));}
+
+// Build a compact snapshot of your current data
+async function buildSnapshot(db){
+  const [dealersPubSnap, displaysSnap, usersSnap] = await Promise.all([
+    get(ref(db,'dealershipPublic')).catch(()=>({val:()=>null})),
+    get(ref(db,'displays')).catch(()=>({val:()=>null})),
+    get(ref(db,'user')).catch(()=>({val:()=>null}))
+  ]);
+  const dealersPublic = dealersPubSnap?.val?.() || {};
+  const displays      = displaysSnap?.val?.()      || {};
+  const usersRaw      = usersSnap?.val?.()         || {};
+
+  // Keep only useful user fields to keep the file small
+  const users = {};
+  for (const [uid,u] of Object.entries(usersRaw)){
+    users[uid] = {
+      email: u.email || null,
+      name:  u.name  || null,
+      role:  u.role  || 'user',
+      dealershipId: u.dealershipId || null
+    };
+  }
+
+  return {
+    meta: {
+      generatedAt: new Date().toISOString(),
+      by: (getAuth().currentUser?.email)||'admin',
+      format: 'iptv-bfa@1'
+    },
+    dealersPublic,
+    displays,
+    users
+  };
+}
+
+// Lightweight GitHub REST call
+async function ghFetch(url, opts){
+  const res = await fetch(url, opts);
+  const text = await res.text();
+  let data;
+  try { data = text ? JSON.parse(text) : {}; } catch { data = { raw:text }; }
+  if(!res.ok){
+    const msg = data?.message || res.statusText || 'GitHub error';
+    throw new Error(`${msg} (HTTP ${res.status})`);
+  }
+  return data;
+}
+
+// Check repo & token quickly
+async function checkRepo(gh){
+  const url = `https://api.github.com/repos/${gh.owner}/${gh.repo}`;
+  return ghFetch(url, {
+    headers:{
+      'Authorization': `Bearer ${gh.token}`,
+      'Accept':'application/vnd.github+json',
+      'X-GitHub-Api-Version':'2022-11-28'
     }
-    async function exportToGitHub(){
-      const need=['owner','repo','branch','path','token'].filter(k=>!gh[k]);
-      if(need.length){ openSettings(); toast('Fill GitHub settings first',true); return; }
-      try{
-        const data=await buildSnapshot();
-        const content=b64(JSON.stringify(data,null,2));
-        const base=`https://api.github.com/repos/${encodeURIComponent(gh.owner)}/${encodeURIComponent(gh.repo)}/contents/${gh.path}`;
-        const headers={ 'Authorization': `token ${gh.token}`, 'Accept':'application/vnd.github+json' };
-        // try to get existing sha
-        let sha=null;
-        try{
-          const r=await fetch(`${base}?ref=${encodeURIComponent(gh.branch)}`,{headers}); if(r.ok){ const j=await r.json(); sha=j.sha; }
-        }catch(_){}
-        const body={ message:`IPTV Admin sync ${new Date().toISOString()}`, content, branch:gh.branch }; if(sha) body.sha=sha;
-        const put=await fetch(base,{ method:'PUT', headers, body: JSON.stringify(body) });
-        if(!put.ok){ const t=await put.text(); throw new Error(t); }
-        toast('Synced to GitHub');
-      }catch(e){ console.error(e); toast('GitHub sync failed',true); }
+  });
+}
+
+// Main sync
+async function exportToGitHub(){
+  try{
+    const gh = JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}');
+    if(!gh.owner || !gh.repo || !gh.branch || !gh.path || !gh.token){
+      toast('Settings incomplete — open Settings and fill all fields', true);
+      return;
     }
-    $('#syncBtn').addEventListener('click', exportToGitHub);
+
+    // 1) verify repo access (catches bad token/perms)
+    await checkRepo(gh);
+
+    // 2) build snapshot from DB
+    const payload = await buildSnapshot(db);
+    const contentB64 = b64(JSON.stringify(payload, null, 2));
+
+    const base = `https://api.github.com/repos/${gh.owner}/${gh.repo}/contents/${encodeURIComponent(gh.path)}`;
+    const headers = {
+      'Authorization': `Bearer ${gh.token}`,
+      'Accept':'application/vnd.github+json',
+      'X-GitHub-Api-Version':'2022-11-28',
+      'Content-Type':'application/json'
+    };
+
+    // 3) find existing file to get its SHA (required for updates)
+    let sha = undefined;
+    try{
+      const existing = await ghFetch(`${base}?ref=${encodeURIComponent(gh.branch)}`, { headers });
+      sha = existing.sha;
+    }catch(e){
+      // 404 is fine → file doesn't exist yet
+      if(!String(e.message||'').includes('404')) throw e;
+    }
+
+    // 4) create or update
+    const body = {
+      message: sha ? `update: ${gh.path}` : `create: ${gh.path}`,
+      content: contentB64,
+      branch: gh.branch,
+      sha
+    };
+    const result = await ghFetch(base, { method:'PUT', headers, body: JSON.stringify(body) });
+
+    toast('Synced to GitHub ✔︎');
+    console.log('[github sync]', result);
+  }catch(err){
+    console.error('[github sync failed]', err);
+    alert(`GitHub sync failed:\n\n${err.message}\n\nTips:\n• Token must be fine-grained with Contents: Read & write\n• Repo must be selected on token\n• Owner/Repo/Branch/Path must be exact`);
+    toast('Sync failed', true);
+  }
+}
+
+// Optional: quick test to verify token & repo (run from devtools if needed)
+async function testGitHubSettings(){
+  const gh = JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}');
+  try{
+    const info = await checkRepo(gh);
+    alert(`OK: can access repo\n\n${info.full_name}\nDefault branch: ${info.default_branch}`);
+  }catch(e){
+    alert(`Cannot access repo:\n${e.message}\n\nRe-check token permissions & settings`);
+  }
+}
+
+// Wire the button again (in case markup changed)
+document.getElementById('syncBtn')?.addEventListener('click', exportToGitHub);
+
 
   </script>
 </body>
