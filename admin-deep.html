@@ -16,7 +16,7 @@
     :root{
       --bg:#0b0b0c;--fg:#fff;--muted:#9a9aa0;--panel:#121214;--border:rgba(255,255,255,.14);
       --accent:#ff9500;--tile:#17171a;--tileActive:#1d1d21;--shadow:0 18px 48px rgba(0,0,0,.45);
-      --radius:18px;--radius-lg:22px;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444
+      --radius:18px;--radius-lg:22px;--ok:#22c55e;--err:#ef4444
     }
     body.light{
       --bg:#f5f5f7;--fg:#111;--muted:#6e6e73;--panel:#fff;--border:rgba(0,0,0,.12);
@@ -34,8 +34,6 @@
     .title{font-weight:900;letter-spacing:.3px}
     .btn{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer}
     .btn.primary{border-color:var(--accent);color:var(--accent);background:transparent}
-    .btn.solid{padding:12px;border-radius:12px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
-    .btn.danger{border-color:#ff6b6b;color:#ff6b6b}
     .muted{color:var(--muted);font-size:12px}
 
     /* Shell */
@@ -64,6 +62,8 @@
     .label{font-size:12px;color:var(--muted);margin-bottom:6px}
     .input,.select{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
     .input::placeholder{color:var(--muted)}
+    .btn.solid{padding:12px;border-radius:12px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
+    .btn.danger{border-color:#ff6b6b;color:#ff6b6b}
     .small{font-size:12px}
 
     /* Lists / items */
@@ -85,7 +85,7 @@
     .user-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
     .user-card{background:var(--tile);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
     .user-header{display:flex;align-items:center;justify-content:space-between;gap:8px}
-    .user-name{font-weight:800}
+    .user-name{font-weight:800;cursor:pointer}
     .badge{border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:11px;color:var(--muted)}
     .user-actions{display:flex;gap:8px;flex-wrap:wrap}
 
@@ -102,15 +102,17 @@
     .app-desc{font-size:12px;color:var(--muted)}
     .apps-note{margin-top:6px;font-size:12px;color:var(--muted)}
 
-    /* Analytics bars */
-    .bar{height:10px;background:var(--tileActive);border:1px solid var(--border);border-radius:999px;overflow:hidden}
-    .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#ffb866);width:0%}
-    .stat{display:flex;justify-content:space-between;gap:12px;align-items:center}
-
-    /* Schedule pills */
-    .seg{display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden}
-    .seg button{border:0;background:var(--tile);color:var(--fg);padding:6px 12px;cursor:pointer}
-    .seg button.active{background:var(--accent);color:#000}
+    /* Analytics extras */
+    .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0}
+    @media (max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+    .kpi{display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding:14px;border:1px solid var(--border);border-radius:16px;background:var(--tile)}
+    .kpi b{font-size:26px;line-height:1}
+    .kpi span{color:var(--muted);font-size:12px}
+    .bar-row{display:flex;align-items:center;gap:10px}
+    .bar{flex:1;height:8px;border-radius:999px;background:var(--tileActive);position:relative;overflow:hidden}
+    .bar>i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:999px}
+    .pill{border:1px solid var(--border);border-radius:999px;padding:4px 10px;font-weight:800}
+    .pill.orange{border-color:var(--accent);color:#000;background:var(--accent)}
 
     /* Toast */
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
@@ -129,8 +131,11 @@
       <span id="adminEmail" class="muted"></span>
       <button id="themeBtn"  class="btn">☀︎/🌙</button>
       <button id="reloadBtn" class="btn">Reload</button>
+      <button id="backupBtn" class="btn primary" title="Download JSON backup">Backup ⤓</button>
+      <input id="restoreFile" type="file" accept="application/json" style="display:none" />
+      <button id="restoreBtn" class="btn" title="Restore from JSON">Restore ⤒</button>
       <button id="signOutBtn" class="btn primary">Sign out</button>
-      <button id="settingsBtn" class="btn primary">Settings</button>
+      <button id="settingsBtn" class="btn">Settings</button>
       <button id="syncBtn" class="btn primary">Sync → GitHub</button>
     </div>
   </div>
@@ -169,7 +174,7 @@
         <div class="tile" data-page="displays"><h3>Displays</h3><p>Live list • channel • volume</p></div>
         <div class="tile" data-page="users"><h3>Users</h3><p>Create • roles • duplicates</p></div>
         <div class="tile" data-page="links"><h3>Links</h3><p>Quick access</p></div>
-        <div class="tile" data-page="analytics"><h3>Analytics</h3><p>Active TVs • channel mix</p></div>
+        <div class="tile" data-page="analytics"><h3>Analytics</h3><p>Now playing • trends</p></div>
         <div class="tile" data-page="schedule"><h3>Schedule</h3><p>Install dates • notes</p></div>
       </div>
     </div>
@@ -180,7 +185,7 @@
       <div class="crumb" data-home><span>←</span><b>Home</b></div>
       <div class="card">
         <h2 style="margin:0 0 8px">Dealerships</h2>
-        <div class="small muted">Create, rename ID (migrates displays & users), delete</div>
+        <div class="small muted">Create, rename ID (migrates displays & users), rename public name, delete</div>
         <div class="row" style="margin-top:12px">
           <input id="dealerName" class="input" placeholder="New dealership name (e.g., Genesis Winnipeg)" />
           <button id="addDealerBtn" class="btn solid">Add</button>
@@ -295,16 +300,23 @@
     <div id="page-analytics" class="page">
       <div class="crumb" data-home><span>←</span><b>Home</b></div>
       <div class="card">
-        <h2 style="margin:0 0 8px">Analytics</h2>
+        <h2 style="margin:0 0 8px">Analytics — Now</h2>
         <div id="anaSummary" class="small muted">Loading…</div>
-        <ul id="anaChannels" class="list" style="margin-top:8px"></ul>
-        <h3 style="margin:12px 0 6px">By Dealership</h3>
+
+        <!-- KPIs -->
+        <div id="anaKpis" class="kpi-grid"></div>
+
+        <!-- Channel board -->
+        <h3 style="margin-top:12px">Now playing — Channels</h3>
+        <div id="anaBoard" class="list"></div>
+
+        <!-- By dealership -->
+        <h3>By dealership</h3>
         <ul id="anaDealers" class="list"></ul>
-        <h3 style="margin:12px 0 6px">Recent activity trend</h3>
-        <div class="small muted">Displays with recent heartbeats (past 120 minutes, 10-min bins)</div>
-        <div id="anaTrend" class="list"></div>
-        <h3 style="margin:12px 0 6px">Channel changes (if tracked)</h3>
-        <ul id="anaChanges" class="list"></ul>
+
+        <!-- Recent changes -->
+        <h3>Recent changes (this session)</h3>
+        <ul id="anaRecent" class="list"></ul>
       </div>
     </div>
 
@@ -317,17 +329,6 @@
           <div><div class="label">Date / time</div><input id="schWhen" class="input" type="datetime-local" /></div>
           <div><div class="label">Note</div><input id="schNote" class="input" placeholder="Installation / visit / reminder…" /></div>
           <div style="display:flex;align-items:end"><button id="schAdd" class="btn solid" style="width:100%">Add</button></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap">
-          <div class="seg" id="schFilterSeg">
-            <button data-f="all" class="active">All</button>
-            <button data-f="upcoming">Upcoming</button>
-            <button data-f="done">Done</button>
-          </div>
-          <div class="split">
-            <button id="schExport" class="btn">Export JSON</button>
-            <label class="btn" style="cursor:pointer">Import JSON<input id="schImport" type="file" accept="application/json" style="display:none"></label>
-          </div>
         </div>
         <ul id="schList" class="list"></ul>
         <div id="schEmpty" class="empty" style="display:none">No reminders.</div>
@@ -347,10 +348,9 @@
       </div>
       <div class="row3">
         <div><div class="label">Branch</div><input id="ghBranch" class="input" placeholder="main" /></div>
-        <div><div class="label">Path</div><input id="ghPath" class="input" placeholder="config/iptv-config.json" /></div>
-        <div><div class="label">Token</div><input id="ghToken" class="input" type="password" placeholder="Fine-grained token (Contents: read/write)" /></div>
+        <div><div class="label">Path</div><input id="ghPath" class="input" placeholder="iptv-config.json" /></div>
+        <div><div class="label">Token</div><input id="ghToken" class="input" type="password" placeholder="ghp_… (contents:write)" /></div>
       </div>
-      <div class="small muted">Tip: If your chosen path 404s, sync will try again at <code>iptv-config.json</code> in repo root.</div>
       <div class="row2">
         <button class="btn" value="cancel">Close</button>
         <button id="saveSettingsBtn" class="btn solid" value="default">Save</button>
@@ -385,10 +385,6 @@
       { emoji:'👤', title:'Firebase — Auth', href:'https://console.firebase.google.com/project/iptv-bfa/authentication/users', desc:'Users & providers' },
       { emoji:'🐙', title:'GitHub Repo', href:'https://github.com/flaviothebfagroup/IPTV-', desc:'Source code' },
       { emoji:'🌐', title:'GitHub Pages (Remote)', href:'https://flaviothebfagroup.github.io/IPTV-/remote-control.html', desc:'Open remote' },
-      { emoji:'📧', title:'Gmail', href:'https://mail.google.com/mail/u/0/#inbox', desc:'Primary inbox' },
-      { emoji:'📧', title:'Outlook', href:'https://outlook.office.com/mail/', desc:'Office 365 inbox' },
-      { emoji:'✅', title:'Trello — Digital Team', href:'https://trello.com/b/jHjTIrZG/digital-team', desc:'Board' },
-      { emoji:'🎛️', title:'BSN.cloud', href:'https://app.bsn.cloud/#/dashboard', desc:'BrightSign dashboard' },
       { emoji:'🖥️', title:'Signagelive', href:'https://login.signagelive.com/', desc:'CMS login' },
       { emoji:'📁', title:'Google Drive', href:'https://drive.google.com/drive/u/0/', desc:'My Drive' }
     ];
@@ -414,7 +410,7 @@
     });
     $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
 
-    // Navigation
+    // Simple page nav
     function showHome(){ hideAll(); $('#home').classList.add('active'); window.scrollTo({top:0,behavior:'auto'}); }
     function showPage(id){ hideAll(); $(`#page-${id}`).classList.add('active'); window.scrollTo({top:0,behavior:'auto'}); }
     function hideAll(){ $$('.page').forEach(p=>p.classList.remove('active')); }
@@ -448,7 +444,6 @@
       }
       $('#adminEmail').textContent = user.email || user.uid;
 
-      // admin check
       const uSnap = await get(ref(db, `user/${user.uid}`));
       const u = uSnap.val() || {};
       if(u.role !== 'admin'){
@@ -471,7 +466,7 @@
       $('#ghOwner').value = gh.owner||'';
       $('#ghRepo').value  = gh.repo||'';
       $('#ghBranch').value= gh.branch||'main';
-      $('#ghPath').value  = gh.path||'config/iptv-config.json';
+      $('#ghPath').value  = gh.path||'iptv-config.json';
       $('#ghToken').value = gh.token||'';
       $('#settingsDlg').showModal();
     }
@@ -479,7 +474,7 @@
       gh.owner=$('#ghOwner').value.trim();
       gh.repo=$('#ghRepo').value.trim();
       gh.branch=$('#ghBranch').value.trim()||'main';
-      gh.path=$('#ghPath').value.trim()||'config/iptv-config.json';
+      gh.path=$('#ghPath').value.trim()||'iptv-config.json';
       gh.token=$('#ghToken').value.trim();
       localStorage.setItem(LS_GH, JSON.stringify(gh));
       toast('Settings saved');
@@ -496,6 +491,62 @@
       const did = $('#dealerForDisplays').value;
       if(did) await watchDisplays(did);
     }
+
+    // ======== BACKUP (no token needed) ========
+    function b64(str){return btoa(unescape(encodeURIComponent(str)));}
+
+    async function buildSnapshot(){
+      const [dealersPubSnap, displaysSnap, usersSnap] = await Promise.all([
+        get(ref(db,'dealershipPublic')).catch(()=>({val:()=>null})),
+        get(ref(db,'displays')).catch(()=>({val:()=>null})),
+        get(ref(db,'user')).catch(()=>({val:()=>null}))
+      ]);
+      const dealersPublic = dealersPubSnap?.val?.() || {};
+      const displays      = displaysSnap?.val?.()      || {};
+      const usersRaw      = usersSnap?.val?.()         || {};
+      const users = {};
+      for (const [uid,u] of Object.entries(usersRaw)){
+        users[uid] = { email:u.email||null, name:u.name||null, role:u.role||'user', dealershipId:u.dealershipId||null, dealershipName:u.dealershipName||null, updatedAt:u.updatedAt||null };
+      }
+      return { meta:{ generatedAt:new Date().toISOString(), format:'iptv-bfa@1' }, dealersPublic, displays, users };
+    }
+
+    // Download backup file
+    async function downloadBackup(){
+      try{
+        const data = await buildSnapshot();
+        const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+        const stamp = new Date().toISOString().replace(/[:T]/g,'-').slice(0,19);
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `iptv-backup-${stamp}.json`;
+        document.body.appendChild(a); a.click(); a.remove();
+        toast('Backup downloaded');
+      }catch(e){ console.error(e); toast('Backup failed', true); }
+    }
+    // Restore from file (overwrites those three roots)
+    function restoreFromFile(e){
+      const f = e.target.files?.[0]; if(!f) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try{
+          const obj = JSON.parse(String(reader.result||'{}'));
+          if(!obj || typeof obj!=='object' || !obj.displays || !obj.users){
+            alert('Invalid backup file'); return;
+          }
+          if(!confirm('Restore backup? This will overwrite Displays, Users and DealershipPublic.')) return;
+          await set(ref(db,'dealershipPublic'), obj.dealersPublic||{});
+          await set(ref(db,'displays'),        obj.displays||{});
+          await set(ref(db,'user'),            obj.users||{});
+          toast('Restore completed'); await reloadAll();
+        }catch(err){ console.error(err); alert('Restore failed: '+err.message); toast('Restore failed', true); }
+        finally{ e.target.value=''; }
+      };
+      reader.readAsText(f);
+    }
+    $('#backupBtn').addEventListener('click', downloadBackup);
+    $('#restoreBtn').addEventListener('click', ()=> $('#restoreFile').click());
+    $('#restoreFile').addEventListener('change', restoreFromFile);
 
     // ======== Dealerships ========
     $('#addDealerBtn').addEventListener('click', async ()=>{
@@ -547,6 +598,7 @@
           </div>
           <div class="split">
             <button class="btn" data-rename="${id}" data-name="${htmlEscape(name)}">Rename ID</button>
+            <button class="btn" data-rename-name="${id}" data-name="${htmlEscape(name)}">Rename Name</button>
             <button class="btn danger" data-del="${id}">Delete</button>
           </div>`;
         list.appendChild(li);
@@ -566,6 +618,18 @@
           if(!confirm(`Migrate ${id} → ${newId}? Displays and users will be updated.`)) return;
           try{ await migrateDealerId(id,newId,currentName); toast('Dealer ID renamed'); await refreshDealers(true); }
           catch(e){ console.error(e); toast('Rename failed', true); }
+        });
+      });
+      list.querySelectorAll('[data-rename-name]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const id = btn.getAttribute('data-rename-name');
+          const current = btn.getAttribute('data-name')||'';
+          const next = prompt('New public name', current); if(!next || next===current) return;
+          try{
+            await update(ref(db,`dealership/${id}`), { name: next });
+            await set(ref(db,`dealershipPublic/${id}`), { name: next });
+            toast('Name updated'); await refreshDealers(true);
+          }catch(e){ console.error(e); toast('Update failed', true); }
         });
       });
       list.querySelectorAll('[data-del]').forEach(btn=>{
@@ -858,23 +922,20 @@
       renderGroup(groups.disabled,'gridDisabled');
     }
 
-    // Duplicate finder
-    const DUP_SEL = new Set(); // store uid selected for deletion
+    // Duplicate finder (unchanged)
+    const DUP_SEL = new Set();
     $('#findDupBtn').addEventListener('click', async ()=>{
       DUP_SEL.clear(); $('#dupList').innerHTML='';
       let map={}; try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
       const rows=Object.entries(map).map(([uid,v])=>({uid,...v})).filter(r=> (r.role==='device') && r.name && r.dealershipId);
-      // group by dealershipId + normalized name
-      const groups={};
+      const groups={}; const now=Date.now();
       rows.forEach(r=>{
         const key=(r.dealershipId||'')+'|'+(r.name||'').toLowerCase().trim();
-        if(!groups[key]) groups[key]=[];
-        groups[key].push(r);
+        if(!groups[key]) groups[key]=[]; groups[key].push(r);
       });
-      const now=Date.now(); let any=false;
+      let any=false;
       for(const [key,arr] of Object.entries(groups)){
-        if(arr.length<=1) continue;
-        any=true;
+        if(arr.length<=1) continue; any=true;
         arr.sort((a,b)=> (b.updatedAt||0)-(a.updatedAt||0));
         const holder=document.createElement('div'); holder.className='item';
         const [did,name]=key.split('|');
@@ -893,12 +954,10 @@
       }
       $('#dupBox').style.display='block';
       $('#dupEmpty').style.display= any? 'none':'block';
-      // track selection
       $('#dupList').querySelectorAll('input[type="checkbox"]').forEach(cb=>{
         cb.addEventListener('change',()=>{ const uid=cb.dataset.uid; if(cb.checked) DUP_SEL.add(uid); else DUP_SEL.delete(uid); });
       });
     });
-
     $('#deleteDupBtn').addEventListener('click', async ()=>{
       if(!DUP_SEL.size) { toast('Pick duplicates to delete'); return; }
       if(!confirm(`Delete ${DUP_SEL.size} selected user(s)?`)) return;
@@ -951,301 +1010,165 @@
       });
     }
 
-    // ======== Analytics (enhanced) ========
+    // ======== Analytics (eye-catching & simple) ========
+    function timeAgo(t){ const s=Math.floor((Date.now()-t)/1000); if(s<60) return s+'s ago'; const m=Math.floor(s/60); if(m<60) return m+'m ago'; const h=Math.floor(m/60); if(h<24) return h+'h ago'; const d=Math.floor(h/24); return d+'d ago'; }
+
     async function loadAnalytics(){
       const s=await get(ref(db,'displays')); const map=s.val()||{}; const ids=Object.keys(map);
       const now=Date.now();
-      let online=0, offline=0;
-      const channelCounts={}, dealerCounts={}, changeCounts={};
-      const bins = Array.from({length:12}, ()=>0); // 12 x 10-min bins (past 120m)
-
+      let online=0, offline=0, mute=0, volSum=0;
+      const channelCounts={};
+      const byDealer={};
       ids.forEach(id=>{
         const v=map[id]||{};
-        const on=(v.lastSeenAt && (now-v.lastSeenAt)<60000) || (v.timestamp && (now-v.timestamp)<120000);
-        on? online++ : offline++;
-        const ch=(v.channel||1); channelCounts[ch]=(channelCounts[ch]||0)+1;
-        const dealer=(v.dealership||'—'); dealerCounts[dealer]=(dealerCounts[dealer]||0)+1;
-        if(typeof v.changeCount==='number'){ changeCounts[id]=v.changeCount; }
-
-        const t = v.lastSeenAt || v.timestamp;
-        if(t){
-          const mins = Math.floor((now - t)/60000);
-          const bin = Math.floor(mins/10);
-          if(bin>=0 && bin<12){ bins[11-bin] += 1; } // newest on right
-        }
+        const on=(v.lastSeenAt&&(now-v.lastSeenAt)<60000)||(v.timestamp&&(now-v.timestamp)<120000);
+        on?online++:offline++;
+        if(v.muted) mute++;
+        volSum += Number(v.volume||0);
+        const ch = v.channel || 1;
+        channelCounts[ch]=(channelCounts[ch]||0)+1;
+        const d=v.dealership||'—';
+        if(!byDealer[d]) byDealer[d]={total:0,online:0,offline:0}; byDealer[d].total++; on?byDealer[d].online++:byDealer[d].offline++;
       });
+      const avgVol=ids.length?Math.round(volSum/ids.length):0;
+      const mutePct=ids.length?Math.round(mute*100/ids.length):0;
+      $('#anaSummary').textContent = `Total ${ids.length} • Online ${online} • Offline ${offline} • Muted ${mutePct}% • Avg VOL ${avgVol}`;
 
-      $('#anaSummary').textContent = `Active now: ${online} • Offline: ${offline} • Total displays: ${ids.length} • Likely active rate: ${ids.length? Math.round((online/ids.length)*100):0}%`;
+      // KPIs
+      const topCh = Object.entries(channelCounts).sort((a,b)=>b[1]-a[1])[0] || ['—',0];
+      $('#anaKpis').innerHTML = `
+        <div class="kpi"><span>TVs Online</span><b>${online}</b></div>
+        <div class="kpi"><span>TVs Offline</span><b>${offline}</b></div>
+        <div class="kpi"><span>Most Played</span><b>CH ${topCh[0]}</b></div>
+        <div class="kpi"><span>Avg Volume</span><b>${avgVol}</b></div>
+      `;
 
-      // Channels
-      const ulC=$('#anaChannels'); ulC.innerHTML='';
-      const totalC = Object.values(channelCounts).reduce((a,b)=>a+b,0)||1;
+      // “Now playing” board (bars + %)
+      const board = $('#anaBoard'); board.innerHTML='';
+      const total = ids.length || 1;
       Object.entries(channelCounts).sort((a,b)=>b[1]-a[1]).forEach(([ch,n])=>{
-        const pct = Math.round((n/totalC)*100);
-        const li=document.createElement('li'); li.className='item';
-        li.innerHTML=`<div class="stat"><div>Channel <b>${ch}</b> — ${n}</div><div style="min-width:160px"><div class="bar"><i style="width:${pct}%"></i></div></div></div>`;
-        ulC.appendChild(li);
+        const pct = Math.round(n*100/total);
+        const row = document.createElement('div'); row.className='item';
+        row.innerHTML = `
+          <div class="pill orange">CH ${ch}</div>
+          <div class="bar-row" style="flex:1">
+            <div class="bar"><i style="width:${pct}%"></i></div>
+            <div class="small muted" style="min-width:48px;text-align:right">${pct}%</div>
+          </div>
+          <div class="small muted">${n} TV${n===1?'':'s'}</div>
+        `;
+        board.appendChild(row);
       });
+      if(!Object.keys(channelCounts).length){
+        const li=document.createElement('div'); li.className='item small muted'; li.textContent='No displays.';
+        board.appendChild(li);
+      }
 
-      // Dealers
+      // Dealership list
       const ulD=$('#anaDealers'); ulD.innerHTML='';
-      const totalD = Object.values(dealerCounts).reduce((a,b)=>a+b,0)||1;
-      Object.entries(dealerCounts).sort((a,b)=>b[1]-a[1]).forEach(([name,n])=>{
-        const pct = Math.round((n/totalD)*100);
+      Object.entries(byDealer).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([d,agg])=>{
         const li=document.createElement('li'); li.className='item';
-        li.innerHTML=`<div class="stat"><div><b>${htmlEscape(name)}</b> — ${n}</div><div style="min-width:160px"><div class="bar"><i style="width:${pct}%"></i></div></div></div>`;
+        li.innerHTML = `<div><b>${htmlEscape(d)}</b></div>
+                        <div class="small muted">Online ${agg.online} • Offline ${agg.offline} • Total ${agg.total}</div>`;
         ulD.appendChild(li);
       });
 
-      // Trend bars (simple)
-      const trend=$('#anaTrend'); trend.innerHTML='';
-      const maxBin = Math.max(1,...bins);
-      const row=document.createElement('div'); row.className='item';
-      row.innerHTML = `<div style="display:flex;gap:6px;align-items:flex-end;width:100%">${
-        bins.map(v=>{
-          const h = Math.round((v/maxBin)*44)+4;
-          return `<div title="${v} active" style="width:10px;height:${h}px;background:linear-gradient(180deg,var(--accent),#ffb866);border:1px solid var(--border);border-radius:3px"></div>`;
-        }).join('')
-      }</div>`;
-      trend.appendChild(row);
-
-      // Changes (if tracked)
-      const ulCh=$('#anaChanges'); ulCh.innerHTML='';
-      const changePairs = Object.entries(changeCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
-      if(changePairs.length===0){
-        const li=document.createElement('li'); li.className='item'; li.innerHTML='<div class="small muted">No change counters found on displays (field <code>changeCount</code>).</div>';
-        ulCh.appendChild(li);
-      } else {
-        changePairs.forEach(([id,ct])=>{
+      // Recent channel changes (session diff)
+      const prev = JSON.parse(localStorage.getItem('ana_prev_displays')||'{}');
+      const changes = [];
+      ids.forEach(id=>{
+        const cur = map[id] || {}, old = prev[id] || {};
+        if (old.channel != null && cur.channel != null && old.channel !== cur.channel) {
+          changes.push({ id, from: old.channel, to: cur.channel, when: cur.timestamp || cur.lastSeenAt || null, d: cur.dealership||'—' });
+        }
+      });
+      localStorage.setItem('ana_prev_displays', JSON.stringify(map));
+      const ulR=$('#anaRecent'); ulR.innerHTML='';
+      if(!changes.length){
+        const li=document.createElement('li'); li.className='item small muted'; li.textContent='No channel changes since you opened this page.'; ulR.appendChild(li);
+      }else{
+        changes.sort((a,b)=> (b.when||0)-(a.when||0));
+        changes.slice(0,15).forEach(c=>{
           const li=document.createElement('li'); li.className='item';
-          li.innerHTML = `<div><b>${htmlEscape(id)}</b></div><div class="small muted">${ct} changes</div>`;
-          ulCh.appendChild(li);
+          li.innerHTML=`<div><b>${htmlEscape(c.id)}</b> <span class="tag">${htmlEscape(c.d)}</span></div>
+                        <div class="small muted">CH ${c.from} → ${c.to} • ${c.when?timeAgo(c.when):'recently'}</div>`;
+          ulR.appendChild(li);
         });
       }
     }
 
-    // ======== Schedule (local, enhanced) ========
+    // ======== Schedule (local) ========
     const LS_SCH='iptv_admin_schedule';
-    let schedule = [];
-    try{ schedule = JSON.parse(localStorage.getItem(LS_SCH)||'[]') || []; }catch(e){ schedule = []; }
-    let schFilter = 'all'; // all|upcoming|done
-
+    const schedule = JSON.parse(localStorage.getItem(LS_SCH)||'[]');
     function saveSchedule(){ localStorage.setItem(LS_SCH, JSON.stringify(schedule)); renderSchedule(); }
     function renderSchedule(){
       const ul=$('#schList'); ul.innerHTML='';
-      let list = schedule.map((r,i)=>({i,...r}));
-      const now = Date.now();
-      if(schFilter==='upcoming') list = list.filter(x=> !x.done && new Date(x.when).getTime()>=now);
-      if(schFilter==='done')     list = list.filter(x=> !!x.done);
-      if(!list.length){ $('#schEmpty').style.display='block'; return; }
+      if(!schedule.length){ $('#schEmpty').style.display='block'; return; }
       $('#schEmpty').style.display='none';
-
-      list.sort((a,b)=> a.when.localeCompare(b.when));
-      list.forEach(({i,when,note,done})=>{
+      schedule.sort((a,b)=>a.when.localeCompare(b.when));
+      const now=Date.now();
+      schedule.forEach((r,i)=>{
+        const t=new Date(r.when).getTime();
+        const due = t-now;
+        const status = due<0 ? 'Overdue' : (due<86400000?'Due soon':'Scheduled');
         const li=document.createElement('li'); li.className='item';
-        const d = new Date(when);
-        li.innerHTML = `
-          <div style="display:flex;flex-direction:column;gap:2px">
-            <b>${d.toLocaleString()}</b>
-            <div class="small muted">${htmlEscape(note||'')}</div>
+        li.innerHTML=`<div>
+            <b>${new Date(r.when).toLocaleString()}</b>
+            <div class="small muted">${htmlEscape(r.note||'')}</div>
+            <div class="badge" style="margin-top:6px">${status}</div>
           </div>
-          <div class="split">
-            <button class="btn ${done?'':'primary'}" data-done="${i}">${done?'Undo':'Done'}</button>
-            <button class="btn" data-edit="${i}">Edit</button>
-            <button class="btn danger" data-del="${i}">Delete</button>
-          </div>`;
+          <button class="btn danger" data-del="${i}">Delete</button>`;
         ul.appendChild(li);
       });
-
-      ul.querySelectorAll('[data-del]').forEach(btn=> btn.addEventListener('click',()=>{ const i=parseInt(btn.dataset.del,10); schedule.splice(i,1); saveSchedule(); }));
-      ul.querySelectorAll('[data-done]').forEach(btn=> btn.addEventListener('click',()=>{ const i=parseInt(btn.dataset.done,10); schedule[i].done = !schedule[i].done; saveSchedule(); }));
-      ul.querySelectorAll('[data-edit]').forEach(btn=> btn.addEventListener('click',()=>{
-        const i=parseInt(btn.dataset.edit,10);
-        const cur=schedule[i]; const nextNote=prompt('Note', cur.note||''); if(nextNote===null) return;
-        const nextWhen=prompt('ISO yyyy-mm-ddThh:mm (leave blank to keep)', cur.when);
-        if(nextWhen!==null && nextWhen.trim()!==''){ cur.when = nextWhen; }
-        cur.note = nextNote; saveSchedule();
-      }));
+      ul.querySelectorAll('button[data-del]').forEach(btn=> btn.addEventListener('click',()=>{ const i=parseInt(btn.dataset.del,10); schedule.splice(i,1); saveSchedule(); }));
     }
+    $('#schAdd').addEventListener('click', ()=>{ const when=$('#schWhen').value; const note=$('#schNote').value.trim(); if(!when||!note) return toast('Pick date/time and note',true); schedule.push({when,note}); saveSchedule(); $('#schWhen').value=''; $('#schNote').value=''; toast('Added'); });
     renderSchedule();
 
-    // Filter segment
-    $('#schFilterSeg').addEventListener('click', (e)=>{
-      const b = e.target.closest('button'); if(!b) return;
-      schFilter = b.dataset.f;
-      Array.from($('#schFilterSeg').children).forEach(x=>x.classList.toggle('active', x.dataset.f===schFilter));
-      renderSchedule();
-    });
-
-    // Add
-    $('#schAdd').addEventListener('click', ()=>{
-      const when=$('#schWhen').value; const note=$('#schNote').value.trim();
-      if(!when||!note) return toast('Pick date/time and note',true);
-      schedule.push({when,note,done:false}); saveSchedule();
-      $('#schWhen').value=''; $('#schNote').value=''; toast('Added');
-    });
-
-    // Export / import
-    $('#schExport').addEventListener('click', ()=>{
-      const blob=new Blob([JSON.stringify(schedule,null,2)],{type:'application/json'});
-      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='iptv-schedule.json'; a.click();
-      URL.revokeObjectURL(a.href);
-    });
-    $('#schImport').addEventListener('change', async (e)=>{
-      const file=e.target.files?.[0]; if(!file) return;
-      try{
-        const text=await file.text(); const arr=JSON.parse(text); if(!Array.isArray(arr)) throw 0;
-        schedule = arr; saveSchedule(); toast('Imported');
-      }catch(_){ toast('Invalid file', true); }
-    });
-
-    // Local notifications
-    (function scheduleNotifier(){
-      try{
-        if('Notification' in window && Notification.permission==='default'){
-          Notification.requestPermission().catch(()=>{});
-        }
-      }catch(_){}
-      setInterval(()=>{
-        const now=Date.now();
-        schedule.forEach((r,idx)=>{
-          const t=new Date(r.when).getTime();
-          if(!r.done && t && Math.abs(now-t)<60000 && !r._fired){
-            r._fired = true; saveSchedule();
-            toast('Reminder: ' + (r.note||''));
-            try{
-              if('Notification' in window && Notification.permission==='granted'){
-                new Notification('IPTV Reminder', { body: r.note||'', badge: '', icon: '' });
-              }
-            }catch(_){}
-          }
-        });
-      }, 30000);
-    })();
-
-    // ======== GitHub Sync (hardened) ========
-    function b64(str){return btoa(unescape(encodeURIComponent(str)));}
-
-    async function buildSnapshot(){
-      const [dealersPubSnap, displaysSnap, usersSnap] = await Promise.all([
-        get(ref(db,'dealershipPublic')).catch(()=>({val:()=>null})),
-        get(ref(db,'displays')).catch(()=>({val:()=>null})),
-        get(ref(db,'user')).catch(()=>({val:()=>null}))
-      ]);
-      const dealersPublic = dealersPubSnap?.val?.() || {};
-      const displays      = displaysSnap?.val?.()      || {};
-      const usersRaw      = usersSnap?.val?.()         || {};
-      const users = {};
-      for (const [uid,u] of Object.entries(usersRaw)){
-        users[uid] = { email:u.email||null, name:u.name||null, role:u.role||'user', dealershipId:u.dealershipId||null };
-      }
-      return {
-        meta: { generatedAt:new Date().toISOString(), by:(getAuth().currentUser?.email)||'admin', format:'iptv-bfa@1' },
-        dealersPublic, displays, users
-      };
-    }
-
+    // ======== GitHub Sync =========
     async function ghFetch(url, opts){
       const res = await fetch(url, opts);
       const text = await res.text();
-      let data; try{ data = text ? JSON.parse(text) : {}; }catch{ data = { raw:text }; }
-      if(!res.ok){ throw new Error((data?.message||res.statusText)+` (HTTP ${res.status})`); }
+      let data; try { data = text ? JSON.parse(text) : {}; } catch { data = { raw:text }; }
+      if(!res.ok){ const msg = data?.message || res.statusText || 'GitHub error'; throw new Error(`${msg} (HTTP ${res.status})`); }
       return data;
     }
-
-    async function getRepo(ghs){
-      return ghFetch(`https://api.github.com/repos/${ghs.owner}/${ghs.repo}`, {
-        headers:{ 'Authorization':`Bearer ${ghs.token}`, 'Accept':'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28' }
-      });
+    async function checkRepo(gh){
+      const headers = { 'Authorization': `Bearer ${gh.token}`, 'Accept':'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28' };
+      await ghFetch(`https://api.github.com/repos/${gh.owner}/${gh.repo}`, { headers });
+      await ghFetch(`https://api.github.com/repos/${gh.owner}/${gh.repo}/branches/${encodeURIComponent(gh.branch)}`, { headers });
     }
-    async function getRef(ghs, branch){
-      return ghFetch(`https://api.github.com/repos/${ghs.owner}/${ghs.repo}/git/ref/heads/${encodeURIComponent(branch)}`, {
-        headers:{ 'Authorization':`Bearer ${ghs.token}`, 'Accept':'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28' }
-      });
-    }
-    async function createBranchFromDefault(ghs){
-      const repo = await getRepo(ghs);
-      const def  = repo.default_branch || 'main';
-      const defRef = await getRef(ghs, def);
-      const sha = defRef.object?.sha;
-      if(!sha) throw new Error('Cannot read default branch SHA');
-      return ghFetch(`https://api.github.com/repos/${ghs.owner}/${ghs.repo}/git/refs`, {
-        method:'POST',
-        headers:{ 'Authorization':`Bearer ${ghs.token}`, 'Accept':'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28', 'Content-Type':'application/json' },
-        body: JSON.stringify({ ref:`refs/heads/${ghs.branch}`, sha })
-      });
-    }
-
     async function exportToGitHub(){
       try{
-        const ghs = JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}');
-        if(!ghs.owner || !ghs.repo || !ghs.branch || !ghs.token){
-          toast('Settings incomplete — open Settings and fill Owner/Repo/Branch/Token', true); return;
-        }
-        ghs.path = (ghs.path && ghs.path.trim()) || 'config/iptv-config.json';
+        const gh = JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}');
+        if(!gh.owner || !gh.repo || !gh.branch || !gh.path || !gh.token){ toast('Settings incomplete — open Settings and fill all fields', true); return; }
+        await checkRepo(gh);
 
-        // Ensure repo & branch exist
-        await getRepo(ghs).catch(e=>{ throw new Error('Repo access failed: '+e.message); });
-        await getRef(ghs, ghs.branch).catch(async e=>{
-          if(String(e.message||'').includes('404')){ await createBranchFromDefault(ghs); }
-          else throw e;
-        });
-
-        // Build content
         const payload = await buildSnapshot();
         const contentB64 = b64(JSON.stringify(payload, null, 2));
+        const base = `https://api.github.com/repos/${gh.owner}/${gh.repo}/contents/${encodeURIComponent(gh.path)}`;
         const headers = {
-          'Authorization': `Bearer ${ghs.token}`,
+          'Authorization': `Bearer ${gh.token}`,
           'Accept':'application/vnd.github+json',
           'X-GitHub-Api-Version':'2022-11-28',
           'Content-Type':'application/json'
         };
 
-        // Try at given path
-        let base = `https://api.github.com/repos/${ghs.owner}/${ghs.repo}/contents/${encodeURIComponent(ghs.path)}`;
-        let sha;
-        try{
-          const existing = await ghFetch(`${base}?ref=${encodeURIComponent(ghs.branch)}`, { headers });
-          sha = existing.sha;
-        }catch(e){
-          if(!String(e.message||'').includes('404')) throw e;
-        }
+        let sha = undefined;
+        try{ const existing = await ghFetch(`${base}?ref=${encodeURIComponent(gh.branch)}`, { headers }); sha = existing.sha; }
+        catch(e){ if(!String(e.message||'').includes('404')) throw e; }
 
-        async function putFile(path, shaMaybe){
-          const url = `https://api.github.com/repos/${ghs.owner}/${ghs.repo}/contents/${encodeURIComponent(path)}`;
-          return ghFetch(url, { method:'PUT', headers, body: JSON.stringify({
-            message: (shaMaybe?'update: ':'create: ')+path,
-            content: contentB64, branch: ghs.branch, sha: shaMaybe
-          })});
-        }
-
-        try{
-          await putFile(ghs.path, sha);
-        }catch(e){
-          // Fallback to repo root file if nested path invalid
-          if(String(e.message||'').includes('No commit found for the ref') || String(e.message||'').includes('path cannot be empty')){
-            await putFile('iptv-config.json', undefined);
-            toast('Synced to GitHub ✔︎ (saved as iptv-config.json)');
-            return;
-          }
-          // Another common case: 404 on nested directories
-          if(String(e.message||'').includes('404')){
-            await putFile('iptv-config.json', undefined);
-            toast('Synced to GitHub ✔︎ (saved as iptv-config.json)');
-            return;
-          }
-          throw e;
-        }
+        const body = { message: sha ? `update: ${gh.path}` : `create: ${gh.path}`, content: contentB64, branch: gh.branch, sha };
+        await ghFetch(base, { method:'PUT', headers, body: JSON.stringify(body) });
 
         toast('Synced to GitHub ✔︎');
       }catch(err){
         console.error('[github sync failed]', err);
-        alert(`GitHub sync failed:\n\n${err.message}\n\nChecklist:\n• Token must be fine-grained with “Repository contents: Read and write”\n• Repo must be selected when creating the token\n• Owner/Repo/Branch/Path must be exact\n• If path fails, we try root as iptv-config.json`);
+        alert(`GitHub sync failed:\n\n${err.message}\n\nChecklist:\n• Token must be fine-grained with “Repository contents: Read and write”\n• Repo must be selected when creating the token\n• Owner/Repo/Branch/Path must be exact\n• If path fails, try root as iptv-config.json`);
         toast('Sync failed', true);
       }
     }
     document.getElementById('syncBtn')?.addEventListener('click', exportToGitHub);
-
   </script>
 </body>
 </html>
