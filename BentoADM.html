@@ -418,915 +418,962 @@
   </dialog>
 
   <script type="module">
-    import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import {
-      getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword,
-      onAuthStateChanged, sendPasswordResetEmail, signOut, createUserWithEmailAndPassword
-    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import {
-      getDatabase, ref, get, set, update, remove, onValue, query, orderByChild, equalTo
-    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+  import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import {
+    getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword,
+    onAuthStateChanged, sendPasswordResetEmail, signOut, createUserWithEmailAndPassword
+  } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  import {
+    getDatabase, ref, get, set, update, remove, onValue, query, orderByChild, equalTo
+  } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    // ========= CONFIG =========
-    const firebaseConfig = {
-      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
-      authDomain: "iptv-bfa.firebaseapp.com",
-      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
-      projectId: "iptv-bfa",
-      storageBucket: "iptv-bfa.firebasestorage.app",
-      messagingSenderId: "838790935867",
-      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
-    };
-    const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
-    const DEFAULT_LINKS = [
-      { emoji:'🔥', title:'Firebase — Overview', href:'https://console.firebase.google.com/project/iptv-bfa/overview', desc:'Console home' },
-      { emoji:'🗄️', title:'Firebase — Database', href:'https://console.firebase.google.com/project/iptv-bfa/database/iptv-bfa-default-rtdb/data', desc:'Realtime DB data' },
-      { emoji:'👤', title:'Firebase — Auth', href:'https://console.firebase.google.com/project/iptv-bfa/authentication/users', desc:'Users & providers' },
-      { emoji:'🐙', title:'GitHub Repo', href:'https://github.com/flaviothebfagroup/IPTV-', desc:'Source code' },
-      { emoji:'🌐', title:'GitHub Pages (Remote)', href:'https://flaviothebfagroup.github.io/IPTV-/remote-control.html', desc:'Open remote' },
-      { emoji:'📧', title:'Gmail', href:'https://mail.google.com/mail/u/0/#inbox', desc:'Primary inbox' },
-      { emoji:'📧', title:'Outlook', href:'https://outlook.office.com/mail/', desc:'Office 365 inbox' },
-      { emoji:'✅', title:'Trello — Digital Team', href:'https://trello.com/b/jHjTIrZG/digital-team', desc:'Board' },
-      { emoji:'🎛️', title:'BSN.cloud', href:'https://app.bsn.cloud/#/dashboard', desc:'BrightSign dashboard' },
-      { emoji:'🖥️', title:'Signagelive', href:'https://login.signagelive.com/', desc:'CMS login' },
-      { emoji:'📁', title:'Google Drive', href:'https://drive.google.com/drive/u/0/', desc:'My Drive' }
-    ];
+  // ========= CONFIG =========
+  const firebaseConfig = {
+    apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+    authDomain: "iptv-bfa.firebaseapp.com",
+    databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+    projectId: "iptv-bfa",
+    storageBucket: "iptv-bfa.firebasestorage.app",
+    messagingSenderId: "838790935867",
+    appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+  };
+  const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
+  const DEFAULT_LINKS = [
+    { emoji:'🔥', title:'Firebase — Overview', href:'https://console.firebase.google.com/project/iptv-bfa/overview', desc:'Console home' },
+    { emoji:'🗄️', title:'Firebase — Database', href:'https://console.firebase.google.com/project/iptv-bfa/database/iptv-bfa-default-rtdb/data', desc:'Realtime DB data' },
+    { emoji:'👤', title:'Firebase — Auth', href:'https://console.firebase.google.com/project/iptv-bfa/authentication/users', desc:'Users & providers' },
+    { emoji:'🐙', title:'GitHub Repo', href:'https://github.com/flaviothebfagroup/IPTV-', desc:'Source code' },
+    { emoji:'🌐', title:'GitHub Pages (Remote)', href:'https://flaviothebfagroup.github.io/IPTV-/remote-control.html', desc:'Open remote' },
+    { emoji:'📧', title:'Gmail', href:'https://mail.google.com/mail/u/0/#inbox', desc:'Primary inbox' },
+    { emoji:'📧', title:'Outlook', href:'https://outlook.office.com/mail/', desc:'Office 365 inbox' },
+    { emoji:'✅', title:'Trello — Digital Team', href:'https://trello.com/b/jHjTIrZG/digital-team', desc:'Board' },
+    { emoji:'🎛️', title:'BSN.cloud', href:'https://app.bsn.cloud/#/dashboard', desc:'BrightSign dashboard' },
+    { emoji:'🖥️', title:'Signagelive', href:'https://login.signagelive.com/', desc:'CMS login' },
+    { emoji:'📁', title:'Google Drive', href:'https://drive.google.com/drive/u/0/', desc:'My Drive' }
+  ];
 
-    // ========= APP/STATE/UI =========
-    const app  = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db   = getDatabase(app);
+  // ========= APP/STATE/UI =========
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getDatabase(app);
 
-    const $ = s => document.querySelector(s);
-    const $$ = s => document.querySelectorAll(s);
-    function htmlEscape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
-    function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
-    const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+  const $ = s => document.querySelector(s);
+  const $$ = s => document.querySelectorAll(s);
+  function htmlEscape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+  function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
+  const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
 
-    // Theme + logo
-    const savedTheme = localStorage.getItem('iptv_theme') || 'light';
-    document.body.classList.toggle('light', savedTheme==='light');
-    $('#themeBtn').addEventListener('click', ()=>{
-      const isLight = !document.body.classList.contains('light');
-      document.body.classList.toggle('light', isLight);
-      localStorage.setItem('iptv_theme', isLight ? 'light' : 'dark');
-    });
-    $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
+  // Theme + logo
+  const savedTheme = localStorage.getItem('iptv_theme') || 'light';
+  document.body.classList.toggle('light', savedTheme==='light');
+  $('#themeBtn').addEventListener('click', ()=>{
+    const isLight = !document.body.classList.contains('light');
+    document.body.classList.toggle('light', isLight);
+    localStorage.setItem('iptv_theme', isLight ? 'light' : 'dark');
+  });
+  $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
 
-    // Navigation
-    function showHome(){ hideAll(); $('#home').classList.add('active'); window.scrollTo({top:0,behavior:'auto'}); }
-    function showPage(id){ hideAll(); $(`#page-${id}`).classList.add('active'); window.scrollTo({top:0,behavior:'auto'}); }
-    function hideAll(){ $$('.page').forEach(p=>p.classList.remove('active')); }
-    $('#home').addEventListener('click', e=>{ const p=e.target.closest('.tile')?.dataset?.page; if(p) showPage(p); });
-    $$('.crumb[data-home]').forEach(c=> c.addEventListener('click', showHome));
+  // Navigation
+  function showHome(){ hideAll(); $('#home').classList.add('active'); window.scrollTo({top:0,behavior:'auto'}); }
+  function showPage(id){ hideAll(); $(`#page-${id}`).classList.add('active'); window.scrollTo({top:0,behavior:'auto'}); }
+  function hideAll(){ $$('.page').forEach(p=>p.classList.remove('active')); }
+  $('#home').addEventListener('click', e=>{ const p=e.target.closest('.tile')?.dataset?.page; if(p) showPage(p); });
+  $$('.crumb[data-home]').forEach(c=> c.addEventListener('click', showHome));
 
-    // Auth UI
-    $('#loginBtn').addEventListener('click', doLogin);
-    $('#resetBtn').addEventListener('click', async ()=>{
-      const email = $('#email').value.trim();
-      if(!email) return toast('Enter email', true);
-      try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed', true); }
-    });
-    $('#signOutBtn').addEventListener('click', ()=>signOut(auth));
-    $('#reloadBtn').addEventListener('click', reloadAll);
+  // Auth UI
+  $('#loginBtn').addEventListener('click', doLogin);
+  $('#resetBtn').addEventListener('click', async ()=>{
+    const email = $('#email').value.trim();
+    if(!email) return toast('Enter email', true);
+    try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed', true); }
+  });
+  $('#signOutBtn').addEventListener('click', ()=>signOut(auth));
+  $('#reloadBtn').addEventListener('click', reloadAll);
 
-    async function doLogin(){
-      const email=$('#email').value.trim(), pass=$('#password').value;
-      if(!email||!pass) return toast('Fill email & password', true);
-      try{ await setPersistence(auth, browserLocalPersistence); await signInWithEmailAndPassword(auth,email,pass); }
-      catch(e){ console.error(e); toast('Sign-in failed', true); }
-    }
+  async function doLogin(){
+    const email=$('#email').value.trim(), pass=$('#password').value;
+    if(!email||!pass) return toast('Fill email & password', true);
+    try{ await setPersistence(auth, browserLocalPersistence); await signInWithEmailAndPassword(auth,email,pass); }
+    catch(e){ console.error(e); toast('Sign-in failed', true); }
+  }
 
-    onAuthStateChanged(auth, async (user)=>{
-      if(!user){
-        $('#adminEmail').textContent='';
-        hideAll();
-        $('#notAdmin').style.display='none';
-        $('#loginBox').style.display='block';
-        return;
-      }
-      $('#adminEmail').textContent = user.email || user.uid;
-
-      // admin check
-      const uSnap = await get(ref(db, `user/${user.uid}`));
-      const u = uSnap.val() || {};
-      if(u.role !== 'admin'){
-        $('#loginBox').style.display='none';
-        $('#notAdmin').style.display='block';
-        hideAll();
-        return;
-      }
-
-      $('#loginBox').style.display='none';
+  onAuthStateChanged(auth, async (user)=>{
+    if(!user){
+      $('#adminEmail').textContent='';
+      hideAll();
       $('#notAdmin').style.display='none';
-      showHome();
-      await reloadAll();
+      $('#loginBox').style.display='block';
+      return;
+    }
+    $('#adminEmail').textContent = user.email || user.uid;
+
+    // admin check
+    const uSnap = await get(ref(db, `user/${user.uid}`));
+    const u = uSnap.val() || {};
+    if(u.role !== 'admin'){
+      $('#loginBox').style.display='none';
+      $('#notAdmin').style.display='block';
+      hideAll();
+      return;
+    }
+
+    $('#loginBox').style.display='none';
+    $('#notAdmin').style.display='none';
+    showHome();
+    await reloadAll();
+  });
+
+  // Settings (GitHub)
+  const LS_GH='iptv_admin_gh';
+  const gh = JSON.parse(localStorage.getItem(LS_GH)||'{}');
+  function openSettings(){
+    $('#ghOwner').value = gh.owner||'';
+    $('#ghRepo').value  = gh.repo||'';
+    $('#ghBranch').value= gh.branch||'main';
+    $('#ghPath').value  = gh.path||'config/iptv-config.json';
+    $('#ghToken').value = gh.token||'';
+    $('#settingsDlg').showModal();
+  }
+  function saveSettings(){
+    gh.owner=$('#ghOwner').value.trim();
+    gh.repo=$('#ghRepo').value.trim();
+    gh.branch=$('#ghBranch').value.trim()||'main';
+    gh.path=$('#ghPath').value.trim()||'config/iptv-config.json';
+    gh.token=$('#ghToken').value.trim();
+    localStorage.setItem(LS_GH, JSON.stringify(gh));
+    toast('Settings saved');
+  }
+  $('#settingsBtn').addEventListener('click', openSettings);
+  $('#saveSettingsBtn').addEventListener('click', (e)=>{ e.preventDefault(); saveSettings(); $('#settingsDlg').close(); });
+
+  // Home reload
+  async function reloadAll(){
+    await refreshDealers();   // fills dealer list + selects
+    await refreshUsers();     // grouped users
+    await quickLinksLoadRender();
+    await loadAnalytics();
+    // keep displays watcher if a dealership is selected
+    const did = $('#dealerForDisplays').value;
+    if(did) await watchDisplays(did);
+  }
+
+  // ======== Dealerships ========
+  $('#addDealerBtn').addEventListener('click', async ()=>{
+    const name = $('#dealerName').value.trim();
+    if(!name) return toast('Enter a name', true);
+    await createDealership(name).catch((e)=>{console.error(e);toast('Create failed',true);});
+    $('#dealerName').value='';
+    await refreshDealers(true);
+    toast('Dealership added');
+  });
+  $('#dealersReload').addEventListener('click', ()=>refreshDealers(true));
+
+  async function createDealership(name){
+    const id = makeDealerId(name);
+    const dealer = { name, createdAt: Date.now(), createdBy: auth.currentUser?.email || 'admin', displays: {} };
+    await set(ref(db, `dealership/${id}`), dealer);
+    await set(ref(db, `dealershipPublic/${id}`), { name });
+  }
+  function makeDealerId(name){ const base=(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24); return base || ('dealer_' + Date.now()); }
+
+  async function refreshDealers(keep=false){
+    const list = $('#dealerList'); list.innerHTML='';
+    const selDisp = $('#dealerForDisplays');
+    const selUsers= $('#userDealer');
+    const selFilt = $('#filterDealer');
+    const prevD=selDisp.value, prevU=selUsers.value, prevF=selFilt.value;
+
+    let map={};
+    try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=pub.val(); }catch(e){}
+    if(!map || Object.keys(map).length===0){
+      try{ const d=await get(ref(db,'dealership')); if(d.exists()){ const raw=d.val(); for(const id of Object.keys(raw)) map[id]={name:raw[id]?.name||id}; } }catch(e){}
+    }
+    const ids=Object.keys(map||{}).sort();
+    $('#dealerEmpty').style.display = ids.length? 'none':'block';
+    selDisp.innerHTML='<option value="">Select dealership…</option>';
+    selUsers.innerHTML='<option value="">Dealership…</option>';
+    selFilt.innerHTML='<option value="">All dealerships</option>';
+
+    for(const id of ids){
+      const name=map[id]?.name||id;
+      const count=await countDisplaysForDealer(id);
+      const li=document.createElement('li'); li.className='item';
+      li.innerHTML=`
+        <div class="col">
+          <div class="split">
+            <b>${htmlEscape(name)}</b>
+            <span class="tag">${htmlEscape(id)}</span>
+            <span class="small muted">${count} TV${count===1?'':'s'}</span>
+          </div>
+        </div>
+        <div class="split">
+          <button class="btn" data-goto-displays="${id}">Displays</button>
+          <button class="btn" data-goto-users="${id}">Users</button>
+          <button class="btn" data-editname="${id}" data-name="${htmlEscape(name)}">Edit Name</button>
+          <button class="btn" data-rename="${id}" data-name="${htmlEscape(name)}">Rename ID</button>
+          <button class="btn danger" data-del="${id}">Delete</button>
+        </div>`;
+      list.appendChild(li);
+
+      ['dealerForDisplays','userDealer','filterDealer'].forEach(sel=>{
+        const opt=document.createElement('option'); opt.value=id; opt.textContent=name; document.getElementById(sel).appendChild(opt);
+      });
+    }
+
+    // jumps
+    list.querySelectorAll('[data-goto-displays]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        $('#dealerForDisplays').value = btn.getAttribute('data-goto-displays');
+        showPage('displays');
+        watchDisplays($('#dealerForDisplays').value, true);
+      });
+    });
+    list.querySelectorAll('[data-goto-users]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        $('#filterDealer').value = btn.getAttribute('data-goto-users');
+        showPage('users');
+        refreshUsers();
+      });
     });
 
-    // Settings (GitHub)
-    const LS_GH='iptv_admin_gh';
-    const gh = JSON.parse(localStorage.getItem(LS_GH)||'{}');
-    function openSettings(){
-      $('#ghOwner').value = gh.owner||'';
-      $('#ghRepo').value  = gh.repo||'';
-      $('#ghBranch').value= gh.branch||'main';
-      $('#ghPath').value  = gh.path||'config/iptv-config.json';
-      $('#ghToken').value = gh.token||'';
-      $('#settingsDlg').showModal();
-    }
-    function saveSettings(){
-      gh.owner=$('#ghOwner').value.trim();
-      gh.repo=$('#ghRepo').value.trim();
-      gh.branch=$('#ghBranch').value.trim()||'main';
-      gh.path=$('#ghPath').value.trim()||'config/iptv-config.json';
-      gh.token=$('#ghToken').value.trim();
-      localStorage.setItem(LS_GH, JSON.stringify(gh));
-      toast('Settings saved');
-    }
-    $('#settingsBtn').addEventListener('click', openSettings);
-    $('#saveSettingsBtn').addEventListener('click', (e)=>{ e.preventDefault(); saveSettings(); $('#settingsDlg').close(); });
-
-    // Home reload of data that pages depend on
-    async function reloadAll(){
-      await refreshDealers();   // fills dealer list + selects
-      await refreshUsers();     // grouped users
-      await quickLinksLoadRender();
-      await loadAnalytics();
-      // keep displays watcher if a dealership is selected
-      const did = $('#dealerForDisplays').value;
-      if(did) await watchDisplays(did);
-    }
-
-    // ======== Dealerships ========
-    $('#addDealerBtn').addEventListener('click', async ()=>{
-      const name = $('#dealerName').value.trim();
-      if(!name) return toast('Enter a name', true);
-      await createDealership(name).catch(()=>toast('Create failed',true));
-      $('#dealerName').value='';
-      await refreshDealers(true);
-      toast('Dealership added');
+    // edit public name
+    list.querySelectorAll('[data-editname]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.getAttribute('data-editname');
+        const current = btn.getAttribute('data-name');
+        const next = prompt('Public display name', current||'');
+        if(!next || next===current) return;
+        try{
+          await set(ref(db, `dealershipPublic/${id}`), { name: next });
+          try{ await update(ref(db, `dealership/${id}`), { name: next }); }catch(_){}
+          toast('Name updated');
+          await refreshDealers(true);
+        }catch(e){ console.error(e); toast('Update failed', true); }
+      });
     });
-    $('#dealersReload').addEventListener('click', ()=>refreshDealers(true));
 
-    async function createDealership(name){
-      const id = makeDealerId(name);
-      const dealer = { name, createdAt: Date.now(), createdBy: auth.currentUser?.email || 'admin', displays: {} };
-      await set(ref(db, `dealership/${id}`), dealer);
-      await set(ref(db, `dealershipPublic/${id}`), { name });
-    }
-    function makeDealerId(name){ const base=(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24); return base || ('dealer_' + Date.now()); }
+    // rename ID (atomic migrate)
+    list.querySelectorAll('[data-rename]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const oldId = btn.getAttribute('data-rename');
+        const currentName = btn.getAttribute('data-name');
+        const newId = prompt('New dealership ID (letters/numbers only):', oldId);
+        if(!newId || newId===oldId) return;
+        if(!/^[a-z0-9]+$/i.test(newId)){ toast('Use letters/numbers only', true); return; }
+        if(!confirm(`Migrate ${oldId} → ${newId}? Displays and users will be updated.`)) return;
+        try{ await migrateDealerId(oldId,newId,currentName); toast('Dealer ID renamed'); await refreshDealers(true); }
+        catch(e){ console.error(e); toast('Rename failed: '+(e?.message||''), true); }
+      });
+    });
 
-    async function refreshDealers(keep=false){
-      const list = $('#dealerList'); list.innerHTML='';
-      const selDisp = $('#dealerForDisplays');
-      const selUsers= $('#userDealer');
-      const selFilt = $('#filterDealer');
-      const prevD=selDisp.value, prevU=selUsers.value, prevF=selFilt.value;
-
-      let map={};
-      try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=pub.val(); }catch(e){}
-      if(!map || Object.keys(map).length===0){
-        try{ const d=await get(ref(db,'dealership')); if(d.exists()){ const raw=d.val(); for(const id of Object.keys(raw)) map[id]={name:raw[id]?.name||id}; } }catch(e){}
-      }
-      const ids=Object.keys(map||{}).sort();
-      $('#dealerEmpty').style.display = ids.length? 'none':'block';
-      selDisp.innerHTML='<option value="">Select dealership…</option>';
-      selUsers.innerHTML='<option value="">Dealership…</option>';
-      selFilt.innerHTML='<option value="">All dealerships</option>';
-
-      for(const id of ids){
-        const name=map[id]?.name||id;
+    // delete
+    list.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.getAttribute('data-del');
         const count=await countDisplaysForDealer(id);
+        if(count>0){ alert(`This dealership still has ${count} display(s). Remove them first or migrate.`); return; }
+        if(!confirm(`Delete ${id}?`)) return;
+        try{ await remove(ref(db,`dealership/${id}`)); await remove(ref(db,`dealershipPublic/${id}`)); toast('Deleted'); await refreshDealers(); }
+        catch(e){ console.error(e); toast('Delete failed', true); }
+      });
+    });
+
+    if(keep){ selDisp.value=prevD||''; selUsers.value=prevU||''; selFilt.value=prevF||''; if(selDisp.value) await watchDisplays(selDisp.value);}
+    else { $('#displayList').innerHTML=''; $('#displayEmpty').style.display='block'; }
+  }
+
+  async function countDisplaysForDealer(did){
+    let n=0;
+    try{
+      const m=await get(ref(db,`dealership/${did}/displays`)); if(m.exists()) n=Object.keys(m.val()||{}).length;
+      if(n===0){ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const q=await get(qRef); if(q.exists()) n=Object.keys(q.val()||{}).length; }
+    }catch(e){}
+    return n;
+  }
+
+  // **Atomic migration using multi-path update (reliable)**
+  async function migrateDealerId(oldId,newId,currentName){
+    // avoid collision
+    const existsNew = await get(ref(db,`dealershipPublic/${newId}`));
+    if(existsNew.exists()) throw new Error('Target ID exists');
+
+    // public name
+    let pubName = currentName;
+    if(!pubName){
+      try{ const s=await get(ref(db,`dealershipPublic/${oldId}`)); if(s.exists()) pubName = s.val()?.name || oldId; }catch(e){}
+    }
+    pubName = pubName || oldId;
+
+    // gather displays linked to oldId
+    const dispSnap = await get(query(ref(db,'displays'),orderByChild('dealership'),equalTo(oldId)));
+    const dispMap  = dispSnap.exists()? dispSnap.val() : {};
+    // gather index under dealership
+    const idxSnap  = await get(ref(db,`dealership/${oldId}/displays`));
+    const idxMap   = idxSnap.exists()? idxSnap.val() : {};
+    // gather users
+    const usersSnap= await get(ref(db,'user'));
+    const usersMap = usersSnap.exists()? usersSnap.val() : {};
+
+    const updates = {};
+    // new public + index
+    updates[`dealershipPublic/${newId}`] = { name: pubName };
+    if(Object.keys(idxMap).length){ updates[`dealership/${newId}/displays`] = idxMap; }
+
+    // displays retarget
+    const now = Date.now();
+    Object.keys(dispMap).forEach(did=>{
+      updates[`displays/${did}/dealership`] = newId;
+      updates[`displays/${did}/timestamp`]  = now;
+    });
+
+    // users retarget
+    Object.entries(usersMap).forEach(([uid,u])=>{
+      if(u?.dealershipId === oldId){
+        updates[`user/${uid}/dealershipId`] = newId;
+        updates[`user/${uid}/dealershipName`] = pubName;
+      }
+    });
+
+    // cleanup old
+    updates[`dealership/${oldId}`] = null;
+    updates[`dealershipPublic/${oldId}`] = null;
+
+    await update(ref(db), updates);
+  }
+
+  // ======== Displays ========
+  let displaysUnsub=null;
+  $('#dealerForDisplays').addEventListener('change', e=>watchDisplays(e.target.value));
+  $('#displaysReload').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(did) watchDisplays(did,true); });
+  $('#jumpUsers').addEventListener('click', ()=>{
+    const did=$('#dealerForDisplays').value; showPage('users'); if(did){ $('#filterDealer').value=did; refreshUsers(); }
+  });
+
+  async function watchDisplays(did,forceOnce=false){
+    const ul=$('#displayList'); ul.innerHTML='';
+    if(!did){ $('#displayEmpty').style.display='block'; if(displaysUnsub) displaysUnsub(); displaysUnsub=null; return; }
+    $('#displayEmpty').style.display='none';
+    if(displaysUnsub){ displaysUnsub(); displaysUnsub=null; }
+
+    const render=(map)=>{
+      ul.innerHTML='';
+      const ids=Object.keys(map||{}).sort();
+      if(ids.length===0){ $('#displayEmpty').style.display='block'; return; }
+      const now=Date.now();
+      ids.forEach(id=>{
+        const st=map[id]||{};
+        const online=(st.lastSeenAt && (now-st.lastSeenAt)<60000) || (st.timestamp && (now-st.timestamp)<120000);
         const li=document.createElement('li'); li.className='item';
         li.innerHTML=`
           <div class="col">
             <div class="split">
-              <b>${htmlEscape(name)}</b>
-              <span class="tag">${htmlEscape(id)}</span>
-              <span class="small muted">${count} TV${count===1?'':'s'}</span>
+              <b>${htmlEscape(id)}</b>
+              <span class="tag">${htmlEscape(did)}</span>
+              <span class="online"><i class="dot ${online?'ok':'err'}"></i>${online?'Online':'Offline'}</span>
             </div>
+            <span class="muted small">CH ${st.channel ?? 1} • VOL ${st.volume ?? 0} • ${st.muted ? 'Muted' : 'Unmuted'}</span>
           </div>
           <div class="split">
-            <button class="btn" data-goto-displays="${id}">Displays</button>
-            <button class="btn" data-goto-users="${id}">Users</button>
-            <button class="btn" data-editname="${id}" data-name="${htmlEscape(name)}">Edit Name</button>
-            <button class="btn" data-rename="${id}" data-name="${htmlEscape(name)}">Rename ID</button>
-            <button class="btn danger" data-del="${id}">Delete</button>
+            <select data-id="${id}" class="select small chsel">
+              ${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===(st.channel||1)?'selected':''}>CH ${n}</option>`).join('')}
+            </select>
+            <div class="vol">
+              <span class="muted small">VOL</span>
+              <input type="range" min="0" max="100" value="${st.volume ?? 0}" data-id="${id}" class="vslider"/>
+            </div>
+            <button class="btn" data-id="${id}" data-muted="${!!st.muted}">${st.muted?'Unmute':'Mute'}</button>
+            <button class="btn danger" data-remove="${id}">Remove</button>
           </div>`;
-        list.appendChild(li);
-
-        ['dealerForDisplays','userDealer','filterDealer'].forEach(sel=>{
-          const opt=document.createElement('option'); opt.value=id; opt.textContent=name; document.getElementById(sel).appendChild(opt);
-        });
-      }
-
-      // go to displays/users
-      list.querySelectorAll('[data-goto-displays]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          $('#dealerForDisplays').value = btn.getAttribute('data-goto-displays');
-          showPage('displays');
-          watchDisplays($('#dealerForDisplays').value, true);
-        });
-      });
-      list.querySelectorAll('[data-goto-users]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          $('#filterDealer').value = btn.getAttribute('data-goto-users');
-          showPage('users');
-          refreshUsers();
-        });
-      });
-
-      // edit public name only
-      list.querySelectorAll('[data-editname]').forEach(btn=>{
-        btn.addEventListener('click', async ()=>{
-          const id = btn.getAttribute('data-editname');
-          const current = btn.getAttribute('data-name');
-          const next = prompt('Public display name', current||'');
-          if(!next || next===current) return;
-          try{
-            await set(ref(db, `dealershipPublic/${id}`), { name: next });
-            // try legacy node too
-            try{ await update(ref(db, `dealership/${id}`), { name: next }); }catch(_){}
-            toast('Name updated');
-            await refreshDealers(true);
-          }catch(e){ console.error(e); toast('Update failed', true); }
-        });
-      });
-
-      // rename ID (migrate)
-      list.querySelectorAll('[data-rename]').forEach(btn=>{
-        btn.addEventListener('click', async ()=>{
-          const id = btn.getAttribute('data-rename');
-          const currentName = btn.getAttribute('data-name');
-          const newId = prompt('New dealership ID (letters/numbers only):', id);
-          if(!newId || newId===id) return;
-          if(!confirm(`Migrate ${id} → ${newId}? Displays and users will be updated.`)) return;
-          try{ await migrateDealerId(id,newId,currentName); toast('Dealer ID renamed'); await refreshDealers(true); }
-          catch(e){ console.error(e); toast('Rename failed', true); }
-        });
-      });
-
-      // delete
-      list.querySelectorAll('[data-del]').forEach(btn=>{
-        btn.addEventListener('click', async ()=>{
-          const id = btn.getAttribute('data-del');
-          const count=await countDisplaysForDealer(id);
-          if(count>0){ alert(`This dealership still has ${count} display(s). Remove them first or migrate.`); return; }
-          if(!confirm(`Delete ${id}?`)) return;
-          try{ await remove(ref(db,`dealership/${id}`)); await remove(ref(db,`dealershipPublic/${id}`)); toast('Deleted'); await refreshDealers(); }
-          catch(e){ console.error(e); toast('Delete failed', true); }
-        });
-      });
-
-      if(keep){ selDisp.value=prevD||''; selUsers.value=prevU||''; selFilt.value=prevF||''; if(selDisp.value) await watchDisplays(selDisp.value);}
-      else { $('#displayList').innerHTML=''; $('#displayEmpty').style.display='block'; }
-    }
-
-    async function countDisplaysForDealer(did){
-      let n=0;
-      try{
-        const m=await get(ref(db,`dealership/${did}/displays`)); if(m.exists()) n=Object.keys(m.val()||{}).length;
-        if(n===0){ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const q=await get(qRef); if(q.exists()) n=Object.keys(q.val()||{}).length; }
-      }catch(e){}
-      return n;
-    }
-
-    async function migrateDealerId(oldId,newId,name){
-      const exists=await get(ref(db,`dealership/${newId}`)); if(exists.exists()) throw new Error('Target ID exists');
-      const pubName=name || (await get(ref(db,`dealershipPublic/${oldId}`))).val()?.name || oldId;
-      await set(ref(db,`dealershipPublic/${newId}`),{name:pubName});
-      const idxSnap=await get(ref(db,`dealership/${oldId}/displays`)); const idxMap=idxSnap.val()||{};
-      if(Object.keys(idxMap).length){ await set(ref(db,`dealership/${newId}/displays`),idxMap); }
-      const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(oldId)); const ds=await get(qRef); const dispMap=ds.val()||{};
-      for(const did of Object.keys(dispMap)){ await update(ref(db,`displays/${did}`),{dealership:newId,timestamp:Date.now()}); }
-      const us=await get(ref(db,'user')); const users=us.val()||{};
-      for(const uid of Object.keys(users)){ if(users[uid]?.dealershipId===oldId){ await update(ref(db,`user/${uid}`),{dealershipId:newId,dealershipName:pubName}); } }
-      await remove(ref(db,`dealership/${oldId}`)); await remove(ref(db,`dealershipPublic/${oldId}`));
-    }
-
-    // ======== Displays ========
-    let displaysUnsub=null;
-    $('#dealerForDisplays').addEventListener('change', e=>watchDisplays(e.target.value));
-    $('#displaysReload').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(did) watchDisplays(did,true); });
-    $('#jumpUsers').addEventListener('click', ()=>{
-      const did=$('#dealerForDisplays').value; showPage('users'); if(did){ $('#filterDealer').value=did; refreshUsers(); }
-    });
-
-    async function watchDisplays(did,forceOnce=false){
-      const ul=$('#displayList'); ul.innerHTML='';
-      if(!did){ $('#displayEmpty').style.display='block'; if(displaysUnsub) displaysUnsub(); displaysUnsub=null; return; }
-      $('#displayEmpty').style.display='none';
-      if(displaysUnsub){ displaysUnsub(); displaysUnsub=null; }
-
-      const render=(map)=>{
-        ul.innerHTML='';
-        const ids=Object.keys(map||{}).sort();
-        if(ids.length===0){ $('#displayEmpty').style.display='block'; return; }
-        const now=Date.now();
-        ids.forEach(id=>{
-          const st=map[id]||{};
-          const online=(st.lastSeenAt && (now-st.lastSeenAt)<60000) || (st.timestamp && (now-st.timestamp)<120000);
-          const li=document.createElement('li'); li.className='item';
-          li.innerHTML=`
-            <div class="col">
-              <div class="split">
-                <b>${htmlEscape(id)}</b>
-                <span class="tag">${htmlEscape(did)}</span>
-                <span class="online"><i class="dot ${online?'ok':'err'}"></i>${online?'Online':'Offline'}</span>
-              </div>
-              <span class="muted small">CH ${st.channel ?? 1} • VOL ${st.volume ?? 0} • ${st.muted ? 'Muted' : 'Unmuted'}</span>
-            </div>
-            <div class="split">
-              <select data-id="${id}" class="select small chsel">
-                ${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===(st.channel||1)?'selected':''}>CH ${n}</option>`).join('')}
-              </select>
-              <div class="vol">
-                <span class="muted small">VOL</span>
-                <input type="range" min="0" max="100" value="${st.volume ?? 0}" data-id="${id}" class="vslider"/>
-              </div>
-              <button class="btn" data-id="${id}" data-muted="${!!st.muted}">${st.muted?'Unmute':'Mute'}</button>
-              <button class="btn danger" data-remove="${id}">Remove</button>
-            </div>`;
-          ul.appendChild(li);
-        });
-
-        ul.querySelectorAll('.chsel').forEach(el=>{
-          el.addEventListener('change', async (e)=>{ const id=e.target.dataset.id; const ch=parseInt(e.target.value,10); await writeDisplay(id,{channel:ch}); });
-        });
-        const debouncedWrite=debounce(async (id,val)=>{ await writeDisplay(id,{volume:val}); },160);
-        ul.querySelectorAll('.vslider').forEach(el=>{
-          el.addEventListener('input', e=>{ const id=e.target.dataset.id; const v=parseInt(e.target.value,10); debouncedWrite(id,v); });
-        });
-        ul.querySelectorAll('button[data-id]').forEach(el=>{
-          el.addEventListener('click', async ()=>{ const id=el.dataset.id; const cur=el.getAttribute('data-muted')==='true'; await writeDisplay(id,{muted:!cur}); });
-        });
-        ul.querySelectorAll('button[data-remove]').forEach(el=>{
-          el.addEventListener('click', async ()=>{ const id=el.dataset.remove; if(!confirm(`Remove ${id}?`)) return;
-            await remove(ref(db,`dealership/${did}/displays/${id}`)).catch(()=>{});
-            await remove(ref(db,`displays/${id}`)).catch(()=>{});
-            toast('Display removed'); });
-        });
-      };
-
-      const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
-      const off=onValue(qRef,snap=>render(snap.val()||{}),err=>console.warn(err));
-      displaysUnsub=()=>off();
-      if(forceOnce){ const once=await get(qRef); render(once.val()||{}); }
-    }
-
-    async function writeDisplay(id,patch){
-      try{
-        const snap=await get(ref(db,`displays/${id}`)); const cur=snap.val()||{};
-        await update(ref(db,`displays/${id}`),{...patch,dealership:cur.dealership || $('#dealerForDisplays').value || null,timestamp:Date.now()});
-        toast(`${id}: updated`);
-      }catch(e){ console.error(e); toast('Write denied', true); }
-    }
-
-    $('#bulkMute').addEventListener('click', ()=>bulkWrite({muted:true}));
-    $('#bulkUnmute').addEventListener('click', ()=>bulkWrite({muted:false}));
-    $('#bulkCh1').addEventListener('click', ()=>bulkWrite({channel:1}));
-    async function bulkWrite(patch){
-      const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
-      try{
-        const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
-        const s=await get(qRef); const map=s.val()||{}; const ids=Object.keys(map);
-        for(const id of ids){ await writeDisplay(id,patch); }
-        toast('Applied to all TVs');
-      }catch(e){ console.error(e); toast('Bulk failed',true); }
-    }
-
-    $('#addDisplayBtn').addEventListener('click', async ()=>{
-      const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
-      let id=$('#newDisplayId').value.trim();
-      if(!id){
-        const friendly=(await get(ref(db,`dealershipPublic/${did}`))).val()?.name||did;
-        const pref=initialsFromName(friendly);
-        const existing=await collectDisplays(did);
-        let n=nextSuffix(existing,pref);
-        id=`${pref}-${String(n).padStart(3,'0')}`;
-      }
-      try{
-        await set(ref(db,`dealership/${did}/displays/${id}`),true);
-        await update(ref(db,`displays/${id}`),{channel:1,volume:0,muted:true,dealership:did,timestamp:Date.now()});
-        $('#newDisplayId').value=''; toast('Display added');
-      }catch(e){ console.error(e); toast('Add failed',true); }
-    });
-
-    async function collectDisplays(did){ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const s=await get(qRef); return Object.keys(s.val()||{}); }
-    function initialsFromName(name){ const raw=(name||'').trim(); if(!raw) return 'DS'; let parts=raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g)||raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g)||[]; let a=parts[0]||'', b=parts[1]||''; let p=(a? a[0]:'')+(b? b[0]:''); if(p.length<2 && a.length>=2) p=a.slice(0,2); return p.toUpperCase(); }
-    function nextSuffix(list,pref){ let max=0; list.forEach(id=>{ const m=id.match(new RegExp('^'+pref+'-(\\d{3})$')); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; }}); return max+1; }
-
-    // ======== Users ========
-    $('#inviteUserBtn').addEventListener('click', async ()=>{
-      const email=$('#userEmail').value.trim(); if(!email) return toast('Enter email',true);
-      try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed',true); }
-    });
-    $('#createUserBtn').addEventListener('click', createUserAdminSafe);
-    $('#userSearch').addEventListener('input', debounce(refreshUsers, 200));
-    $('#filterDealer').addEventListener('change', refreshUsers);
-    $('#filterRole').addEventListener('change', refreshUsers);
-
-    async function createUserAdminSafe(){
-      const email=$('#userEmail').value.trim();
-      const name=$('#userName').value.trim();
-      const role=$('#userRole').value;
-      const did=$('#userDealer').value;
-      if(!email||!name||!role||!did) return toast('Fill all user fields',true);
-
-      const tempName='admin-helper-'+Date.now();
-      const tempApp=initializeApp(firebaseConfig,tempName);
-      const tempAuth=getAuth(tempApp);
-      try{
-        const tmpPass=Math.random().toString(36).slice(2)+Math.random().toString(36).toUpperCase().slice(2);
-        const cred=await createUserWithEmailAndPassword(tempAuth,email,tmpPass);
-        const uid=cred.user.uid;
-
-        let dname=did; try{ const p=await get(ref(db,`dealershipPublic/${did}`)); if(p.exists()) dname=p.val()?.name||did; }catch(e){}
-        let displays=[]; const ds=await get(ref(db,`dealership/${did}/displays`)); if(ds.exists()) displays=Object.keys(ds.val()||{});
-
-        await set(ref(db,`user/${uid}`),{email,name,role,dealershipId:did,dealershipName:dname,displays,createdAt:Date.now()});
-        await sendPasswordResetEmail(tempAuth,email);
-        toast('User created + reset sent'); await refreshUsers();
-      }catch(e){ console.error(e); toast('Create failed',true); }
-      finally{ try{ await signOut(tempAuth);}catch(e){} try{ await deleteApp(tempApp);}catch(e){} }
-    }
-
-    async function loadDealersMap(){
-      let map={};
-      try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=Object.fromEntries(Object.entries(pub.val()).map(([k,v])=>[k,v?.name||k])); }catch(e){}
-      if(!Object.keys(map).length){ try{ const d=await get(ref(db,'dealership')); if(d.exists()) map=Object.fromEntries(Object.entries(d.val()).map(([k,v])=>[k,v?.name||k])); }catch(e){} }
-      // refresh selects
-      const selF=$('#filterDealer'), selU=$('#userDealer'); const prevF=selF.value, prevU=selU.value;
-      selF.innerHTML='<option value="">All dealerships</option>'; selU.innerHTML='<option value="">Dealership…</option>';
-      for(const [id,name] of Object.entries(map).sort((a,b)=>a[1].localeCompare(b[1]))){
-        const f=document.createElement('option'); f.value=id; f.textContent=name; selF.appendChild(f);
-        const u=document.createElement('option'); u.value=id; u.textContent=name; selU.appendChild(u);
-      }
-      selF.value=prevF||''; selU.value=prevU||'';
-      return map;
-    }
-
-    async function refreshUsers(){
-      const search=($('#userSearch').value||'').toLowerCase();
-      const fDid=$('#filterDealer').value;
-      const fRole=$('#filterRole').value;
-      const dealers=await loadDealersMap();
-
-      let map={}; try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
-      const rows=Object.entries(map).map(([uid,v])=>({uid,...v}));
-
-      const filtered=rows.filter(r=>{
-        if(fDid && r.dealershipId!==fDid) return false;
-        if(fRole && (r.role||'user')!==fRole) return false;
-        if(search && !((r.email||'').toLowerCase().includes(search) || (r.name||'').toLowerCase().includes(search))) return false;
-        return true;
-      });
-
-      const groups={admin:[],device:[],user:[],disabled:[]};
-      filtered.forEach(r=>{ const role=(r.role||'user');
-        if(role==='admin') groups.admin.push(r);
-        else if(role==='device') groups.device.push(r);
-        else if(role==='disabled') groups.disabled.push(r);
-        else groups.user.push(r);
-      });
-
-      $('#countAdmins').textContent=groups.admin.length;
-      $('#countDevices').textContent=groups.device.length;
-      $('#countUsers').textContent=groups.user.length;
-      $('#countDisabled').textContent=groups.disabled.length;
-
-      const total=groups.admin.length+groups.device.length+groups.user.length+groups.disabled.length;
-      $('#userEmpty').style.display= total? 'none':'block';
-
-      const renderGroup=(arr,gridId)=>{
-        const grid=document.getElementById(gridId); grid.innerHTML='';
-        arr.sort((a,b)=> (a.dealershipName||a.dealershipId||'').localeCompare(b.dealershipName||b.dealershipId||'') || (a.email||'').localeCompare(b.email||''));
-        const now=Date.now();
-        arr.forEach(r=>{
-          const dealer=r.dealershipName||r.dealershipId||'—';
-          const isDevice=(r.role==='device');
-          const active=isDevice && r.updatedAt && (now-r.updatedAt) < 10*60*1000; // 10 min
-          const card=document.createElement('div'); card.className='user-card';
-          card.innerHTML=`
-            <div class="user-header">
-              <div class="user-name" title="Click to rename" data-rename="${r.uid}">
-                ${isDevice ? `<i class="dot ${active?'ok':'err'}" title="${active?'Active now':'Inactive'}"></i>` : ''} ${htmlEscape(r.name||'No name')}
-              </div>
-              <span class="badge">${htmlEscape(r.role||'user')}</span>
-            </div>
-            <div class="small muted" style="display:flex;gap:8px;flex-wrap:wrap">
-              <span>${htmlEscape(r.email||'')}</span>
-              <span class="badge">${htmlEscape(dealer)}</span>
-            </div>
-            <div class="user-actions">
-              <select data-uid="${r.uid}" class="select roleSel">
-                ${['user','admin','device','disabled'].map(v=>`<option value="${v}" ${v===(r.role||'user')?'selected':''}>${v}</option>`).join('')}
-              </select>
-              <select data-uid="${r.uid}" class="select dealerSel">
-                ${Object.entries(dealers).map(([id,nm])=>`<option value="${id}" ${id===(r.dealershipId||'')?'selected':''}>${nm}</option>`).join('')}
-              </select>
-              <button class="btn" data-reset="${htmlEscape(r.email||'')}">Reset password</button>
-            </div>`;
-          grid.appendChild(card);
-        });
-
-        // rename name
-        grid.querySelectorAll('[data-rename]').forEach(el=>{
-          el.addEventListener('click', async ()=>{
-            const uid=el.getAttribute('data-rename'); const current=el.textContent.trim();
-            const next=prompt('New name', current||''); if(!next || next===current) return;
-            try{ await update(ref(db,`user/${uid}`),{name:next}); el.childNodes[isNaN(el.firstChild.nodeType)?0:0]; el.innerHTML = el.innerHTML.replace(current, htmlEscape(next)); toast('Name updated'); }catch(e){ toast('Update failed',true); }
-          });
-        });
-        // role change
-        grid.querySelectorAll('.roleSel').forEach(sel=>{
-          sel.addEventListener('change', async (e)=>{ const uid=e.target.dataset.uid; const role=e.target.value;
-            try{ await update(ref(db,`user/${uid}`),{role}); toast('Role updated'); await refreshUsers(); }catch(err){ toast('Update failed',true); }
-          });
-        });
-        // move dealership
-        grid.querySelectorAll('.dealerSel').forEach(sel=>{
-          sel.addEventListener('change', async (e)=>{ const uid=e.target.dataset.uid; const did=e.target.value; const name=dealers[did]||did;
-            try{ await update(ref(db,`user/${uid}`),{dealershipId:did,dealershipName:name}); toast('Moved'); }catch(err){ toast('Move failed',true); }
-          });
-        });
-        // reset
-        grid.querySelectorAll('[data-reset]').forEach(btn=>{
-          btn.addEventListener('click', async ()=>{
-            const email=btn.getAttribute('data-reset'); if(!email) return toast('No email',true);
-            try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(err){ toast('Reset failed',true); }
-          });
-        });
-      };
-
-      renderGroup(groups.admin,'gridAdmins');
-      renderGroup(groups.device,'gridDevices');
-      renderGroup(groups.user,'gridUsers');
-      renderGroup(groups.disabled,'gridDisabled');
-    }
-
-    // Duplicate finder
-    const DUP_SEL = new Set(); // store uid selected for deletion
-    $('#findDupBtn').addEventListener('click', async ()=>{
-      DUP_SEL.clear(); $('#dupList').innerHTML='';
-      let map={}; try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
-      const rows=Object.entries(map).map(([uid,v])=>({uid,...v})).filter(r=> (r.role==='device') && r.name && r.dealershipId);
-      // group by dealershipId + normalized name
-      const groups={};
-      rows.forEach(r=>{
-        const key=(r.dealershipId||'')+'|'+(r.name||'').toLowerCase().trim();
-        if(!groups[key]) groups[key]=[];
-        groups[key].push(r);
-      });
-      const now=Date.now(); let any=false;
-      for(const [key,arr] of Object.entries(groups)){
-        if(arr.length<=1) continue;
-        any=true;
-        arr.sort((a,b)=> (b.updatedAt||0)-(a.updatedAt||0));
-        const holder=document.createElement('div'); holder.className='item';
-        const [did,name]=key.split('|');
-        const inner=arr.map(r=>{
-          const active = (r.updatedAt && (now-r.updatedAt) < 10*60*1000);
-          return `
-            <label style="display:flex;align-items:center;gap:8px">
-              <input type="checkbox" data-uid="${r.uid}"/>
-              <span>
-                ${active?'<i class="dot ok" title="Active now"></i>':'<i class="dot err" title="Inactive"></i>'}
-                ${htmlEscape(r.name)} <span class="tag">${htmlEscape(did)}</span>
-                <span class="badge">${active?'Likely active':'Likely unused'}</span>
-              </span>
-            </label>`;
-        }).join('<br/>');
-        holder.innerHTML = `<div class="col"><b>“${htmlEscape(name)}” in ${htmlEscape(did)}</b><div class="small muted">Select old/unused ones and delete</div></div><div>${inner}</div>`;
-        $('#dupList').appendChild(holder);
-      }
-      $('#dupBox').style.display='block';
-      $('#dupEmpty').style.display= any? 'none':'block';
-      // track selection
-      $('#dupList').querySelectorAll('input[type="checkbox"]').forEach(cb=>{
-        cb.addEventListener('change',()=>{ const uid=cb.dataset.uid; if(cb.checked) DUP_SEL.add(uid); else DUP_SEL.delete(uid); });
-      });
-    });
-
-    $('#deleteDupBtn').addEventListener('click', async ()=>{
-      if(!DUP_SEL.size) { toast('Pick duplicates to delete'); return; }
-      if(!confirm(`Delete ${DUP_SEL.size} selected user(s)?`)) return;
-      try{
-        await Promise.all(Array.from(DUP_SEL).map(uid=> remove(ref(db,`user/${uid}`)).catch(()=>{})));
-        DUP_SEL.clear(); toast('Deleted'); $('#dupBox').style.display='none'; await refreshUsers();
-      }catch(e){ toast('Delete failed',true); }
-    });
-
-    // ======== Links ========
-    const LINKS_DB_PATH='admin/quickLinks';
-    let quickLinks=[], quickLinksSource='db';
-    $('#qlAddBtn').addEventListener('click', async ()=>{
-      const title=$('#qlTitle').value.trim(), href=$('#qlHref').value.trim();
-      const emoji=$('#qlEmoji').value.trim(), img=$('#qlImg').value.trim(), desc=$('#qlDesc').value.trim();
-      if(!title||!href) return toast('Title and URL are required',true);
-      quickLinks.push({title,href,emoji,img,desc}); await quickLinksSave(); clearQlForm(); renderApps(); toast('Link added');
-    });
-    $('#qlResetBtn').addEventListener('click', async ()=>{
-      quickLinks=[...DEFAULT_LINKS]; await quickLinksSave(true); renderApps(); toast('Links reset');
-    });
-    function clearQlForm(){ ['#qlTitle','#qlHref','#qlEmoji','#qlImg','#qlDesc'].forEach(s=>$(s).value=''); }
-
-    async function quickLinksLoadRender(){
-      try{ const s=await get(ref(db,LINKS_DB_PATH)); if(s.exists()){ quickLinks=Object.values(s.val()); quickLinksSource='db'; $('#qlStorageNote').textContent='Links are synced from database.'; }
-      else throw new Error('empty'); }
-      catch(e){
-        try{ quickLinks=JSON.parse(localStorage.getItem('admin_quick_links')||'[]'); if(!quickLinks.length) quickLinks=[...DEFAULT_LINKS]; quickLinksSource='local'; $('#qlStorageNote').textContent='Links are stored locally on this device (no DB permission).'; }
-        catch(_){ quickLinks=[...DEFAULT_LINKS]; quickLinksSource='local'; $('#qlStorageNote').textContent='Links are stored locally on this device (no DB permission).'; }
-      }
-      renderApps();
-    }
-    async function quickLinksSave(forceLocal=false){
-      if(forceLocal || quickLinksSource==='local'){
-        localStorage.setItem('admin_quick_links', JSON.stringify(quickLinks)); quickLinksSource='local'; $('#qlStorageNote').textContent='Links are stored locally on this device (no DB permission).'; return;
-      }
-      try{ const data={}; quickLinks.forEach((l,i)=>data[i]=l); await set(ref(db,LINKS_DB_PATH),data); quickLinksSource='db'; $('#qlStorageNote').textContent='Links are synced from database.'; }
-      catch(e){ localStorage.setItem('admin_quick_links', JSON.stringify(quickLinks)); quickLinksSource='local'; $('#qlStorageNote').textContent='Links are stored locally on this device (no DB permission).'; }
-    }
-    function renderApps(){
-      const grid=$('#appsGrid'); grid.innerHTML='';
-      quickLinks.forEach((l,idx)=>{
-        const a=document.createElement('a'); a.className='app-tile'; a.href=l.href; a.target='_blank'; a.rel='noopener noreferrer';
-        const left=l.img? `<div class="app-logo" style="background-image:url('${l.img}')"></div>` : `<div class="app-emoji">${htmlEscape(l.emoji||'🔗')}</div>`;
-        a.innerHTML=`${left}<div class="app-info"><div class="app-title">${htmlEscape(l.title||'Link')}</div><div class="app-desc">${htmlEscape(l.desc||'')}</div></div><button type="button" title="Remove" class="btn danger" data-remove="${idx}" style="margin-left:auto">×</button>`;
-        grid.appendChild(a);
-      });
-      grid.querySelectorAll('button[data-remove]').forEach(btn=>{
-        btn.addEventListener('click', async (e)=>{ e.preventDefault(); e.stopPropagation(); const i=parseInt(btn.dataset.remove,10); quickLinks.splice(i,1); await quickLinksSave(); renderApps(); toast('Link removed'); });
-      });
-    }
-
-    // ======== Analytics (snapshot) ========
-    function renderBarRow(label,value,total){
-      const pct = total ? Math.round((value/total)*100) : 0;
-      const row = document.createElement('div');
-      row.className='item';
-      row.innerHTML = `<div class="col"><b>${htmlEscape(label)}</b><div class="bar"><i style="width:${pct}%"></i></div></div><div class="small muted">${value} • ${pct}%</div>`;
-      return row;
-    }
-
-    async function loadAnalytics(){
-      const s=await get(ref(db,'displays')); const map=s.val()||{}; const ids=Object.keys(map);
-      const now=Date.now();
-      let online=0, offline=0, volSum=0, volN=0, mutedCount=0;
-      const channelCounts={}, dealerCounts={};
-
-      ids.forEach(id=>{
-        const v=map[id]||{};
-        const on=(v.lastSeenAt && (now-v.lastSeenAt)<60000) || (v.timestamp && (now-v.timestamp)<120000);
-        on? online++ : offline++;
-        const ch=(v.channel||1); channelCounts[ch]=(channelCounts[ch]||0)+1;
-        const d=(v.dealership||'—'); dealerCounts[d]=(dealerCounts[d]||0)+1;
-        if(typeof v.volume==='number'){ volSum+=v.volume; volN++; }
-        if(v.muted===true) mutedCount++;
-      });
-
-      const avgVol = volN ? Math.round(volSum/volN) : 0;
-      const topCh = Object.entries(channelCounts).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
-      const mutedPct = ids.length? Math.round((mutedCount/ids.length)*100) : 0;
-
-      $('#statActive').textContent = online;
-      $('#statOffline').textContent= offline;
-      $('#statTopCh').textContent  = topCh;
-      $('#statVolMuted').textContent = `${avgVol} • ${mutedPct}%`;
-
-      // channel bars
-      const chWrap = $('#anaChBars'); chWrap.innerHTML='';
-      const chTotal = Object.values(channelCounts).reduce((a,b)=>a+b,0);
-      Object.entries(channelCounts).sort((a,b)=>a[0]-b[0]).forEach(([ch,n])=> chWrap.appendChild(renderBarRow('Channel '+ch, n, chTotal)));
-
-      // dealer bars (top 10)
-      const dWrap = $('#anaDealerBars'); dWrap.innerHTML='';
-      const dTotal = Object.values(dealerCounts).reduce((a,b)=>a+b,0);
-      Object.entries(dealerCounts).sort((a,b)=>b[1]-a[1]).slice(0,10).forEach(([d,n])=> dWrap.appendChild(renderBarRow(d, n, dTotal)));
-    }
-
-    // ======== Schedule (local) with asset creation ========
-    const LS_SCH='iptv_admin_schedule';
-    const schedule = JSON.parse(localStorage.getItem(LS_SCH)||'[]');
-
-    $('#schCreateAssets').addEventListener('change', e=>{
-      $('#schAssets').style.display = e.target.checked ? 'block' : 'none';
-    });
-
-    function saveSchedule(){ localStorage.setItem(LS_SCH, JSON.stringify(schedule)); renderSchedule(); }
-    function renderSchedule(){
-      const ul=$('#schList'); ul.innerHTML='';
-      if(!schedule.length){ $('#schEmpty').style.display='block'; return; }
-      $('#schEmpty').style.display='none';
-      schedule.sort((a,b)=>a.when.localeCompare(b.when));
-      schedule.forEach((r,i)=>{
-        const li=document.createElement('li'); li.className='item';
-        li.innerHTML=`<div><b>${new Date(r.when).toLocaleString()}</b>
-          <div class="small muted">${htmlEscape(r.note||'')}</div>
-          ${r.dest? `<div class="small muted">📍 ${htmlEscape(r.dest)}</div>`:''}
-          ${r.assets? `<div class="small muted">Assets: ${htmlEscape(r.assets)}</div>`:''}
-        </div><button class="btn danger" data-del="${i}">Delete</button>`;
         ul.appendChild(li);
       });
-      ul.querySelectorAll('button[data-del]').forEach(btn=> btn.addEventListener('click',()=>{ const i=parseInt(btn.dataset.del,10); schedule.splice(i,1); saveSchedule(); }));
+
+      ul.querySelectorAll('.chsel').forEach(el=>{
+        el.addEventListener('change', async (e)=>{ const id=e.target.dataset.id; const ch=parseInt(e.target.value,10); await writeDisplay(id,{channel:ch}); });
+      });
+      const debouncedWrite=debounce(async (id,val)=>{ await writeDisplay(id,{volume:val}); },160);
+      ul.querySelectorAll('.vslider').forEach(el=>{
+        el.addEventListener('input', e=>{ const id=e.target.dataset.id; const v=parseInt(e.target.value,10); debouncedWrite(id,v); });
+      });
+      ul.querySelectorAll('button[data-id]').forEach(el=>{
+        el.addEventListener('click', async ()=>{ const id=el.dataset.id; const cur=el.getAttribute('data-muted')==='true'; await writeDisplay(id,{muted:!cur}); });
+      });
+      ul.querySelectorAll('button[data-remove]').forEach(el=>{
+        el.addEventListener('click', async ()=>{ const id=el.dataset.remove; if(!confirm(`Remove ${id}?`)) return;
+          await remove(ref(db,`dealership/${did}/displays/${id}`)).catch(()=>{});
+          await remove(ref(db,`displays/${id}`)).catch(()=>{});
+          toast('Display removed'); });
+      });
+    };
+
+    const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
+    const off=onValue(qRef,snap=>render(snap.val()||{}),err=>console.warn(err));
+    displaysUnsub=()=>off();
+    if(forceOnce){ const once=await get(qRef); render(once.val()||{}); }
+  }
+
+  async function writeDisplay(id,patch){
+    try{
+      const snap=await get(ref(db,`displays/${id}`)); const cur=snap.val()||{};
+      await update(ref(db,`displays/${id}`),{...patch,dealership:cur.dealership || $('#dealerForDisplays').value || null,timestamp:Date.now()});
+      toast(`${id}: updated`);
+    }catch(e){ console.error(e); toast('Write denied', true); }
+  }
+
+  $('#bulkMute').addEventListener('click', ()=>bulkWrite({muted:true}));
+  $('#bulkUnmute').addEventListener('click', ()=>bulkWrite({muted:false}));
+  $('#bulkCh1').addEventListener('click', ()=>bulkWrite({channel:1}));
+  async function bulkWrite(patch){
+    const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
+    try{
+      const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
+      const s=await get(qRef); const map=s.val()||{}; const ids=Object.keys(map);
+      for(const id of ids){ await writeDisplay(id,patch); }
+      toast('Applied to all TVs');
+    }catch(e){ console.error(e); toast('Bulk failed',true); }
+  }
+
+  $('#addDisplayBtn').addEventListener('click', async ()=>{
+    const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
+    let id=$('#newDisplayId').value.trim();
+    if(!id){
+      const friendly=(await get(ref(db,`dealershipPublic/${did}`))).val()?.name||did;
+      const pref=initialsFromName(friendly);
+      const existing=await collectDisplays(did);
+      let n=nextSuffix(existing,pref);
+      id=`${pref}-${String(n).padStart(3,'0')}`;
     }
-    renderSchedule();
+    try{
+      await set(ref(db,`dealership/${did}/displays/${id}`),true);
+      await update(ref(db,`displays/${id}`),{channel:1,volume:0,muted:true,dealership:did,timestamp:Date.now()});
+      $('#newDisplayId').value=''; toast('Display added');
+    }catch(e){ console.error(e); toast('Add failed',true); }
+  });
 
-    $('#schAdd').addEventListener('click', async ()=>{
-      const when=$('#schWhen').value;
-      const note=$('#schNote').value.trim();
-      const dest=$('#schDest').value.trim();
-      const make=$('#schCreateAssets').checked;
-      if(!when||!note) return toast('Pick date/time and note',true);
+  async function collectDisplays(did){ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const s=await get(qRef); return Object.keys(s.val()||{}); }
+  function initialsFromName(name){ const raw=(name||'').trim(); if(!raw) return 'DS'; let parts=raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g)||raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g)||[]; let a=parts[0]||'', b=parts[1]||''; let p=(a? a[0]:'')+(b? b[0]:''); if(p.length<2 && a.length>=2) p=a.slice(0,2); return p.toUpperCase(); }
+  function nextSuffix(list,pref){ let max=0; list.forEach(id=>{ const m=id.match(new RegExp('^'+pref+'-(\\d{3})$')); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; }}); return max+1; }
 
-      let assetsMsg='';
-      if(make){
-        let dName=$('#schDealerName').value.trim();
-        let dId=$('#schDealerId').value.trim();
-        let displayId=$('#schDisplayId').value.trim();
+  // ======== Users ========
+  $('#inviteUserBtn').addEventListener('click', async ()=>{
+    const email=$('#userEmail').value.trim(); if(!email) return toast('Enter email',true);
+    try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed',true); }
+  });
+  $('#createUserBtn').addEventListener('click', createUserAdminSafe);
+  $('#userSearch').addEventListener('input', debounce(refreshUsers, 200));
+  $('#filterDealer').addEventListener('change', refreshUsers);
+  $('#filterRole').addEventListener('change', refreshUsers);
 
-        if(!dName && !dId) return toast('Enter dealership name or id', true);
-        if(!dId) dId = makeDealerId(dName||('dealer_'+Date.now()));
+  // Create user: stable (uses default initial password), keeps admin session clean
+  async function createUserAdminSafe(){
+    const email=$('#userEmail').value.trim();
+    const name=$('#userName').value.trim();
+    const role=$('#userRole').value;
+    const did=$('#userDealer').value;
 
-        // create dealership/public if missing
-        const exists = await get(ref(db,`dealershipPublic/${dId}`));
-        if(!exists.exists()){
-          await set(ref(db,`dealershipPublic/${dId}`), { name: dName || dId });
-          await set(ref(db,`dealership/${dId}`), { name: dName || dId, createdAt: Date.now(), createdBy: auth.currentUser?.email||'admin', displays:{} });
-        }
-        // display id
-        if(!displayId){
-          const friendly=(await get(ref(db,`dealershipPublic/${dId}`))).val()?.name||dId;
-          const pref=initialsFromName(friendly);
-          const existing=await collectDisplays(dId);
-          let n=nextSuffix(existing,pref);
-          displayId=`${pref}-${String(n).padStart(3,'0')}`;
-        }
-        await set(ref(db,`dealership/${dId}/displays/${displayId}`), true);
-        await update(ref(db,`displays/${displayId}`), { channel:1, volume:0, muted:true, dealership:dId, timestamp:Date.now() });
+    const INIT_PW = '123456789'; // initial password so test emails still work
 
-        assetsMsg = `${dId} • ${displayId}`;
-        // clear fields to avoid accidental reuse
-        $('#schDealerName').value=''; $('#schDealerId').value=''; $('#schDisplayId').value='';
-      }
+    if(!email||!name||!role||!did) return toast('Fill all user fields',true);
 
-      schedule.push({when,note,dest, assets: assetsMsg});
-      saveSchedule();
-      $('#schWhen').value=''; $('#schNote').value=''; $('#schDest').value=''; $('#schCreateAssets').checked=false; $('#schAssets').style.display='none';
-      toast('Scheduled');
+    const tempName='admin-helper-'+Date.now();
+    const tempApp=initializeApp(firebaseConfig,tempName);
+    const tempAuth=getAuth(tempApp);
+    try{
+      // Create Auth account with initial password
+      const cred=await createUserWithEmailAndPassword(tempAuth,email,INIT_PW);
+      const uid=cred.user.uid;
+
+      let dname=did; try{ const p=await get(ref(db,`dealershipPublic/${did}`)); if(p.exists()) dname=p.val()?.name||did; }catch(e){}
+      let displays=[]; const ds=await get(ref(db,`dealership/${did}/displays`)); if(ds.exists()) displays=Object.keys(ds.val()||{});
+
+      await set(ref(db,`user/${uid}`),{
+        email,name,role,dealershipId:did,dealershipName:dname,displays,createdAt:Date.now(),mustReset:true
+      });
+
+      toast('User created ✔︎');
+      $('#userEmail').value=''; $('#userName').value='';
+      await refreshUsers();
+    }catch(e){
+      console.error(e);
+      let msg='Create failed';
+      if(e?.code==='auth/email-already-in-use') msg='Email already exists';
+      if(e?.code==='auth/operation-not-allowed') msg='Enable Email/Password sign-in in Firebase Auth';
+      if(e?.code==='auth/weak-password') msg='Initial password rejected by password policy';
+      toast(msg,true);
+    }finally{
+      try{ await signOut(tempAuth);}catch(e){}
+      try{ await deleteApp(tempApp);}catch(e){}
+    }
+  }
+
+  async function loadDealersMap(){
+    let map={};
+    try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=Object.fromEntries(Object.entries(pub.val()).map(([k,v])=>[k,v?.name||k])); }catch(e){}
+    if(!Object.keys(map).length){ try{ const d=await get(ref(db,'dealership')); if(d.exists()) map=Object.fromEntries(Object.entries(d.val()).map(([k,v])=>[k,v?.name||k])); }catch(e){} }
+    // refresh selects
+    const selF=$('#filterDealer'), selU=$('#userDealer'); const prevF=selF.value, prevU=selU.value;
+    selF.innerHTML='<option value="">All dealerships</option>'; selU.innerHTML='<option value="">Dealership…</option>';
+    for(const [id,name] of Object.entries(map).sort((a,b)=>a[1].localeCompare(b[1]))){
+      const f=document.createElement('option'); f.value=id; f.textContent=name; selF.appendChild(f);
+      const u=document.createElement('option'); u.value=id; u.textContent=name; selU.appendChild(u);
+    }
+    selF.value=prevF||''; selU.value=prevU||'';
+    return map;
+  }
+
+  async function refreshUsers(){
+    const search=($('#userSearch').value||'').toLowerCase();
+    const fDid=$('#filterDealer').value;
+    const fRole=$('#filterRole').value;
+    const dealers=await loadDealersMap();
+
+    let map={}; try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
+    const rows=Object.entries(map).map(([uid,v])=>({uid,...v}));
+
+    const filtered=rows.filter(r=>{
+      if(fDid && r.dealershipId!==fDid) return false;
+      if(fRole && (r.role||'user')!==fRole) return false;
+      if(search && !((r.email||'').toLowerCase().includes(search) || (r.name||'').toLowerCase().includes(search))) return false;
+      return true;
     });
 
-    // ======== Backup (download/restore preview) ========
-    function download(filename, text){
-      const a=document.createElement('a');
-      a.href='data:application/json;charset=utf-8,'+encodeURIComponent(text);
-      a.download=filename; a.click();
-    }
+    const groups={admin:[],device:[],user:[],disabled:[]};
+    filtered.forEach(r=>{ const role=(r.role||'user');
+      if(role==='admin') groups.admin.push(r);
+      else if(role==='device') groups.device.push(r);
+      else if(role==='disabled') groups.disabled.push(r);
+      else groups.user.push(r);
+    });
 
-    function compactUsers(u){
-      const out={}; Object.entries(u||{}).forEach(([uid,v])=>{
-        out[uid] = { email:v.email||null, name:v.name||null, role:v.role||'user', dealershipId:v.dealershipId||null };
+    $('#countAdmins').textContent=groups.admin.length;
+    $('#countDevices').textContent=groups.device.length;
+    $('#countUsers').textContent=groups.user.length;
+    $('#countDisabled').textContent=groups.disabled.length;
+
+    const total=groups.admin.length+groups.device.length+groups.user.length+groups.disabled.length;
+    $('#userEmpty').style.display= total? 'none':'block';
+
+    const renderGroup=(arr,gridId)=>{
+      const grid=document.getElementById(gridId); grid.innerHTML='';
+      arr.sort((a,b)=> (a.dealershipName||a.dealershipId||'').localeCompare(b.dealershipName||b.dealershipId||'') || (a.email||'').localeCompare(b.email||''));
+      const now=Date.now();
+      arr.forEach(r=>{
+        const dealer=r.dealershipName||r.dealershipId||'—';
+        const isDevice=(r.role==='device');
+        const active=isDevice && r.updatedAt && (now-r.updatedAt) < 10*60*1000; // 10 min
+        const card=document.createElement('div'); card.className='user-card';
+        card.innerHTML=`
+          <div class="user-header">
+            <div class="user-name" title="Click to rename" data-rename="${r.uid}">
+              ${isDevice ? `<i class="dot ${active?'ok':'err'}" title="${active?'Active now':'Inactive'}"></i>` : ''} ${htmlEscape(r.name||'No name')}
+            </div>
+            <span class="badge">${htmlEscape(r.role||'user')}</span>
+            ${r.mustReset ? '<span class="badge" style="border-color:var(--warn);color:var(--warn)">must reset</span>' : ''}
+          </div>
+          <div class="small muted" style="display:flex;gap:8px;flex-wrap:wrap">
+            <span>${htmlEscape(r.email||'')}</span>
+            <span class="badge">${htmlEscape(dealer)}</span>
+          </div>
+          <div class="user-actions">
+            <select data-uid="${r.uid}" class="select roleSel">
+              ${['user','admin','device','disabled'].map(v=>`<option value="${v}" ${v===(r.role||'user')?'selected':''}>${v}</option>`).join('')}
+            </select>
+            <select data-uid="${r.uid}" class="select dealerSel">
+              ${Object.entries(dealers).map(([id,nm])=>`<option value="${id}" ${id===(r.dealershipId||'')?'selected':''}>${nm}</option>`).join('')}
+            </select>
+            <button class="btn" data-reset="${htmlEscape(r.email||'')}">Reset password</button>
+          </div>`;
+        grid.appendChild(card);
       });
-      return out;
+
+      // rename name (refresh after to keep icons/badges correct)
+      grid.querySelectorAll('[data-rename]').forEach(el=>{
+        el.addEventListener('click', async ()=>{
+          const uid=el.getAttribute('data-rename'); const current=(el.textContent||'').trim();
+          const next=prompt('New name', current||''); if(!next || next===current) return;
+          try{ await update(ref(db,`user/${uid}`),{name:next}); toast('Name updated'); await refreshUsers(); }catch(e){ toast('Update failed',true); }
+        });
+      });
+      // role change
+      grid.querySelectorAll('.roleSel').forEach(sel=>{
+        sel.addEventListener('change', async (e)=>{ const uid=e.target.dataset.uid; const role=e.target.value;
+          try{ await update(ref(db,`user/${uid}`),{role}); toast('Role updated'); await refreshUsers(); }catch(err){ toast('Update failed',true); }
+        });
+      });
+      // move dealership
+      grid.querySelectorAll('.dealerSel').forEach(sel=>{
+        sel.addEventListener('change', async (e)=>{ const uid=e.target.dataset.uid; const did=e.target.value; const name=dealers[did]||did;
+          try{ await update(ref(db,`user/${uid}`),{dealershipId:did,dealershipName:name}); toast('Moved'); }catch(err){ toast('Move failed',true); }
+        });
+      });
+      // reset
+      grid.querySelectorAll('[data-reset]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const email=btn.getAttribute('data-reset'); if(!email) return toast('No email',true);
+          try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(err){ toast('Reset failed',true); }
+        });
+      });
+    };
+
+    renderGroup(groups.admin,'gridAdmins');
+    renderGroup(groups.device,'gridDevices');
+    renderGroup(groups.user,'gridUsers');
+    renderGroup(groups.disabled,'gridDisabled');
+  }
+
+  // Duplicate finder
+  const DUP_SEL = new Set();
+  $('#findDupBtn').addEventListener('click', async ()=>{
+    DUP_SEL.clear(); $('#dupList').innerHTML='';
+    let map={}; try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
+    const rows=Object.entries(map).map(([uid,v])=>({uid,...v})).filter(r=> (r.role==='device') && r.name && r.dealershipId);
+    const groups={};
+    rows.forEach(r=>{
+      const key=(r.dealershipId||'')+'|'+(r.name||'').toLowerCase().trim();
+      if(!groups[key]) groups[key]=[];
+      groups[key].push(r);
+    });
+    const now=Date.now(); let any=false;
+    for(const [key,arr] of Object.entries(groups)){
+      if(arr.length<=1) continue;
+      any=true;
+      arr.sort((a,b)=> (b.updatedAt||0)-(a.updatedAt||0));
+      const holder=document.createElement('div'); holder.className='item';
+      const [did,name]=key.split('|');
+      const inner=arr.map(r=>{
+        const active = (r.updatedAt && (now-r.updatedAt) < 10*60*1000);
+        return `
+          <label style="display:flex;align-items:center;gap:8px">
+            <input type="checkbox" data-uid="${r.uid}"/>
+            <span>
+              ${active?'<i class="dot ok" title="Active now"></i>':'<i class="dot err" title="Inactive"></i>'}
+              ${htmlEscape(r.name)} <span class="tag">${htmlEscape(did)}</span>
+              <span class="badge">${active?'Likely active':'Likely unused'}</span>
+            </span>
+          </label>`;
+      }).join('<br/>');
+      holder.innerHTML = `<div class="col"><b>“${htmlEscape(name)}” in ${htmlEscape(did)}</b><div class="small muted">Select old/unused ones and delete</div></div><div>${inner}</div>`;
+      $('#dupList').appendChild(holder);
+    }
+    $('#dupBox').style.display='block';
+    $('#dupEmpty').style.display= any? 'none':'block';
+    $('#dupList').querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+      cb.addEventListener('change',()=>{ const uid=cb.dataset.uid; if(cb.checked) DUP_SEL.add(uid); else DUP_SEL.delete(uid); });
+    });
+  });
+
+  $('#deleteDupBtn').addEventListener('click', async ()=>{
+    if(!DUP_SEL.size) { toast('Pick duplicates to delete'); return; }
+    if(!confirm(`Delete ${DUP_SEL.size} selected user(s)?`)) return;
+    try{
+      await Promise.all(Array.from(DUP_SEL).map(uid=> remove(ref(db,`user/${uid}`)).catch(()=>{})));
+      DUP_SEL.clear(); toast('Deleted'); $('#dupBox').style.display='none'; await refreshUsers();
+    }catch(e){ toast('Delete failed',true); }
+  });
+
+  // ======== Links ========
+  const LINKS_DB_PATH='admin/quickLinks';
+  let quickLinks=[], quickLinksSource='db';
+  $('#qlAddBtn').addEventListener('click', async ()=>{
+    const title=$('#qlTitle').value.trim(), href=$('#qlHref').value.trim();
+    const emoji=$('#qlEmoji').value.trim(), img=$('#qlImg').value.trim(), desc=$('#qlDesc').value.trim();
+    if(!title||!href) return toast('Title and URL are required',true);
+    quickLinks.push({title,href,emoji,img,desc}); await quickLinksSave(); clearQlForm(); renderApps(); toast('Link added');
+  });
+  $('#qlResetBtn').addEventListener('click', async ()=>{
+    quickLinks=[...DEFAULT_LINKS]; await quickLinksSave(true); renderApps(); toast('Links reset');
+  });
+  function clearQlForm(){ ['#qlTitle','#qlHref','#qlEmoji','#qlImg','#qlDesc'].forEach(s=>$(s).value=''); }
+
+  async function quickLinksLoadRender(){
+    try{ const s=await get(ref(db,LINKS_DB_PATH)); if(s.exists()){ quickLinks=Object.values(s.val()); quickLinksSource='db'; $('#qlStorageNote').textContent='Links are synced from database.'; }
+    else throw new Error('empty'); }
+    catch(e){
+      try{ quickLinks=JSON.parse(localStorage.getItem('admin_quick_links')||'[]'); if(!quickLinks.length) quickLinks=[...DEFAULT_LINKS]; quickLinksSource='local'; $('#qlStorageNote').textContent='Links are stored locally on this device (no DB permission).'; }
+      catch(_){ quickLinks=[...DEFAULT_LINKS]; quickLinksSource='local'; $('#qlStorageNote').textContent='Links are stored locally on this device (no DB permission).'; }
+    }
+    renderApps();
+  }
+  async function quickLinksSave(forceLocal=false){
+    if(forceLocal || quickLinksSource==='local'){
+      localStorage.setItem('admin_quick_links', JSON.stringify(quickLinks)); quickLinksSource='local'; $('#qlStorageNote').textContent='Links are stored locally on this device (no DB permission).'; return;
+    }
+    try{ const data={}; quickLinks.forEach((l,i)=>data[i]=l); await set(ref(db,LINKS_DB_PATH),data); quickLinksSource='db'; $('#qlStorageNote').textContent='Links are synced from database.'; }
+    catch(e){ localStorage.setItem('admin_quick_links', JSON.stringify(quickLinks)); quickLinksSource='local'; $('#qlStorageNote').textContent='Links are stored locally on this device (no DB permission).'; }
+  }
+  function renderApps(){
+    const grid=$('#appsGrid'); grid.innerHTML='';
+    quickLinks.forEach((l,idx)=>{
+      const a=document.createElement('a'); a.className='app-tile'; a.href=l.href; a.target='_blank'; a.rel='noopener noreferrer';
+      const left=l.img? `<div class="app-logo" style="background-image:url('${l.img}')"></div>` : `<div class="app-emoji">${htmlEscape(l.emoji||'🔗')}</div>`;
+      a.innerHTML=`${left}<div class="app-info"><div class="app-title">${htmlEscape(l.title||'Link')}</div><div class="app-desc">${htmlEscape(l.desc||'')}</div></div><button type="button" title="Remove" class="btn danger" data-remove="${idx}" style="margin-left:auto">×</button>`;
+      grid.appendChild(a);
+    });
+    grid.querySelectorAll('button[data-remove]').forEach(btn=>{
+      btn.addEventListener('click', async (e)=>{ e.preventDefault(); e.stopPropagation(); const i=parseInt(btn.dataset.remove,10); quickLinks.splice(i,1); await quickLinksSave(); renderApps(); toast('Link removed'); });
+    });
+  }
+
+  // ======== Analytics (snapshot) ========
+  function renderBarRow(label,value,total){
+    const pct = total ? Math.round((value/total)*100) : 0;
+    const row = document.createElement('div');
+    row.className='item';
+    row.innerHTML = `<div class="col"><b>${htmlEscape(label)}</b><div class="bar"><i style="width:${pct}%"></i></div></div><div class="small muted">${value} • ${pct}%</div>`;
+    return row;
+  }
+
+  async function loadAnalytics(){
+    const s=await get(ref(db,'displays')); const map=s.val()||{}; const ids=Object.keys(map);
+    const now=Date.now();
+    let online=0, offline=0, volSum=0, volN=0, mutedCount=0;
+    const channelCounts={}, dealerCounts={};
+
+    ids.forEach(id=>{
+      const v=map[id]||{};
+      const on=(v.lastSeenAt && (now-v.lastSeenAt)<60000) || (v.timestamp && (now-v.timestamp)<120000);
+      on? online++ : offline++;
+      const ch=(v.channel||1); channelCounts[ch]=(channelCounts[ch]||0)+1;
+      const d=(v.dealership||'—'); dealerCounts[d]=(dealerCounts[d]||0)+1;
+      if(typeof v.volume==='number'){ volSum+=v.volume; volN++; }
+      if(v.muted===true) mutedCount++;
+    });
+
+    const avgVol = volN ? Math.round(volSum/volN) : 0;
+    const topCh = Object.entries(channelCounts).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
+    const mutedPct = ids.length? Math.round((mutedCount/ids.length)*100) : 0;
+
+    $('#statActive').textContent = online;
+    $('#statOffline').textContent= offline;
+    $('#statTopCh').textContent  = topCh;
+    $('#statVolMuted').textContent = `${avgVol} • ${mutedPct}%`;
+
+    // channel bars
+    const chWrap = $('#anaChBars'); chWrap.innerHTML='';
+    const chTotal = Object.values(channelCounts).reduce((a,b)=>a+b,0);
+    Object.entries(channelCounts).sort((a,b)=>a[0]-b[0]).forEach(([ch,n])=> chWrap.appendChild(renderBarRow('Channel '+ch, n, chTotal)));
+
+    // dealer bars (top 10)
+    const dWrap = $('#anaDealerBars'); dWrap.innerHTML='';
+    const dTotal = Object.values(dealerCounts).reduce((a,b)=>a+b,0);
+    Object.entries(dealerCounts).sort((a,b)=>b[1]-a[1]).slice(0,10).forEach(([d,n])=> dWrap.appendChild(renderBarRow(d, n, dTotal)));
+  }
+
+  // ======== Schedule (local) ========
+  const LS_SCH='iptv_admin_schedule';
+  const schedule = JSON.parse(localStorage.getItem(LS_SCH)||'[]');
+
+  $('#schCreateAssets').addEventListener('change', e=>{
+    $('#schAssets').style.display = e.target.checked ? 'block' : 'none';
+  });
+
+  function saveSchedule(){ localStorage.setItem(LS_SCH, JSON.stringify(schedule)); renderSchedule(); }
+  function renderSchedule(){
+    const ul=$('#schList'); ul.innerHTML='';
+    if(!schedule.length){ $('#schEmpty').style.display='block'; return; }
+    $('#schEmpty').style.display='none';
+    schedule.sort((a,b)=>a.when.localeCompare(b.when));
+    schedule.forEach((r,i)=>{
+      const li=document.createElement('li'); li.className='item';
+      li.innerHTML=`<div><b>${new Date(r.when).toLocaleString()}</b>
+        <div class="small muted">${htmlEscape(r.note||'')}</div>
+        ${r.dest? `<div class="small muted">📍 ${htmlEscape(r.dest)}</div>`:''}
+        ${r.assets? `<div class="small muted">Assets: ${htmlEscape(r.assets)}</div>`:''}
+      </div><button class="btn danger" data-del="${i}">Delete</button>`;
+      ul.appendChild(li);
+    });
+    ul.querySelectorAll('button[data-del]').forEach(btn=> btn.addEventListener('click',()=>{ const i=parseInt(btn.dataset.del,10); schedule.splice(i,1); saveSchedule(); }));
+  }
+  renderSchedule();
+
+  $('#schAdd').addEventListener('click', async ()=>{
+    const when=$('#schWhen').value;
+    const note=$('#schNote').value.trim();
+    const dest=$('#schDest').value.trim();
+    const make=$('#schCreateAssets').checked;
+    if(!when||!note) return toast('Pick date/time and note',true);
+
+    let assetsMsg='';
+    if(make){
+      let dName=$('#schDealerName').value.trim();
+      let dId=$('#schDealerId').value.trim();
+      let displayId=$('#schDisplayId').value.trim();
+
+      if(!dName && !dId) return toast('Enter dealership name or id', true);
+      if(!dId) dId = makeDealerId(dName||('dealer_'+Date.now()));
+
+      const exists = await get(ref(db,`dealershipPublic/${dId}`));
+      if(!exists.exists()){
+        await set(ref(db,`dealershipPublic/${dId}`), { name: dName || dId });
+        await set(ref(db,`dealership/${dId}`), { name: dName || dId, createdAt: Date.now(), createdBy: auth.currentUser?.email||'admin', displays:{} });
+      }
+      if(!displayId){
+        const friendly=(await get(ref(db,`dealershipPublic/${dId}`))).val()?.name||dId;
+        const pref=initialsFromName(friendly);
+        const existing=await collectDisplays(dId);
+        let n=nextSuffix(existing,pref);
+        displayId=`${pref}-${String(n).padStart(3,'0')}`;
+      }
+      await set(ref(db,`dealership/${dId}/displays/${displayId}`), true);
+      await update(ref(db,`displays/${displayId}`), { channel:1, volume:0, muted:true, dealership:dId, timestamp:Date.now() });
+
+      assetsMsg = `${dId} • ${displayId}`;
+      $('#schDealerName').value=''; $('#schDealerId').value=''; $('#schDisplayId').value='';
     }
 
-    async function snapshot(){
-      const [dealersPubSnap, displaysSnap, usersSnap] = await Promise.all([
-        get(ref(db,'dealershipPublic')).catch(()=>({val:()=>null})),
-        get(ref(db,'displays')).catch(()=>({val:()=>null})),
-        get(ref(db,'user')).catch(()=>({val:()=>null}))
-      ]);
-      return {
-        meta: { generatedAt:new Date().toISOString(), by: auth.currentUser?.email||'admin', format:'iptv-bfa@1' },
-        dealersPublic: dealersPubSnap?.val?.() || {},
-        displays:      displaysSnap?.val?.()      || {},
-        users:         compactUsers(usersSnap?.val?.() || {})
+    schedule.push({when,note,dest, assets: assetsMsg});
+    saveSchedule();
+    $('#schWhen').value=''; $('#schNote').value=''; $('#schDest').value=''; $('#schCreateAssets').checked=false; $('#schAssets').style.display='none';
+    toast('Scheduled');
+  });
+
+  // ======== Backups (download/restore preview) ========
+  function download(filename, text){
+    const a=document.createElement('a');
+    a.href='data:application/json;charset=utf-8,'+encodeURIComponent(text);
+    a.download=filename; a.click();
+  }
+
+  function compactUsers(u){
+    const out={}; Object.entries(u||{}).forEach(([uid,v])=>{
+      out[uid] = { email:v.email||null, name:v.name||null, role:v.role||'user', dealershipId:v.dealershipId||null };
+    });
+    return out;
+  }
+
+  async function snapshot(){
+    const [dealersPubSnap, displaysSnap, usersSnap] = await Promise.all([
+      get(ref(db,'dealershipPublic')).catch(()=>({val:()=>null})),
+      get(ref(db,'displays')).catch(()=>({val:()=>null})),
+      get(ref(db,'user')).catch(()=>({val:()=>null}))
+    ]);
+    return {
+      meta: { generatedAt:new Date().toISOString(), by: auth.currentUser?.email||'admin', format:'iptv-bfa@1' },
+      dealersPublic: dealersPubSnap?.val?.() || {},
+      displays:      displaysSnap?.val?.()      || {},
+      users:         compactUsers(usersSnap?.val?.() || {})
+    };
+  }
+
+  $('#btnDownloadBackup').addEventListener('click', async ()=>{
+    const snap = await snapshot();
+    download('iptv-backup.json', JSON.stringify(snap, null, 2));
+  });
+
+  let restoreData=null, restoreDiff=null;
+  $('#btnPreviewRestore').addEventListener('click', async ()=>{
+    const f = $('#fileRestore').files?.[0];
+    if(!f) return toast('Pick a JSON file', true);
+    try{
+      const text = await f.text();
+      restoreData = JSON.parse(text);
+    }catch(e){ return toast('Invalid JSON', true); }
+
+    const live = await snapshot();
+    const diff = { add:[], update:[], remove:[] };
+    function diffMap(title, cur, next){
+      const keys = new Set([...Object.keys(cur||{}), ...Object.keys(next||{})]);
+      keys.forEach(k=>{
+        const a = cur?.[k]; const b = next?.[k];
+        if(a==null && b!=null) diff.add.push(`${title}: + ${k}`);
+        else if(a!=null && b==null) diff.remove.push(`${title}: - ${k}`);
+        else if(JSON.stringify(a)!==JSON.stringify(b)) diff.update.push(`${title}: ~ ${k}`);
+      });
+    }
+    diffMap('dealersPublic', live.dealersPublic, restoreData.dealersPublic);
+    diffMap('displays', live.displays, restoreData.displays);
+    diffMap('users', live.users, restoreData.users);
+
+    restoreDiff = diff;
+    const box = $('#restoreDiff'); box.innerHTML='';
+    const addH = document.createElement('div'); addH.className='item'; addH.innerHTML = `<b>Add</b><div class="small muted">${diff.add.length? diff.add.join('<br/>') : '—'}</div>`;
+    const updH = document.createElement('div'); updH.className='item'; updH.innerHTML = `<b>Update</b><div class="small muted">${diff.update.length? diff.update.join('<br/>') : '—'}</div>`;
+    const remH = document.createElement('div'); remH.className='item'; remH.innerHTML = `<b>Remove</b><div class="small muted">${diff.remove.length? diff.remove.join('<br/>') : '—'}</div>`;
+    box.appendChild(addH); box.appendChild(updH); box.appendChild(remH);
+    $('#restorePreview').style.display='block';
+    toast((diff.add.length+diff.update.length+diff.remove.length)? 'Review changes below' : 'No differences');
+  });
+
+  $('#btnCancelRestore').addEventListener('click', ()=>{ $('#restorePreview').style.display='none'; restoreData=null; restoreDiff=null; });
+
+  $('#btnApplyRestore').addEventListener('click', async ()=>{
+    if(!restoreData) return;
+    if(!confirm('Apply these changes? This will overwrite matching keys.')) return;
+    try{
+      await set(ref(db,'dealershipPublic'), restoreData.dealersPublic || {});
+      await set(ref(db,'displays'), restoreData.displays || {});
+      // merge minimal users onto /user safely
+      const liveUsers = (await get(ref(db,'user'))).val()||{};
+      const merged = {...liveUsers};
+      Object.entries(restoreData.users||{}).forEach(([uid,u])=>{
+        merged[uid] = { ...(merged[uid]||{}), ...u };
+      });
+      await set(ref(db,'user'), merged);
+      toast('Restore complete');
+      $('#restorePreview').style.display='none';
+      await reloadAll();
+    }catch(e){ console.error(e); toast('Restore failed', true); }
+  });
+
+  // ======== GitHub Sync (hardened) ========
+  function b64(str){return btoa(unescape(encodeURIComponent(str)));}
+
+  async function ghFetch(url, opts){
+    const res = await fetch(url, opts);
+    const text = await res.text();
+    let data;
+    try { data = text ? JSON.parse(text) : {}; } catch { data = { raw:text }; }
+    if(!res.ok){
+      const msg = data?.message || res.statusText || 'GitHub error';
+      throw new Error(`${msg} (HTTP ${res.status})`);
+    }
+    return data;
+  }
+  async function checkRepo(gh){
+    const url = `https://api.github.com/repos/${gh.owner}/${gh.repo}`;
+    return ghFetch(url, {
+      headers:{
+        'Authorization': `Bearer ${gh.token}`,
+        'Accept':'application/vnd.github+json',
+        'X-GitHub-Api-Version':'2022-11-28'
+      }
+    });
+  }
+  async function exportToGitHub(){
+    try{
+      const gh = JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}');
+      if(!gh.owner || !gh.repo || !gh.branch || !gh.path || !gh.token){
+        toast('Settings incomplete — open Settings and fill all fields', true);
+        return;
+      }
+      await checkRepo(gh);
+      const payload = await snapshot();
+      const contentB64 = b64(JSON.stringify(payload, null, 2));
+
+      const base = `https://api.github.com/repos/${gh.owner}/${gh.repo}/contents/${encodeURIComponent(gh.path)}`;
+      const headers = {
+        'Authorization': `Bearer ${gh.token}`,
+        'Accept':'application/vnd.github+json',
+        'X-GitHub-Api-Version':'2022-11-28',
+        'Content-Type':'application/json'
       };
-    }
-
-    $('#btnDownloadBackup').addEventListener('click', async ()=>{
-      const snap = await snapshot();
-      download('iptv-backup.json', JSON.stringify(snap, null, 2));
-    });
-
-    let restoreData=null, restoreDiff=null;
-    $('#btnPreviewRestore').addEventListener('click', async ()=>{
-      const f = $('#fileRestore').files?.[0];
-      if(!f) return toast('Pick a JSON file', true);
+      let sha = undefined;
       try{
-        const text = await f.text();
-        restoreData = JSON.parse(text);
-      }catch(e){ return toast('Invalid JSON', true); }
-
-      // compute diff vs live
-      const live = await snapshot();
-      const diff = { add:[], update:[], remove:[] };
-      // helpers
-      function diffMap(title, cur, next){
-        const keys = new Set([...Object.keys(cur||{}), ...Object.keys(next||{})]);
-        keys.forEach(k=>{
-          const a = cur?.[k]; const b = next?.[k];
-          if(a==null && b!=null) diff.add.push(`${title}: + ${k}`);
-          else if(a!=null && b==null) diff.remove.push(`${title}: - ${k}`);
-          else if(JSON.stringify(a)!==JSON.stringify(b)) diff.update.push(`${title}: ~ ${k}`);
-        });
+        const existing = await ghFetch(`${base}?ref=${encodeURIComponent(gh.branch)}`, { headers });
+        sha = existing.sha;
+      }catch(e){
+        if(!String(e.message||'').includes('HTTP 404')) throw e;
       }
-      diffMap('dealersPublic', live.dealersPublic, restoreData.dealersPublic);
-      diffMap('displays', live.displays, restoreData.displays);
-      diffMap('users', live.users, restoreData.users);
-
-      restoreDiff = diff;
-      const box = $('#restoreDiff'); box.innerHTML='';
-      const any = (diff.add.length+diff.update.length+diff.remove.length)>0;
-      const addH = document.createElement('div'); addH.className='item'; addH.innerHTML = `<b>Add</b><div class="small muted">${diff.add.length? diff.add.join('<br/>') : '—'}</div>`;
-      const updH = document.createElement('div'); updH.className='item'; updH.innerHTML = `<b>Update</b><div class="small muted">${diff.update.length? diff.update.join('<br/>') : '—'}</div>`;
-      const remH = document.createElement('div'); remH.className='item'; remH.innerHTML = `<b>Remove</b><div class="small muted">${diff.remove.length? diff.remove.join('<br/>') : '—'}</div>`;
-      box.appendChild(addH); box.appendChild(updH); box.appendChild(remH);
-      $('#restorePreview').style.display='block';
-      toast(any? 'Review changes below' : 'No differences');
-    });
-
-    $('#btnCancelRestore').addEventListener('click', ()=>{ $('#restorePreview').style.display='none'; restoreData=null; restoreDiff=null; });
-
-    $('#btnApplyRestore').addEventListener('click', async ()=>{
-      if(!restoreData) return;
-      if(!confirm('Apply these changes? This will overwrite matching keys.')) return;
-      try{
-        await set(ref(db,'dealershipPublic'), restoreData.dealersPublic || {});
-        await set(ref(db,'displays'), restoreData.displays || {});
-        // expand users minimal back into /user with safe merge:
-        const liveUsers = (await get(ref(db,'user'))).val()||{};
-        const merged = {...liveUsers};
-        Object.entries(restoreData.users||{}).forEach(([uid,u])=>{
-          merged[uid] = { ...(merged[uid]||{}), ...u };
-        });
-        await set(ref(db,'user'), merged);
-        toast('Restore complete');
-        $('#restorePreview').style.display='none';
-        await reloadAll();
-      }catch(e){ console.error(e); toast('Restore failed', true); }
-    });
-
-    // ======== GitHub Sync (unchanged UI, hardened code) ========
-    function b64(str){return btoa(unescape(encodeURIComponent(str)));}
-
-    async function ghFetch(url, opts){
-      const res = await fetch(url, opts);
-      const text = await res.text();
-      let data;
-      try { data = text ? JSON.parse(text) : {}; } catch { data = { raw:text }; }
-      if(!res.ok){
-        const msg = data?.message || res.statusText || 'GitHub error';
-        throw new Error(`${msg} (HTTP ${res.status})`);
-      }
-      return data;
+      const body = { message: sha ? `update: ${gh.path}` : `create: ${gh.path}`, content: contentB64, branch: gh.branch, sha };
+      await ghFetch(base, { method:'PUT', headers, body: JSON.stringify(body) });
+      toast('Synced to GitHub ✔︎');
+    }catch(err){
+      console.error('[github sync failed]', err);
+      alert(`GitHub sync failed:\n\n${err.message}\n\nChecklist:\n• Token must be fine-grained with “Contents: Read and write” (Metadata is OK)\n• Repo must be selected on the token\n• Owner/Repo/Branch/Path must be exact`);
+      toast('Sync failed', true);
     }
-    async function checkRepo(gh){
-      const url = `https://api.github.com/repos/${gh.owner}/${gh.repo}`;
-      return ghFetch(url, {
-        headers:{
-          'Authorization': `Bearer ${gh.token}`,
-          'Accept':'application/vnd.github+json',
-          'X-GitHub-Api-Version':'2022-11-28'
-        }
-      });
-    }
-    async function exportToGitHub(){
-      try{
-        const gh = JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}');
-        if(!gh.owner || !gh.repo || !gh.branch || !gh.path || !gh.token){
-          toast('Settings incomplete — open Settings and fill all fields', true);
-          return;
-        }
-        await checkRepo(gh);
-        const payload = await snapshot();
-        const contentB64 = b64(JSON.stringify(payload, null, 2));
+  }
+  document.getElementById('syncBtn')?.addEventListener('click', exportToGitHub);
+</script>
 
-        const base = `https://api.github.com/repos/${gh.owner}/${gh.repo}/contents/${encodeURIComponent(gh.path)}`;
-        const headers = {
-          'Authorization': `Bearer ${gh.token}`,
-          'Accept':'application/vnd.github+json',
-          'X-GitHub-Api-Version':'2022-11-28',
-          'Content-Type':'application/json'
-        };
-        let sha = undefined;
-        try{
-          const existing = await ghFetch(`${base}?ref=${encodeURIComponent(gh.branch)}`, { headers });
-          sha = existing.sha;
-        }catch(e){
-          if(!String(e.message||'').includes('404')) throw e;
-        }
-        const body = { message: sha ? `update: ${gh.path}` : `create: ${gh.path}`, content: contentB64, branch: gh.branch, sha };
-        await ghFetch(base, { method:'PUT', headers, body: JSON.stringify(body) });
-        toast('Synced to GitHub ✔︎');
-      }catch(err){
-        console.error('[github sync failed]', err);
-        alert(`GitHub sync failed:\n\n${err.message}\n\nChecklist:\n• Token must be fine-grained with “Contents: Read and write” (and Metadata auto-adds)\n• Repo must be selected on the token\n• Owner/Repo/Branch/Path must be exact`);
-        toast('Sync failed', true);
-      }
-    }
-    document.getElementById('syncBtn')?.addEventListener('click', exportToGitHub);
-
-  </script>
 </body>
 </html>
