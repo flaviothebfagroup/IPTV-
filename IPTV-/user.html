@@ -4,132 +4,162 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>BFA IPTV — Users</title>
-  <link rel="stylesheet" href="assets/ui.css"/>
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./assets/ui.css" />
 </head>
-<body>
-  <div class="topbar">
+<body class="light">
+  <!-- Topbar -->
+  <div class="topbar" style="border-bottom:1px solid var(--border)">
     <div class="lhs">
-      <div id="brandLogo" class="logo" title="IPTV"></div>
+      <a href="./home.html" class="logo" style="display:block;background:url('./icons/icon-512.png') center/cover no-repeat" title="Home"></a>
       <div class="title">Users</div>
     </div>
     <div class="rhs" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <a class="btn" href="home.html">← Home</a>
-      <a class="btn" href="dealership.html">Dealerships</a>
-      <a class="btn" href="display.html">Displays</a>
+      <a class="btn" href="./dealership.html">Dealerships</a>
+      <a class="btn" href="./display.html">Displays</a>
+      <a class="btn" href="./more.html">More</a>
       <span id="adminEmail" class="muted"></span>
-      <button id="themeBtn" class="btn">☀︎/🌙</button>
+      <button id="reloadBtn" class="btn">Reload</button>
+      <button id="signOutBtn" class="btn primary">Sign out</button>
     </div>
   </div>
 
   <div class="wrap">
-    <div class="card">
-      <h2 style="margin:0 0 8px">Users</h2>
-      <div class="row4">
-        <div><div class="label">Email</div><input id="userEmail" class="input" placeholder="user@email.com" /></div>
-        <div><div class="label">Name</div><input id="userName" class="input" placeholder="Full Name" /></div>
-        <div><div class="label">Role</div>
-          <select id="userRole" class="select">
-            <option value="user">user</option><option value="admin">admin</option><option value="device">device</option>
-          </select>
-        </div>
-        <div><div class="label">Dealership</div><select id="userDealer" class="select"><option value="">Dealership…</option></select></div>
-      </div>
-      <div class="row2">
-        <button id="createUserBtn" class="btn solid">Create User (pwd: 123456789)</button>
-        <button id="inviteUserBtn" class="btn">Send Reset (existing)</button>
-      </div>
-      <div class="row3">
-        <div><div class="label">Search</div><input id="userSearch" class="input" placeholder="Search name or email…" /></div>
-        <div><div class="label">Filter dealership</div><select id="filterDealer" class="select"><option value="">All dealerships</option></select></div>
-        <div><div class="label">Filter role</div>
-          <select id="filterRole" class="select">
-            <option value="">All roles</option><option value="admin">admin</option><option value="device">device</option><option value="user">user</option><option value="disabled">disabled</option>
-          </select>
-        </div>
-      </div>
+    <div id="notAdmin" class="card" style="display:none;max-width:720px;margin:40px auto">
+      <h2>Not authorized</h2>
+      <div class="muted small">Ask an admin to set your role to <b>admin</b> in the database.</div>
+    </div>
 
-      <div style="display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap">
-        <button id="findDupBtn" class="btn">Find duplicates</button>
-        <button id="deleteDupBtn" class="btn danger">Delete selected duplicates</button>
-        <span class="muted small">Duplicates = device users with the same name within a dealership. Green = currently active (updated last 10 min).</span>
-      </div>
-      <div id="dupBox" class="card" style="display:none;margin-bottom:10px">
-        <h3 style="margin:0 0 6px">Duplicate candidates</h3>
-        <div id="dupList" class="list"></div>
-        <div class="small muted" id="dupEmpty" style="display:none">No duplicates found.</div>
-      </div>
+    <div id="main" class="page active">
+      <div class="card">
+        <h2 style="margin:0 0 8px">Users</h2>
+        <div class="row4">
+          <div><div class="label">Email</div><input id="userEmail" class="input" placeholder="user@email.com" /></div>
+          <div><div class="label">Name</div><input id="userName" class="input" placeholder="Full Name" /></div>
+          <div><div class="label">Role</div>
+            <select id="userRole" class="select">
+              <option value="user">user</option><option value="admin">admin</option><option value="device">device</option><option value="disabled">disabled</option>
+            </select>
+          </div>
+          <div><div class="label">Dealership</div><select id="userDealer" class="select"><option value="">Dealership…</option></select></div>
+        </div>
+        <div class="row2">
+          <button id="createUserBtn" class="btn solid">Create User (pwd: 123456789)</button>
+          <button id="inviteUserBtn" class="btn">Send Reset (existing)</button>
+        </div>
 
-      <div class="group"><h3>Admins (<span id="countAdmins">0</span>)</h3><div class="user-grid" id="gridAdmins"></div></div>
-      <div class="group"><h3>Device Users (<span id="countDevices">0</span>)</h3><div class="user-grid" id="gridDevices"></div></div>
-      <div class="group"><h3>Regular Users (<span id="countUsers">0</span>)</h3><div class="user-grid" id="gridUsers"></div></div>
-      <div class="group"><h3>Disabled (<span id="countDisabled">0</span>)</h3><div class="user-grid" id="gridDisabled"></div></div>
-      <div id="userEmpty" class="empty" style="display:none">No users.</div>
+        <div class="row3">
+          <div><div class="label">Search</div><input id="userSearch" class="input" placeholder="Search name or email…" /></div>
+          <div><div class="label">Filter dealership</div><select id="filterDealer" class="select"><option value="">All dealerships</option></select></div>
+          <div><div class="label">Filter role</div>
+            <select id="filterRole" class="select">
+              <option value="">All roles</option><option value="admin">admin</option><option value="device">device</option><option value="user">user</option><option value="disabled">disabled</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap">
+          <button id="findDupBtn" class="btn">Find duplicates</button>
+          <button id="deleteDupBtn" class="btn danger">Delete selected duplicates</button>
+          <span class="muted small">Duplicates = device users with the same name within a dealership. Green = currently active in the last 10 minutes.</span>
+        </div>
+
+        <div id="dupBox" class="card" style="display:none;margin-bottom:10px">
+          <h3 style="margin:0 0 6px">Duplicate candidates</h3>
+          <div id="dupList" class="list"></div>
+          <div class="small muted" id="dupEmpty" style="display:none">No duplicates found.</div>
+        </div>
+
+        <div class="group"><h3>Admins (<span id="countAdmins">0</span>)</h3><div class="user-grid" id="gridAdmins"></div></div>
+        <div class="group"><h3>Device Users (<span id="countDevices">0</span>)</h3><div class="user-grid" id="gridDevices"></div></div>
+        <div class="group"><h3>Regular Users (<span id="countUsers">0</span>)</h3><div class="user-grid" id="gridUsers"></div></div>
+        <div class="group"><h3>Disabled (<span id="countDisabled">0</span>)</h3><div class="user-grid" id="gridDisabled"></div></div>
+        <div id="userEmpty" class="empty" style="display:none">No users.</div>
+      </div>
     </div>
   </div>
+
   <div id="toast" class="toast"></div>
 
   <script type="module">
-    import { setupTheme, guardAdminOrRedirect, auth, db, fb, $, $$, htmlEscape, toast, debounce } from './assets/core.js';
-    import { ref, get, set, update, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-    import { sendPasswordResetEmail, createUserWithEmailAndPassword, getAuth, signOut, initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import {
+      app, auth, db, $, $$, htmlEscape, toast, debounce,
+      loadDealersMap, createUserAdminSafe,
+      getAuth, sendPasswordResetEmail, signOut,
+      ref, get, set, update, remove, query, orderByChild, equalTo
+    } from './assets/core.js';
 
-    setupTheme();
-    await guardAdminOrRedirect();
+    // Admin gate (simple)
+    import { onAuthStateChanged, setPersistence, browserLocalPersistence, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
-    // Load dealers for selects
-    async function loadDealersMap(){
-      let map={};
-      try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=Object.fromEntries(Object.entries(pub.val()).map(([k,v])=>[k,v?.name||k])); }catch(e){}
-      if(!Object.keys(map).length){ try{ const d=await get(ref(db,'dealership')); if(d.exists()) map=Object.fromEntries(Object.entries(d.val()).map(([k,v])=>[k,v?.name||k])); }catch(e){} }
-      const selF=$('#filterDealer'), selU=$('#userDealer'); const prevF=selF.value, prevU=selU.value;
-      selF.innerHTML='<option value="">All dealerships</option>'; selU.innerHTML='<option value="">Dealership…</option>';
-      for(const [id,name] of Object.entries(map).sort((a,b)=>a[1].localeCompare(b[1]))){
-        const f=document.createElement('option'); f.value=id; f.textContent=name; selF.appendChild(f);
-        const u=document.createElement('option'); u.value=id; u.textContent=name; selU.appendChild(u);
-      }
-      selF.value=location.hash? location.hash.slice(1): (prevF||'');
-      selU.value=prevU||'';
-      return map;
+    function goLogin(){
+      $('#main').style.display='none';
+      $('#notAdmin').style.display='block';
     }
 
-    // Create user with secondary app, set default password
-    async function createUserAdminSafe(){
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ goLogin(); return; }
+      $('#adminEmail').textContent = user.email || user.uid;
+      const uSnap = await get(ref(db, `user/${user.uid}`)); const u=uSnap.val()||{};
+      if(u.role!=='admin'){ goLogin(); return; }
+      $('#notAdmin').style.display='none';
+      $('#main').style.display='block';
+      await boot();
+    });
+
+    $('#signOutBtn').addEventListener('click', ()=>signOut(auth));
+    $('#reloadBtn').addEventListener('click', ()=>boot());
+
+    async function boot(){
+      await fillDealers();
+      await refreshUsers();
+    }
+
+    async function fillDealers(){
+      const dealers=await loadDealersMap();
+      const selU=$('#userDealer'); const selF=$('#filterDealer');
+      const prevU=selU.value, prevF=selF.value;
+      selU.innerHTML='<option value="">Dealership…</option>';
+      selF.innerHTML='<option value="">All dealerships</option>';
+      for(const [id,name] of Object.entries(dealers).sort((a,b)=>a[1].localeCompare(b[1]))){
+        const o1=document.createElement('option'); o1.value=id; o1.textContent=name; selU.appendChild(o1);
+        const o2=document.createElement('option'); o2.value=id; o2.textContent=name; selF.appendChild(o2);
+      }
+      selU.value=prevU||''; selF.value=prevF||'';
+    }
+
+    // ---- Create + Reset
+    $('#createUserBtn').addEventListener('click', async ()=>{
       const email=$('#userEmail').value.trim();
       const name=$('#userName').value.trim();
       const role=$('#userRole').value;
-      const did=$('#userDealer').value;
-      if(!email||!name||!role||!did) return toast('Fill all user fields',true);
-
-      const tempName='admin-helper-'+Date.now();
-      const tempApp=initializeApp((await import('./assets/core.js')).firebaseConfig, tempName);
-      const tempAuth=getAuth(tempApp);
+      const dealershipId=$('#userDealer').value;
+      if(!email||!name||!role||!dealershipId){ toast('Fill all user fields',true); return; }
       try{
-        const defaultPwd='123456789';
-        const cred=await createUserWithEmailAndPassword(tempAuth,email,defaultPwd);
-        const uid=cred.user.uid;
-        let dname=did; try{ const p=await get(ref(db,`dealershipPublic/${did}`)); if(p.exists()) dname=p.val()?.name||did; }catch(e){}
-        let displays=[]; const ds=await get(ref(db,`dealership/${did}/displays`)); if(ds.exists()) displays=Object.keys(ds.val()||{});
-        await set(ref(db,`user/${uid}`),{email,name,role,dealershipId:did,dealershipName:dname,displays,createdAt:Date.now()});
-        toast('User created (pwd 123456789)'); await refreshUsers();
-      }catch(e){ console.error(e); toast('Create failed',true); }
-      finally{ try{ await (await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js')).deleteApp(tempApp);}catch(e){} }
-    }
+        await createUserAdminSafe({email,name,role,dealershipId});
+        toast('User created (pwd: 123456789)');
+        $('#userEmail').value=''; $('#userName').value='';
+        await refreshUsers();
+      }catch(e){ console.error(e); toast(e.message||'Create failed',true); }
+    });
 
     $('#inviteUserBtn').addEventListener('click', async ()=>{
-      const email=$('#userEmail').value.trim(); if(!email) return toast('Enter email',true);
-      try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed',true); }
+      const email=$('#userEmail').value.trim(); if(!email){ toast('Enter email', true); return; }
+      try{ await sendPasswordResetEmail(auth, email); toast('If an account exists, a reset email was sent'); }
+      catch(e){ console.error(e); toast('Reset failed',true); }
     });
-    $('#createUserBtn').addEventListener('click', createUserAdminSafe);
 
-    $('#userSearch').addEventListener('input', debounce(refreshUsers, 200));
+    // ---- Search/filters
+    $('#userSearch').addEventListener('input', debounce(refreshUsers,200));
     $('#filterDealer').addEventListener('change', refreshUsers);
     $('#filterRole').addEventListener('change', refreshUsers);
 
+    // ---- List + actions
     async function refreshUsers(){
       const search=($('#userSearch').value||'').toLowerCase();
       const fDid=$('#filterDealer').value;
       const fRole=$('#filterRole').value;
-      const dealers=await loadDealersMap();
 
       let map={}; try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
       const rows=Object.entries(map).map(([uid,v])=>({uid,...v}));
@@ -157,6 +187,7 @@
       const total=groups.admin.length+groups.device.length+groups.user.length+groups.disabled.length;
       $('#userEmpty').style.display= total? 'none':'block';
 
+      const dealers=await loadDealersMap();
       const renderGroup=(arr,gridId)=>{
         const grid=document.getElementById(gridId); grid.innerHTML='';
         arr.sort((a,b)=> (a.dealershipName||a.dealershipId||'').localeCompare(b.dealershipName||b.dealershipId||'') || (a.email||'').localeCompare(b.email||''));
@@ -165,6 +196,7 @@
           const dealer=r.dealershipName||r.dealershipId||'—';
           const isDevice=(r.role==='device');
           const active=isDevice && r.updatedAt && (now-r.updatedAt) < 10*60*1000; // 10 min
+
           const card=document.createElement('div'); card.className='user-card';
           card.innerHTML=`
             <div class="user-header">
@@ -185,35 +217,49 @@
                 ${Object.entries(dealers).map(([id,nm])=>`<option value="${id}" ${id===(r.dealershipId||'')?'selected':''}>${nm}</option>`).join('')}
               </select>
               <button class="btn" data-reset="${htmlEscape(r.email||'')}">Reset password</button>
+              <button class="btn danger" data-del="${r.uid}">Delete</button>
             </div>`;
           grid.appendChild(card);
         });
 
-        // rename name
+        // rename
         grid.querySelectorAll('[data-rename]').forEach(el=>{
           el.addEventListener('click', async ()=>{
-            const uid=el.getAttribute('data-rename'); const current=el.textContent.trim();
-            const next=prompt('New name', current||''); if(!next || next===current) return;
-            try{ await update(ref(db,`user/${uid}`),{name:next}); el.innerHTML = el.innerHTML.replace(current, htmlEscape(next)); toast('Name updated'); }catch(e){ toast('Update failed',true); }
+            const uid=el.getAttribute('data-rename');
+            const current=(el.textContent||'').trim();
+            const next=prompt('New name', current.replace(/^•?\s*/,''));
+            if(!next || next===current) return;
+            try{ await update(ref(db,`user/${uid}`),{name:next, updatedAt:Date.now()}); el.innerHTML = el.innerHTML.replace(current, htmlEscape(next)); toast('Name updated'); }
+            catch(e){ toast('Update failed',true); }
           });
         });
         // role change
         grid.querySelectorAll('.roleSel').forEach(sel=>{
           sel.addEventListener('change', async (e)=>{ const uid=e.target.dataset.uid; const role=e.target.value;
-            try{ await update(ref(db,`user/${uid}`),{role}); toast('Role updated'); await refreshUsers(); }catch(err){ toast('Update failed',true); }
+            try{ await update(ref(db,`user/${uid}`),{role, updatedAt:Date.now()}); toast('Role updated'); await refreshUsers(); }catch(err){ toast('Update failed',true); }
           });
         });
         // move dealership
         grid.querySelectorAll('.dealerSel').forEach(sel=>{
-          sel.addEventListener('change', async (e)=>{ const uid=e.target.dataset.uid; const did=e.target.value; const name=dealers[did]||did;
-            try{ await update(ref(db,`user/${uid}`),{dealershipId:did,dealershipName:name}); toast('Moved'); }catch(err){ toast('Move failed',true); }
+          sel.addEventListener('change', async (e)=>{ const uid=e.target.dataset.uid; const did=e.target.value;
+            const dealers=await loadDealersMap(); const name=dealers[did]||did;
+            try{ await update(ref(db,`user/${uid}`),{dealershipId:did, dealershipName:name, updatedAt:Date.now()}); toast('Moved'); }catch(err){ toast('Move failed',true); }
           });
         });
         // reset
         grid.querySelectorAll('[data-reset]').forEach(btn=>{
           btn.addEventListener('click', async ()=>{
-            const email=btn.getAttribute('data-reset'); if(!email) return toast('No email',true);
-            try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(err){ toast('Reset failed',true); }
+            const email=btn.getAttribute('data-reset'); if(!email){ toast('No email',true); return; }
+            try{ await sendPasswordResetEmail(getAuth(), email); toast('If the account exists, reset email sent'); }
+            catch(err){ console.error(err); toast('Reset failed',true); }
+          });
+        });
+        // delete
+        grid.querySelectorAll('[data-del]').forEach(btn=>{
+          btn.addEventListener('click', async ()=>{
+            const uid=btn.getAttribute('data-del'); if(!confirm('Delete this user?')) return;
+            try{ await remove(ref(db,`user/${uid}`)); toast('Deleted'); await refreshUsers(); }
+            catch(err){ console.error(err); toast('Delete failed',true); }
           });
         });
       };
@@ -224,8 +270,8 @@
       renderGroup(groups.disabled,'gridDisabled');
     }
 
-    // Duplicate finder
-    const DUP_SEL = new Set();
+    // ---- Duplicates
+    const DUP_SEL=new Set();
     $('#findDupBtn').addEventListener('click', async ()=>{
       DUP_SEL.clear(); $('#dupList').innerHTML='';
       let map={}; try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
@@ -233,16 +279,14 @@
       const groups={};
       rows.forEach(r=>{
         const key=(r.dealershipId||'')+'|'+(r.name||'').toLowerCase().trim();
-        if(!groups[key]) groups[key]=[];
-        groups[key].push(r);
+        (groups[key]||(groups[key]=[])).push(r);
       });
       const now=Date.now(); let any=false;
       for(const [key,arr] of Object.entries(groups)){
-        if(arr.length<=1) continue;
-        any=true;
+        if(arr.length<=1) continue; any=true;
         arr.sort((a,b)=> (b.updatedAt||0)-(a.updatedAt||0));
-        const holder=document.createElement('div'); holder.className='item';
         const [did,name]=key.split('|');
+        const holder=document.createElement('div'); holder.className='item';
         const inner=arr.map(r=>{
           const active = (r.updatedAt && (now-r.updatedAt) < 10*60*1000);
           return `
@@ -250,8 +294,7 @@
               <input type="checkbox" data-uid="${r.uid}"/>
               <span>${active?'<i class="dot ok" title="Active now"></i>':'<i class="dot err" title="Inactive"></i>'}
                 ${htmlEscape(r.name)} <span class="tag">${htmlEscape(did)}</span>
-                <span class="badge">${active?'Likely active':'Likely unused'}</span>
-              </span>
+                <span class="badge">${active?'Likely active':'Likely unused'}</span></span>
             </label>`;
         }).join('<br/>');
         holder.innerHTML = `<div class="col"><b>“${htmlEscape(name)}” in ${htmlEscape(did)}</b><div class="small muted">Select old/unused ones and delete</div></div><div>${inner}</div>`;
@@ -272,8 +315,9 @@
         DUP_SEL.clear(); toast('Deleted'); $('#dupBox').style.display='none'; await refreshUsers();
       }catch(e){ toast('Delete failed',true); }
     });
-
-    refreshUsers();
   </script>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
 </body>
 </html>
