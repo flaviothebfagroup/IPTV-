@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>BFA IPTV — Home</title>
+  <link rel="stylesheet" href="assets/ui.css"/>
+</head>
+<body>
+  <div class="topbar">
+    <div class="lhs">
+      <div id="brandLogo" class="logo" title="IPTV"></div>
+      <div class="title">BFA IPTV — Home</div>
+    </div>
+    <div class="rhs" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span id="adminEmail" class="muted"></span>
+      <button id="themeBtn" class="btn">☀︎/🌙</button>
+      <a class="btn primary" href="more.html">More</a>
+      <button id="signOutBtn" class="btn primary">Sign out</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- Login -->
+    <div id="loginBox" class="card" style="max-width:520px;margin:40px auto;display:none">
+      <h2 style="margin:0 0 12px">Admin Sign In</h2>
+      <div class="row2">
+        <div>
+          <div class="label">Email</div>
+          <input id="email" class="input" type="email" placeholder="you@company.com" autocomplete="email" />
+        </div>
+        <div>
+          <div class="label">Password</div>
+          <input id="password" class="input" type="password" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+      </div>
+      <div class="row2">
+        <button id="loginBtn" class="btn solid">Sign in</button>
+        <button id="resetBtn" class="btn">Send reset link</button>
+      </div>
+      <div class="small muted">Requires <b>role: "admin"</b> in <code>/user/{uid}</code>.</div>
+    </div>
+
+    <!-- Bento -->
+    <div id="home" class="page">
+      <div id="homeGrid">
+        <a class="tile" href="dealership.html"><h3>Dealerships</h3><p>Add / rename (migrate) / delete</p></a>
+        <a class="tile" href="display.html"><h3>Displays</h3><p>Live list • channel • volume</p></a>
+        <a class="tile" href="user.html"><h3>Users</h3><p>Create • roles • duplicates</p></a>
+        <a class="tile" href="more.html#links"><h3>Links</h3><p>Quick access</p></a>
+        <a class="tile" href="more.html#analytics"><h3>Analytics</h3><p>Now • channels • dealers</p></a>
+        <a class="tile" href="more.html#schedule"><h3>Schedule</h3><p>Installs • reminders</p></a>
+        <a class="tile" href="more.html#backups"><h3>Backups</h3><p>Download / restore preview</p></a>
+      </div>
+    </div>
+  </div>
+  <div id="toast" class="toast"></div>
+
+  <script type="module">
+    import { setupTheme, doLogin, auth, fb, db, LOGO_URL, $, toast } from './assets/core.js';
+    import { onAuthStateChanged, sendPasswordResetEmail, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    setupTheme();
+
+    document.getElementById('signOutBtn').addEventListener('click', ()=>signOut(auth));
+    document.getElementById('loginBtn').addEventListener('click', ()=> doLogin($('#email').value.trim(), $('#password').value));
+    document.getElementById('resetBtn').addEventListener('click', async ()=>{
+      const email = $('#email').value.trim();
+      if(!email) return toast('Enter email', true);
+      try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed', true); }
+    });
+
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){
+        document.getElementById('home').classList.remove('active');
+        document.getElementById('loginBox').style.display='block';
+        return;
+      }
+      document.getElementById('loginBox').style.display='none';
+      document.getElementById('home').classList.add('active');
+      document.getElementById('adminEmail').textContent = user.email || user.uid;
+    });
+  </script>
+</body>
+</html>

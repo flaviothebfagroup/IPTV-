@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>BFA IPTV — Displays</title>
+  <link rel="stylesheet" href="assets/ui.css"/>
+</head>
+<body>
+  <div class="topbar">
+    <div class="lhs">
+      <div id="brandLogo" class="logo" title="IPTV"></div>
+      <div class="title">Displays</div>
+    </div>
+    <div class="rhs" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <a class="btn" href="home.html">← Home</a>
+      <a class="btn" href="dealership.html">Dealerships</a>
+      <a class="btn" href="user.html">Users</a>
+      <span id="adminEmail" class="muted"></span>
+      <button id="themeBtn" class="btn">☀︎/🌙</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <h2 style="margin:0 0 8px">Displays</h2>
+      <div class="row3">
+        <div>
+          <div class="label">Dealership</div>
+          <select id="dealerForDisplays" class="select"><option value="">Select dealership…</option></select>
+        </div>
+        <div>
+          <div class="label">Optional display ID</div>
+          <input id="newDisplayId" class="input" placeholder="Auto if empty (e.g., GW-002)" />
+        </div>
+        <div style="display:flex;align-items:end">
+          <button id="addDisplayBtn" class="btn solid" style="width:100%">Add TV</button>
+        </div>
+      </div>
+      <div class="split" style="margin:8px 0">
+        <button id="bulkMute" class="btn">Mute all</button>
+        <button id="bulkUnmute" class="btn">Unmute all</button>
+        <button id="bulkCh1" class="btn">All → CH1</button>
+        <button id="displaysReload" class="btn">Reload</button>
+      </div>
+      <ul id="displayList" class="list"></ul>
+      <div id="displayEmpty" class="empty" style="display:none">Pick a dealership to list TVs.</div>
+    </div>
+  </div>
+  <div id="toast" class="toast"></div>
+
+  <script type="module">
+    import { setupTheme, guardAdminOrRedirect, auth, db, $, $$, htmlEscape, toast, debounce, initialsFromName, nextSuffix } from './assets/core.js';
+    import { get, set, update, remove, ref, query, orderByChild, equalTo, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+    setupTheme();
+    await guardAdminOrRedirect();
+
+    function hashDealerFromAnchor(){
+      const h = location.hash.replace('#','');
+      if(h) $('#dealerForDisplays').value = h;
+    }
+
+    async function loadDealersIntoSelect(){
+      let map={};
+      try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=pub.val(); }catch(e){}
+      const sel = $('#dealerForDisplays');
+      const cur = sel.value;
+      sel.innerHTML='<option value="">Select dealership…</option>';
+      Object.keys(map).sort().forEach(id=>{
+        const opt=document.createElement('option'); opt.value=id; opt.textContent=map[id]?.name||id; sel.appendChild(opt);
+      });
+      if(cur) sel.value=cur;
+      if(!sel.value) hashDealerFromAnchor();
+    }
+
+    let displaysUnsub=null;
+    async function watchDisplays(did,forceOnce=false){
+      const ul=$('#displayList'); ul.innerHTML='';
+      if(!did){ $('#displayEmpty').style.display='block'; if(displaysUnsub) displaysUnsub(); displaysUnsub=null; return; }
+      $('#displayEmpty').style.display='none';
+      if(displaysUnsub){ displaysUnsub(); displaysUnsub=null; }
+
+      const render=(map)=>{
+        ul.innerHTML='';
+        const ids=Object.keys(map||{}).sort();
+        if(ids.length===0){ $('#displayEmpty').style.display='block'; return; }
+        const now=Date.now();
+        ids.forEach(id=>{
+          const st=map[id]||{};
+          const online=(st.lastSeenAt && (now-st.lastSeenAt)<60000) || (st.timestamp && (now-st.timestamp)<120000);
+          const li=document.createElement('li'); li.className='item';
+          li.innerHTML=`
+            <div class="col">
+              <div class="split">
+                <b>${htmlEscape(id)}</b>
+                <span class="tag">${htmlEscape(did)}</span>
+                <span class="online"><i class="dot ${online?'ok':'err'}"></i>${online?'Online':'Offline'}</span>
+              </div>
+              <span class="muted small">CH ${st.channel ?? 1} • VOL ${st.volume ?? 0} • ${st.muted ? 'Muted' : 'Unmuted'}</span>
+            </div>
+            <div class="split">
+              <select data-id="${id}" class="select small chsel">
+                ${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===(st.channel||1)?'selected':''}>CH ${n}</option>`).join('')}
+              </select>
+              <div class="vol">
+                <span class="muted small">VOL</span>
+                <input type="range" min="0" max="100" value="${st.volume ?? 0}" data-id="${id}" class="vslider"/>
+              </div>
+              <button class="btn" data-id="${id}" data-muted="${!!st.muted}">${st.muted?'Unmute':'Mute'}</button>
+              <button class="btn danger" data-remove="${id}">Remove</button>
+            </div>`;
+          ul.appendChild(li);
+        });
+
+        ul.querySelectorAll('.chsel').forEach(el=>{
+          el.addEventListener('change', async (e)=>{ const id=e.target.dataset.id; const ch=parseInt(e.target.value,10); await writeDisplay(id,{channel:ch}); });
+        });
+        const debouncedWrite=(id,val)=> debounce(async ()=>{ await writeDisplay(id,{volume:val}); },160)();
+        ul.querySelectorAll('.vslider').forEach(el=>{
+          el.addEventListener('input', e=>{ const id=e.target.dataset.id; const v=parseInt(e.target.value,10); debouncedWrite(id,v); });
+        });
+        ul.querySelectorAll('button[data-id]').forEach(el=>{
+          el.addEventListener('click', async ()=>{ const id=el.dataset.id; const cur=el.getAttribute('data-muted')==='true'; await writeDisplay(id,{muted:!cur}); });
+        });
+        ul.querySelectorAll('button[data-remove]').forEach(el=>{
+          el.addEventListener('click', async ()=>{ const id=el.dataset.remove; if(!confirm(`Remove ${id}?`)) return;
+            await remove(ref(db,`dealership/${did}/displays/${id}`)).catch(()=>{});
+            await remove(ref(db,`displays/${id}`)).catch(()=>{});
+            toast('Display removed'); });
+        });
+      };
+
+      const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
+      const off=onValue(qRef,snap=>render(snap.val()||{}),err=>console.warn(err));
+      displaysUnsub=()=>off();
+      if(forceOnce){ const once=await get(qRef); render(once.val()||{}); }
+    }
+
+    async function writeDisplay(id,patch){
+      try{
+        const did=$('#dealerForDisplays').value;
+        const snap=await get(ref(db,`displays/${id}`)); const cur=snap.val()||{};
+        await update(ref(db,`displays/${id}`),{...patch,dealership:cur.dealership || did || null,timestamp:Date.now()});
+        toast(`${id}: updated`);
+      }catch(e){ console.error(e); toast('Write denied', true); }
+    }
+
+    $('#bulkMute').addEventListener('click', ()=>bulkWrite({muted:true}));
+    $('#bulkUnmute').addEventListener('click', ()=>bulkWrite({muted:false}));
+    $('#bulkCh1').addEventListener('click', ()=>bulkWrite({channel:1}));
+    async function bulkWrite(patch){
+      const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
+      try{
+        const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
+        const s=await get(qRef); const map=s.val()||{}; const ids=Object.keys(map);
+        for(const id of ids){ await writeDisplay(id,patch); }
+        toast('Applied to all TVs');
+      }catch(e){ console.error(e); toast('Bulk failed',true); }
+    }
+
+    $('#addDisplayBtn').addEventListener('click', async ()=>{
+      const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
+      let id=$('#newDisplayId').value.trim();
+      if(!id){
+        const friendly=(await get(ref(db,`dealershipPublic/${did}`))).val()?.name||did;
+        const pref=initialsFromName(friendly);
+        const existing=await (async()=>{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const s=await get(qRef); return Object.keys(s.val()||{}); })();
+        let n=nextSuffix(existing,pref);
+        id=`${pref}-${String(n).padStart(3,'0')}`;
+      }
+      try{
+        await set(ref(db,`dealership/${did}/displays/${id}`),true);
+        await update(ref(db,`displays/${id}`),{channel:1,volume:0,muted:true,dealership:did,timestamp:Date.now()});
+        $('#newDisplayId').value=''; toast('Display added');
+      }catch(e){ console.error(e); toast('Add failed',true); }
+    });
+
+    $('#dealerForDisplays').addEventListener('change', e=>watchDisplays(e.target.value));
+    $('#displaysReload').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(did) watchDisplays(did,true); });
+
+    await loadDealersIntoSelect();
+    if($('#dealerForDisplays').value) watchDisplays($('#dealerForDisplays').value);
+  </script>
+</body>
+</html>
