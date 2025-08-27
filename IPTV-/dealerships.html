@@ -18,7 +18,9 @@
 
   /* Top */
   .top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px var(--pad);background:linear-gradient(0deg,transparent,rgba(0,0,0,.06));backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
-  .lhs{font-weight:900}
+  .lhs{display:flex;align-items:center;gap:10px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:900}
+  .logo{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:var(--tile) center/cover no-repeat}
   .chip{display:inline-flex;align-items:center;justify-content:center;height:var(--btnH);padding:0 14px;border:1px solid var(--border);border-radius:9999px;background:var(--tile);font-weight:700;font-size:var(--btnFS);line-height:1;white-space:nowrap}
 
   /* Shell */
@@ -56,7 +58,7 @@
   .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
   .spacer{height:6px}
 
-  /* Make all action buttons visually consistent widths on larger screens */
+  /* Equal widths on desktop for clean alignment */
   @media (min-width:681px){
     .actions .btn, .actions a.btn{min-width:110px;justify-content:center}
   }
@@ -78,7 +80,10 @@
 
 <!-- Top bar -->
 <div class="top">
-  <div class="lhs">BFA IPTV — Admin</div>
+  <div class="lhs">
+    <div class="logo" id="brandLogo" title="IPTV"></div>
+    <div class="brand">BFA IPTV — Admin</div>
+  </div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
     <a class="chip" href="home.html">← Home</a>
     <span id="who" class="muted"></span>
@@ -122,6 +127,8 @@ const firebaseConfig = {
   messagingSenderId: "838790935867",
   appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
 };
+const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getDatabase(app);
@@ -136,6 +143,9 @@ function sanitizeId(raw){
   if(!id){ id=(raw||'').normalize('NFKD').replace(/[^\w\-]+/g,'').slice(0,40); }
   return id;
 }
+
+/* set logo */
+document.getElementById('brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
 
 /* ---------- auth gate ---------- */
 onAuthStateChanged(auth, async (user)=>{
