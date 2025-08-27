@@ -21,6 +21,11 @@
     html,body{height:100%}
     body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;padding:22px;transition:background .25s,color .25s}
 
+    /* Language switch (global) */
+    .lang-switch{position:fixed;top:16px;right:16px;z-index:50}
+    .lang-select{appearance:none;background:var(--tile);border:1px solid var(--border);color:var(--fg);border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;box-shadow:var(--shadow)}
+    .lang-select:focus{outline:none;border-color:var(--accent)}
+
     /* Login */
     .login{width:100%;max-width:380px;text-align:center}
     .logo{width:110px;height:110px;margin:0 auto 18px;display:block;background:var(--accent);
@@ -119,6 +124,14 @@
   </style>
 </head>
 <body>
+  <!-- Language switch -->
+  <div class="lang-switch">
+    <select id="langSelect" class="lang-select" aria-label="Language">
+      <option value="en">EN</option>
+      <option value="fr">FR</option>
+    </select>
+  </div>
+
   <!-- LOGIN -->
   <div class="login" id="login">
     <div class="logo" role="img" aria-label="IPTV logo"></div>
@@ -126,7 +139,7 @@
       <input type="email" id="email" placeholder="Email" autocomplete="email" />
       <input type="password" id="password" placeholder="Password" autocomplete="current-password" />
       <button id="btnEnter" type="button" onclick="window.signIn && window.signIn()">ENTER</button>
-      <div class="link">Don’t have an account? <a href="https://flaviothebfagroup.github.io/IPTV-/signup.html">Create your account</a></div>
+      <div class="link" id="signupLink">Don’t have an account? <a id="signupA" href="https://flaviothebfagroup.github.io/IPTV-/signup.html">Create your account</a></div>
     </div>
   </div>
 
@@ -182,11 +195,11 @@
 
     <!-- Grid (1..5 + MUTE) -->
     <div class="quick-grid">
-      <button class="quick-btn" id="qch-1"><strong>1</strong><span>News</span></button>
-      <button class="quick-btn" id="qch-2"><strong>2</strong><span>Sports</span></button>
-      <button class="quick-btn" id="qch-3"><strong>3</strong><span>Cooking</span></button>
-      <button class="quick-btn" id="qch-4"><strong>4</strong><span>Nature</span></button>
-      <button class="quick-btn" id="qch-5"><strong>5</strong><span>Kids</span></button>
+      <button class="quick-btn" id="qch-1"><strong>1</strong><span id="lbl-1">News</span></button>
+      <button class="quick-btn" id="qch-2"><strong>2</strong><span id="lbl-2">Sports</span></button>
+      <button class="quick-btn" id="qch-3"><strong>3</strong><span id="lbl-3">Cooking</span></button>
+      <button class="quick-btn" id="qch-4"><strong>4</strong><span id="lbl-4">Nature</span></button>
+      <button class="quick-btn" id="qch-5"><strong>5</strong><span id="lbl-5">Kids</span></button>
       <button class="quick-btn mute" id="q-mute"><strong>🔇</strong><span id="muteLabel">Mute</span></button>
     </div>
 
@@ -213,6 +226,123 @@
     import { getAuth, setPersistence, browserLocalPersistence, signOut, onAuthStateChanged, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import { getDatabase, ref, set, get, onValue, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
+    // ---------------- I18N ----------------
+    const i18n = {
+      en: {
+        htmlLang: 'en',
+        emailPH: 'Email',
+        passwordPH: 'Password',
+        btnEnter: 'ENTER',
+        linkNoAccount: "Don’t have an account?",
+        linkCreate: 'Create your account',
+        btnSignOut: 'Sign out',
+        displayTitle: 'DISPLAY',
+        titleTap: 'Tap to select TV',
+        chooserAll: 'All TVs',
+        chooserMine: 'My TVs',
+        themeLight: 'Light mode',
+        themeDark: 'Dark mode',
+        needCreds: 'Enter email & password',
+        invalidLogin: 'Invalid login',
+        loginFailed: 'Login failed',
+        selectDisplay: 'Select a TV',
+        updateDenied: 'Update denied — check rules/display dealership',
+        mutedLabel: 'Mute',
+        mutedOn: 'Muted',
+        toastMuted: 'MUTED',
+        toastUnmuted: 'UNMUTED',
+        dialAria: 'Ring navigation',
+        arrows: {Up:'Up',Down:'Down',Left:'Left',Right:'Right',Select:'Select'},
+        CH: 'CH',
+        VOL: 'VOL',
+        channels: {1:'News',2:'Sports',3:'Cooking',4:'Nature',5:'Kids'},
+        ariaLogo: 'IPTV logo'
+      },
+      fr: {
+        htmlLang: 'fr-CA',
+        emailPH: 'Courriel',
+        passwordPH: 'Mot de passe',
+        btnEnter: 'Se connecter',
+        linkNoAccount: 'Pas de compte ?',
+        linkCreate: 'Créez votre compte',
+        btnSignOut: 'Se déconnecter',
+        displayTitle: 'ÉCRAN',
+        titleTap: 'Touchez pour choisir l’écran',
+        chooserAll: 'Tous les écrans',
+        chooserMine: 'Mes écrans',
+        themeLight: 'Mode clair',
+        themeDark: 'Mode sombre',
+        needCreds: 'Entrez votre courriel et votre mot de passe',
+        invalidLogin: 'Identifiants invalides',
+        loginFailed: 'Échec de la connexion',
+        selectDisplay: 'Sélectionnez un écran',
+        updateDenied: 'Mise à jour refusée — vérifiez les règles/la concession',
+        mutedLabel: 'Sourdine',
+        mutedOn: 'En sourdine',
+        toastMuted: 'SOURDINE',
+        toastUnmuted: 'SON ACTIVÉ',
+        dialAria: 'Navigation circulaire',
+        arrows: {Up:'Haut',Down:'Bas',Left:'Gauche',Right:'Droite',Select:'Sélectionner'},
+        CH: 'CH',
+        VOL: 'VOL',
+        channels: {1:'Nouvelles',2:'Sports',3:'Cuisine',4:'Nature',5:'Enfants'},
+        ariaLogo: 'logo IPTV'
+      }
+    };
+
+    let lang = localStorage.getItem('iptv_lang') || ((navigator.language||'en').toLowerCase().startsWith('fr') ? 'fr' : 'en');
+    const $  = (s)=>document.querySelector(s);
+    const $$ = (s)=>document.querySelectorAll(s);
+    function t(key){ return i18n[lang][key]; }
+    function toast(msg){ const tEl=$('#toast'); tEl.textContent=msg; tEl.classList.add('show'); setTimeout(()=>tEl.classList.remove('show'),1400); }
+
+    function applyI18n(){
+      // html lang
+      document.documentElement.lang = i18n[lang].htmlLang;
+      // login texts
+      $('#email').placeholder = t('emailPH');
+      $('#password').placeholder = t('passwordPH');
+      $('#btnEnter').textContent = t('btnEnter');
+      $('#signupLink').childNodes[0].textContent = t('linkNoAccount') + ' ';
+      $('#signupA').textContent = t('linkCreate');
+      const logo = document.querySelector('.logo');
+      if (logo) logo.setAttribute('aria-label', t('ariaLogo'));
+      // header
+      $('#btnSignOut').textContent = t('btnSignOut');
+      $('#currentDisplay').textContent = t('displayTitle');
+      $('#currentDisplay').title = t('titleTap');
+      // chooser
+      $('#chooserTitle').textContent = t('chooserAll');
+      // dial aria + arrows
+      $('#dial').setAttribute('aria-label', t('dialAria'));
+      $('#arrowUp').setAttribute('aria-label', i18n[lang].arrows.Up);
+      $('#arrowDown').setAttribute('aria-label', i18n[lang].arrows.Down);
+      $('#arrowLeft').setAttribute('aria-label', i18n[lang].arrows.Left);
+      $('#arrowRight').setAttribute('aria-label', i18n[lang].arrows.Right);
+      $('#dialSelect').setAttribute('aria-label', i18n[lang].arrows.Select);
+      // channel labels (grid + dial)
+      for (let i=1;i<=5;i++) {
+        const el = $('#lbl-'+i);
+        if (el) el.textContent = i18n[lang].channels[i];
+      }
+      // mute label
+      $('#muteLabel').textContent = muted ? t('mutedOn') : t('mutedLabel');
+      // dial name
+      paintDial(currentChannel);
+      // theme switch toast uses i18n at click time
+    }
+
+    // language control UI
+    const langSelect = document.getElementById('langSelect');
+    langSelect.value = lang;
+    langSelect.addEventListener('change', ()=>{
+      lang = langSelect.value;
+      localStorage.setItem('iptv_lang', lang);
+      applyI18n();
+      toast(lang==='fr' ? 'Langue : Français' : 'Language: English');
+    });
+
+    // ---------------- Firebase ----------------
     const firebaseConfig = {
       apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
       authDomain: "iptv-bfa.firebaseapp.com",
@@ -231,19 +361,18 @@
     let dealershipId = null, displayIds = [], currentDisplay = null;
     let currentChannel = 1, previewChannel = 1;
     let volume = 50, muted = false;
-    const CHANNELS = {1:'News',2:'Sports',3:'Cooking',4:'Nature',5:'Kids'};
     const IDX_TO_ID = ['qch-1','qch-2','qch-3','qch-4','qch-5','q-mute'];
     let focusedIndex = 0;
     let displayUnsub = null;
     let isAdmin = false;
 
-    // ---------- Shortcuts ----------
-    const $  = (s)=>document.querySelector(s);
-    const $$ = (s)=>document.querySelectorAll(s);
-    function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1400); }
     function haptic(){ if(navigator.vibrate){ try{ navigator.vibrate(10);}catch(e){} } }
-    function paintDial(ch){ $('#dialNumber').textContent = ch; $('#dialName').textContent = CHANNELS[ch] || `Channel ${ch}`; }
     function updateVolumeUI(){ $('#volFill').style.width = volume + '%'; }
+    function channelName(ch){ return (i18n[lang].channels[ch] || (lang==='fr' ? `Chaîne ${ch}` : `Channel ${ch}`)); }
+    function paintDial(ch){
+      $('#dialNumber').textContent = ch;
+      $('#dialName').textContent = channelName(ch);
+    }
 
     // ---------- ORANGE GLOW ----------
     const ring = $('#dialRing');
@@ -298,7 +427,7 @@
       const isLight = !document.body.classList.contains('light');
       document.body.classList.toggle('light', isLight);
       localStorage.setItem('iptv_theme', isLight ? 'light' : 'dark');
-      syncThemeSwitch(); toast(isLight ? 'White mode' : 'Dark mode');
+      syncThemeSwitch(); toast(isLight ? t('themeLight') : t('themeDark'));
     });
     function syncThemeSwitch(){ const sw=$('#hdrSwitch'); sw && sw.classList.toggle('on', document.body.classList.contains('light')); }
 
@@ -308,9 +437,9 @@
     async function signIn(){
       const email = $('#email').value.trim();
       const password = $('#password').value;
-      if(!email||!password){ toast('Enter email & password'); return; }
+      if(!email||!password){ toast(t('needCreds')); return; }
       try { await signInWithEmailAndPassword(auth,email,password); }
-      catch(e){ console.error(e); toast(e?.code==='auth/invalid-credential'?'Invalid login':'Login failed'); }
+      catch(e){ console.error(e); toast(e?.code==='auth/invalid-credential'? t('invalidLogin') : t('loginFailed')); }
     }
     window.signIn = signIn;
     $('#btnSignOut').addEventListener('click', ()=>signOut(auth));
@@ -322,7 +451,7 @@
       }else{
         $('#login').style.display='block'; $('#remote').style.display='none';
         closeChooser();
-        currentDisplay=null; $('#currentDisplay').textContent='DISPLAY';
+        currentDisplay=null; $('#currentDisplay').textContent=t('displayTitle');
         if (displayUnsub) { displayUnsub(); displayUnsub=null; }
       }
     });
@@ -336,15 +465,12 @@
       dealershipId = u.dealershipId ?? u.dealership;
       isAdmin = (u.role === 'admin');
 
-      // Build chooser list
       await buildChooserList();
 
-      // pick last or first
       const saved = localStorage.getItem('iptv_last_display');
       if(saved && displayIds.includes(saved)){ switchDisplay(saved); }
       else if(displayIds.length){ switchDisplay(displayIds[0]); }
 
-      // title click opens chooser
       $('#currentDisplay').addEventListener('click', openChooser);
     }
 
@@ -353,12 +479,11 @@
       const listEl = $('#displayList'); listEl.innerHTML = '';
 
       if (isAdmin){
-        // Admin sees ALL /displays
         const all = await get(ref(db,'displays'));
         const map = all.val() || {};
         const ids = Object.keys(map).sort();
         ids.forEach(id=>{
-          const dealer = map[id]?.dealership || 'UNKNOWN';
+          const dealer = map[id]?.dealership || (lang==='fr'?'INCONNU':'UNKNOWN');
           displayIds.push(id);
           const row = document.createElement('div');
           row.className = 'item';
@@ -366,9 +491,8 @@
           row.addEventListener('click', ()=>{ closeChooser(); switchDisplay(id, null); });
           listEl.appendChild(row);
         });
-        $('#chooserTitle').textContent = 'All TVs';
+        $('#chooserTitle').textContent = t('chooserAll');
       }else{
-        // Regular users: TVs from their dealership path (singular->plural fallback)
         let dSnap = await get(ref(db, `dealership/${dealershipId}/displays`));
         if(!dSnap.exists()) dSnap = await get(ref(db, `dealerships/${dealershipId}/displays`));
         const map = dSnap.val() || {};
@@ -380,7 +504,7 @@
           row.addEventListener('click', ()=>{ closeChooser(); switchDisplay(id, null); });
           listEl.appendChild(row);
         });
-        $('#chooserTitle').textContent = dealershipId || 'My TVs';
+        $('#chooserTitle').textContent = dealershipId ? dealershipId : t('chooserMine');
       }
     }
 
@@ -395,12 +519,10 @@
       $('#currentDisplay').textContent = id;
       toast(id);
 
-      // for non-admin only, ensure mapping exists (safe no-op if present)
       if (!isAdmin && dealershipId) {
         try { await update(ref(db, `dealership/${dealershipId}/displays`), { [id]: true }); } catch(e){}
       }
 
-      // realtime listener for state
       if (displayUnsub) { displayUnsub(); displayUnsub=null; }
       const dRef = ref(db, `displays/${id}`);
       const off = onValue(dRef, (snap)=>{
@@ -410,7 +532,7 @@
         if (typeof v.muted === 'boolean') {
           muted = v.muted;
           $('#q-mute').classList.toggle('muted', muted);
-          $('#muteLabel').textContent = muted ? 'Muted' : 'Mute';
+          $('#muteLabel').textContent = muted ? t('mutedOn') : t('mutedLabel');
         }
       }, (err)=>{ console.warn('display read error', err); });
       displayUnsub = ()=>{ off(); };
@@ -430,7 +552,7 @@
           updateDisplay();
           if (tileEl) { tileEl.classList.add('pulsing'); setTimeout(()=>tileEl.classList.remove('pulsing'), 260); }
           if (dc) { dc.classList.add('pulse'); setTimeout(()=>dc.classList.remove('pulse'), 280); }
-          toast(`CH ${currentChannel}`);
+          toast(`${i18n[lang].CH} ${currentChannel}`);
         }
       } else {
         toggleMute();
@@ -460,26 +582,25 @@
     });
     dial.addEventListener('pointercancel',()=>{ tracking=false; });
 
-    // Initial paint
+    // Initial paint & language apply
     IDX_TO_ID.forEach((id,idx)=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active', idx===focusedIndex); });
-    paintDial(currentChannel); updateVolumeUI();
+    paintDial(currentChannel); updateVolumeUI(); applyI18n();
 
     // ---------- VOLUME & MUTE ----------
-    async function volUp(){ if(!currentDisplay){ toast('Select a TV'); return; } volume=Math.min(100,volume+10); updateVolumeUI(); await updateDisplay(); toast(`VOL ${volume}`); }
-    async function volDown(){ if(!currentDisplay){ toast('Select a TV'); return; } volume=Math.max(0,volume-10); updateVolumeUI(); await updateDisplay(); toast(`VOL ${volume}`); }
-    async function toggleMute(){ if(!currentDisplay){ toast('Select a TV'); return; } muted=!muted; $('#q-mute').classList.toggle('muted', muted); $('#muteLabel').textContent = muted? 'Muted' : 'Mute'; await updateDisplay(); toast(muted?'MUTED':'UNMUTED'); }
+    async function volUp(){ if(!currentDisplay){ toast(t('selectDisplay')); return; } volume=Math.min(100,volume+10); updateVolumeUI(); await updateDisplay(); toast(`${i18n[lang].VOL} ${volume}`); }
+    async function volDown(){ if(!currentDisplay){ toast(t('selectDisplay')); return; } volume=Math.max(0,volume-10); updateVolumeUI(); await updateDisplay(); toast(`${i18n[lang].VOL} ${volume}`); }
+    async function toggleMute(){ if(!currentDisplay){ toast(t('selectDisplay')); return; } muted=!muted; $('#q-mute').classList.toggle('muted', muted); $('#muteLabel').textContent = muted? t('mutedOn') : t('mutedLabel'); await updateDisplay(); toast(muted?t('toastMuted'):t('toastUnmuted')); }
     document.getElementById('volPlus').addEventListener('click', volUp);
     document.getElementById('volMinus').addEventListener('click', volDown);
 
     // ---------- WRITE (secure-rules friendly) ----------
     async function updateDisplay(){
       if(!currentDisplay){ console.warn('[update] no currentDisplay'); return; }
-      // Admin does NOT overwrite dealership; regular users must include their dealershipId
       const base = { channel:currentChannel, volume, muted, timestamp: Date.now() };
       const state = isAdmin ? base : { ...base, dealership: dealershipId };
       await update(ref(db,`displays/${currentDisplay}`), state).catch(err=>{
         console.error('Update failed:', err);
-        toast('Update denied — check rules/display dealership');
+        toast(t('updateDenied'));
       });
     }
   </script>
