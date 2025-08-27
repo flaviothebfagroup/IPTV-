@@ -1,450 +1,367 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>BFA IPTV — Displays</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>BFA IPTV — Displays</title>
 
-<style>
-  :root{
-    --bg:#f5f5f7;--fg:#111;--muted:#6e6e73;--panel:#fff;--border:rgba(0,0,0,.12);
-    --tile:#f2f2f7;--tileActive:#ededf2;--shadow:0 14px 36px rgba(0,0,0,.10);
-    --accent:#ff9500;--danger:#e11d48;
-    --rad:16px; --pad:16px; --gap:10px; --btnH:40px; --btnFS:14px;
-    --ok:#22c55e; --err:#ef4444; --warn:#f59e0b;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
-  a{color:inherit;text-decoration:none}
+  <link rel="manifest" href="/IPTV-/manifest.webmanifest" />
+  <meta name="theme-color" content="#000000" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png" />
+  <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png" />
 
-  /* Top */
-  .top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px var(--pad);background:linear-gradient(0deg,transparent,rgba(0,0,0,.06));backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
-  .lhs{display:flex;align-items:center;gap:10px}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:900}
-  .logo{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:var(--tile) center/cover no-repeat}
+  <style>
+    :root{
+      --bg:#0b0b0c;--fg:#fff;--muted:#9a9aa0;--panel:#121214;--border:rgba(255,255,255,.14);
+      --accent:#ff9500;--tile:#17171a;--tileActive:#1d1d21;--shadow:0 18px 48px rgba(0,0,0,.45);
+      --radius:18px;--radius-lg:22px;--ok:#22c55e;--err:#ef4444
+    }
+    body.light{
+      --bg:#f5f5f7;--fg:#111;--muted:#6e6e73;--panel:#fff;--border:rgba(0,0,0,.12);
+      --tile:#f2f2f7;--tileActive:#eaeaef;--shadow:0 14px 36px rgba(0,0,0,.10)
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;margin:0;line-height:1.35}
+    a{color:inherit;text-decoration:none}
 
-  /* Common buttons/inputs */
-  .chip,.btn, a.btn, .select,.input{
-    height:var(--btnH);padding:0 16px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);
-    font-weight:700;font-size:var(--btnFS);line-height:1;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;
-  }
-  .chip{padding:0 14px}
-  .btn, a.btn{cursor:pointer}
-  .btn:hover, a.btn:hover{border-color:var(--accent);background:var(--tileActive)}
-  .btn.danger, a.btn.danger{background:transparent;border-color:rgba(225,29,72,.35);color:var(--danger)}
-  .btn.danger:hover, a.btn.danger:hover{background:#fff1f3;border-color:var(--danger)}
-  .btn:focus-visible, a.btn:focus-visible, .input:focus-visible, .select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-  .select{min-width:210px;background:transparent}
-  .input{min-width:220px;background:transparent}
+    /* Topbar */
+    .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;background:linear-gradient(0deg,transparent,rgba(0,0,0,.06));backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+    .lhs{display:flex;align-items:center;gap:12px}
+    .logo{width:36px;height:36px;border-radius:10px;background:var(--tileActive) center no-repeat;border:1px solid var(--border);background-size:contain}
+    .title{font-weight:900;letter-spacing:.3px}
+    .btn{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center}
+    .btn.primary{border-color:var(--accent);color:var(--accent);background:transparent}
+    .btn.solid{background:var(--accent);border-color:var(--accent);color:#000}
+    .btn.danger{border-color:#ff6b6b;color:#ff6b6b;background:transparent}
+    .muted{color:var(--muted);font-size:12px}
 
-  /* Shell */
-  .wrap{max-width:1100px;margin:0 auto;padding:18px}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:var(--pad);box-shadow:var(--shadow)}
-  .muted{color:var(--muted);font-size:12px}
-  .bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+    /* Shell */
+    .wrap{max-width:1200px;margin:0 auto;padding:18px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow)}
+    .hstack{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-  /* List */
-  .list{list-style:none;margin:14px 0 0;padding:0}
-  .item{
-    display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;
-    background:var(--tile);border:1px solid var(--border);border-radius:16px;padding:12px;margin:10px 0;
-  }
-  .title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .tag{padding:2px 8px;border:1px solid var(--border);border-radius:9999px;background:transparent;font-size:12px;color:var(--muted)}
-  .small{font-size:12px}
-  .mutedline{color:var(--muted)}
-  .online{display:inline-flex;align-items:center;gap:6px;font-size:12px}
-  .dot{width:8px;height:8px;border-radius:999px;background:#999}
-  .dot.ok{background:var(--ok)} .dot.err{background:var(--err)} .dot.warn{background:var(--warn)}
+    /* Inputs */
+    .row3{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin:10px 0}
+    @media (max-width:840px){.row3{grid-template-columns:1fr}}
+    .label{font-size:12px;color:var(--muted);margin:0 0 6px}
+    .input,.select{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
+    .input::placeholder{color:var(--muted)}
 
-  .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-  .vol{display:flex;align-items:center;gap:8px}
-  .vol input[type="range"]{width:140px;accent-color:var(--accent)}
-  @media (min-width:681px){
-    .actions .btn, .actions a.btn, .actions .select{min-width:110px;justify-content:center}
-  }
-  @media (max-width:680px){
-    .item{grid-template-columns:1fr}
-    .actions{justify-content:flex-start}
-    .vol input[type="range"]{width:100%}
-  }
+    /* Lists / items */
+    .list{margin:8px 0 0;padding:0;list-style:none}
+    .empty{padding:12px;border:1px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center}
+    .item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px;margin:8px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap}
+    .split{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .col{display:flex;flex-direction:column;gap:6px;min-width:220px}
+    .tag{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:transparent;font-size:12px;color:var(--muted)}
+    .online{display:inline-flex;align-items:center;gap:6px;font-size:12px}
+    .dot{width:8px;height:8px;border-radius:999px;background:#999}
+    .dot.ok{background:var(--ok)}
+    .dot.err{background:var(--err)}
+    .vol{display:flex;align-items:center;gap:8px}
+    .vol input[type="range"]{width:140px;accent-color:var(--accent)}
+    @media (max-width:560px){ .vol input[type="range"]{width:100%} }
 
-  /* Dialogs */
-  dialog{border:0;padding:0;border-radius:18px;width:min(980px,96vw);max-height:90vh}
-  dialog::backdrop{background:rgba(0,0,0,.35)}
-  .dlg{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
-  .dlgHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
-  .usersList{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  @media (max-width:720px){ .usersList{grid-template-columns:1fr} }
-  .uItem{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;border:1px solid var(--border);border-radius:12px;background:var(--tile)}
-  .badge{border:1px solid var(--border);border-radius:9999px;padding:2px 8px;font-size:11px;color:var(--muted)}
-  .frameWrap{width:min(1100px,96vw);height:min(70vh,760px);background:#000;border-radius:18px;overflow:hidden;border:1px solid var(--border)}
-  .frameWrap iframe{width:100%;height:100%;border:0;display:block}
-
-  /* Toast */
-  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;z-index:99}
-  .toast.show{opacity:1}
-  .toast.err{background:#ff453a;color:#fff}
-</style>
+    /* Toast */
+    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
+    .toast.show{opacity:1}
+    .toast.err{background:#ff453a;color:#fff}
+  </style>
 </head>
 <body>
-
-<!-- Top bar -->
-<div class="top">
-  <div class="lhs">
-    <div class="logo" id="brandLogo" title="IPTV"></div>
-    <div class="brand">BFA IPTV — Admin</div>
-  </div>
-  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <a class="chip" href="home.html">← Home</a>
-    <span id="who" class="muted"></span>
-    <button id="reloadBtn" class="btn">Reload</button>
-    <button id="signOutBtn" class="btn">Sign out</button>
-  </div>
-</div>
-
-<div class="wrap">
-  <div class="card">
-    <h2 style="margin:0">Displays</h2>
-    <div class="muted">Pick a dealership, add TVs, and control channel / volume / mute.</div>
-
-    <!-- Controls -->
-    <div class="bar">
-      <select id="dealerSel" class="select"><option value="">Select dealership…</option></select>
-      <input id="newDisplayId" class="input" placeholder="Optional display ID (auto if empty)"/>
-      <button id="addBtn" class="btn">Add TV</button>
-      <button id="checkUsersBtn" class="btn">Check Users</button>
-      <a id="jumpUsers" class="btn" href="users.html">Open Users Page</a>
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="lhs">
+      <div id="brandLogo" class="logo" title="IPTV"></div>
+      <div class="title">BFA IPTV — Displays</div>
     </div>
-
-    <div class="bar" style="margin-top:10px">
-      <button id="bulkMute" class="btn">Mute all</button>
-      <button id="bulkUnmute" class="btn">Unmute all</button>
-      <button id="bulkCh1" class="btn">All → CH1</button>
-      <button id="refreshBtn" class="btn">Reload</button>
+    <div class="hstack">
+      <button id="homeBtn" class="btn">Home</button>
+      <button id="dealersBtn" class="btn">Dealerships</button>
+      <button id="usersBtn" class="btn">Users</button>
+      <span id="adminEmail" class="muted"></span>
+      <button id="themeBtn"  class="btn">☀︎/🌙</button>
+      <button id="signOutBtn" class="btn primary">Sign out</button>
     </div>
-
-    <!-- Live list -->
-    <ul id="list" class="list"></ul>
-    <div id="empty" class="muted" style="display:none">Pick a dealership to list TVs.</div>
   </div>
-</div>
 
-<!-- Users dialog -->
-<dialog id="usersDlg">
-  <div class="dlg">
-    <div class="dlgHead">
-      <div>
-        <h3 style="margin:0">Users in <span id="dlgDealerName">—</span></h3>
-        <div class="muted" id="dlgCounts">Loading…</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <a id="dlgOpenUsers" class="btn" href="users.html">Open Users Page</a>
-        <button id="dlgClose" class="btn">Close</button>
-      </div>
-    </div>
-    <div id="usersList" class="usersList"></div>
-  </div>
-</dialog>
-
-<!-- Preview dialog -->
-<dialog id="previewDlg">
-  <div class="dlg">
-    <div class="dlgHead">
-      <h3 style="margin:0" id="pvTitle">Preview</h3>
-      <div style="display:flex;gap:8px">
-        <a id="pvOpenTab" class="btn" target="_blank" rel="noopener">Open Remote</a>
-        <button id="pvClose" class="btn">Close</button>
-      </div>
-    </div>
-    <div class="frameWrap"><iframe id="pvFrame" allow="autoplay; fullscreen"></iframe></div>
-    <div class="muted" style="margin-top:8px">This embeds <code>remote-control.html</code>. Use “Open Remote” for full control.</div>
-  </div>
-</dialog>
-
-<div id="toast" class="toast"></div>
-
-<script type="module">
-/* ---------- Firebase ---------- */
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getAuth, onAuthStateChanged, signOut, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import { getDatabase, ref, get, set, update, remove, onValue, query, orderByChild, equalTo } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
-  authDomain: "iptv-bfa.firebaseapp.com",
-  databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
-  projectId: "iptv-bfa",
-  storageBucket: "iptv-bfa.firebasestorage.app",
-  messagingSenderId: "838790935867",
-  appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
-};
-const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db   = getDatabase(app);
-
-/* ---------- helpers ---------- */
-const $=s=>document.querySelector(s);
-const $$=s=>document.querySelectorAll(s);
-function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));}
-function toast(msg,err=false){const t=$("#toast");t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2200);}
-const debounce=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
-function initialsFromName(name){
-  const raw=(name||'').trim(); if(!raw) return 'DS';
-  let parts=raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g)||raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g)||[];
-  let a=parts[0]||'', b=parts[1]||''; let p=(a? a[0]:'')+(b? b[0]:'');
-  if(p.length<2 && a.length>=2) p=a.slice(0,2);
-  return p.toUpperCase();
-}
-function nextSuffix(list,pref){
-  let max=0;
-  list.forEach(id=>{
-    const m=id.match(new RegExp('^'+pref+'-(\\d{3})$'));
-    if(m){ const n=parseInt(m[1],10); if(n>max) max=n;}
-  });
-  return max+1;
-}
-function onlineNow(v){
-  const now=Date.now();
-  return (v.lastSeenAt && (now-v.lastSeenAt)<60000) || (v.timestamp && (now-v.timestamp)<120000);
-}
-
-/* set logo */
-document.getElementById('brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
-
-/* ---------- auth gate ---------- */
-let unsub=null;
-onAuthStateChanged(auth, async (user)=>{
-  if(!user){ location.href='home.html'; return; }
-  $("#who").textContent=user.email||user.uid;
-  const u = (await get(ref(db,'user/'+user.uid))).val()||{};
-  if(u.role!=='admin'){ alert('Admin only'); await signOut(auth); location.href='home.html'; return; }
-  await loadDealers();                       // fill the select
-  // preselect via ?dealer=
-  const q = new URLSearchParams(location.search);
-  const pre = q.get('dealer')||'';
-  if(pre && $('#dealerSel').querySelector(`option[value="${CSS.escape(pre)}"]`)){
-    $('#dealerSel').value = pre;
-  }
-  attachWatcher();
-});
-$("#signOutBtn").addEventListener('click', ()=>signOut(auth).then(()=>location.href='home.html'));
-$("#reloadBtn").addEventListener('click', ()=>location.reload());
-
-/* ---------- Dealership select ---------- */
-async function loadDealers(){
-  const sel = $('#dealerSel');
-  sel.innerHTML = '<option value="">Select dealership…</option>';
-  let map={};
-  try{ const s=await get(ref(db,'dealershipPublic')); map=s.val()||{}; }catch(e){}
-  if(!Object.keys(map).length){
-    try{ const s=await get(ref(db,'dealership')); const raw=s.val()||{}; for(const id of Object.keys(raw)) map[id]={name:raw[id]?.name||id}; }catch(e){}
-  }
-  Object.entries(map).sort((a,b)=> (a[1]?.name||a[0]).localeCompare(b[1]?.name||b[0]))
-    .forEach(([id,info])=>{
-      const o=document.createElement('option'); o.value=id; o.textContent=info?.name||id; sel.appendChild(o);
-    });
-}
-$('#dealerSel').addEventListener('change', attachWatcher);
-
-/* ---------- Watch & render ---------- */
-function renderList(did, map){
-  const ul=$('#list'); ul.innerHTML='';
-  const ids=Object.keys(map||{}).sort();
-  if(!ids.length){ $('#empty').style.display='block'; return; }
-  $('#empty').style.display='none';
-  ids.forEach(id=>{
-    const st=map[id]||{};
-    const on = onlineNow(st);
-    const li=document.createElement('li'); li.className='item';
-    li.innerHTML = `
-      <div>
-        <div class="title">
-          <b>${esc(id)}</b>
-          <span class="tag">${esc(did)}</span>
-          <span class="online"><i class="dot ${on?'ok':'err'}"></i>${on?'Online':'Offline'}</span>
+  <div class="wrap">
+    <!-- Login -->
+    <div id="loginBox" class="card" style="max-width:520px;margin:40px auto;display:none">
+      <h2 style="margin:0 0 12px">Admin Sign In</h2>
+      <div class="row3" style="grid-template-columns:1fr 1fr auto">
+        <div>
+          <div class="label">Email</div>
+          <input id="email" class="input" type="email" placeholder="you@company.com" autocomplete="email" />
         </div>
-        <div class="mutedline small">CH ${st.channel ?? 1} • VOL ${st.volume ?? 0} • ${st.muted ? 'Muted' : 'Unmuted'}</div>
-      </div>
-      <div class="actions">
-        <select data-id="${esc(id)}" class="select chsel">
-          ${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===(st.channel||1)?'selected':''}>CH ${n}</option>`).join('')}
-        </select>
-        <div class="vol">
-          <span class="muted small">VOL</span>
-          <input type="range" min="0" max="100" value="${st.volume ?? 0}" data-id="${esc(id)}" class="vslider"/>
+        <div>
+          <div class="label">Password</div>
+          <input id="password" class="input" type="password" placeholder="••••••••" autocomplete="current-password" />
         </div>
-        <button class="btn toggleMute" data-id="${esc(id)}" data-muted="${!!st.muted}">${st.muted?'Unmute':'Mute'}</button>
-        <button class="btn previewBtn" data-id="${esc(id)}">Preview</button>
-        <a class="btn" target="_blank" rel="noopener" href="remote-control.html?display=${encodeURIComponent(id)}">Remote</a>
-        <button class="btn danger removeBtn" data-id="${esc(id)}">Delete</button>
+        <div style="display:flex;align-items:end">
+          <button id="loginBtn" class="btn solid" style="width:100%">Sign in</button>
+        </div>
       </div>
-    `;
-    ul.appendChild(li);
-  });
+      <div class="hstack">
+        <button id="resetBtn" class="btn">Send reset link</button>
+        <span class="small muted">Requires <b>role:"admin"</b> in <code>/user/{uid}</code>.</span>
+      </div>
+    </div>
 
-  // events
-  $$('.chsel').forEach(el=>{
-    el.addEventListener('change', e=>{
-      const id=e.target.dataset.id; const ch=parseInt(e.target.value,10);
-      writeDisplay(id, { channel: ch });
+    <!-- Displays -->
+    <div id="content" class="card" style="display:none">
+      <h2 style="margin:0 0 8px">Displays</h2>
+      <div class="muted small">Preview opens the actual player page:
+        <code>https://flaviothebfagroup.github.io/IPTV-/{displayId}.html</code>.
+        “Ping” writes <code>flashAt</code> so your player can blink if it listens for it.</div>
+
+      <!-- action strip -->
+      <div class="row3" style="margin:10px 0">
+        <div>
+          <div class="label">Dealership</div>
+          <select id="dealerForDisplays" class="select"><option value="">Select dealership…</option></select>
+        </div>
+        <div>
+          <div class="label">Optional display ID</div>
+          <input id="newDisplayId" class="input" placeholder="Auto if empty (e.g., GW-002)" />
+        </div>
+        <div style="display:flex;align-items:end;gap:8px;flex-wrap:wrap">
+          <button id="addDisplayBtn" class="btn solid">Add TV</button>
+        </div>
+      </div>
+
+      <div class="hstack" style="margin:8px 0">
+        <button id="bulkMute" class="btn">Mute all</button>
+        <button id="bulkUnmute" class="btn">Unmute all</button>
+        <button id="bulkCh1" class="btn">All → CH1</button>
+        <button id="displaysReload" class="btn">Reload</button>
+        <button id="manageUsers" class="btn primary" title="Open Users filtered to this dealership">Manage Users</button>
+      </div>
+
+      <ul id="displayList" class="list"></ul>
+      <div id="displayEmpty" class="empty" style="display:none">Pick a dealership to list TVs.</div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module">
+    import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import {
+      getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword,
+      onAuthStateChanged, sendPasswordResetEmail, signOut
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import {
+      getDatabase, ref, get, set, update, remove, onValue, query, orderByChild, equalTo
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+    // ========= CONFIG =========
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+      authDomain: "iptv-bfa.firebaseapp.com",
+      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+      projectId: "iptv-bfa",
+      storageBucket: "iptv-bfa.firebasestorage.app",
+      messagingSenderId: "838790935867",
+      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    };
+    const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
+
+    // ========= APP/STATE/UI =========
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
+
+    const $  = s => document.querySelector(s);
+    const $$ = s => document.querySelectorAll(s);
+    const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+    function htmlEscape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+    function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
+
+    // Theme + logo
+    const savedTheme = localStorage.getItem('iptv_theme') || 'light';
+    document.body.classList.toggle('light', savedTheme==='light');
+    $('#themeBtn').addEventListener('click', ()=>{
+      const isLight = !document.body.classList.contains('light');
+      document.body.classList.toggle('light', isLight);
+      localStorage.setItem('iptv_theme', isLight ? 'light' : 'dark');
     });
-  });
-  const debouncedWrite = debounce((id,val)=> writeDisplay(id,{volume:val}), 160);
-  $$('.vslider').forEach(el=>{
-    el.addEventListener('input', e=>{
-      const id=e.target.dataset.id; const v=parseInt(e.target.value,10);
-      debouncedWrite(id, v);
+    $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
+
+    // Nav
+    $('#homeBtn').addEventListener('click', ()=> location.href='home.html');
+    $('#dealersBtn').addEventListener('click', ()=> location.href='dealerships.html');
+    $('#usersBtn').addEventListener('click', ()=> location.href='users.html');
+    $('#signOutBtn').addEventListener('click', ()=> signOut(auth));
+
+    // Auth UI
+    $('#loginBtn')?.addEventListener('click', doLogin);
+    $('#resetBtn')?.addEventListener('click', async ()=>{
+      const email = $('#email').value.trim();
+      if(!email) return toast('Enter email', true);
+      try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed', true); }
     });
-  });
-  $$('.toggleMute').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const id=btn.dataset.id; const cur = btn.getAttribute('data-muted')==='true';
-      writeDisplay(id, { muted: !cur });
+
+    async function doLogin(){
+      const email=$('#email').value.trim(), pass=$('#password').value;
+      if(!email||!pass) return toast('Fill email & password', true);
+      try{ await setPersistence(auth, browserLocalPersistence); await signInWithEmailAndPassword(auth,email,pass); }
+      catch(e){ console.error(e); toast('Sign-in failed', true); }
+    }
+
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ $('#loginBox').style.display='block'; $('#content').style.display='none'; return; }
+      $('#adminEmail').textContent = user.email || user.uid;
+      // admin check
+      const uSnap = await get(ref(db, `user/${user.uid}`));
+      const u = uSnap.val() || {};
+      if(u.role !== 'admin'){ $('#loginBox').style.display='none'; $('#content').style.display='none'; alert('Not authorized. Ask an admin to set your role to admin.'); return; }
+      $('#loginBox').style.display='none';
+      $('#content').style.display='block';
+      await refreshDealers();
+      const did = new URL(location.href).searchParams.get('dealer') || '';
+      if(did){ $('#dealerForDisplays').value=did; watchDisplays(did,true); }
     });
-  });
-  $$('.previewBtn').forEach(btn=>{
-    btn.addEventListener('click', ()=> openPreview(btn.dataset.id));
-  });
-  $$('.removeBtn').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      const id=btn.dataset.id; if(!confirm(`Remove ${id}?`)) return;
+
+    // ======== Dealers (for dropdown) ========
+    async function refreshDealers(){
+      const sel = $('#dealerForDisplays'); sel.innerHTML='<option value="">Select dealership…</option>';
+      let map={};
+      try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=pub.val(); }catch(e){}
+      if(!map || Object.keys(map).length===0){
+        try{ const d=await get(ref(db,'dealership')); if(d.exists()){ const raw=d.val(); for(const id of Object.keys(raw)) map[id]={name:raw[id]?.name||id}; } }catch(e){}
+      }
+      Object.entries(map||{}).sort((a,b)=> (a[1]?.name||a[0]).localeCompare(b[1]?.name||b[0]) )
+      .forEach(([id,v])=>{
+        const opt=document.createElement('option'); opt.value=id; opt.textContent=v?.name||id; sel.appendChild(opt);
+      });
+    }
+
+    // ======== Displays ========
+    let displaysUnsub=null;
+    $('#dealerForDisplays').addEventListener('change', e=>watchDisplays(e.target.value));
+    $('#displaysReload').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(did) watchDisplays(did,true); });
+    $('#manageUsers').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true); location.href = `users.html?dealer=${encodeURIComponent(did)}`; });
+
+    function previewUrlFor(id){
+      return `https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html`;
+    }
+
+    async function watchDisplays(did,forceOnce=false){
+      const ul=$('#displayList'); ul.innerHTML='';
+      if(!did){ $('#displayEmpty').style.display='block'; if(displaysUnsub) displaysUnsub(); displaysUnsub=null; return; }
+      $('#displayEmpty').style.display='none';
+      if(displaysUnsub){ displaysUnsub(); displaysUnsub=null; }
+
+      const render=(map)=>{
+        ul.innerHTML='';
+        const ids=Object.keys(map||{}).sort();
+        if(ids.length===0){ $('#displayEmpty').style.display='block'; return; }
+        const now=Date.now();
+        ids.forEach(id=>{
+          const st=map[id]||{};
+          const online=(st.lastSeenAt && (now-st.lastSeenAt)<60000) || (st.timestamp && (now-st.timestamp)<120000);
+          const li=document.createElement('li'); li.className='item';
+          li.innerHTML=`
+            <div class="col">
+              <div class="split">
+                <b>${htmlEscape(id)}</b>
+                <span class="tag">${htmlEscape(did)}</span>
+                <span class="online"><i class="dot ${online?'ok':'err'}"></i>${online?'Online':'Offline'}</span>
+              </div>
+              <span class="muted small">CH ${st.channel ?? 1} • VOL ${st.volume ?? 0} • ${st.muted ? 'Muted' : 'Unmuted'}</span>
+            </div>
+            <div class="split">
+              <select data-id="${id}" class="select small chsel">
+                ${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===(st.channel||1)?'selected':''}>CH ${n}</option>`).join('')}
+              </select>
+              <div class="vol">
+                <span class="muted small">VOL</span>
+                <input type="range" min="0" max="100" value="${st.volume ?? 0}" data-id="${id}" class="vslider"/>
+              </div>
+              <button class="btn" data-id="${id}" data-muted="${!!st.muted}">${st.muted?'Unmute':'Mute'}</button>
+              <button class="btn" data-preview="${id}">Preview</button>
+              <button class="btn" data-flash="${id}">Ping</button>
+              <button class="btn danger" data-remove="${id}">Remove</button>
+            </div>`;
+          ul.appendChild(li);
+        });
+
+        ul.querySelectorAll('.chsel').forEach(el=>{
+          el.addEventListener('change', async (e)=>{ const id=e.target.dataset.id; const ch=parseInt(e.target.value,10); await writeDisplay(id,{channel:ch}); });
+        });
+        const debouncedWrite=debounce(async (id,val)=>{ await writeDisplay(id,{volume:val}); },160);
+        ul.querySelectorAll('.vslider').forEach(el=>{
+          el.addEventListener('input', e=>{ const id=e.target.dataset.id; const v=parseInt(e.target.value,10); debouncedWrite(id,v); });
+        });
+        ul.querySelectorAll('button[data-id]').forEach(el=>{
+          el.addEventListener('click', async ()=>{ const id=el.dataset.id; const cur=el.getAttribute('data-muted')==='true'; await writeDisplay(id,{muted:!cur}); });
+        });
+        ul.querySelectorAll('button[data-preview]').forEach(el=>{
+          el.addEventListener('click', ()=>{ const id=el.dataset.preview; window.open(previewUrlFor(id),'_blank','noopener'); });
+        });
+        ul.querySelectorAll('button[data-flash]').forEach(el=>{
+          el.addEventListener('click', async ()=>{ const id=el.dataset.flash; await writeDisplay(id,{flashAt: Date.now()}); toast(`Pinged ${id}`); });
+        });
+        ul.querySelectorAll('button[data-remove]').forEach(el=>{
+          el.addEventListener('click', async ()=>{ const id=el.dataset.remove; if(!confirm(`Remove ${id}?`)) return;
+            await remove(ref(db,`dealership/${did}/displays/${id}`)).catch(()=>{});
+            await remove(ref(db,`displays/${id}`)).catch(()=>{});
+            toast('Display removed'); });
+        });
+      };
+
+      const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
+      const off=onValue(qRef,snap=>render(snap.val()||{}),err=>console.warn(err));
+      displaysUnsub=()=>off();
+      if(forceOnce){ const once=await get(qRef); render(once.val()||{}); }
+    }
+
+    async function writeDisplay(id,patch){
       try{
-        await remove(ref(db, `dealership/${did}/displays/${id}`)).catch(()=>{});
-        await remove(ref(db, `displays/${id}`)).catch(()=>{});
-        toast('Display removed');
-      }catch(e){ console.error(e); toast('Remove failed', true); }
+        const did=$('#dealerForDisplays').value;
+        const snap=await get(ref(db,`displays/${id}`)); const cur=snap.val()||{};
+        await update(ref(db,`displays/${id}`),{...patch,dealership:cur.dealership || did || null,timestamp:Date.now()});
+        toast(`${id}: updated`);
+      }catch(e){ console.error(e); toast('Write denied', true); }
+    }
+
+    $('#bulkMute').addEventListener('click', ()=>bulkWrite({muted:true}));
+    $('#bulkUnmute').addEventListener('click', ()=>bulkWrite({muted:false}));
+    $('#bulkCh1').addEventListener('click', ()=>bulkWrite({channel:1}));
+    async function bulkWrite(patch){
+      const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
+      try{
+        const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
+        const s=await get(qRef); const map=s.val()||{}; const ids=Object.keys(map);
+        for(const id of ids){ await writeDisplay(id,patch); }
+        toast('Applied to all TVs');
+      }catch(e){ console.error(e); toast('Bulk failed',true); }
+    }
+
+    // Add display
+    $('#addDisplayBtn').addEventListener('click', async ()=>{
+      const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
+      let id=$('#newDisplayId').value.trim();
+      if(!id){
+        const friendly=(await get(ref(db,`dealershipPublic/${did}`))).val()?.name||did;
+        const pref=initialsFromName(friendly);
+        const existing=await collectDisplays(did);
+        let n=nextSuffix(existing,pref);
+        id=`${pref}-${String(n).padStart(3,'0')}`;
+      }
+      try{
+        await set(ref(db,`dealership/${did}/displays/${id}`),true);
+        await update(ref(db,`displays/${id}`),{channel:1,volume:0,muted:true,dealership:did,timestamp:Date.now()});
+        $('#newDisplayId').value=''; toast('Display added'); watchDisplays(did,true);
+      }catch(e){ console.error(e); toast('Add failed',true); }
     });
-  });
-}
 
-/* ---------- Preview dialog ---------- */
-function openPreview(displayId){
-  $('#pvTitle').textContent = `Preview — ${displayId}`;
-  const url = `remote-control.html?display=${encodeURIComponent(displayId)}&preview=1`;
-  $('#pvOpenTab').href = url;
-  $('#pvFrame').src = url;
-  $('#previewDlg').showModal();
-}
-$('#pvClose').addEventListener('click', ()=>$('#previewDlg').close());
-
-/* ---------- Users dialog ---------- */
-$('#checkUsersBtn').addEventListener('click', openUsersDialog);
-$('#dlgClose').addEventListener('click', ()=>$('#usersDlg').close());
-
-async function openUsersDialog(){
-  const did = $('#dealerSel').value;
-  if(!did) return toast('Pick a dealership first', true);
-
-  // resolve nice name
-  let dname = did;
-  try{ const p=await get(ref(db,'dealershipPublic/'+did)); if(p.exists()) dname=p.val()?.name||did; }catch(_){}
-  $('#dlgDealerName').textContent = dname;
-  $('#dlgOpenUsers').href = `users.html?dealer=${encodeURIComponent(did)}`;
-
-  // load users
-  let map={}; try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
-  const now=Date.now();
-  const rows = Object.entries(map).map(([uid,v])=>({uid,...v})).filter(r=>r.dealershipId===did);
-  const counts = {
-    admin: rows.filter(r=>r.role==='admin').length,
-    device: rows.filter(r=>r.role==='device').length,
-    user: rows.filter(r=>(!r.role || r.role==='user')).length,
-    disabled: rows.filter(r=>r.role==='disabled').length
-  };
-  $('#dlgCounts').textContent = `Admins: ${counts.admin} • Devices: ${counts.device} • Users: ${counts.user} • Disabled: ${counts.disabled}`;
-
-  const list = $('#usersList'); list.innerHTML='';
-  rows.sort((a,b)=> (a.role||'user').localeCompare(b.role||'user') || (a.name||'').localeCompare(b.name||''));
-  rows.forEach(r=>{
-    const isDevice = r.role==='device';
-    const active = isDevice && r.updatedAt && (now-r.updatedAt)<10*60*1000;
-    const div=document.createElement('div'); div.className='uItem';
-    div.innerHTML = `
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        ${isDevice?`<i class="dot ${active?'ok':'err'}" title="${active?'Active now':'Inactive'}"></i>`:''}
-        <b>${esc(r.name||'—')}</b>
-        <span class="badge">${esc(r.role||'user')}</span>
-        <span class="muted small">${esc(r.email||'')}</span>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${r.email?'<button class="btn resetBtn" data-email="'+esc(r.email)+'">Reset</button>':''}
-      </div>
-    `;
-    list.appendChild(div);
-  });
-
-  // attach reset handlers
-  list.querySelectorAll('.resetBtn').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      const email=btn.dataset.email;
-      try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }
-      catch(e){ console.error(e); toast('Reset failed', true); }
-    });
-  });
-
-  $('#usersDlg').showModal();
-}
-
-/* ---------- Attach watcher ---------- */
-async function attachWatcher(){
-  if(unsub){unsub();unsub=null;}
-  $('#list').innerHTML='';
-  const did = $('#dealerSel').value;
-  $('#jumpUsers').href = did ? `users.html?dealer=${encodeURIComponent(did)}` : 'users.html';
-  if(!did){ $('#empty').style.display='block'; return; }
-  $('#empty').style.display='none';
-  const qRef = query(ref(db,'displays'), orderByChild('dealership'), equalTo(did));
-  const off = onValue(qRef, snap=>renderList(did, snap.val()||{}), err=>console.warn(err));
-  unsub = ()=>off();
-}
-
-/* ---------- Write helpers ---------- */
-async function writeDisplay(id, patch){
-  try{
-    const did = $('#dealerSel').value || (await get(ref(db,'displays/'+id))).val()?.dealership || null;
-    await update(ref(db,'displays/'+id), { ...patch, dealership: did, timestamp: Date.now() });
-    toast(`${id}: updated`);
-  }catch(e){ console.error(e); toast('Write denied', true); }
-}
-
-/* ---------- Add & bulk ---------- */
-$('#addBtn').addEventListener('click', async ()=>{
-  const did = $('#dealerSel').value;
-  if(!did) return toast('Pick a dealership', true);
-
-  let id = $('#newDisplayId').value.trim();
-  if(!id){
-    const friendly=(await get(ref(db,'dealershipPublic/'+did))).val()?.name||did;
-    const pref=initialsFromName(friendly);
-    const existing = await (async ()=>{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const s=await get(qRef); return Object.keys(s.val()||{}); })();
-    const n = nextSuffix(existing, pref);
-    id = `${pref}-${String(n).padStart(3,'0')}`;
-  }
-  try{
-    await set(ref(db,`dealership/${did}/displays/${id}`), true);
-    await update(ref(db,`displays/${id}`), { channel:1, volume:0, muted:true, dealership:did, timestamp:Date.now() });
-    $('#newDisplayId').value='';
-    toast('Display added');
-  }catch(e){ console.error(e); toast('Add failed', true); }
-});
-
-$('#bulkMute').addEventListener('click', ()=>bulkWrite({muted:true}));
-$('#bulkUnmute').addEventListener('click', ()=>bulkWrite({muted:false}));
-$('#bulkCh1').addEventListener('click', ()=>bulkWrite({channel:1}));
-$('#refreshBtn').addEventListener('click', attachWatcher);
-
-async function bulkWrite(patch){
-  const did=$('#dealerSel').value; if(!did) return toast('Pick a dealership', true);
-  try{
-    const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
-    const s=await get(qRef); const map=s.val()||{}; const ids=Object.keys(map);
-    for(const id of ids){ await writeDisplay(id, patch); }
-    toast('Applied to all TVs');
-  }catch(e){ console.error(e); toast('Bulk failed', true); }
-}
-</script>
+    async function collectDisplays(did){ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const s=await get(qRef); return Object.keys(s.val()||{}); }
+    function initialsFromName(name){ const raw=(name||'').trim(); if(!raw) return 'DS'; let parts=raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g)||raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g)||[]; let a=parts[0]||'', b=parts[1]||''; let p=(a? a[0]:'')+(b? b[0]:''); if(p.length<2 && a.length>=2) p=a.slice(0,2); return p.toUpperCase(); }
+    function nextSuffix(list,pref){ let max=0; list.forEach(id=>{ const m=id.match(new RegExp('^'+pref+'-(\\d{3})$')); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; }}); return max+1; }
+  </script>
 </body>
 </html>
