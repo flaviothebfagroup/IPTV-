@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>BFA IPTV — Dealerships</title>
+
+  <link rel="manifest" href="/IPTV-/manifest.webmanifest" />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png" />
+  <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png" />
+
+  <style>
+    /* ===== Design tokens (monochrome + orange accent) ===== */
+    :root{
+      --bg:#f5f5f7; --fg:#111; --muted:#6e6e73; --panel:#fff; --border:rgba(0,0,0,.12);
+      --tile:#f2f2f7; --tileActive:#eaeaef; --accent:#ff9500; --shadow:0 14px 36px rgba(0,0,0,.10);
+      --radius:18px; --radius-lg:22px; --ok:#22c55e; --err:#ef4444;
+    }
+    body.dark{
+      --bg:#0b0b0c; --fg:#fff; --muted:#9a9aa0; --panel:#121214; --border:rgba(255,255,255,.14);
+      --tile:#17171a; --tileActive:#1d1d21; --shadow:0 18px 48px rgba(0,0,0,.45);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--fg);
+      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
+    }
+    a{color:inherit; text-decoration:none}
+
+    /* ===== Topbar ===== */
+    .topbar{
+      position:sticky; top:0; z-index:50;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:14px 18px; background:var(--panel);
+      border-bottom:1px solid var(--border);
+      backdrop-filter:saturate(1.2) blur(8px);
+    }
+    .lhs{display:flex;align-items:center;gap:12px}
+    .logo{width:36px;height:36px;border-radius:10px;background:var(--tile) center/cover no-repeat;border:1px solid var(--border)}
+    .title{font-weight:900; letter-spacing:.3px}
+    .muted{color:var(--muted); font-size:12px}
+    .btn{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer}
+    .btn.primary{border-color:var(--accent); color:var(--accent); background:transparent}
+    .btn.danger{border-color:#ff6b6b; color:#ff6b6b}
+    .btn.small{height:30px; padding:0 10px; font-weight:800}
+
+    /* ===== Shell ===== */
+    .wrap{max-width:1100px;margin:0 auto;padding:18px}
+
+    /* ===== Cards / layout ===== */
+    .card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; box-shadow:var(--shadow)}
+    .crumb{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:999px;padding:6px 10px;background:var(--tile);margin-bottom:12px}
+    .crumb:hover{border-color:var(--accent)}
+
+    .row{display:grid; grid-template-columns:1fr auto; gap:10px}
+    .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    @media (max-width:720px){ .row,.row2{grid-template-columns:1fr} }
+    .label{font-size:12px; color:var(--muted); margin-bottom:6px}
+    .input,.select{width:100%; padding:12px; background:transparent; border:1px solid var(--border); border-radius:12px; color:var(--fg); font-size:14px; outline:none}
+    .btn.solid{padding:12px;border-radius:12px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
+
+    /* ===== List ===== */
+    .list{margin:8px 0 0;padding:0;list-style:none}
+    .empty{padding:12px;border:1px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center}
+    .item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px;margin:8px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap}
+    .split{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .col{display:flex;flex-direction:column;gap:6px;min-width:220px}
+    .tag{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:transparent;font-size:11px;color:var(--muted)}
+    .small{font-size:12px}
+  </style>
+</head>
+<body>
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="lhs">
+      <a href="home.html" title="Back to Home"><div id="brandLogo" class="logo"></div></a>
+      <div class="title">Dealerships</div>
+    </div>
+    <div class="rhs" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span id="adminEmail" class="muted"></span>
+      <a class="btn" href="home.html">← Home</a>
+      <button id="themeBtn"  class="btn">☀︎/🌙</button>
+      <button id="signOutBtn" class="btn primary">Sign out</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="crumb"><span class="muted">Manage stores • rename IDs • migrate</span></div>
+
+    <div class="card">
+      <h2 style="margin:0 0 8px">Add dealership</h2>
+      <div class="row" style="margin-top:10px">
+        <input id="dealerName" class="input" placeholder="New dealership name (e.g., Genesis Winnipeg)" />
+        <button id="addDealerBtn" class="btn solid">Add</button>
+      </div>
+      <div class="small muted">Creates <code>/dealership/{id}</code> and <code>/dealershipPublic/{id}</code>. ID is derived from the name.</div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <h2 style="margin:0 0 8px">All dealerships</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+        <button id="reloadBtn" class="btn small">Reload</button>
+      </div>
+      <ul id="dealerList" class="list"></ul>
+      <div id="dealerEmpty" class="empty" style="display:none">No dealerships found.</div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <style>
+    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
+    .toast.show{opacity:1}
+    .toast.err{background:#ff453a;color:#fff}
+  </style>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import {
+      getAuth, setPersistence, browserLocalPersistence,
+      onAuthStateChanged, signOut
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import {
+      getDatabase, ref, get, set, update, remove, query, orderByChild, equalTo
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+    // ===== Firebase (yours) =====
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+      authDomain: "iptv-bfa.firebaseapp.com",
+      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+      projectId: "iptv-bfa",
+      storageBucket: "iptv-bfa.firebasestorage.app",
+      messagingSenderId: "838790935867",
+      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    };
+    const LOGO_URL = "/IPTV-/icons/icon-512.png";
+
+    // ===== App =====
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
+
+    // ===== Helpers =====
+    const $ = s => document.querySelector(s);
+    function htmlEscape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+    function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2400); }
+
+    // Theme + logo
+    const savedTheme = localStorage.getItem('iptv_theme') || 'light';
+    document.body.classList.toggle('dark', savedTheme==='dark');
+    $('#themeBtn').addEventListener('click', ()=>{
+      const dark = !document.body.classList.contains('dark');
+      document.body.classList.toggle('dark', dark);
+      localStorage.setItem('iptv_theme', dark ? 'dark' : 'light');
+    });
+    $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
+
+    // Auth gate (admin-only)
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ location.href = 'home.html'; return; }
+      $('#adminEmail').textContent = user.email || user.uid;
+      try{
+        const snap = await get(ref(db, `user/${user.uid}`));
+        if((snap.val()||{}).role !== 'admin'){ location.href = 'home.html'; }
+      }catch(e){ location.href = 'home.html'; }
+    });
+    $('#signOutBtn').addEventListener('click', ()=>signOut(auth));
+
+    // ===== UI Actions =====
+    $('#addDealerBtn').addEventListener('click', addDealer);
+    $('#reloadBtn').addEventListener('click', refreshDealers);
+
+    function makeDealerId(name){
+      const base = (name||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24);
+      return base || ('dealer_'+Date.now());
+    }
+
+    async function addDealer(){
+      const name = $('#dealerName').value.trim();
+      if(!name) return toast('Enter a name', true);
+      const id = makeDealerId(name);
+      try{
+        await set(ref(db, `dealership/${id}`), {
+          name, createdAt: Date.now(), createdBy: auth.currentUser?.email || 'admin', displays: {}
+        });
+        await set(ref(db, `dealershipPublic/${id}`), { name });
+        $('#dealerName').value='';
+        toast('Dealership added');
+        await refreshDealers();
+      }catch(e){ console.error(e); toast('Create failed', true); }
+    }
+
+    async function countDisplaysForDealer(did){
+      let n = 0;
+      try{
+        const idx = await get(ref(db,`dealership/${did}/displays`));
+        if(idx.exists()) n = Object.keys(idx.val()||{}).length;
+        if(n===0){
+          const qRef = query(ref(db,'displays'), orderByChild('dealership'), equalTo(did));
+          const s = await get(qRef);
+          if(s.exists()) n = Object.keys(s.val()||{}).length;
+        }
+      }catch(e){}
+      return n;
+    }
+
+    async function migrateDealerId(oldId, newId, publicName){
+      // guard
+      if(!newId || /[^a-z0-9]/.test(newId)) throw new Error('ID must be a–z 0–9');
+      if(newId.length>24) throw new Error('ID too long');
+
+      // already exists?
+      const exists = await get(ref(db,`dealership/${newId}`));
+      if(exists.exists()) throw new Error('Target ID already exists');
+
+      const pubName = publicName || (await get(ref(db,`dealershipPublic/${oldId}`))).val()?.name || oldId;
+
+      // copy public node
+      await set(ref(db,`dealershipPublic/${newId}`), { name: pubName });
+
+      // copy displays index if any
+      const idxSnap = await get(ref(db,`dealership/${oldId}/displays`));
+      const idxMap = idxSnap.val()||{};
+      if(Object.keys(idxMap).length){
+        await set(ref(db,`dealership/${newId}/displays`), idxMap);
+      }else{
+        // create the shell so the node exists
+        await set(ref(db,`dealership/${newId}`), { name: pubName, createdAt: Date.now(), createdBy: auth.currentUser?.email||'admin', displays:{} });
+      }
+
+      // move /displays dealership pointers
+      const qRef = query(ref(db,'displays'), orderByChild('dealership'), equalTo(oldId));
+      const ds = await get(qRef);
+      const dispMap = ds.val()||{};
+      for(const dispId of Object.keys(dispMap)){
+        await update(ref(db,`displays/${dispId}`), { dealership:newId, timestamp:Date.now() });
+      }
+
+      // move user dealership pointers
+      const usersSnap = await get(ref(db,'user'));
+      const users = usersSnap.val()||{};
+      for(const uid of Object.keys(users)){
+        const u = users[uid]||{};
+        if(u.dealershipId === oldId){
+          await update(ref(db,`user/${uid}`), { dealershipId:newId, dealershipName:pubName });
+        }
+      }
+
+      // remove old nodes
+      await remove(ref(db,`dealership/${oldId}`)).catch(()=>{});
+      await remove(ref(db,`dealershipPublic/${oldId}`)).catch(()=>{});
+    }
+
+    async function refreshDealers(){
+      const list = $('#dealerList'); list.innerHTML='';
+      // try public map first (id -> {name})
+      let map = {};
+      try{
+        const pub = await get(ref(db,'dealershipPublic'));
+        if(pub.exists()) map = pub.val();
+      }catch(e){}
+      // fallback to legacy /dealership names
+      if(!map || Object.keys(map).length===0){
+        try{
+          const d = await get(ref(db,'dealership'));
+          if(d.exists()){
+            const raw=d.val();
+            for(const id of Object.keys(raw)) map[id] = { name: raw[id]?.name || id };
+          }
+        }catch(e){}
+      }
+
+      const ids = Object.keys(map||{}).sort((a,b)=>(map[a]?.name||a).localeCompare(map[b]?.name||b));
+      $('#dealerEmpty').style.display = ids.length ? 'none' : 'block';
+
+      for(const id of ids){
+        const name = map[id]?.name || id;
+        const count = await countDisplaysForDealer(id);
+
+        const li = document.createElement('li'); li.className='item';
+        li.innerHTML = `
+          <div class="col">
+            <div class="split">
+              <b>${htmlEscape(name)}</b>
+              <span class="tag">${htmlEscape(id)}</span>
+              <span class="small muted">${count} TV${count===1?'':'s'}</span>
+            </div>
+          </div>
+          <div class="split">
+            <button class="btn small" data-go-displays="${id}">Displays</button>
+            <button class="btn small" data-go-users="${id}">Users</button>
+            <button class="btn small" data-edit-name="${id}" data-name="${htmlEscape(name)}">Edit Name</button>
+            <button class="btn small" data-rename="${id}" data-name="${htmlEscape(name)}">Rename ID</button>
+            <button class="btn small danger" data-del="${id}">Delete</button>
+          </div>
+        `;
+        list.appendChild(li);
+      }
+
+      // Wire actions
+      list.querySelectorAll('[data-go-displays]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const id = btn.getAttribute('data-go-displays');
+          localStorage.setItem('last_dealer', id);
+          location.href = 'displays.html';
+        });
+      });
+      list.querySelectorAll('[data-go-users]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const id = btn.getAttribute('data-go-users');
+          localStorage.setItem('last_dealer', id);
+          location.href = 'users.html';
+        });
+      });
+      list.querySelectorAll('[data-edit-name]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const id = btn.getAttribute('data-edit-name');
+          const current = btn.getAttribute('data-name');
+          const next = prompt('Public display name', current||'');
+          if(!next || next===current) return;
+          try{
+            await set(ref(db,`dealershipPublic/${id}`), { name: next });
+            // best-effort legacy node too
+            try{ await update(ref(db,`dealership/${id}`), { name: next }); }catch(_){}
+            toast('Name updated'); refreshDealers();
+          }catch(e){ console.error(e); toast('Update failed', true); }
+        });
+      });
+      list.querySelectorAll('[data-rename]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const oldId = btn.getAttribute('data-rename');
+          const curName = btn.getAttribute('data-name');
+          const proposed = prompt('New dealership ID (a–z 0–9, max 24 chars):', oldId);
+          if(!proposed || proposed===oldId) return;
+          const newId = proposed.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24);
+          if(!newId){ toast('Invalid ID', true); return; }
+          if(!confirm(`Migrate ${oldId} → ${newId}?\nDisplays and users will be updated.`)) return;
+          try{
+            await migrateDealerId(oldId,newId,curName);
+            toast('Dealer ID renamed');
+            refreshDealers();
+          }catch(e){ console.error(e); toast(e.message||'Rename failed', true); }
+        });
+      });
+      list.querySelectorAll('[data-del]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const id = btn.getAttribute('data-del');
+          const count = await countDisplaysForDealer(id);
+          if(count>0){ alert(`This dealership still has ${count} display(s).\nRemove/migrate them first.`); return; }
+          if(!confirm(`Delete ${id}?`)) return;
+          try{
+            await remove(ref(db,`dealership/${id}`)).catch(()=>{});
+            await remove(ref(db,`dealershipPublic/${id}`)).catch(()=>{});
+            toast('Deleted'); refreshDealers();
+          }catch(e){ console.error(e); toast('Delete failed', true); }
+        });
+      });
+    }
+
+    // init
+    refreshDealers();
+  </script>
+</body>
+</html>
