@@ -12,7 +12,6 @@
   <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png" />
 
   <style>
-    /* ===== Design tokens (monochrome + orange accent) ===== */
     :root{
       --bg:#f5f5f7; --fg:#111; --muted:#6e6e73; --panel:#fff; --border:rgba(0,0,0,.12);
       --tile:#f2f2f7; --tileActive:#eaeaef; --accent:#ff9500; --shadow:0 14px 36px rgba(0,0,0,.10);
@@ -25,13 +24,12 @@
 
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{
-      margin:0; background:var(--bg); color:var(--fg);
-      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
-    }
+    body{margin:0; background:var(--bg); color:var(--fg);
+      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;}
+
     a{color:inherit; text-decoration:none}
 
-    /* ===== Topbar ===== */
+    /* Topbar */
     .topbar{
       position:sticky; top:0; z-index:50;
       display:flex; align-items:center; justify-content:space-between; gap:12px;
@@ -43,15 +41,21 @@
     .logo{width:36px;height:36px;border-radius:10px;background:var(--tile) center/cover no-repeat;border:1px solid var(--border)}
     .title{font-weight:900; letter-spacing:.3px}
     .muted{color:var(--muted); font-size:12px}
-    .btn{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer}
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      height:34px; padding:0 14px; line-height:1;
+      border-radius:9999px; border:1px solid var(--border);
+      background:var(--tile); color:var(--fg); font-weight:800; cursor:pointer;
+      text-decoration:none; /* so <a> looks identical */
+    }
     .btn.primary{border-color:var(--accent); color:var(--accent); background:transparent}
     .btn.danger{border-color:#ff6b6b; color:#ff6b6b}
     .btn.small{height:30px; padding:0 10px; font-weight:800}
 
-    /* ===== Shell ===== */
+    /* Shell */
     .wrap{max-width:1100px;margin:0 auto;padding:18px}
 
-    /* ===== Cards / layout ===== */
+    /* Cards / layout */
     .card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; box-shadow:var(--shadow)}
     .crumb{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:999px;padding:6px 10px;background:var(--tile);margin-bottom:12px}
     .crumb:hover{border-color:var(--accent)}
@@ -63,7 +67,7 @@
     .input,.select{width:100%; padding:12px; background:transparent; border:1px solid var(--border); border-radius:12px; color:var(--fg); font-size:14px; outline:none}
     .btn.solid{padding:12px;border-radius:12px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
 
-    /* ===== List ===== */
+    /* List */
     .list{margin:8px 0 0;padding:0;list-style:none}
     .empty{padding:12px;border:1px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center}
     .item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px;margin:8px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap}
@@ -71,6 +75,11 @@
     .col{display:flex;flex-direction:column;gap:6px;min-width:220px}
     .tag{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:transparent;font-size:11px;color:var(--muted)}
     .small{font-size:12px}
+
+    /* Toast */
+    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
+    .toast.show{opacity:1}
+    .toast.err{background:#ff453a;color:#fff}
   </style>
 </head>
 <body>
@@ -82,14 +91,14 @@
     </div>
     <div class="rhs" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span id="adminEmail" class="muted"></span>
-      <a class="btn" href="home.html">← Home</a>
+      <a class="btn" href="home.html" id="homeBtn">← Home</a>
       <button id="themeBtn"  class="btn">☀︎/🌙</button>
       <button id="signOutBtn" class="btn primary">Sign out</button>
     </div>
   </div>
 
   <div class="wrap">
-    <div class="crumb"><span class="muted">Manage stores • rename IDs • migrate</span></div>
+    <div class="crumb"><span class="muted">Create • edit public name • rename ID (migrates TVs & users) • delete (safe)</span></div>
 
     <div class="card">
       <h2 style="margin:0 0 8px">Add dealership</h2>
@@ -111,23 +120,17 @@
   </div>
 
   <div id="toast" class="toast"></div>
-  <style>
-    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
-    .toast.show{opacity:1}
-    .toast.err{background:#ff453a;color:#fff}
-  </style>
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import {
-      getAuth, setPersistence, browserLocalPersistence,
-      onAuthStateChanged, signOut
+      getAuth, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import {
       getDatabase, ref, get, set, update, remove, query, orderByChild, equalTo
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    // ===== Firebase (yours) =====
+    // ---- Firebase config (yours) ----
     const firebaseConfig = {
       apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
       authDomain: "iptv-bfa.firebaseapp.com",
@@ -139,12 +142,12 @@
     };
     const LOGO_URL = "/IPTV-/icons/icon-512.png";
 
-    // ===== App =====
+    // ---- App ----
     const app  = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    // ===== Helpers =====
+    // ---- Helpers ----
     const $ = s => document.querySelector(s);
     function htmlEscape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
     function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2400); }
@@ -159,18 +162,23 @@
     });
     $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
 
-    // Auth gate (admin-only)
+    // Persist auth locally (helps between pages)
+    setPersistence(auth, browserLocalPersistence).catch(()=>{});
+
+    // Admin gate
     onAuthStateChanged(auth, async (user)=>{
       if(!user){ location.href = 'home.html'; return; }
       $('#adminEmail').textContent = user.email || user.uid;
       try{
         const snap = await get(ref(db, `user/${user.uid}`));
-        if((snap.val()||{}).role !== 'admin'){ location.href = 'home.html'; }
-      }catch(e){ location.href = 'home.html'; }
+        if((snap.val()||{}).role !== 'admin'){ location.href = 'home.html'; return; }
+      }catch(e){ location.href = 'home.html'; return; }
+      // once authenticated as admin
+      refreshDealers();
     });
     $('#signOutBtn').addEventListener('click', ()=>signOut(auth));
 
-    // ===== UI Actions =====
+    // UI
     $('#addDealerBtn').addEventListener('click', addDealer);
     $('#reloadBtn').addEventListener('click', refreshDealers);
 
@@ -191,7 +199,10 @@
         $('#dealerName').value='';
         toast('Dealership added');
         await refreshDealers();
-      }catch(e){ console.error(e); toast('Create failed', true); }
+      }catch(e){
+        console.error(e);
+        toast(`Create failed: ${e?.code||e?.message||'permission'}`, true);
+      }
     }
 
     async function countDisplaysForDealer(did){
@@ -209,30 +220,21 @@
     }
 
     async function migrateDealerId(oldId, newId, publicName){
-      // guard
-      if(!newId || /[^a-z0-9]/.test(newId)) throw new Error('ID must be a–z 0–9');
+      if(!newId || /[^a-z0-9]/.test(newId)) throw new Error('ID must use a–z 0–9');
       if(newId.length>24) throw new Error('ID too long');
 
-      // already exists?
+      // must not exist already
       const exists = await get(ref(db,`dealership/${newId}`));
       if(exists.exists()) throw new Error('Target ID already exists');
 
       const pubName = publicName || (await get(ref(db,`dealershipPublic/${oldId}`))).val()?.name || oldId;
 
-      // copy public node
+      // ensure new nodes exist
       await set(ref(db,`dealershipPublic/${newId}`), { name: pubName });
+      const oldIdx = (await get(ref(db,`dealership/${oldId}/displays`))).val()||{};
+      await set(ref(db,`dealership/${newId}`), { name: pubName, createdAt: Date.now(), createdBy: auth.currentUser?.email||'admin', displays: oldIdx });
 
-      // copy displays index if any
-      const idxSnap = await get(ref(db,`dealership/${oldId}/displays`));
-      const idxMap = idxSnap.val()||{};
-      if(Object.keys(idxMap).length){
-        await set(ref(db,`dealership/${newId}/displays`), idxMap);
-      }else{
-        // create the shell so the node exists
-        await set(ref(db,`dealership/${newId}`), { name: pubName, createdAt: Date.now(), createdBy: auth.currentUser?.email||'admin', displays:{} });
-      }
-
-      // move /displays dealership pointers
+      // re-point /displays
       const qRef = query(ref(db,'displays'), orderByChild('dealership'), equalTo(oldId));
       const ds = await get(qRef);
       const dispMap = ds.val()||{};
@@ -240,7 +242,7 @@
         await update(ref(db,`displays/${dispId}`), { dealership:newId, timestamp:Date.now() });
       }
 
-      // move user dealership pointers
+      // re-point /user
       const usersSnap = await get(ref(db,'user'));
       const users = usersSnap.val()||{};
       for(const uid of Object.keys(users)){
@@ -257,13 +259,11 @@
 
     async function refreshDealers(){
       const list = $('#dealerList'); list.innerHTML='';
-      // try public map first (id -> {name})
       let map = {};
       try{
         const pub = await get(ref(db,'dealershipPublic'));
         if(pub.exists()) map = pub.val();
       }catch(e){}
-      // fallback to legacy /dealership names
       if(!map || Object.keys(map).length===0){
         try{
           const d = await get(ref(db,'dealership'));
@@ -280,7 +280,6 @@
       for(const id of ids){
         const name = map[id]?.name || id;
         const count = await countDisplaysForDealer(id);
-
         const li = document.createElement('li'); li.className='item';
         li.innerHTML = `
           <div class="col">
@@ -301,7 +300,7 @@
         list.appendChild(li);
       }
 
-      // Wire actions
+      // actions
       list.querySelectorAll('[data-go-displays]').forEach(btn=>{
         btn.addEventListener('click', ()=>{
           const id = btn.getAttribute('data-go-displays');
@@ -324,10 +323,10 @@
           if(!next || next===current) return;
           try{
             await set(ref(db,`dealershipPublic/${id}`), { name: next });
-            // best-effort legacy node too
             try{ await update(ref(db,`dealership/${id}`), { name: next }); }catch(_){}
-            toast('Name updated'); refreshDealers();
-          }catch(e){ console.error(e); toast('Update failed', true); }
+            toast('Name updated');
+            refreshDealers();
+          }catch(e){ console.error(e); toast(`Update failed: ${e?.code||e?.message||'permission'}`, true); }
         });
       });
       list.querySelectorAll('[data-rename]').forEach(btn=>{
@@ -343,7 +342,7 @@
             await migrateDealerId(oldId,newId,curName);
             toast('Dealer ID renamed');
             refreshDealers();
-          }catch(e){ console.error(e); toast(e.message||'Rename failed', true); }
+          }catch(e){ console.error(e); toast(`Rename failed: ${e?.code||e?.message||'permission'}`, true); }
         });
       });
       list.querySelectorAll('[data-del]').forEach(btn=>{
@@ -355,14 +354,12 @@
           try{
             await remove(ref(db,`dealership/${id}`)).catch(()=>{});
             await remove(ref(db,`dealershipPublic/${id}`)).catch(()=>{});
-            toast('Deleted'); refreshDealers();
-          }catch(e){ console.error(e); toast('Delete failed', true); }
+            toast('Deleted');
+            refreshDealers();
+          }catch(e){ console.error(e); toast(`Delete failed: ${e?.code||e?.message||'permission'}`, true); }
         });
       });
     }
-
-    // init
-    refreshDealers();
   </script>
 </body>
 </html>
