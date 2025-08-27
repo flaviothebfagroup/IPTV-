@@ -4,7 +4,60 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
   <title>BFA IPTV — Admin • Dealerships</title>
-  <link rel="stylesheet" href="assets/core.css"/>
+
+  <style>
+    :root{
+      --bg:#0b0b0c;--fg:#fff;--muted:#9a9aa0;--panel:#121214;--border:rgba(255,255,255,.14);
+      --accent:#ff9500;--tile:#17171a;--tileActive:#1d1d21;--shadow:0 18px 48px rgba(0,0,0,.45);
+      --radius:18px;--radius-lg:22px;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444
+    }
+    body.light{
+      --bg:#f5f5f7;--fg:#111;--muted:#6e6e73;--panel:#fff;--border:rgba(0,0,0,.12);
+      --tile:#f2f2f7;--tileActive:#eaeaef;--shadow:0 14px 36px rgba(0,0,0,.10)
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;margin:0}
+    a{color:inherit;text-decoration:none}
+
+    /* Topbar */
+    .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;background:linear-gradient(0deg,transparent,rgba(0,0,0,.06));backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+    .lhs{display:flex;align-items:center;gap:12px}
+    .logo{width:36px;height:36px;border-radius:10px;background:var(--tile) center/cover no-repeat;border:1px solid var(--border)}
+    .title{font-weight:900;letter-spacing:.3px}
+    .btn{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+    .btn.primary{border-color:var(--accent);color:var(--accent);background:transparent}
+    .muted{color:var(--muted);font-size:12px}
+
+    /* Home pill matches buttons */
+    .crumb{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:999px;padding:6px 12px;background:var(--tile);margin:0 8px 0 0}
+    .crumb b{font-size:12px}
+
+    /* Shell */
+    .wrap{max-width:1200px;margin:0 auto;padding:18px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow)}
+
+    /* Inputs */
+    .row{display:grid;grid-template-columns:1fr auto;gap:10px;margin:10px 0}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+    @media (max-width:720px){.row2{grid-template-columns:1fr}}
+    .label{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .input,.select{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
+    .btn.solid{padding:12px;border-radius:12px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
+    .btn.danger{border-color:#ff6b6b;color:#ff6b6b}
+    .small{font-size:12px}
+
+    /* Lists / items */
+    .list{margin:8px 0 0;padding:0;list-style:none}
+    .empty{padding:12px;border:1px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center}
+    .item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px;margin:8px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap}
+    .split{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .col{display:flex;flex-direction:column;gap:6px;min-width:200px}
+    .tag{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:transparent;font-size:12px;color:var(--muted)}
+    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
+    .toast.show{opacity:1}
+    .toast.err{background:#ff453a;color:#fff}
+  </style>
 </head>
 <body>
   <!-- Topbar -->
@@ -16,13 +69,13 @@
     <div class="rhs" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span id="adminEmail" class="muted"></span>
       <a href="home.html" class="crumb"><span>←</span><b>Home</b></a>
-      <button id="themeBtn"  class="btn">☀︎/🌙</button>
+      <button id="themeBtn"  class="btn" title="Theme">☀︎/🌙</button>
       <button id="signOutBtn" class="btn primary">Sign out</button>
     </div>
   </div>
 
   <div class="wrap">
-    <!-- Login (shown when not authenticated admin) -->
+    <!-- Login -->
     <div id="loginBox" class="card" style="max-width:520px;margin:40px auto;display:none">
       <h2 style="margin:0 0 12px">Admin Sign In</h2>
       <div class="row2">
@@ -36,7 +89,7 @@
       <div class="small muted">Requires <b>role: "admin"</b> in <code>/user/{uid}</code>.</div>
     </div>
 
-    <!-- Page root -->
+    <!-- Page -->
     <div id="pageRoot" style="display:none">
       <div class="card">
         <h2 style="margin:0 0 8px">Dealerships</h2>
@@ -62,17 +115,169 @@
 
   <div id="toast" class="toast"></div>
 
-  <!-- Page script -->
   <script type="module">
-    import { initChrome, requireAdmin, db, auth, $, htmlEscape, toast,
-             createDealership, getDealersMap, countDisplaysForDealer,
-             migrateDealerId, updatePublicName, makeDealerId } from './assets/core.js';
-    import { ref, remove } from './assets/core.js';
+    // ===== Firebase (CDN ESM) =====
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import {
+      getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword,
+      onAuthStateChanged, sendPasswordResetEmail, signOut
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import {
+      getDatabase, ref, get, set, update, remove, query, orderByChild, equalTo
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    initChrome();
-    await requireAdmin();
+    // ===== Config (your project) =====
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+      authDomain: "iptv-bfa.firebaseapp.com",
+      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+      projectId: "iptv-bfa",
+      storageBucket: "iptv-bfa.firebasestorage.app",
+      messagingSenderId: "838790935867",
+      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    };
 
-    $('#addDealerBtn')?.addEventListener('click', async ()=>{
+    // ===== Singletons =====
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
+
+    // ===== Helpers/UI =====
+    const $ = s=>document.querySelector(s);
+    const $$= s=>document.querySelectorAll(s);
+    const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
+    function htmlEscape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+    function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
+    function makeDealerId(name){ const base=(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24); return base || ('dealer_' + Date.now()); }
+
+    // Theme + chrome
+    $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
+    const savedTheme = localStorage.getItem('iptv_theme') || 'light';
+    document.body.classList.toggle('light', savedTheme==='light');
+    $('#themeBtn').addEventListener('click', ()=>{
+      const isLight = !document.body.classList.contains('light');
+      document.body.classList.toggle('light', isLight);
+      localStorage.setItem('iptv_theme', isLight ? 'light' : 'dark');
+    });
+    $('#signOutBtn').addEventListener('click', ()=>signOut(auth));
+
+    // ===== Admin gate =====
+    $('#loginBtn').addEventListener('click', async ()=>{
+      const email=$('#email').value.trim(), pass=$('#password').value;
+      if(!email||!pass) return toast('Fill email & password', true);
+      try{ await setPersistence(auth, browserLocalPersistence); await signInWithEmailAndPassword(auth,email,pass); }
+      catch(e){ console.error(e); toast('Sign-in failed', true); }
+    });
+    $('#resetBtn').addEventListener('click', async ()=>{
+      const email=$('#email').value.trim(); if(!email) return toast('Enter email', true);
+      try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(e){ toast('Reset failed', true); }
+    });
+
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){
+        $('#adminEmail').textContent='';
+        $('#loginBox').style.display='block';
+        $('#pageRoot').style.display='none';
+        return;
+      }
+      $('#adminEmail').textContent = user.email || user.uid;
+      try{
+        const uSnap = await get(ref(db, `user/${user.uid}`));
+        const u = uSnap.val() || {};
+        if(u.role !== 'admin'){
+          $('#loginBox').style.display='none';
+          $('#pageRoot').innerHTML='<div class="card"><h2>Not authorized</h2><div class="small muted">Ask an admin to grant role <b>admin</b>.</div></div>';
+          $('#pageRoot').style.display='block';
+          return;
+        }
+        $('#loginBox').style.display='none';
+        $('#pageRoot').style.display='block';
+        await renderList();
+      }catch(e){ console.error(e); toast('Admin check failed', true); }
+    });
+
+    // ===== Dealership helpers =====
+    async function getDealersMap(){
+      let map={};
+      try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=pub.val(); }catch(_){}
+      if(!Object.keys(map).length){
+        try{ const d=await get(ref(db,'dealership')); if(d.exists()){ const raw=d.val(); for(const id of Object.keys(raw)) map[id]={name:raw[id]?.name||id}; } }catch(_){}
+      }
+      return map; // {id:{name}}
+    }
+
+    async function countDisplaysForDealer(did){
+      let n=0;
+      try{
+        const m=await get(ref(db,`dealership/${did}/displays`)); if(m.exists()) n=Object.keys(m.val()||{}).length;
+        if(n===0){ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const q=await get(qRef); if(q.exists()) n=Object.keys(q.val()||{}).length; }
+      }catch(_){}
+      return n;
+    }
+
+    async function createDealership(name){
+      const id = makeDealerId(name);
+      const dealer = { name, createdAt: Date.now(), createdBy: auth.currentUser?.email || 'admin', displays:{} };
+      await set(ref(db,`dealership/${id}`), dealer);
+      try{ await set(ref(db,`dealershipPublic/${id}`), { name }); }catch(_){}
+      return id;
+    }
+
+    async function updatePublicName(id,nextName){
+      try{ await set(ref(db,`dealershipPublic/${id}`),{name:nextName}); }catch(_){}
+      try{ await update(ref(db,`dealership/${id}`),{name:nextName}); }catch(_){}
+    }
+
+    // Safe rename / merge
+    async function migrateDealerId(oldId,newId,pubName){
+      if(!newId || newId===oldId) throw new Error('Same ID');
+      const dealRef    =(id)=>ref(db,`dealership/${id}`);
+      const dealPubRef =(id)=>ref(db,`dealershipPublic/${id}`);
+      const pubNameSafe = pubName || (await get(dealPubRef(oldId)).catch(()=>({val:()=>null}))).val()?.name || oldId;
+
+      const targetExists = (await get(dealRef(newId))).exists();
+      if(targetExists){
+        // MERGE old -> new
+        const oldIdx = (await get(ref(db,`dealership/${oldId}/displays`))).val()||{};
+        const newIdx = (await get(ref(db,`dealership/${newId}/displays`))).val()||{};
+        const merged = { ...newIdx, ...oldIdx };
+        if(Object.keys(merged).length){ await set(ref(db,`dealership/${newId}/displays`), merged); }
+
+        const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(oldId));
+        const ds=(await get(qRef)).val()||{};
+        for(const did of Object.keys(ds)){ await update(ref(db,`displays/${did}`),{dealership:newId,timestamp:Date.now()}); }
+
+        const users=(await get(ref(db,'user'))).val()||{};
+        for(const uid of Object.keys(users)){ if(users[uid]?.dealershipId===oldId){ await update(ref(db,`user/${uid}`),{dealershipId:newId,dealershipName:pubNameSafe}); } }
+
+        try{
+          const current= (await get(dealPubRef(newId)).catch(()=>({val:()=>null}))).val();
+          await set(dealPubRef(newId), { name: current?.name || pubNameSafe });
+        }catch(_){}
+
+        await remove(ref(db,`dealership/${oldId}`)).catch(()=>{});
+        await remove(ref(db,`dealershipPublic/${oldId}`)).catch(()=>{});
+        return;
+      }
+
+      // RENAME to brand new ID
+      try{ await set(dealPubRef(newId), { name: pubNameSafe }); }catch(_){}
+      const oldIdx=(await get(ref(db,`dealership/${oldId}/displays`))).val()||{};
+      if(Object.keys(oldIdx).length){ await set(ref(db,`dealership/${newId}/displays`), oldIdx); }
+
+      const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(oldId));
+      const ds=(await get(qRef)).val()||{};
+      for(const did of Object.keys(ds)){ await update(ref(db,`displays/${did}`),{dealership:newId,timestamp:Date.now()}); }
+
+      const users=(await get(ref(db,'user'))).val()||{};
+      for(const uid of Object.keys(users)){ if(users[uid]?.dealershipId===oldId){ await update(ref(db,`user/${uid}`),{dealershipId:newId,dealershipName:pubNameSafe}); } }
+
+      await remove(ref(db,`dealership/${oldId}`)).catch(()=>{});
+      await remove(ref(db,`dealershipPublic/${oldId}`)).catch(()=>{});
+    }
+
+    // ===== Wire UI =====
+    $('#addDealerBtn').addEventListener('click', async ()=>{
       const name=$('#dealerName').value.trim();
       if(!name) return toast('Enter a name', true);
       await createDealership(name);
@@ -80,8 +285,7 @@
       await renderList();
       toast('Dealership added');
     });
-
-    $('#dealersReload')?.addEventListener('click', renderList);
+    $('#dealersReload').addEventListener('click', renderList);
 
     async function renderList(){
       const list=$('#dealerList'); list.innerHTML='';
@@ -123,7 +327,7 @@
         });
       });
 
-      // rename or merge
+      // rename/merge
       list.querySelectorAll('[data-rename]').forEach(btn=>{
         btn.addEventListener('click', async ()=>{
           const oldId = btn.getAttribute('data-rename');
@@ -131,7 +335,6 @@
           const newIdRaw = prompt('New dealership ID (letters/numbers only):', oldId);
           const newId = (newIdRaw||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
           if(!newId || newId===oldId) return;
-          // lightweight confirm when merging happens is handled in core (page already asked new ID)
           try{ await migrateDealerId(oldId,newId,currentName); toast('Dealer ID updated'); await renderList(); }
           catch(e){ toast(e.message||'Rename failed', true); }
         });
@@ -152,8 +355,6 @@
         });
       });
     }
-
-    await renderList();
   </script>
 </body>
 </html>
