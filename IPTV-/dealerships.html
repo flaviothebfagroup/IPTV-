@@ -1,122 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>BFA IPTV — Admin</title>
-
-  <!-- PWA bits -->
-  <link rel="manifest" href="/IPTV-/manifest.webmanifest" />
-  <meta name="theme-color" content="#000000" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png" />
-  <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png" />
-  <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png" />
-
-  <style>
-    :root{
-      --bg:#0b0b0c;--fg:#fff;--muted:#9a9aa0;--panel:#121214;--border:rgba(255,255,255,.14);
-      --accent:#ff9500;--tile:#17171a;--tileActive:#1d1d21;--shadow:0 18px 48px rgba(0,0,0,.45);
-      --radius:18px;--radius-lg:22px;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444
-    }
-    body.light{
-      --bg:#f5f5f7;--fg:#111;--muted:#6e6e73;--panel:#fff;--border:rgba(0,0,0,.12);
-      --tile:#f2f2f7;--tileActive:#eaeaef;--shadow:0 14px 36px rgba(0,0,0,.10)
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;margin:0}
-    a{color:inherit}
-
-    /* Topbar */
-    .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;background:linear-gradient(0deg,transparent,rgba(0,0,0,.06));backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
-    .lhs{display:flex;align-items:center;gap:12px}
-    .logo{width:36px;height:36px;border-radius:10px;background:var(--tile) center/cover no-repeat;border:1px solid var(--border)}
-    .title{font-weight:900;letter-spacing:.3px}
-    .btn{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
-    .btn.primary{border-color:var(--accent);color:var(--accent);background:transparent}
-    .muted{color:var(--muted);font-size:12px}
-
-    /* Shell */
-    .wrap{max-width:1200px;margin:0 auto;padding:18px}
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow)}
-    .page{display:none}
-    .page.active{display:block}
-    .crumb{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:999px;padding:0 12px;background:var(--tile);margin-bottom:12px;cursor:pointer;height:34px}
-    .crumb b{font-size:12px}
-
-    /* Bento home */
-    #homeGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-    @media (max-width:980px){#homeGrid{grid-template-columns:repeat(2,1fr)}}
-    @media (max-width:560px){#homeGrid{grid-template-columns:1fr}}
-    .tile{display:flex;flex-direction:column;gap:8px;min-height:120px;padding:16px;border:1px solid var(--border);border-radius:20px;background:var(--tile);cursor:pointer;transition:transform .08s,border-color .2s,box-shadow .2s}
-    .tile:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 8px 22px rgba(255,149,0,.15)}
-    .tile h3{margin:0;font-size:16px}
-    .tile p{margin:0;color:var(--muted);font-size:12px}
-
-    /* Inputs */
-    .row{display:grid;grid-template-columns:1fr auto;gap:10px;margin:10px 0}
-    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
-    .row3{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin:10px 0}
-    .row4{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin:10px 0}
-    @media (max-width:720px){.row,.row2,.row3,.row4{grid-template-columns:1fr;gap:8px}}
-    .label{font-size:12px;color:var(--muted);margin-bottom:6px}
-    .input,.select{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
-    .input::placeholder{color:var(--muted)}
-    .btn.solid{padding:12px;border-radius:12px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
-    .btn.danger{border-color:#ff6b6b;color:#ff6b6b}
-    .small{font-size:12px}
-
-    /* Lists / items */
-    .list{margin:8px 0 0;padding:0;list-style:none}
-    .empty{padding:12px;border:1px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center}
-    .item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px;margin:8px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap}
-    .split{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .col{display:flex;flex-direction:column;gap:6px;min-width:200px}
-    .tag{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:transparent;font-size:12px;color:var(--muted)}
-    .online{display:inline-flex;align-items:center;gap:6px;font-size:12px}
-    .dot{width:8px;height:8px;border-radius:999px;background:#999}
-    .dot.ok{background:var(--ok)}
-    .dot.warn{background:var(--warn)}
-    .dot.err{background:var(--err)}
-    .vol{display:flex;align-items:center;gap:8px}
-    .vol input[type="range"]{width:140px;accent-color:var(--accent)}
-    @media (max-width:560px){ .vol input[type="range"]{width:100%} }
-
-    /* Users grid */
-    .user-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
-    .user-card{background:var(--tile);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
-    .user-header{display:flex;align-items:center;justify-content:space-between;gap:8px}
-    .user-name{font-weight:800}
-    .badge{border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:11px;color:var(--muted)}
-    .user-actions{display:flex;gap:8px;flex-wrap:wrap}
-
-    /* Links grid */
-    .apps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
-    @media (max-width:1060px){ .apps-grid{grid-template-columns:repeat(2,1fr)} }
-    @media (max-width:560px){ .apps-grid{grid-template-columns:1fr} }
-    .app-tile{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:16px;background:var(--tile);text-decoration:none;color:inherit;transition:transform .1s, box-shadow .2s, border-color .2s}
-    .app-tile:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 8px 22px rgba(255,149,0,.15)}
-    .app-emoji{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--tileActive);border:1px solid var(--border);font-size:20px}
-    .app-logo{width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:var(--tileActive) center/cover no-repeat}
-    .app-info{display:flex;flex-direction:column;gap:2px}
-    .app-title{font-weight:800}
-    .app-desc{font-size:12px;color:var(--muted)}
-    .apps-note{margin-top:6px;font-size:12px;color:var(--muted)}
-
-    /* Analytics */
-    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:8px 0}
-    @media (max-width:980px){.stats{grid-template-columns:repeat(2,1fr)}}
-    @media (max-width:560px){.stats{grid-template-columns:1fr}}
-    .stat{background:var(--tile);border:1px solid var(--border);border-radius:12px;padding:14px}
-    .stat b{font-size:22px}
-    .bar{height:10px;background:var(--tileActive);border:1px solid var(--border);border-radius:999px;overflow:hidden}
-    .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#ffb866)}
-
-    /* Toast */
-    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
-    .toast.show{opacity:1}
-    .toast.err{background:#ff453a;color:#fff}
-  </style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <title>BFA IPTV — Admin • Dealerships</title>
+  <link rel="stylesheet" href="assets/core.css"/>
 </head>
 <body>
   <!-- Topbar -->
@@ -127,27 +15,19 @@
     </div>
     <div class="rhs" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span id="adminEmail" class="muted"></span>
+      <a href="home.html" class="crumb"><span>←</span><b>Home</b></a>
       <button id="themeBtn"  class="btn">☀︎/🌙</button>
-      <button id="reloadBtn" class="btn">Reload</button>
-      <button id="syncBtn" class="btn primary">Sync → GitHub</button>
-      <button id="settingsBtn" class="btn primary">Settings</button>
       <button id="signOutBtn" class="btn primary">Sign out</button>
     </div>
   </div>
 
   <div class="wrap">
-    <!-- Login -->
+    <!-- Login (shown when not authenticated admin) -->
     <div id="loginBox" class="card" style="max-width:520px;margin:40px auto;display:none">
       <h2 style="margin:0 0 12px">Admin Sign In</h2>
       <div class="row2">
-        <div>
-          <div class="label">Email</div>
-          <input id="email" class="input" type="email" placeholder="you@company.com" autocomplete="email" />
-        </div>
-        <div>
-          <div class="label">Password</div>
-          <input id="password" class="input" type="password" placeholder="••••••••" autocomplete="current-password" />
-        </div>
+        <div><div class="label">Email</div><input id="email" class="input" type="email" placeholder="you@company.com"/></div>
+        <div><div class="label">Password</div><input id="password" class="input" type="password" placeholder="••••••••"/></div>
       </div>
       <div class="row2">
         <button id="loginBtn" class="btn solid">Sign in</button>
@@ -156,34 +36,12 @@
       <div class="small muted">Requires <b>role: "admin"</b> in <code>/user/{uid}</code>.</div>
     </div>
 
-    <!-- Not admin -->
-    <div id="notAdmin" class="card" style="display:none;max-width:720px;margin:40px auto">
-      <h2>Not authorized</h2>
-      <div class="muted small">Ask an admin to set your role to <b>admin</b> in the database.</div>
-    </div>
-
-    <!-- HOME (bento) -->
-    <div id="home" class="page">
-      <div id="homeGrid">
-        <div class="tile" data-page="dealers"><h3>Dealerships</h3><p>Add / rename (migrate) / delete</p></div>
-        <div class="tile" data-page="displays"><h3>Displays</h3><p>Live list • channel • volume</p></div>
-        <div class="tile" data-page="users"><h3>Users</h3><p>Create • roles • duplicates</p></div>
-        <div class="tile" data-page="links"><h3>Links</h3><p>Quick access</p></div>
-        <div class="tile" data-page="analytics"><h3>Analytics</h3><p>Now • channels • dealers</p></div>
-        <div class="tile" data-page="schedule"><h3>Schedule</h3><p>Installs • reminders</p></div>
-        <div class="tile" data-page="backups"><h3>Backups</h3><p>Download / restore preview</p></div>
-      </div>
-    </div>
-
-    <!-- PAGES -->
-    <!-- Dealerships -->
-    <div id="page-dealers" class="page">
-      <div class="crumb" data-home><span>←</span><b>Home</b></div>
+    <!-- Page root -->
+    <div id="pageRoot" style="display:none">
       <div class="card">
         <h2 style="margin:0 0 8px">Dealerships</h2>
-        <div class="small muted">Create, edit public name, rename ID (safe merge), delete</div>
+        <div class="small muted">Create, edit public name, <b>safe ID rename / merge</b>, delete</div>
 
-        <!-- quick flow -->
         <div class="row2" style="margin-top:12px">
           <div>
             <div class="label">New dealership name</div>
@@ -194,408 +52,42 @@
             <button id="dealersReload" class="btn">Reload</button>
           </div>
         </div>
-        <div class="small muted">Creates <code>/dealership/{id}</code> and (if permitted) <code>/dealershipPublic/{id}</code>. ID is generated from name.</div>
+        <div class="small muted">Creates <code>/dealership/{id}</code> and tries <code>/dealershipPublic/{id}</code> (if rules allow). ID is generated from the name.</div>
 
         <ul id="dealerList" class="list" style="margin-top:10px"></ul>
         <div id="dealerEmpty" class="empty" style="display:none">No dealerships.</div>
-      </div>
-    </div>
-
-    <!-- Displays -->
-    <div id="page-displays" class="page">
-      <div class="crumb" data-home><span>←</span><b>Home</b></div>
-      <div class="card">
-        <h2 style="margin:0 0 8px">Displays</h2>
-
-        <!-- action strip -->
-        <div class="row3" style="margin:4px 0 10px">
-          <div>
-            <div class="label">Dealership</div>
-            <select id="dealerForDisplays" class="select"><option value="">Select dealership…</option></select>
-          </div>
-          <div>
-            <div class="label">Optional display ID</div>
-            <input id="newDisplayId" class="input" placeholder="Auto if empty (e.g., GW-002)" />
-          </div>
-          <div style="display:flex;align-items:end;gap:8px;flex-wrap:wrap">
-            <button id="addDisplayBtn" class="btn solid">Add TV</button>
-          </div>
-        </div>
-
-        <div class="split" style="margin:8px 0;flex-wrap:wrap">
-          <button id="bulkMute" class="btn">Mute all</button>
-          <button id="bulkUnmute" class="btn">Unmute all</button>
-          <button id="bulkCh1" class="btn">All → CH1</button>
-          <button id="displaysReload" class="btn">Reload</button>
-          <button id="jumpUsers" class="btn primary" title="Go manage users for this dealership">Manage Users</button>
-        </div>
-
-        <ul id="displayList" class="list"></ul>
-        <div id="displayEmpty" class="empty" style="display:none">Pick a dealership to list TVs.</div>
-      </div>
-    </div>
-
-    <!-- Users -->
-    <div id="page-users" class="page">
-      <div class="crumb" data-home><span>←</span><b>Home</b></div>
-      <div class="card">
-        <h2 style="margin:0 0 8px">Users</h2>
-        <div class="row4">
-          <div><div class="label">Email</div><input id="userEmail" class="input" placeholder="user@email.com" /></div>
-          <div><div class="label">Name</div><input id="userName" class="input" placeholder="Full Name" /></div>
-          <div><div class="label">Role</div>
-            <select id="userRole" class="select">
-              <option value="user">user</option><option value="admin">admin</option><option value="device">device</option>
-            </select>
-          </div>
-          <div><div class="label">Dealership</div><select id="userDealer" class="select"><option value="">Dealership…</option></select></div>
-        </div>
-        <div class="row2">
-          <button id="createUserBtn" class="btn solid">Create User (pwd 123456789)</button>
-          <button id="inviteUserBtn" class="btn">Send Reset (existing)</button>
-        </div>
-        <div class="row3">
-          <div><div class="label">Search</div><input id="userSearch" class="input" placeholder="Search name or email…" /></div>
-          <div><div class="label">Filter dealership</div><select id="filterDealer" class="select"><option value="">All dealerships</option></select></div>
-          <div><div class="label">Filter role</div>
-            <select id="filterRole" class="select">
-              <option value="">All roles</option><option value="admin">admin</option><option value="device">device</option><option value="user">user</option><option value="disabled">disabled</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap">
-          <button id="findDupBtn" class="btn">Find duplicates</button>
-          <button id="deleteDupBtn" class="btn danger">Delete selected duplicates</button>
-          <span class="muted small">Duplicates = device users with the same name within a dealership. Green = <b>active now</b>.</span>
-        </div>
-        <div id="dupBox" class="card" style="display:none;margin-bottom:10px">
-          <h3 style="margin:0 0 6px">Duplicate candidates</h3>
-          <div id="dupList" class="list"></div>
-          <div class="small muted" id="dupEmpty" style="display:none">No duplicates found.</div>
-        </div>
-
-        <div class="group"><h3>Admins (<span id="countAdmins">0</span>)</h3><div class="user-grid" id="gridAdmins"></div></div>
-        <div class="group"><h3>Device Users (<span id="countDevices">0</span>)</h3><div class="user-grid" id="gridDevices"></div></div>
-        <div class="group"><h3>Regular Users (<span id="countUsers">0</span>)</h3><div class="user-grid" id="gridUsers"></div></div>
-        <div class="group"><h3>Disabled (<span id="countDisabled">0</span>)</h3><div class="user-grid" id="gridDisabled"></div></div>
-        <div id="userEmpty" class="empty" style="display:none">No users.</div>
-      </div>
-    </div>
-
-    <!-- Links -->
-    <div id="page-links" class="page">
-      <div class="crumb" data-home><span>←</span><b>Home</b></div>
-      <div class="card">
-        <h2 style="margin:0 0 8px">Apps / Quick Links</h2>
-        <div class="row3">
-          <div><div class="label">Title</div><input id="qlTitle" class="input" placeholder="e.g., Firebase — Database" /></div>
-          <div><div class="label">URL</div><input id="qlHref" class="input" placeholder="https://..." /></div>
-          <div style="display:flex;align-items:end"><button id="qlAddBtn" class="btn solid" style="width:100%">Add Link</button></div>
-        </div>
-        <div class="row2">
-          <div><div class="label">Emoji (optional)</div><input id="qlEmoji" class="input" placeholder="🔥 ✅ 📁 …" /></div>
-          <div><div class="label">Logo image URL (optional)</div><input id="qlImg" class="input" placeholder="https://.../logo.png" /></div>
-        </div>
-        <div class="row">
-          <div><div class="label">Description (optional)</div><input id="qlDesc" class="input" placeholder="Short label under the title" /></div>
-          <div style="display:flex;align-items:end"><button id="qlResetBtn" class="btn" style="width:100%">Reset to defaults</button></div>
-        </div>
-        <div id="appsGrid" class="apps-grid"></div>
-        <div class="apps-note muted small" id="qlStorageNote">Loading…</div>
-      </div>
-    </div>
-
-    <!-- Analytics -->
-    <div id="page-analytics" class="page">
-      <div class="crumb" data-home><span>←</span><b>Home</b></div>
-      <div class="card">
-        <h2 style="margin:0 0 8px">Analytics — right now</h2>
-        <div class="stats">
-          <div class="stat"><div class="muted small">Active TVs</div><b id="statActive">0</b></div>
-          <div class="stat"><div class="muted small">Offline</div><b id="statOffline">0</b></div>
-          <div class="stat"><div class="muted small">Top Channel</div><b id="statTopCh">—</b></div>
-          <div class="stat"><div class="muted small">Avg Volume / Muted</div><b id="statVolMuted">0 • 0%</b></div>
-        </div>
-
-        <h3 style="margin:10px 0 6px">Channel mix</h3>
-        <div id="anaChBars"></div>
-
-        <h3 style="margin:16px 0 6px">Most active dealerships</h3>
-        <div id="anaDealerBars"></div>
-      </div>
-    </div>
-
-    <!-- Schedule -->
-    <div id="page-schedule" class="page">
-      <div class="crumb" data-home><span>←</span><b>Home</b></div>
-      <div class="card">
-        <h2 style="margin:0 0 8px">Schedule / Reminders (local)</h2>
-
-        <div class="row2">
-          <div>
-            <div class="label">Date / time</div>
-            <input id="schWhen" class="input" type="datetime-local" />
-          </div>
-          <div>
-            <div class="label">Destination / address (optional)</div>
-            <input id="schDest" class="input" placeholder="Location / notes…" />
-          </div>
-        </div>
-
-        <div class="row2">
-          <div>
-            <div class="label">Note</div>
-            <input id="schNote" class="input" placeholder="Installation / visit / reminder…" />
-          </div>
-          <div style="display:flex;align-items:end;gap:10px;flex-wrap:wrap">
-            <label style="display:flex;gap:8px;align-items:center">
-              <input type="checkbox" id="schCreateAssets" />
-              <span class="small">Create assets now (dealership + display)</span>
-            </label>
-            <button id="schAdd" class="btn solid">Add</button>
-          </div>
-        </div>
-
-        <div id="schAssets" style="display:none">
-          <div class="row3">
-            <div><div class="label">Dealership name</div><input id="schDealerName" class="input" placeholder="e.g., Genesis Winnipeg"/></div>
-            <div><div class="label">Dealership ID (auto if empty)</div><input id="schDealerId" class="input" placeholder="genesiswinnipeg"/></div>
-            <div><div class="label">Display ID (auto if empty)</div><input id="schDisplayId" class="input" placeholder="GW-001"/></div>
-          </div>
-        </div>
-
-        <ul id="schList" class="list"></ul>
-        <div id="schEmpty" class="empty" style="display:none">No reminders.</div>
-      </div>
-    </div>
-
-    <!-- Backups -->
-    <div id="page-backups" class="page">
-      <div class="crumb" data-home><span>←</span><b>Home</b></div>
-      <div class="card">
-        <h2 style="margin:0 0 8px">Backups</h2>
-        <div class="row2">
-          <button id="btnDownloadBackup" class="btn solid">Download backup (JSON)</button>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input id="fileRestore" type="file" accept="application/json" class="input" />
-            <button id="btnPreviewRestore" class="btn">Preview restore</button>
-          </div>
-        </div>
-        <div id="restorePreview" class="card" style="display:none;margin-top:8px">
-          <h3 style="margin:0 0 8px">Restore preview</h3>
-          <div id="restoreDiff" class="list"></div>
-          <div class="row2">
-            <button id="btnApplyRestore" class="btn solid">Apply changes</button>
-            <button id="btnCancelRestore" class="btn">Cancel</button>
-          </div>
-        </div>
-        <div class="small muted">GitHub sync stays available from the top bar (Settings → owner/repo/branch/path/token).</div>
       </div>
     </div>
   </div>
 
   <div id="toast" class="toast"></div>
 
-  <!-- Settings dialog -->
-  <dialog id="settingsDlg" style="border:0;padding:0;border-radius:18px;max-width:720px;width:96vw">
-    <form method="dialog" class="card" style="margin:0">
-      <h2>Settings</h2>
-      <div class="row2">
-        <div><div class="label">GitHub Owner</div><input id="ghOwner" class="input" placeholder="org-or-user" /></div>
-        <div><div class="label">Repo</div><input id="ghRepo" class="input" placeholder="repo" /></div>
-      </div>
-      <div class="row3">
-        <div><div class="label">Branch</div><input id="ghBranch" class="input" placeholder="main" /></div>
-        <div><div class="label">Path</div><input id="ghPath" class="input" placeholder="config/iptv-config.json" /></div>
-        <div><div class="label">Token</div><input id="ghToken" class="input" type="password" placeholder="fine-grained token (contents:write)" /></div>
-      </div>
-      <div class="row2">
-        <button class="btn" value="cancel">Close</button>
-        <button id="saveSettingsBtn" class="btn solid" value="default">Save</button>
-      </div>
-    </form>
-  </dialog>
-
+  <!-- Page script -->
   <script type="module">
-    import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import {
-      getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword,
-      onAuthStateChanged, sendPasswordResetEmail, signOut, createUserWithEmailAndPassword
-    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import {
-      getDatabase, ref, get, set, update, remove, onValue, query, orderByChild, equalTo
-    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    import { initChrome, requireAdmin, db, auth, $, htmlEscape, toast,
+             createDealership, getDealersMap, countDisplaysForDealer,
+             migrateDealerId, updatePublicName, makeDealerId } from './assets/core.js';
+    import { ref, remove } from './assets/core.js';
 
-    // ========= CONFIG =========
-    const firebaseConfig = {
-      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
-      authDomain: "iptv-bfa.firebaseapp.com",
-      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
-      projectId: "iptv-bfa",
-      storageBucket: "iptv-bfa.firebasestorage.app",
-      messagingSenderId: "838790935867",
-      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
-    };
-    const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
-    const DEFAULT_LINKS = [
-      { emoji:'🔥', title:'Firebase — Overview', href:'https://console.firebase.google.com/project/iptv-bfa/overview', desc:'Console home' },
-      { emoji:'🗄️', title:'Firebase — Database', href:'https://console.firebase.google.com/project/iptv-bfa/database/iptv-bfa-default-rtdb/data', desc:'Realtime DB data' },
-      { emoji:'👤', title:'Firebase — Auth', href:'https://console.firebase.google.com/project/iptv-bfa/authentication/users', desc:'Users & providers' },
-      { emoji:'🐙', title:'GitHub Repo', href:'https://github.com/flaviothebfagroup/IPTV-', desc:'Source code' },
-      { emoji:'🌐', title:'GitHub Pages (Remote)', href:'https://flaviothebfagroup.github.io/IPTV-/remote-control.html', desc:'Open remote' },
-      { emoji:'📧', title:'Gmail', href:'https://mail.google.com/mail/u/0/#inbox', desc:'Primary inbox' },
-      { emoji:'📧', title:'Outlook', href:'https://outlook.office.com/mail/', desc:'Office 365 inbox' },
-      { emoji:'✅', title:'Trello — Digital Team', href:'https://trello.com/b/jHjTIrZG/digital-team', desc:'Board' },
-      { emoji:'🎛️', title:'BSN.cloud', href:'https://app.bsn.cloud/#/dashboard', desc:'BrightSign dashboard' },
-      { emoji:'🖥️', title:'Signagelive', href:'https://login.signagelive.com/', desc:'CMS login' },
-      { emoji:'📁', title:'Google Drive', href:'https://drive.google.com/drive/u/0/', desc:'My Drive' }
-    ];
+    initChrome();
+    await requireAdmin();
 
-    // ========= APP/STATE/UI =========
-    const app  = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db   = getDatabase(app);
-
-    const $ = s => document.querySelector(s);
-    const $$ = s => document.querySelectorAll(s);
-    function htmlEscape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
-    function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
-    const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
-
-    // Theme + logo
-    const savedTheme = localStorage.getItem('iptv_theme') || 'light';
-    document.body.classList.toggle('light', savedTheme==='light');
-    $('#themeBtn').addEventListener('click', ()=>{
-      const isLight = !document.body.classList.contains('light');
-      document.body.classList.toggle('light', isLight);
-      localStorage.setItem('iptv_theme', isLight ? 'light' : 'dark');
-    });
-    $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
-
-    // Navigation
-    function showHome(){ hideAll(); $('#home').classList.add('active'); window.scrollTo({top:0,behavior:'auto'}); }
-    function showPage(id){ hideAll(); $(`#page-${id}`).classList.add('active'); window.scrollTo({top:0,behavior:'auto'}); }
-    function hideAll(){ $$('.page').forEach(p=>p.classList.remove('active')); }
-    $('#home').addEventListener('click', e=>{ const p=e.target.closest('.tile')?.dataset?.page; if(p) showPage(p); });
-    $$('.crumb[data-home]').forEach(c=> c.addEventListener('click', showHome));
-
-    // Auth UI
-    $('#loginBtn').addEventListener('click', doLogin);
-    $('#resetBtn').addEventListener('click', async ()=>{
-      const email = $('#email').value.trim();
-      if(!email) return toast('Enter email', true);
-      try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed', true); }
-    });
-    $('#signOutBtn').addEventListener('click', ()=>signOut(auth));
-    $('#reloadBtn').addEventListener('click', reloadAll);
-
-    async function doLogin(){
-      const email=$('#email').value.trim(), pass=$('#password').value;
-      if(!email||!pass) return toast('Fill email & password', true);
-      try{ await setPersistence(auth, browserLocalPersistence); await signInWithEmailAndPassword(auth,email,pass); }
-      catch(e){ console.error(e); toast('Sign-in failed', true); }
-    }
-
-    onAuthStateChanged(auth, async (user)=>{
-      if(!user){
-        $('#adminEmail').textContent='';
-        hideAll();
-        $('#notAdmin').style.display='none';
-        $('#loginBox').style.display='block';
-        return;
-      }
-      $('#adminEmail').textContent = user.email || user.uid;
-
-      // admin check
-      const uSnap = await get(ref(db, `user/${user.uid}`));
-      const u = uSnap.val() || {};
-      if(u.role !== 'admin'){
-        $('#loginBox').style.display='none';
-        $('#notAdmin').style.display='block';
-        hideAll();
-        return;
-      }
-
-      $('#loginBox').style.display='none';
-      $('#notAdmin').style.display='none';
-      showHome();
-      await reloadAll();
-    });
-
-    // Settings (GitHub)
-    const LS_GH='iptv_admin_gh';
-    const gh = JSON.parse(localStorage.getItem(LS_GH)||'{}');
-    function openSettings(){
-      $('#ghOwner').value = gh.owner||'';
-      $('#ghRepo').value  = gh.repo||'';
-      $('#ghBranch').value= gh.branch||'main';
-      $('#ghPath').value  = gh.path||'config/iptv-config.json';
-      $('#ghToken').value = gh.token||'';
-      $('#settingsDlg').showModal();
-    }
-    function saveSettings(){
-      gh.owner=$('#ghOwner').value.trim();
-      gh.repo=$('#ghRepo').value.trim();
-      gh.branch=$('#ghBranch').value.trim()||'main';
-      gh.path=$('#ghPath').value.trim()||'config/iptv-config.json';
-      gh.token=$('#ghToken').value.trim();
-      localStorage.setItem(LS_GH, JSON.stringify(gh));
-      toast('Settings saved');
-    }
-    $('#settingsBtn').addEventListener('click', openSettings);
-    $('#saveSettingsBtn').addEventListener('click', (e)=>{ e.preventDefault(); saveSettings(); $('#settingsDlg').close(); });
-
-    // Home reload of data that pages depend on
-    async function reloadAll(){
-      await refreshDealers();   // fills dealer list + selects
-      await refreshUsers();     // grouped users
-      await quickLinksLoadRender();
-      await loadAnalytics();
-      const did = $('#dealerForDisplays').value;
-      if(did) await watchDisplays(did);
-    }
-
-    // ======== Dealerships ========
-    $('#addDealerBtn').addEventListener('click', async ()=>{
-      const name = $('#dealerName').value.trim();
+    $('#addDealerBtn')?.addEventListener('click', async ()=>{
+      const name=$('#dealerName').value.trim();
       if(!name) return toast('Enter a name', true);
-      try{
-        await createDealership(name);
-        $('#dealerName').value='';
-        await refreshDealers(true);
-        toast('Dealership added');
-      }catch(e){ console.error(e); toast('Create failed',true); }
+      await createDealership(name);
+      $('#dealerName').value='';
+      await renderList();
+      toast('Dealership added');
     });
-    $('#dealersReload').addEventListener('click', ()=>refreshDealers(true));
 
-    async function createDealership(name){
-      const id = makeDealerId(name);
-      const dealer = { name, createdAt: Date.now(), createdBy: auth.currentUser?.email || 'admin', displays: {} };
-      // always write the main node
-      await set(ref(db, `dealership/${id}`), dealer);
-      // try to write the public name (ignore if rules block)
-      try{ await set(ref(db, `dealershipPublic/${id}`), { name }); }catch(e){ /* ignore permission denied */ }
-    }
-    function makeDealerId(name){ const base=(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24); return base || ('dealer_' + Date.now()); }
+    $('#dealersReload')?.addEventListener('click', renderList);
 
-    async function refreshDealers(keep=false){
-      const list = $('#dealerList'); list.innerHTML='';
-      const selDisp = $('#dealerForDisplays');
-      const selUsers= $('#userDealer');
-      const selFilt = $('#filterDealer');
-      const prevD=selDisp.value, prevU=selUsers.value, prevF=selFilt.value;
-
-      let map={};
-      try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=pub.val(); }catch(e){}
-      if(!map || Object.keys(map).length===0){
-        try{ const d=await get(ref(db,'dealership')); if(d.exists()){ const raw=d.val(); for(const id of Object.keys(raw)) map[id]={name:raw[id]?.name||id}; } }catch(e){}
-      }
-      const ids=Object.keys(map||{}).sort();
+    async function renderList(){
+      const list=$('#dealerList'); list.innerHTML='';
+      const map=await getDealersMap();
+      const ids=Object.keys(map).sort();
       $('#dealerEmpty').style.display = ids.length? 'none':'block';
-      selDisp.innerHTML='<option value="">Select dealership…</option>';
-      selUsers.innerHTML='<option value="">Dealership…</option>';
-      selFilt.innerHTML='<option value="">All dealerships</option>';
 
       for(const id of ids){
         const name=map[id]?.name||id;
@@ -610,779 +102,58 @@
             </div>
           </div>
           <div class="split">
-            <button class="btn" data-goto-displays="${id}">Displays</button>
-            <button class="btn" data-goto-users="${id}">Users</button>
+            <a class="btn" href="displays.html?dealer=${encodeURIComponent(id)}">Displays</a>
+            <a class="btn" href="users.html?dealer=${encodeURIComponent(id)}">Users</a>
             <button class="btn" data-editname="${id}" data-name="${htmlEscape(name)}">Edit Name</button>
             <button class="btn" data-rename="${id}" data-name="${htmlEscape(name)}">Rename ID</button>
             <button class="btn danger" data-del="${id}">Delete</button>
           </div>`;
         list.appendChild(li);
-
-        ['dealerForDisplays','userDealer','filterDealer'].forEach(sel=>{
-          const opt=document.createElement('option'); opt.value=id; opt.textContent=name; document.getElementById(sel).appendChild(opt);
-        });
       }
 
-      // go to displays/users
-      list.querySelectorAll('[data-goto-displays]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          $('#dealerForDisplays').value = btn.getAttribute('data-goto-displays');
-          showPage('displays');
-          watchDisplays($('#dealerForDisplays').value, true);
-        });
-      });
-      list.querySelectorAll('[data-goto-users]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          $('#filterDealer').value = btn.getAttribute('data-goto-users');
-          showPage('users');
-          refreshUsers();
-        });
-      });
-
-      // edit public name only (also tries legacy node)
+      // edit public name
       list.querySelectorAll('[data-editname]').forEach(btn=>{
         btn.addEventListener('click', async ()=>{
-          const id = btn.getAttribute('data-editname');
-          const current = btn.getAttribute('data-name');
-          const next = prompt('Public display name', current||'');
+          const id=btn.getAttribute('data-editname');
+          const current=btn.getAttribute('data-name');
+          const next=prompt('Public display name', current||'');
           if(!next || next===current) return;
-          try{
-            try{ await set(ref(db, `dealershipPublic/${id}`), { name: next }); }catch(_){}
-            try{ await update(ref(db, `dealership/${id}`), { name: next }); }catch(_){}
-            toast('Name updated');
-            await refreshDealers(true);
-          }catch(e){ console.error(e); toast('Update failed', true); }
+          try{ await updatePublicName(id,next); toast('Name updated'); await renderList(); }
+          catch(e){ console.error(e); toast('Update failed',true); }
         });
       });
 
-      // rename ID (safe merge if needed)
+      // rename or merge
       list.querySelectorAll('[data-rename]').forEach(btn=>{
         btn.addEventListener('click', async ()=>{
-          const id = btn.getAttribute('data-rename');
+          const oldId = btn.getAttribute('data-rename');
           const currentName = btn.getAttribute('data-name');
-          const newId = prompt('New dealership ID (letters/numbers only):', id);
-          if(!newId || newId===id) return;
-          try{ await migrateDealerId(id,newId,currentName); toast('Dealer ID updated'); await refreshDealers(true); }
-          catch(e){ console.error(e); toast(e.message || 'Rename failed', true); }
+          const newIdRaw = prompt('New dealership ID (letters/numbers only):', oldId);
+          const newId = (newIdRaw||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+          if(!newId || newId===oldId) return;
+          // lightweight confirm when merging happens is handled in core (page already asked new ID)
+          try{ await migrateDealerId(oldId,newId,currentName); toast('Dealer ID updated'); await renderList(); }
+          catch(e){ toast(e.message||'Rename failed', true); }
         });
       });
 
       // delete
       list.querySelectorAll('[data-del]').forEach(btn=>{
         btn.addEventListener('click', async ()=>{
-          const id = btn.getAttribute('data-del');
+          const id=btn.getAttribute('data-del');
           const count=await countDisplaysForDealer(id);
           if(count>0){ alert(`This dealership still has ${count} display(s). Remove them first or migrate.`); return; }
           if(!confirm(`Delete ${id}?`)) return;
-          try{ await remove(ref(db,`dealership/${id}`)); await remove(ref(db,`dealershipPublic/${id}`)).catch(()=>{}); toast('Deleted'); await refreshDealers(); }
-          catch(e){ console.error(e); toast('Delete failed', true); }
+          try{
+            await remove(ref(db,`dealership/${id}`));
+            await remove(ref(db,`dealershipPublic/${id}`)).catch(()=>{});
+            toast('Deleted'); await renderList();
+          }catch(e){ console.error(e); toast('Delete failed',true); }
         });
       });
-
-      if(keep){ selDisp.value=prevD||''; selUsers.value=prevU||''; selFilt.value=prevF||''; if(selDisp.value) await watchDisplays(selDisp.value);}
-      else { $('#displayList').innerHTML=''; $('#displayEmpty').style.display='block'; }
     }
 
-    async function countDisplaysForDealer(did){
-      let n=0;
-      try{
-        const m=await get(ref(db,`dealership/${did}/displays`)); if(m.exists()) n=Object.keys(m.val()||{}).length;
-        if(n===0){ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const q=await get(qRef); if(q.exists()) n=Object.keys(q.val()||{}).length; }
-      }catch(e){}
-      return n;
-    }
-
-    // >>> FIXED: robust rename with merge <<<
-    async function migrateDealerId(oldId, rawNewId, name){
-      const newId = (rawNewId||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
-      if(!newId) throw new Error('Invalid ID');
-      if(newId === oldId) return;
-
-      const dealRef     = (id)=> ref(db, `dealership/${id}`);
-      const dealPubRef  = (id)=> ref(db, `dealershipPublic/${id}`);
-
-      const targetDealSnap  = await get(dealRef(newId));
-      const targetPubSnap   = await get(dealPubRef(newId)).catch(()=>({ val:()=>null }));
-      const pubName = name || (await get(dealPubRef(oldId)).catch(()=>({val:()=>null}))).val()?.name || oldId;
-
-      if (targetDealSnap.exists()){
-        if(!confirm(`ID "${newId}" already exists.\n\nMerge displays & users from "${oldId}" into "${newId}"?`)){
-          throw new Error('Cancelled');
-        }
-        const oldIdx = (await get(ref(db,`dealership/${oldId}/displays`))).val() || {};
-        const newIdx = (await get(ref(db,`dealership/${newId}/displays`))).val() || {};
-        const merged = { ...newIdx, ...oldIdx };
-        if(Object.keys(merged).length){
-          await set(ref(db,`dealership/${newId}/displays`), merged);
-        }
-        const qRef = query(ref(db,'displays'), orderByChild('dealership'), equalTo(oldId));
-        const ds   = (await get(qRef)).val() || {};
-        for (const did of Object.keys(ds)){
-          await update(ref(db,`displays/${did}`), { dealership:newId, timestamp:Date.now() });
-        }
-        const users = (await get(ref(db,'user'))).val() || {};
-        for (const uid of Object.keys(users)){
-          if(users[uid]?.dealershipId === oldId){
-            await update(ref(db,`user/${uid}`), { dealershipId:newId, dealershipName: pubName });
-          }
-        }
-        try{ await set(dealPubRef(newId), { name: targetPubSnap?.val?.()?.name || pubName }); }catch(_){}
-        await remove(ref(db,`dealership/${oldId}`)).catch(()=>{});
-        await remove(ref(db,`dealershipPublic/${oldId}`)).catch(()=>{});
-        return;
-      }
-
-      // fresh rename (target doesn't exist)
-      try{ await set(dealPubRef(newId), { name: targetPubSnap?.val?.()?.name || pubName }); }catch(_){}
-      const oldIdx = (await get(ref(db,`dealership/${oldId}/displays`))).val() || {};
-      if(Object.keys(oldIdx).length){
-        await set(ref(db,`dealership/${newId}/displays`), oldIdx);
-      }
-      const qRef = query(ref(db,'displays'), orderByChild('dealership'), equalTo(oldId));
-      const ds   = (await get(qRef)).val() || {};
-      for (const did of Object.keys(ds)){
-        await update(ref(db,`displays/${did}`), { dealership:newId, timestamp:Date.now() });
-      }
-      const users = (await get(ref(db,'user'))).val() || {};
-      for (const uid of Object.keys(users)){
-        if(users[uid]?.dealershipId === oldId){
-          await update(ref(db,`user/${uid}`), { dealershipId:newId, dealershipName: pubName });
-        }
-      }
-      await remove(ref(db,`dealership/${oldId}`)).catch(()=>{});
-      await remove(ref(db,`dealershipPublic/${oldId}`)).catch(()=>{});
-    }
-
-    // ======== Displays ========
-    let displaysUnsub=null;
-    $('#dealerForDisplays').addEventListener('change', e=>watchDisplays(e.target.value));
-    $('#displaysReload').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(did) watchDisplays(did,true); });
-    $('#jumpUsers').addEventListener('click', ()=>{
-      const did=$('#dealerForDisplays').value; showPage('users'); if(did){ $('#filterDealer').value=did; refreshUsers(); }
-    });
-
-    async function watchDisplays(did,forceOnce=false){
-      const ul=$('#displayList'); ul.innerHTML='';
-      if(!did){ $('#displayEmpty').style.display='block'; if(displaysUnsub) displaysUnsub(); displaysUnsub=null; return; }
-      $('#displayEmpty').style.display='none';
-      if(displaysUnsub){ displaysUnsub(); displaysUnsub=null; }
-
-      const render=(map)=>{
-        ul.innerHTML='';
-        const ids=Object.keys(map||{}).sort();
-        if(ids.length===0){ $('#displayEmpty').style.display='block'; return; }
-        const now=Date.now();
-        ids.forEach(id=>{
-          const st=map[id]||{};
-          const online=(st.lastSeenAt && (now-st.lastSeenAt)<60000) || (st.timestamp && (now-st.timestamp)<120000);
-          const li=document.createElement('li'); li.className='item';
-          li.innerHTML=`
-            <div class="col">
-              <div class="split">
-                <b>${htmlEscape(id)}</b>
-                <span class="tag">${htmlEscape(did)}</span>
-                <span class="online"><i class="dot ${online?'ok':'err'}"></i>${online?'Online':'Offline'}</span>
-              </div>
-              <span class="muted small">CH ${st.channel ?? 1} • VOL ${st.volume ?? 0} • ${st.muted ? 'Muted' : 'Unmuted'}</span>
-            </div>
-            <div class="split">
-              <select data-id="${id}" class="select small chsel">
-                ${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===(st.channel||1)?'selected':''}>CH ${n}</option>`).join('')}
-              </select>
-              <div class="vol">
-                <span class="muted small">VOL</span>
-                <input type="range" min="0" max="100" value="${st.volume ?? 0}" data-id="${id}" class="vslider"/>
-              </div>
-              <button class="btn" data-id="${id}" data-muted="${!!st.muted}">${st.muted?'Unmute':'Mute'}</button>
-              <button class="btn danger" data-remove="${id}">Remove</button>
-            </div>`;
-          ul.appendChild(li);
-        });
-
-        ul.querySelectorAll('.chsel').forEach(el=>{
-          el.addEventListener('change', async (e)=>{ const id=e.target.dataset.id; const ch=parseInt(e.target.value,10); await writeDisplay(id,{channel:ch}); });
-        });
-        const debouncedWrite=debounce(async (id,val)=>{ await writeDisplay(id,{volume:val}); },160);
-        ul.querySelectorAll('.vslider').forEach(el=>{
-          el.addEventListener('input', e=>{ const id=e.target.dataset.id; const v=parseInt(e.target.value,10); debouncedWrite(id,v); });
-        });
-        ul.querySelectorAll('button[data-id]').forEach(el=>{
-          el.addEventListener('click', async ()=>{ const id=el.dataset.id; const cur=el.getAttribute('data-muted')==='true'; await writeDisplay(id,{muted:!cur}); });
-        });
-        ul.querySelectorAll('button[data-remove]').forEach(el=>{
-          el.addEventListener('click', async ()=>{ const id=el.dataset.remove; if(!confirm(`Remove ${id}?`)) return;
-            await remove(ref(db,`dealership/${did}/displays/${id}`)).catch(()=>{});
-            await remove(ref(db,`displays/${id}`)).catch(()=>{});
-            toast('Display removed'); });
-        });
-      };
-
-      const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
-      const off=onValue(qRef,snap=>render(snap.val()||{}),err=>console.warn(err));
-      displaysUnsub=off;
-      if(forceOnce){ const once=await get(qRef); render(once.val()||{}); }
-    }
-
-    async function writeDisplay(id,patch){
-      try{
-        const snap=await get(ref(db,`displays/${id}`)); const cur=snap.val()||{};
-        await update(ref(db,`displays/${id}`),{...patch,dealership:cur.dealership || $('#dealerForDisplays').value || null,timestamp:Date.now()});
-        toast(`${id}: updated`);
-      }catch(e){ console.error(e); toast('Write denied', true); }
-    }
-
-    $('#bulkMute').addEventListener('click', ()=>bulkWrite({muted:true}));
-    $('#bulkUnmute').addEventListener('click', ()=>bulkWrite({muted:false}));
-    $('#bulkCh1').addEventListener('click', ()=>bulkWrite({channel:1}));
-    async function bulkWrite(patch){
-      const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
-      try{
-        const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
-        const s=await get(qRef); const map=s.val()||{}; const ids=Object.keys(map);
-        for(const id of ids){ await writeDisplay(id,patch); }
-        toast('Applied to all TVs');
-      }catch(e){ console.error(e); toast('Bulk failed',true); }
-    }
-
-    $('#addDisplayBtn').addEventListener('click', async ()=>{
-      const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
-      let id=$('#newDisplayId').value.trim();
-      if(!id){
-        const friendly=(await get(ref(db,`dealershipPublic/${did}`)).catch(()=>({val:()=>null}))).val()?.name
-              || (await get(ref(db,`dealership/${did}`)).catch(()=>({val:()=>null}))).val()?.name
-              || did;
-        const pref=initialsFromName(friendly);
-        const existing=await collectDisplays(did);
-        let n=nextSuffix(existing,pref);
-        id=`${pref}-${String(n).padStart(3,'0')}`;
-      }
-      try{
-        await set(ref(db,`dealership/${did}/displays/${id}`),true);
-        await update(ref(db,`displays/${id}`),{channel:1,volume:0,muted:true,dealership:did,timestamp:Date.now()});
-        $('#newDisplayId').value=''; toast('Display added');
-      }catch(e){ console.error(e); toast('Add failed',true); }
-    });
-
-    async function collectDisplays(did){ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const s=await get(qRef); return Object.keys(s.val()||{}); }
-    function initialsFromName(name){ const raw=(name||'').trim(); if(!raw) return 'DS'; let parts=raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g)||raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g)||[]; let a=parts[0]||'', b=parts[1]||''; let p=(a? a[0]:'')+(b? b[0]:''); if(p.length<2 && a.length>=2) p=a.slice(0,2); return p.toUpperCase(); }
-    function nextSuffix(list,pref){ let max=0; list.forEach(id=>{ const m=id.match(new RegExp('^'+pref+'-(\\d{3})$')); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; }}); return max+1; }
-
-    // ======== Users ========
-    $('#inviteUserBtn').addEventListener('click', async ()=>{
-      const email=$('#userEmail').value.trim(); if(!email) return toast('Enter email',true);
-      try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed',true); }
-    });
-    $('#createUserBtn').addEventListener('click', createUserAdminSafe);
-    $('#userSearch').addEventListener('input', debounce(refreshUsers, 200));
-    $('#filterDealer').addEventListener('change', refreshUsers);
-    $('#filterRole').addEventListener('change', refreshUsers);
-
-    // >>> FIXED: creates auth user with default password 123456789 (no email needed)
-    async function createUserAdminSafe(){
-      const email=$('#userEmail').value.trim();
-      const name=$('#userName').value.trim();
-      const role=$('#userRole').value;
-      const did=$('#userDealer').value;
-      if(!email||!name||!role||!did) return toast('Fill all user fields',true);
-
-      const tempName='admin-helper-'+Date.now();
-      const tempApp=initializeApp(firebaseConfig,tempName);
-      const tempAuth=getAuth(tempApp);
-      try{
-        const tmpPass='123456789';
-        const cred=await createUserWithEmailAndPassword(tempAuth,email,tmpPass);
-        const uid=cred.user.uid;
-
-        let dname=did;
-        try{
-          const p=await get(ref(db,`dealershipPublic/${did}`)); if(p.exists()) dname=p.val()?.name||did;
-          if(dname===did){ const q=await get(ref(db,`dealership/${did}`)); if(q.exists()) dname=q.val()?.name||did; }
-        }catch(e){}
-
-        let displays=[]; const ds=await get(ref(db,`dealership/${did}/displays`)); if(ds.exists()) displays=Object.keys(ds.val()||{});
-
-        await set(ref(db,`user/${uid}`),{email,name,role,dealershipId:did,dealershipName:dname,displays,createdAt:Date.now()});
-        toast('User created (pwd 123456789)');
-        await refreshUsers();
-      }catch(e){
-        console.error(e);
-        toast(e.message || 'Create failed',true);
-      }
-      finally{ try{ await signOut(tempAuth);}catch(e){} try{ await deleteApp(tempApp);}catch(e){} }
-    }
-
-    async function loadDealersMap(){
-      let map={};
-      try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=Object.fromEntries(Object.entries(pub.val()).map(([k,v])=>[k,v?.name||k])); }catch(e){}
-      if(!Object.keys(map).length){ try{ const d=await get(ref(db,'dealership')); if(d.exists()) map=Object.fromEntries(Object.entries(d.val()).map(([k,v])=>[k,v?.name||k])); }catch(e){} }
-      const selF=$('#filterDealer'), selU=$('#userDealer'); const prevF=selF.value, prevU=selU.value;
-      selF.innerHTML='<option value="">All dealerships</option>'; selU.innerHTML='<option value="">Dealership…</option>';
-      for(const [id,name] of Object.entries(map).sort((a,b)=>a[1].localeCompare(b[1]))){
-        const f=document.createElement('option'); f.value=id; f.textContent=name; selF.appendChild(f);
-        const u=document.createElement('option'); u.value=id; u.textContent=name; selU.appendChild(u);
-      }
-      selF.value=prevF||''; selU.value=prevU||'';
-      return map;
-    }
-
-    async function refreshUsers(){
-      const search=($('#userSearch').value||'').toLowerCase();
-      const fDid=$('#filterDealer').value;
-      const fRole=$('#filterRole').value;
-      const dealers=await loadDealersMap();
-
-      let map={}; try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
-      const rows=Object.entries(map).map(([uid,v])=>({uid,...v}));
-
-      const filtered=rows.filter(r=>{
-        if(fDid && r.dealershipId!==fDid) return false;
-        if(fRole && (r.role||'user')!==fRole) return false;
-        if(search && !((r.email||'').toLowerCase().includes(search) || (r.name||'').toLowerCase().includes(search))) return false;
-        return true;
-      });
-
-      const groups={admin:[],device:[],user:[],disabled:[]};
-      filtered.forEach(r=>{ const role=(r.role||'user');
-        if(role==='admin') groups.admin.push(r);
-        else if(role==='device') groups.device.push(r);
-        else if(role==='disabled') groups.disabled.push(r);
-        else groups.user.push(r);
-      });
-
-      $('#countAdmins').textContent=groups.admin.length;
-      $('#countDevices').textContent=groups.device.length;
-      $('#countUsers').textContent=groups.user.length;
-      $('#countDisabled').textContent=groups.disabled.length;
-
-      const total=groups.admin.length+groups.device.length+groups.user.length+groups.disabled.length;
-      $('#userEmpty').style.display= total? 'none':'block';
-
-      const renderGroup=(arr,gridId)=>{
-        const grid=document.getElementById(gridId); grid.innerHTML='';
-        arr.sort((a,b)=> (a.dealershipName||a.dealershipId||'').localeCompare(b.dealershipName||b.dealershipId||'') || (a.email||'').localeCompare(b.email||''));
-        const now=Date.now();
-        arr.forEach(r=>{
-          const dealer=r.dealershipName||r.dealershipId||'—';
-          const isDevice=(r.role==='device');
-          const active=isDevice && r.updatedAt && (now-r.updatedAt) < 10*60*1000; // 10 min
-          const card=document.createElement('div'); card.className='user-card';
-          card.innerHTML=`
-            <div class="user-header">
-              <div class="user-name" title="Click to rename" data-rename="${r.uid}">
-                ${isDevice ? `<i class="dot ${active?'ok':'err'}" title="${active?'Active now':'Inactive'}"></i>` : ''} ${htmlEscape(r.name||'No name')}
-              </div>
-              <span class="badge">${htmlEscape(r.role||'user')}</span>
-            </div>
-            <div class="small muted" style="display:flex;gap:8px;flex-wrap:wrap">
-              <span>${htmlEscape(r.email||'')}</span>
-              <span class="badge">${htmlEscape(dealer)}</span>
-            </div>
-            <div class="user-actions">
-              <select data-uid="${r.uid}" class="select roleSel">
-                ${['user','admin','device','disabled'].map(v=>`<option value="${v}" ${v===(r.role||'user')?'selected':''}>${v}</option>`).join('')}
-              </select>
-              <select data-uid="${r.uid}" class="select dealerSel">
-                ${Object.entries(dealers).map(([id,nm])=>`<option value="${id}" ${id===(r.dealershipId||'')?'selected':''}>${nm}</option>`).join('')}
-              </select>
-              <button class="btn" data-reset="${htmlEscape(r.email||'')}">Reset password</button>
-            </div>`;
-          grid.appendChild(card);
-        });
-
-        // rename name
-        grid.querySelectorAll('[data-rename]').forEach(el=>{
-          el.addEventListener('click', async ()=>{
-            const uid=el.getAttribute('data-rename'); const current=el.textContent.trim();
-            const next=prompt('New name', current||''); if(!next || next===current) return;
-            try{ await update(ref(db,`user/${uid}`),{name:next}); toast('Name updated'); await refreshUsers(); }catch(e){ toast('Update failed',true); }
-          });
-        });
-        // role change
-        grid.querySelectorAll('.roleSel').forEach(sel=>{
-          sel.addEventListener('change', async (e)=>{ const uid=e.target.dataset.uid; const role=e.target.value;
-            try{ await update(ref(db,`user/${uid}`),{role}); toast('Role updated'); await refreshUsers(); }catch(err){ toast('Update failed',true); }
-          });
-        });
-        // move dealership
-        grid.querySelectorAll('.dealerSel').forEach(sel=>{
-          sel.addEventListener('change', async (e)=>{ const uid=e.target.dataset.uid; const did=e.target.value; const name=dealers[did]||did;
-            try{ await update(ref(db,`user/${uid}`),{dealershipId:did,dealershipName:name}); toast('Moved'); }catch(err){ toast('Move failed',true); }
-          });
-        });
-        // reset
-        grid.querySelectorAll('[data-reset]').forEach(btn=>{
-          btn.addEventListener('click', async ()=>{
-            const email=btn.getAttribute('data-reset'); if(!email) return toast('No email',true);
-            try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(err){ toast('Reset failed',true); }
-          });
-        });
-      };
-
-      renderGroup(groups.admin,'gridAdmins');
-      renderGroup(groups.device,'gridDevices');
-      renderGroup(groups.user,'gridUsers');
-      renderGroup(groups.disabled,'gridDisabled');
-    }
-
-    // Duplicate finder
-    const DUP_SEL = new Set();
-    $('#findDupBtn').addEventListener('click', async ()=>{
-      DUP_SEL.clear(); $('#dupList').innerHTML='';
-      let map={}; try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
-      const rows=Object.entries(map).map(([uid,v])=>({uid,...v})).filter(r=> (r.role==='device') && r.name && r.dealershipId);
-      const groups={};
-      rows.forEach(r=>{
-        const key=(r.dealershipId||'')+'|'+(r.name||'').toLowerCase().trim();
-        if(!groups[key]) groups[key]=[];
-        groups[key].push(r);
-      });
-      const now=Date.now(); let any=false;
-      for(const [key,arr] of Object.entries(groups)){
-        if(arr.length<=1) continue;
-        any=true;
-        arr.sort((a,b)=> (b.updatedAt||0)-(a.updatedAt||0));
-        const holder=document.createElement('div'); holder.className='item';
-        const [did,name]=key.split('|');
-        const inner=arr.map(r=>{
-          const active = (r.updatedAt && (now-r.updatedAt) < 10*60*1000);
-          return `
-            <label style="display:flex;align-items:center;gap:8px">
-              <input type="checkbox" data-uid="${r.uid}"/>
-              <span>
-                ${active?'<i class="dot ok" title="Active now"></i>':'<i class="dot err" title="Inactive"></i>'}
-                ${htmlEscape(r.name)} <span class="tag">${htmlEscape(did)}</span>
-                <span class="badge">${active?'Likely active':'Likely unused'}</span>
-              </span>
-            </label>`;
-        }).join('<br/>');
-        holder.innerHTML = `<div class="col"><b>“${htmlEscape(name)}” in ${htmlEscape(did)}</b><div class="small muted">Select old/unused ones and delete</div></div><div>${inner}</div>`;
-        $('#dupList').appendChild(holder);
-      }
-      $('#dupBox').style.display='block';
-      $('#dupEmpty').style.display= any? 'none':'block';
-      $('#dupList').querySelectorAll('input[type="checkbox"]').forEach(cb=>{
-        cb.addEventListener('change',()=>{ const uid=cb.dataset.uid; if(cb.checked) DUP_SEL.add(uid); else DUP_SEL.delete(uid); });
-      });
-    });
-
-    $('#deleteDupBtn').addEventListener('click', async ()=>{
-      if(!DUP_SEL.size) { toast('Pick duplicates to delete'); return; }
-      if(!confirm(`Delete ${DUP_SEL.size} selected user(s)?`)) return;
-      try{
-        await Promise.all(Array.from(DUP_SEL).map(uid=> remove(ref(db,`user/${uid}`)).catch(()=>{})));
-        DUP_SEL.clear(); toast('Deleted'); $('#dupBox').style.display='none'; await refreshUsers();
-      }catch(e){ toast('Delete failed',true); }
-    });
-
-    // ======== Links ========
-    const LINKS_DB_PATH='admin/quickLinks';
-    let quickLinks=[], quickLinksSource='db';
-    $('#qlAddBtn').addEventListener('click', async ()=>{
-      const title=$('#qlTitle').value.trim(), href=$('#qlHref').value.trim();
-      const emoji=$('#qlEmoji').value.trim(), img=$('#qlImg').value.trim(), desc=$('#qlDesc').value.trim();
-      if(!title||!href) return toast('Title and URL are required',true);
-      quickLinks.push({title,href,emoji,img,desc}); await quickLinksSave(); clearQlForm(); renderApps(); toast('Link added');
-    });
-    $('#qlResetBtn').addEventListener('click', async ()=>{
-      quickLinks=[...DEFAULT_LINKS]; await quickLinksSave(true); renderApps(); toast('Links reset');
-    });
-    function clearQlForm(){ ['#qlTitle','#qlHref','#qlEmoji','#qlImg','#qlDesc'].forEach(s=>$(s).value=''); }
-
-    async function quickLinksLoadRender(){
-      try{ const s=await get(ref(db,LINKS_DB_PATH)); if(s.exists()){ quickLinks=Object.values(s.val()); quickLinksSource='db'; $('#qlStorageNote').textContent='Links are synced from database.'; }
-      else throw new Error('empty'); }
-      catch(e){
-        try{ quickLinks=JSON.parse(localStorage.getItem('admin_quick_links')||'[]'); if(!quickLinks.length) quickLinks=[...DEFAULT_LINKS]; quickLinksSource='local'; $('#qlStorageNote').textContent='Links are stored locally on this device (no DB permission).'; }
-        catch(_){ quickLinks=[...DEFAULT_LINKS]; quickLinksSource='local'; $('#qlStorageNote').textContent='Links are stored locally on this device (no DB permission).'; }
-      }
-      renderApps();
-    }
-    async function quickLinksSave(forceLocal=false){
-      if(forceLocal || quickLinksSource==='local'){
-        localStorage.setItem('admin_quick_links', JSON.stringify(quickLinks)); quickLinksSource='local'; $('#qlStorageNote').textContent='Links are stored locally on this device (no DB permission).'; return;
-      }
-      try{ const data={}; quickLinks.forEach((l,i)=>data[i]=l); await set(ref(db,LINKS_DB_PATH),data); quickLinksSource='db'; $('#qlStorageNote').textContent='Links are synced from database.'; }
-      catch(e){ localStorage.setItem('admin_quick_links', JSON.stringify(quickLinks)); quickLinksSource='local'; $('#qlStorageNote').textContent='Links are stored locally on this device (no DB permission).'; }
-    }
-    function renderApps(){
-      const grid=$('#appsGrid'); grid.innerHTML='';
-      quickLinks.forEach((l,idx)=>{
-        const a=document.createElement('a'); a.className='app-tile'; a.href=l.href; a.target='_blank'; a.rel='noopener noreferrer';
-        const left=l.img? `<div class="app-logo" style="background-image:url('${l.img}')"></div>` : `<div class="app-emoji">${htmlEscape(l.emoji||'🔗')}</div>`;
-        a.innerHTML=`${left}<div class="app-info"><div class="app-title">${htmlEscape(l.title||'Link')}</div><div class="app-desc">${htmlEscape(l.desc||'')}</div></div><button type="button" title="Remove" class="btn danger" data-remove="${idx}" style="margin-left:auto">×</button>`;
-        grid.appendChild(a);
-      });
-      grid.querySelectorAll('button[data-remove]').forEach(btn=>{
-        btn.addEventListener('click', async (e)=>{ e.preventDefault(); e.stopPropagation(); const i=parseInt(btn.dataset.remove,10); quickLinks.splice(i,1); await quickLinksSave(); renderApps(); toast('Link removed'); });
-      });
-    }
-
-    // ======== Analytics (snapshot) ========
-    function renderBarRow(label,value,total){
-      const pct = total ? Math.round((value/total)*100) : 0;
-      const row = document.createElement('div');
-      row.className='item';
-      row.innerHTML = `<div class="col"><b>${htmlEscape(label)}</b><div class="bar"><i style="width:${pct}%"></i></div></div><div class="small muted">${value} • ${pct}%</div>`;
-      return row;
-    }
-
-    async function loadAnalytics(){
-      const s=await get(ref(db,'displays')); const map=s.val()||{}; const ids=Object.keys(map);
-      const now=Date.now();
-      let online=0, offline=0, volSum=0, volN=0, mutedCount=0;
-      const channelCounts={}, dealerCounts={};
-
-      ids.forEach(id=>{
-        const v=map[id]||{};
-        const on=(v.lastSeenAt && (now-v.lastSeenAt)<60000) || (v.timestamp && (now-v.timestamp)<120000);
-        on? online++ : offline++;
-        const ch=(v.channel||1); channelCounts[ch]=(channelCounts[ch]||0)+1;
-        const d=(v.dealership||'—'); dealerCounts[d]=(dealerCounts[d]||0)+1;
-        if(typeof v.volume==='number'){ volSum+=v.volume; volN++; }
-        if(v.muted===true) mutedCount++;
-      });
-
-      const avgVol = volN ? Math.round(volSum/volN) : 0;
-      const topCh = Object.entries(channelCounts).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
-      const mutedPct = ids.length? Math.round((mutedCount/ids.length)*100) : 0;
-
-      $('#statActive').textContent = online;
-      $('#statOffline').textContent= offline;
-      $('#statTopCh').textContent  = topCh;
-      $('#statVolMuted').textContent = `${avgVol} • ${mutedPct}%`;
-
-      // channel bars
-      const chWrap = $('#anaChBars'); chWrap.innerHTML='';
-      const chTotal = Object.values(channelCounts).reduce((a,b)=>a+b,0);
-      Object.entries(channelCounts).sort((a,b)=>a[0]-b[0]).forEach(([ch,n])=> chWrap.appendChild(renderBarRow('Channel '+ch, n, chTotal)));
-
-      // dealer bars (top 10)
-      const dWrap = $('#anaDealerBars'); dWrap.innerHTML='';
-      const dTotal = Object.values(dealerCounts).reduce((a,b)=>a+b,0);
-      Object.entries(dealerCounts).sort((a,b)=>b[1]-a[1]).slice(0,10).forEach(([d,n])=> dWrap.appendChild(renderBarRow(d, n, dTotal)));
-    }
-
-    // ======== Schedule (local) with asset creation ========
-    const LS_SCH='iptv_admin_schedule';
-    const schedule = JSON.parse(localStorage.getItem(LS_SCH)||'[]');
-
-    $('#schCreateAssets').addEventListener('change', e=>{
-      $('#schAssets').style.display = e.target.checked ? 'block' : 'none';
-    });
-
-    function saveSchedule(){ localStorage.setItem(LS_SCH, JSON.stringify(schedule)); renderSchedule(); }
-    function renderSchedule(){
-      const ul=$('#schList'); ul.innerHTML='';
-      if(!schedule.length){ $('#schEmpty').style.display='block'; return; }
-      $('#schEmpty').style.display='none';
-      schedule.sort((a,b)=>a.when.localeCompare(b.when));
-      schedule.forEach((r,i)=>{
-        const li=document.createElement('li'); li.className='item';
-        li.innerHTML=`<div><b>${new Date(r.when).toLocaleString()}</b>
-          <div class="small muted">${htmlEscape(r.note||'')}</div>
-          ${r.dest? `<div class="small muted">📍 ${htmlEscape(r.dest)}</div>`:''}
-          ${r.assets? `<div class="small muted">Assets: ${htmlEscape(r.assets)}</div>`:''}
-        </div><button class="btn danger" data-del="${i}">Delete</button>`;
-        ul.appendChild(li);
-      });
-      ul.querySelectorAll('button[data-del]').forEach(btn=> btn.addEventListener('click',()=>{ const i=parseInt(btn.dataset.del,10); schedule.splice(i,1); saveSchedule(); }));
-    }
-    renderSchedule();
-
-    $('#schAdd').addEventListener('click', async ()=>{
-      const when=$('#schWhen').value;
-      const note=$('#schNote').value.trim();
-      const dest=$('#schDest').value.trim();
-      const make=$('#schCreateAssets').checked;
-      if(!when||!note) return toast('Pick date/time and note',true);
-
-      let assetsMsg='';
-      if(make){
-        let dName=$('#schDealerName').value.trim();
-        let dId=$('#schDealerId').value.trim();
-        let displayId=$('#schDisplayId').value.trim();
-
-        if(!dName && !dId) return toast('Enter dealership name or id', true);
-        if(!dId) dId = makeDealerId(dName||('dealer_'+Date.now()));
-
-        // create dealership/public if missing
-        const exists = await get(ref(db,`dealership/${dId}`));
-        if(!exists.exists()){
-          await set(ref(db,`dealership/${dId}`), { name: dName || dId, createdAt: Date.now(), createdBy: auth.currentUser?.email||'admin', displays:{} });
-          try{ await set(ref(db,`dealershipPublic/${dId}`), { name: dName || dId }); }catch(_){}
-        }
-        // display id
-        if(!displayId){
-          const friendly=(await get(ref(db,`dealershipPublic/${dId}`)).catch(()=>({val:()=>null}))).val()?.name
-                || (await get(ref(db,`dealership/${dId}`)).catch(()=>({val:()=>null}))).val()?.name
-                || dId;
-          const pref=initialsFromName(friendly);
-          const existing=await collectDisplays(dId);
-          let n=nextSuffix(existing,pref);
-          displayId=`${pref}-${String(n).padStart(3,'0')}`;
-        }
-        await set(ref(db,`dealership/${dId}/displays/${displayId}`), true);
-        await update(ref(db,`displays/${displayId}`), { channel:1, volume:0, muted:true, dealership:dId, timestamp:Date.now() });
-
-        assetsMsg = `${dId} • ${displayId}`;
-        $('#schDealerName').value=''; $('#schDealerId').value=''; $('#schDisplayId').value='';
-      }
-
-      schedule.push({when,note,dest, assets: assetsMsg});
-      saveSchedule();
-      $('#schWhen').value=''; $('#schNote').value=''; $('#schDest').value=''; $('#schCreateAssets').checked=false; $('#schAssets').style.display='none';
-      toast('Scheduled');
-    });
-
-    // ======== Backups (download/restore preview) ========
-    function download(filename, text){
-      const a=document.createElement('a');
-      a.href='data:application/json;charset=utf-8,'+encodeURIComponent(text);
-      a.download=filename; a.click();
-    }
-
-    function compactUsers(u){
-      const out={}; Object.entries(u||{}).forEach(([uid,v])=>{
-        out[uid] = { email:v.email||null, name:v.name||null, role:v.role||'user', dealershipId:v.dealershipId||null };
-      });
-      return out;
-    }
-
-    async function snapshot(){
-      const [dealersPubSnap, displaysSnap, usersSnap] = await Promise.all([
-        get(ref(db,'dealershipPublic')).catch(()=>({val:()=>null})),
-        get(ref(db,'displays')).catch(()=>({val:()=>null})),
-        get(ref(db,'user')).catch(()=>({val:()=>null}))
-      ]);
-      return {
-        meta: { generatedAt:new Date().toISOString(), by: auth.currentUser?.email||'admin', format:'iptv-bfa@1' },
-        dealersPublic: dealersPubSnap?.val?.() || {},
-        displays:      displaysSnap?.val?.()      || {},
-        users:         compactUsers(usersSnap?.val?.() || {})
-      };
-    }
-
-    $('#btnDownloadBackup').addEventListener('click', async ()=>{
-      const snap = await snapshot();
-      download('iptv-backup.json', JSON.stringify(snap, null, 2));
-    });
-
-    let restoreData=null, restoreDiff=null;
-    $('#btnPreviewRestore').addEventListener('click', async ()=>{
-      const f = $('#fileRestore').files?.[0];
-      if(!f) return toast('Pick a JSON file', true);
-      try{
-        const text = await f.text();
-        restoreData = JSON.parse(text);
-      }catch(e){ return toast('Invalid JSON', true); }
-
-      // compute diff vs live
-      const live = await snapshot();
-      const diff = { add:[], update:[], remove:[] };
-      function diffMap(title, cur, next){
-        const keys = new Set([...Object.keys(cur||{}), ...Object.keys(next||{})]);
-        keys.forEach(k=>{
-          const a = cur?.[k]; const b = next?.[k];
-          if(a==null && b!=null) diff.add.push(`${title}: + ${k}`);
-          else if(a!=null && b==null) diff.remove.push(`${title}: - ${k}`);
-          else if(JSON.stringify(a)!==JSON.stringify(b)) diff.update.push(`${title}: ~ ${k}`);
-        });
-      }
-      diffMap('dealersPublic', live.dealersPublic, restoreData.dealersPublic);
-      diffMap('displays', live.displays, restoreData.displays);
-      diffMap('users', live.users, restoreData.users);
-
-      restoreDiff = diff;
-      const box = $('#restoreDiff'); box.innerHTML='';
-      const addH = document.createElement('div'); addH.className='item'; addH.innerHTML = `<b>Add</b><div class="small muted">${diff.add.length? diff.add.join('<br/>') : '—'}</div>`;
-      const updH = document.createElement('div'); updH.className='item'; updH.innerHTML = `<b>Update</b><div class="small muted">${diff.update.length? diff.update.join('<br/>') : '—'}</div>`;
-      const remH = document.createElement('div'); remH.className='item'; remH.innerHTML = `<b>Remove</b><div class="small muted">${diff.remove.length? diff.remove.join('<br/>') : '—'}</div>`;
-      box.appendChild(addH); box.appendChild(updH); box.appendChild(remH);
-      $('#restorePreview').style.display='block';
-      toast('Review changes below');
-    });
-
-    $('#btnCancelRestore').addEventListener('click', ()=>{ $('#restorePreview').style.display='none'; restoreData=null; restoreDiff=null; });
-
-    $('#btnApplyRestore').addEventListener('click', async ()=>{
-      if(!restoreData) return;
-      if(!confirm('Apply these changes? This will overwrite matching keys.')) return;
-      try{
-        // best-effort writes; will work where rules allow
-        try{ await set(ref(db,'dealershipPublic'), restoreData.dealersPublic || {}); }catch(_){}
-        await set(ref(db,'displays'), restoreData.displays || {});
-        const liveUsers = (await get(ref(db,'user'))).val()||{};
-        const merged = {...liveUsers};
-        Object.entries(restoreData.users||{}).forEach(([uid,u])=>{
-          merged[uid] = { ...(merged[uid]||{}), ...u };
-        });
-        await set(ref(db,'user'), merged);
-        toast('Restore complete');
-        $('#restorePreview').style.display='none';
-        await reloadAll();
-      }catch(e){ console.error(e); toast('Restore failed', true); }
-    });
-
-    // ======== GitHub Sync (hardened) ========
-    function b64(str){return btoa(unescape(encodeURIComponent(str)));}
-
-    async function ghFetch(url, opts){
-      const res = await fetch(url, opts);
-      const text = await res.text();
-      let data;
-      try { data = text ? JSON.parse(text) : {}; } catch { data = { raw:text }; }
-      if(!res.ok){
-        const msg = data?.message || res.statusText || 'GitHub error';
-        throw new Error(`${msg} (HTTP ${res.status})`);
-      }
-      return data;
-    }
-    async function checkRepo(gh){
-      const url = `https://api.github.com/repos/${gh.owner}/${gh.repo}`;
-      return ghFetch(url, {
-        headers:{
-          'Authorization': `Bearer ${gh.token}`,
-          'Accept':'application/vnd.github+json',
-          'X-GitHub-Api-Version':'2022-11-28'
-        }
-      });
-    }
-    async function exportToGitHub(){
-      try{
-        const gh = JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}');
-        if(!gh.owner || !gh.repo || !gh.branch || !gh.path || !gh.token){
-          toast('Settings incomplete — open Settings and fill all fields', true);
-          return;
-        }
-        await checkRepo(gh);
-        const payload = await snapshot();
-        const contentB64 = b64(JSON.stringify(payload, null, 2));
-
-        const base = `https://api.github.com/repos/${gh.owner}/${gh.repo}/contents/${encodeURIComponent(gh.path)}`;
-        const headers = {
-          'Authorization': `Bearer ${gh.token}`,
-          'Accept':'application/vnd.github+json',
-          'X-GitHub-Api-Version':'2022-11-28',
-          'Content-Type':'application/json'
-        };
-        let sha = undefined;
-        try{
-          const existing = await ghFetch(`${base}?ref=${encodeURIComponent(gh.branch)}`, { headers });
-          sha = existing.sha;
-        }catch(e){
-          if(!String(e.message||'').includes('404')) throw e;
-        }
-        const body = { message: sha ? `update: ${gh.path}` : `create: ${gh.path}`, content: contentB64, branch: gh.branch, sha };
-        await ghFetch(base, { method:'PUT', headers, body: JSON.stringify(body) });
-        toast('Synced to GitHub ✔︎');
-      }catch(err){
-        console.error('[github sync failed]', err);
-        alert(`GitHub sync failed:\n\n${err.message}\n\nChecklist:\n• Token must be fine-grained with “Contents: Read and write” (Metadata is auto)\n• Repo must be selected on the token\n• Owner/Repo/Branch/Path must be exact`);
-        toast('Sync failed', true);
-      }
-    }
-    document.getElementById('syncBtn')?.addEventListener('click', exportToGitHub);
-
+    await renderList();
   </script>
 </body>
 </html>
