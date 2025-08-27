@@ -174,25 +174,16 @@
         <h3 style="margin:0 0 6px">Device Cleanup</h3>
         <div class="row3">
           <div>
-            <div class="label">Inactivity threshold</div>
-            <select id="dcThreshold" class="select">
-              <option value="7">7 days</option>
-              <option value="14" selected>14 days</option>
-              <option value="30">30 days</option>
-              <option value="60">60 days</option>
-            </select>
+            <div class="label">Inactivity threshold (hours)</div>
+            <input id="dcThresholdHours" class="input" type="number" min="1" value="24" />
           </div>
           <div>
-            <div class="label">Keep if active in last</div>
-            <select id="dcActiveWindow" class="select">
-              <option value="5">5 minutes</option>
-              <option value="10" selected>10 minutes</option>
-              <option value="30">30 minutes</option>
-              <option value="60">60 minutes</option>
-            </select>
+            <div class="label">Active window (minutes)</div>
+            <input id="dcActiveMins" class="input" type="number" min="1" value="10" />
           </div>
           <div style="display:flex;align-items:end;gap:8px;flex-wrap:wrap">
             <button id="dcScan" class="btn">Scan</button>
+            <button id="dcSelectAuto" class="btn">Select stale</button>
             <button id="dcSelectAll" class="btn">Select all</button>
             <label class="muted" style="display:flex;align-items:center;gap:8px">
               <input type="checkbox" id="dcLive" /> Live monitor
@@ -200,7 +191,7 @@
             <button id="dcDelete" class="btn danger" disabled>Delete selected</button>
           </div>
         </div>
-        <div class="small muted">Finds <b>device</b> users not seen within threshold and not currently active (never selects green-dot devices).</div>
+        <div class="small muted">Finds <b>device</b> users not seen within the threshold and not currently active (never selects green-dot devices).</div>
         <div id="dcList" class="list"></div>
         <div id="dcEmpty" class="empty" style="display:none">No stale device users found.</div>
       </div>
@@ -225,7 +216,7 @@
       sendPasswordResetEmail, signOut, createUserWithEmailAndPassword
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import {
-      getDatabase, ref, get, set, update, remove, onValue, query, orderByChild, equalTo
+      getDatabase, ref, get, set, update, remove, onValue
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
     // ========= CONFIG =========
@@ -245,7 +236,7 @@
     function htmlEscape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
     function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
     const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
-    function timeAgo(ts){ const s=Math.max(1,Math.floor((Date.now()-ts)/1000)); const u=[['d',86400],['h',3600],['m',60],['s',1]]; for(const [l,v] of u){ if(s>=v) return Math.floor(s/v)+l; } return s+'s'; }
+    function timeAgo(ts){ if(!ts) return '—'; const s=Math.max(1,Math.floor((Date.now()-ts)/1000)); const u=[['d',86400],['h',3600],['m',60],['s',1]]; for(const [l,v] of u){ if(s>=v) return Math.floor(s/v)+l; } return s+'s'; }
 
     // Theme + logo
     const savedTheme = localStorage.getItem('iptv_theme') || 'light';
@@ -264,14 +255,16 @@
 
     onAuthStateChanged(auth, async (user)=>{
       if(!user){ location.href='home.html'; return; }
-      // optional: ensure admin in /user
     });
     $('#signOutBtn').addEventListener('click', ()=>signOut(auth));
 
     // Load dealers into selects
     async function loadDealersMap(){
       let map={};
-      try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=Object.fromEntries(Object.entries(pub.val()).map(([k,v])=>[k,v?.name||k])); }catch(e){}
+      try{
+        const pub=await get(ref(db,'dealershipPublic'));
+        if(pub.exists()) map=Object.fromEntries(Object.entries(pub.val()).map(([k,v])=>[k,v?.name||k]));
+      }catch(e){}
       const selUser=$('#userDealer'), selFilter=$('#filterDealer');
       const prevU=selUser.value, prevF=selFilter.value;
       selUser.innerHTML='<option value="">Dealership…</option>';
@@ -284,7 +277,7 @@
       return map;
     }
 
-    // Create user (now with **initial password**)
+    // Create user (with initial password)
     $('#createUserBtn').addEventListener('click', createUserAdminSafe);
     $('#inviteUserBtn').addEventListener('click', async ()=>{
       const email=$('#userEmail').value.trim(); if(!email) return toast('Enter email',true);
@@ -306,11 +299,9 @@
       const tempApp=initializeApp(firebaseConfig,tempName);
       const tempAuth=getAuth(tempApp);
       try{
-        // Create with the chosen initial password
         const cred=await createUserWithEmailAndPassword(tempAuth,email,pass);
         const uid=cred.user.uid;
 
-        // Prepare user profile node
         let dname=did; try{ const p=await get(ref(db,`dealershipPublic/${did}`)); if(p.exists()) dname=p.val()?.name||did; }catch(e){}
         let displays=[]; const ds=await get(ref(db,`dealership/${did}/displays`)); if(ds.exists()) displays=Object.keys(ds.val()||{});
 
@@ -318,19 +309,15 @@
           email,name,role,dealershipId:did,dealershipName:dname,displays,createdAt:Date.now()
         });
 
-        if(alsoReset){
-          try{ await sendPasswordResetEmail(tempAuth,email); }catch(_){}
-        }
+        if(alsoReset){ try{ await sendPasswordResetEmail(tempAuth,email); }catch(_){ } }
 
         toast('User created'); clearCreateForm(); await refreshUsers();
       }catch(e){ console.error(e); toast('Create failed: '+(e?.code||'error'),true); }
       finally{ try{ await deleteApp(tempApp);}catch(e){} }
     }
-
     function clearCreateForm(){
       $('#userEmail').value=''; $('#userName').value='';
       $('#userRole').value='user'; $('#userDealer').value='';
-      // Keep your chosen default in place for convenience
     }
 
     // Filters/events
@@ -338,7 +325,7 @@
     $('#filterDealer').addEventListener('change', refreshUsers);
     $('#filterRole').addEventListener('change', refreshUsers);
 
-    // Users list rendering (with green dot for active device users)
+    // Users list (with green dot + Delete button)
     async function refreshUsers(){
       const search=($('#userSearch').value||'').toLowerCase();
       const fDid=$('#filterDealer').value;
@@ -368,11 +355,10 @@
       $('#countUsers').textContent=groups.user.length;
       $('#countDisabled').textContent=groups.disabled.length;
 
-      const total=groups.admin.length+groups.device.length+groups.user.length+groups.disabled.length;
-      $('#userEmpty').style.display= total? 'none':'block';
+      $('#userEmpty').style.display= (groups.admin.length+groups.device.length+groups.user.length+groups.disabled.length)? 'none':'block';
 
-      // Pull activity from displays for green dots
       const { map:actMap, now } = await getActivityMap();
+      const me = auth.currentUser?.uid;
 
       const renderGroup=(arr,gridId)=>{
         const grid=document.getElementById(gridId); grid.innerHTML='';
@@ -381,7 +367,7 @@
           const dealer=r.dealershipName||r.dealershipId||'—';
           const isDevice=(r.role==='device');
           const last=actMap[r.uid] || r.updatedAt || r.createdAt || 0;
-          const active=isDevice && last && (now-last) < 10*60*1000; // 10 min
+          const active=isDevice && last && (now-last) < 10*60*1000;
 
           const card=document.createElement('div'); card.className='user-card';
           card.innerHTML=`
@@ -405,6 +391,7 @@
                 ${Object.entries(dealers).map(([id,nm])=>`<option value="${id}" ${id===(r.dealershipId||'')?'selected':''}>${nm}</option>`).join('')}
               </select>
               <button class="btn" data-reset="${htmlEscape(r.email||'')}">Reset password</button>
+              <button class="btn danger" data-del="${r.uid}" ${r.uid===me?'disabled':''}>Delete</button>
             </div>`;
           grid.appendChild(card);
         });
@@ -430,11 +417,20 @@
             try{ await update(ref(db,`user/${uid}`),{dealershipId:did,dealershipName:name}); toast('Moved'); }catch(err){ toast('Move failed',true); }
           });
         });
-        // reset
+        // reset password
         grid.querySelectorAll('[data-reset]').forEach(btn=>{
           btn.addEventListener('click', async ()=>{
             const email=btn.getAttribute('data-reset'); if(!email) return toast('No email',true);
             try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(err){ toast('Reset failed',true); }
+          });
+        });
+        // delete user
+        grid.querySelectorAll('[data-del]').forEach(btn=>{
+          btn.addEventListener('click', async ()=>{
+            const uid=btn.getAttribute('data-del');
+            if(uid===me) return; // already disabled
+            if(!confirm('Delete this user from the database? (Auth account is not removed)')) return;
+            try{ await remove(ref(db,`user/${uid}`)); toast('User deleted'); await refreshUsers(); }catch(e){ toast('Delete failed', true); }
           });
         });
       };
@@ -503,31 +499,36 @@
         cb.addEventListener('change',()=>{ const uid=cb.dataset.uid; if(cb.checked) DUP_SEL.add(uid); else DUP_SEL.delete(uid); });
       });
     });
-
     $('#deleteDupBtn').addEventListener('click', async ()=>{
       if(!DUP_SEL.size) { toast('Pick duplicates to delete'); return; }
       if(!confirm(`Delete ${DUP_SEL.size} selected user(s)?`)) return;
       try{
         await Promise.all(Array.from(DUP_SEL).map(uid=> remove(ref(db,`user/${uid}`)).catch(()=>{})));
-        DUP_SEL.clear(); toast('Deleted'); $('#dupBox').style.display='none'; await refreshUsers();
+        DUP_SEL.clear(); toast('Deleted'); document.getElementById('dupBox').style.display='none'; await refreshUsers();
       }catch(e){ toast('Delete failed',true); }
     });
 
-    // Device Cleanup logic (live above in UI)
+    // Device Cleanup
     const DC_SEL = new Set();
     let DC_LIVE_OFF = null;
     const $dc = {
-      threshold:  ()=> parseInt($('#dcThreshold').value,10),
-      activeWin:  ()=> parseInt($('#dcActiveWindow').value,10),
-      list:        $('#dcList'),
-      empty:       $('#dcEmpty'),
-      scanBtn:     $('#dcScan'),
-      delBtn:      $('#dcDelete'),
-      selectAllBtn:$('#dcSelectAll'),
-      liveChk:     $('#dcLive'),
+      hrs: ()=> Math.max(1, parseInt($('#dcThresholdHours').value,10)||24),
+      mins:()=> Math.max(1, parseInt($('#dcActiveMins').value,10)||10),
+      list:  $('#dcList'),
+      empty: $('#dcEmpty'),
+      scanBtn: $('#dcScan'),
+      selAutoBtn: $('#dcSelectAuto'),
+      delBtn: $('#dcDelete'),
+      selectAllBtn: $('#dcSelectAll'),
+      liveChk: $('#dcLive'),
     };
+
     $dc.scanBtn.addEventListener('click', scanDeviceCleanup);
     $dc.selectAllBtn.addEventListener('click', ()=>{
+      $dc.list.querySelectorAll('input[type="checkbox"]').forEach(cb=>{ cb.checked = true; DC_SEL.add(cb.dataset.uid); });
+      updateDcDeleteState();
+    });
+    $dc.selAutoBtn.addEventListener('click', ()=>{
       $dc.list.querySelectorAll('input[type="checkbox"]').forEach(cb=>{ cb.checked = true; DC_SEL.add(cb.dataset.uid); });
       updateDcDeleteState();
     });
@@ -552,6 +553,7 @@
         await refreshUsers();
       }catch(e){ console.error(e); toast('Delete failed', true); }
     });
+
     async function scanDeviceCleanup(){
       DC_SEL.clear(); updateDcDeleteState();
       $dc.list.innerHTML=''; $dc.empty.style.display='none';
@@ -559,8 +561,9 @@
       const all = Object.entries(map).map(([uid,v])=>({uid,...v}));
       const devices = all.filter(u => (u.role==='device'));
       const { map:actMap, now } = await getActivityMap();
-      const msThreshold = $dc.threshold()*24*60*60*1000;
-      const msActive    = $dc.activeWin()*60*1000;
+
+      const msThreshold = $dc.hrs()*60*60*1000;
+      const msActive    = $dc.mins()*60*1000;
 
       const stale = [];
       devices.forEach(u=>{
@@ -588,7 +591,7 @@
                 <span class="badge">${htmlEscape(r.dealershipName)}</span>
                 <span class="badge">${r.lastSeen ? ('last: '+htmlEscape(timeAgo(r.lastSeen))) : 'no activity'}</span>
               </div>
-              <div class="small muted">Will be deleted (not currently active & older than ${$dc.threshold()}d)</div>
+              <div class="small muted">Will be deleted (inactive ≥ ${$dc.hrs()}h & not currently active)</div>
             </div>
           </label>`;
         $dc.list.appendChild(li);
