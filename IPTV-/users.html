@@ -4,165 +4,371 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>BFA IPTV — Users</title>
-  <link rel="icon" href="./icons/icon-192.png" />
-  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
-  <link rel="stylesheet" href="./assets/ui.css" />
+
+  <link rel="manifest" href="/IPTV-/manifest.webmanifest" />
+  <meta name="theme-color" content="#000000" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png" />
+  <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png" />
+
+  <style>
+    :root{
+      --bg:#0b0b0c;--fg:#fff;--muted:#9a9aa0;--panel:#121214;--border:rgba(255,255,255,.14);
+      --accent:#ff9500;--tile:#17171a;--tileActive:#1d1d21;--shadow:0 18px 48px rgba(0,0,0,.45);
+      --radius:18px;--radius-lg:22px;--ok:#22c55e;--err:#ef4444
+    }
+    body.light{
+      --bg:#f5f5f7;--fg:#111;--muted:#6e6e73;--panel:#fff;--border:rgba(0,0,0,.12);
+      --tile:#f2f2f7;--tileActive:#eaeaef;--shadow:0 14px 36px rgba(0,0,0,.10)
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;margin:0;line-height:1.35}
+    a{color:inherit;text-decoration:none}
+
+    /* Topbar */
+    .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;background:linear-gradient(0deg,transparent,rgba(0,0,0,.06));backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+    .lhs{display:flex;align-items:center;gap:12px}
+    .logo{width:36px;height:36px;border-radius:10px;background:var(--tileActive) center no-repeat;border:1px solid var(--border);background-size:contain}
+    .title{font-weight:900;letter-spacing:.3px}
+    .btn{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center}
+    .btn.primary{border-color:var(--accent);color:var(--accent);background:transparent}
+    .btn.solid{background:var(--accent);border-color:var(--accent);color:#000}
+    .btn.danger{border-color:#ff6b6b;color:#ff6b6b;background:transparent}
+    .muted{color:var(--muted);font-size:12px}
+
+    /* Shell */
+    .wrap{max-width:1200px;margin:0 auto;padding:18px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow)}
+    .hstack{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+    /* Inputs */
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}
+    .row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin:10px 0}
+    @media (max-width:1000px){.row4{grid-template-columns:1fr 1fr}}
+    @media (max-width:700px){.row3{grid-template-columns:1fr};.row2{grid-template-columns:1fr}}
+    .label{font-size:12px;color:var(--muted);margin:0 0 6px}
+    .input,.select{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
+    .input::placeholder{color:var(--muted)}
+
+    /* Grids / cards */
+    .group{margin-top:14px}
+    .user-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+    .user-card{background:var(--tile);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+    .user-header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .user-name{font-weight:800;cursor:pointer;display:flex;align-items:center;gap:8px}
+    .badge{border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:11px;color:var(--muted)}
+    .dot{width:8px;height:8px;border-radius:999px;background:#999}
+    .dot.ok{background:var(--ok)}
+    .dot.err{background:var(--err)}
+    .user-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+    /* Lists */
+    .list{margin:8px 0 0;padding:0;list-style:none}
+    .item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px;margin:8px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap}
+    .empty{padding:12px;border:1px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center}
+
+    /* Toast */
+    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
+    .toast.show{opacity:1}
+    .toast.err{background:#ff453a;color:#fff}
+  </style>
 </head>
-<body class="light">
+<body>
   <!-- Topbar -->
-  <div class="topbar" style="border-bottom:1px solid var(--border)">
+  <div class="topbar">
     <div class="lhs">
-      <a href="./home.html" class="logo" style="display:block;background:url('./icons/icon-512.png') center/cover no-repeat" title="Home"></a>
-      <div class="title">Users</div>
+      <div id="brandLogo" class="logo" title="IPTV"></div>
+      <div class="title">BFA IPTV — Users</div>
     </div>
-    <div class="rhs" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <a class="btn" href="./dealership.html">Dealerships</a>
-      <a class="btn" href="./display.html">Displays</a>
-      <a class="btn" href="./more.html">More</a>
+    <div class="hstack">
+      <button id="homeBtn" class="btn">Home</button>
+      <button id="dealersBtn" class="btn">Dealerships</button>
+      <button id="displaysBtn" class="btn">Displays</button>
       <span id="adminEmail" class="muted"></span>
-      <button id="reloadBtn" class="btn">Reload</button>
+      <button id="themeBtn"  class="btn">☀︎/🌙</button>
       <button id="signOutBtn" class="btn primary">Sign out</button>
     </div>
   </div>
 
   <div class="wrap">
-    <div id="notAdmin" class="card" style="display:none;max-width:720px;margin:40px auto">
-      <h2>Not authorized</h2>
-      <div class="muted small">Ask an admin to set your role to <b>admin</b> in the database.</div>
+    <!-- Login -->
+    <div id="loginBox" class="card" style="max-width:520px;margin:40px auto;display:none">
+      <h2 style="margin:0 0 12px">Admin Sign In</h2>
+      <div class="row3">
+        <div>
+          <div class="label">Email</div>
+          <input id="email" class="input" type="email" placeholder="you@company.com" autocomplete="email" />
+        </div>
+        <div>
+          <div class="label">Password</div>
+          <input id="password" class="input" type="password" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <div style="display:flex;align-items:end">
+          <button id="loginBtn" class="btn solid" style="width:100%">Sign in</button>
+        </div>
+      </div>
+      <div class="hstack">
+        <button id="resetBtn" class="btn">Send reset link</button>
+        <span class="small muted">Requires <b>role:"admin"</b> in <code>/user/{uid}</code>.</span>
+      </div>
     </div>
 
-    <div id="main" class="page active">
-      <div class="card">
-        <h2 style="margin:0 0 8px">Users</h2>
-        <div class="row4">
-          <div><div class="label">Email</div><input id="userEmail" class="input" placeholder="user@email.com" /></div>
-          <div><div class="label">Name</div><input id="userName" class="input" placeholder="Full Name" /></div>
-          <div><div class="label">Role</div>
-            <select id="userRole" class="select">
-              <option value="user">user</option><option value="admin">admin</option><option value="device">device</option><option value="disabled">disabled</option>
-            </select>
-          </div>
-          <div><div class="label">Dealership</div><select id="userDealer" class="select"><option value="">Dealership…</option></select></div>
-        </div>
-        <div class="row2">
-          <button id="createUserBtn" class="btn solid">Create User (pwd: 123456789)</button>
-          <button id="inviteUserBtn" class="btn">Send Reset (existing)</button>
-        </div>
+    <!-- Users -->
+    <div id="content" class="card" style="display:none">
+      <h2 style="margin:0 0 8px">Users</h2>
+      <div class="muted small">Device users show a green dot when active in the last 10 minutes (based on display <code>lastUser</code> + <code>lastSeenAt</code>).</div>
 
-        <div class="row3">
-          <div><div class="label">Search</div><input id="userSearch" class="input" placeholder="Search name or email…" /></div>
-          <div><div class="label">Filter dealership</div><select id="filterDealer" class="select"><option value="">All dealerships</option></select></div>
-          <div><div class="label">Filter role</div>
-            <select id="filterRole" class="select">
-              <option value="">All roles</option><option value="admin">admin</option><option value="device">device</option><option value="user">user</option><option value="disabled">disabled</option>
-            </select>
-          </div>
+      <!-- Create -->
+      <div class="row4" style="margin-top:10px">
+        <div><div class="label">Email</div><input id="userEmail" class="input" placeholder="user@email.com" /></div>
+        <div><div class="label">Name</div><input id="userName" class="input" placeholder="Full Name" /></div>
+        <div><div class="label">Role</div>
+          <select id="userRole" class="select">
+            <option value="user">user</option>
+            <option value="admin">admin</option>
+            <option value="device">device</option>
+          </select>
         </div>
-
-        <div style="display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap">
-          <button id="findDupBtn" class="btn">Find duplicates</button>
-          <button id="deleteDupBtn" class="btn danger">Delete selected duplicates</button>
-          <span class="muted small">Duplicates = device users with the same name within a dealership. Green = currently active in the last 10 minutes.</span>
-        </div>
-
-        <div id="dupBox" class="card" style="display:none;margin-bottom:10px">
-          <h3 style="margin:0 0 6px">Duplicate candidates</h3>
-          <div id="dupList" class="list"></div>
-          <div class="small muted" id="dupEmpty" style="display:none">No duplicates found.</div>
-        </div>
-
-        <div class="group"><h3>Admins (<span id="countAdmins">0</span>)</h3><div class="user-grid" id="gridAdmins"></div></div>
-        <div class="group"><h3>Device Users (<span id="countDevices">0</span>)</h3><div class="user-grid" id="gridDevices"></div></div>
-        <div class="group"><h3>Regular Users (<span id="countUsers">0</span>)</h3><div class="user-grid" id="gridUsers"></div></div>
-        <div class="group"><h3>Disabled (<span id="countDisabled">0</span>)</h3><div class="user-grid" id="gridDisabled"></div></div>
-        <div id="userEmpty" class="empty" style="display:none">No users.</div>
+        <div><div class="label">Dealership</div><select id="userDealer" class="select"><option value="">Dealership…</option></select></div>
       </div>
+      <div class="row2">
+        <button id="createUserBtn" class="btn solid">Create User</button>
+        <button id="inviteUserBtn" class="btn">Send Reset (existing)</button>
+      </div>
+
+      <!-- Filters -->
+      <div class="row3">
+        <div><div class="label">Search</div><input id="userSearch" class="input" placeholder="Search name or email…" /></div>
+        <div><div class="label">Filter dealership</div><select id="filterDealer" class="select"><option value="">All dealerships</option></select></div>
+        <div><div class="label">Filter role</div>
+          <select id="filterRole" class="select">
+            <option value="">All roles</option><option value="admin">admin</option><option value="device">device</option><option value="user">user</option><option value="disabled">disabled</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Duplicates -->
+      <div class="hstack" style="margin:8px 0">
+        <button id="findDupBtn" class="btn">Find duplicates</button>
+        <button id="deleteDupBtn" class="btn danger">Delete selected duplicates</button>
+        <span class="muted small">Duplicates = device users with the same name within a dealership.</span>
+      </div>
+      <div id="dupBox" class="card" style="display:none;margin-bottom:10px">
+        <h3 style="margin:0 0 6px">Duplicate candidates</h3>
+        <div id="dupList" class="list"></div>
+        <div class="small muted" id="dupEmpty" style="display:none">No duplicates found.</div>
+      </div>
+
+      <!-- Groups -->
+      <div class="group"><h3>Admins (<span id="countAdmins">0</span>)</h3><div class="user-grid" id="gridAdmins"></div></div>
+      <div class="group"><h3>Device Users (<span id="countDevices">0</span>)</h3><div class="user-grid" id="gridDevices"></div></div>
+      <div class="group"><h3>Regular Users (<span id="countUsers">0</span>)</h3><div class="user-grid" id="gridUsers"></div></div>
+      <div class="group"><h3>Disabled (<span id="countDisabled">0</span>)</h3><div class="user-grid" id="gridDisabled"></div></div>
+      <div id="userEmpty" class="empty" style="display:none">No users.</div>
     </div>
   </div>
 
   <div id="toast" class="toast"></div>
 
   <script type="module">
+    import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import {
-      app, auth, db, $, $$, htmlEscape, toast, debounce,
-      loadDealersMap, createUserAdminSafe,
-      getAuth, sendPasswordResetEmail, signOut,
-      ref, get, set, update, remove, query, orderByChild, equalTo
-    } from './assets/core.js';
+      getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword,
+      onAuthStateChanged, sendPasswordResetEmail, signOut, createUserWithEmailAndPassword
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import {
+      getDatabase, ref, get, set, update, remove, onValue
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    // Admin gate (simple)
-    import { onAuthStateChanged, setPersistence, browserLocalPersistence, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    // ========= CONFIG =========
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+      authDomain: "iptv-bfa.firebaseapp.com",
+      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+      projectId: "iptv-bfa",
+      storageBucket: "iptv-bfa.firebasestorage.app",
+      messagingSenderId: "838790935867",
+      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    };
+    const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
 
-    function goLogin(){
-      $('#main').style.display='none';
-      $('#notAdmin').style.display='block';
+    // ========= APP/STATE/UI =========
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
+
+    const $  = s => document.querySelector(s);
+    const $$ = s => document.querySelectorAll(s);
+    const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+    function htmlEscape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+    function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
+
+    // Theme + logo
+    const savedTheme = localStorage.getItem('iptv_theme') || 'light';
+    document.body.classList.toggle('light', savedTheme==='light');
+    $('#themeBtn').addEventListener('click', ()=>{
+      const isLight = !document.body.classList.contains('light');
+      document.body.classList.toggle('light', isLight);
+      localStorage.setItem('iptv_theme', isLight ? 'light' : 'dark');
+    });
+    $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
+
+    // Nav
+    $('#homeBtn').addEventListener('click', ()=> location.href='home.html');
+    $('#dealersBtn').addEventListener('click', ()=> location.href='dealerships.html');
+    $('#displaysBtn').addEventListener('click', ()=> location.href='displays.html');
+    $('#signOutBtn').addEventListener('click', ()=> signOut(auth));
+
+    // Auth UI
+    $('#loginBtn')?.addEventListener('click', doLogin);
+    $('#resetBtn')?.addEventListener('click', async ()=>{
+      const email = $('#email').value.trim();
+      if(!email) return toast('Enter email', true);
+      try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed', true); }
+    });
+
+    async function doLogin(){
+      const email=$('#email').value.trim(), pass=$('#password').value;
+      if(!email||!pass) return toast('Fill email & password', true);
+      try{ await setPersistence(auth, browserLocalPersistence); await signInWithEmailAndPassword(auth,email,pass); }
+      catch(e){ console.error(e); toast('Sign-in failed', true); }
     }
 
     onAuthStateChanged(auth, async (user)=>{
-      if(!user){ goLogin(); return; }
+      if(!user){ $('#loginBox').style.display='block'; $('#content').style.display='none'; return; }
       $('#adminEmail').textContent = user.email || user.uid;
-      const uSnap = await get(ref(db, `user/${user.uid}`)); const u=uSnap.val()||{};
-      if(u.role!=='admin'){ goLogin(); return; }
-      $('#notAdmin').style.display='none';
-      $('#main').style.display='block';
-      await boot();
+      // admin check
+      const uSnap = await get(ref(db, `user/${user.uid}`));
+      const u = uSnap.val() || {};
+      if(u.role !== 'admin'){ $('#loginBox').style.display='none'; $('#content').style.display='none'; alert('Not authorized. Ask an admin to set your role to admin.'); return; }
+      $('#loginBox').style.display='none';
+      $('#content').style.display='block';
+      await loadDealersMap();
+      await refreshUsers(true);
+      // respect ?dealer=
+      const did = new URL(location.href).searchParams.get('dealer') || '';
+      if(did){ $('#filterDealer').value=did; await refreshUsers(); }
     });
 
-    $('#signOutBtn').addEventListener('click', ()=>signOut(auth));
-    $('#reloadBtn').addEventListener('click', ()=>boot());
-
-    async function boot(){
-      await fillDealers();
-      await refreshUsers();
-    }
-
-    async function fillDealers(){
-      const dealers=await loadDealersMap();
-      const selU=$('#userDealer'); const selF=$('#filterDealer');
-      const prevU=selU.value, prevF=selF.value;
-      selU.innerHTML='<option value="">Dealership…</option>';
-      selF.innerHTML='<option value="">All dealerships</option>';
-      for(const [id,name] of Object.entries(dealers).sort((a,b)=>a[1].localeCompare(b[1]))){
-        const o1=document.createElement('option'); o1.value=id; o1.textContent=name; selU.appendChild(o1);
-        const o2=document.createElement('option'); o2.value=id; o2.textContent=name; selF.appendChild(o2);
+    // ===== Dealers map (for selects) =====
+    let DEALERS = {};
+    async function loadDealersMap(){
+      DEALERS = {};
+      try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) DEALERS=Object.fromEntries(Object.entries(pub.val()).map(([k,v])=>[k,v?.name||k])); }catch(e){}
+      if(!Object.keys(DEALERS).length){
+        try{ const d=await get(ref(db,'dealership')); if(d.exists()) DEALERS=Object.fromEntries(Object.entries(d.val()).map(([k,v])=>[k,v?.name||k])); }catch(e){}
       }
-      selU.value=prevU||''; selF.value=prevF||'';
+      // refresh selects
+      const selF=$('#filterDealer'), selU=$('#userDealer'); const prevF=selF.value, prevU=selU.value;
+      selF.innerHTML='<option value="">All dealerships</option>'; selU.innerHTML='<option value="">Dealership…</option>';
+      for(const [id,name] of Object.entries(DEALERS).sort((a,b)=>a[1].localeCompare(b[1]))){
+        const f=document.createElement('option'); f.value=id; f.textContent=name; selF.appendChild(f);
+        const u=document.createElement('option'); u.value=id; u.textContent=name; selU.appendChild(u);
+      }
+      selF.value=prevF||''; selU.value=prevU||'';
     }
 
-    // ---- Create + Reset
-    $('#createUserBtn').addEventListener('click', async ()=>{
+    // ===== Activity snapshot from displays =====
+    // Build a map of { uid -> lastSeenAt(max) } using displays.lastUser
+    async function getActivityMap(){
+      const res = await get(ref(db,'displays')).catch(()=>null);
+      const map = {};
+      const now = Date.now();
+      if(res && res.exists()){
+        for(const [dispId,v] of Object.entries(res.val()||{})){
+          const uid = v?.lastUser?.uid;
+          const seen = v?.lastSeenAt || v?.timestamp || 0;
+          if(uid){
+            map[uid] = Math.max(map[uid]||0, seen);
+          }
+        }
+      }
+      return { map, now };
+    }
+
+    // ===== Create / invite =====
+    $('#inviteUserBtn').addEventListener('click', async ()=>{
+      const email=$('#userEmail').value.trim(); if(!email) return toast('Enter email',true);
+      try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed',true); }
+    });
+
+    $('#createUserBtn').addEventListener('click', createUserAdminSafe);
+
+    async function createUserAdminSafe(){
       const email=$('#userEmail').value.trim();
       const name=$('#userName').value.trim();
       const role=$('#userRole').value;
-      const dealershipId=$('#userDealer').value;
-      if(!email||!name||!role||!dealershipId){ toast('Fill all user fields',true); return; }
+      const did=$('#userDealer').value;
+      if(!email||!name||!role||!did) return toast('Fill all user fields',true);
+
+      const tempName='admin-helper-'+Date.now();
+      const tempApp=initializeApp(firebaseConfig,tempName);
+      const tempAuth=getAuth(tempApp);
+
       try{
-        await createUserAdminSafe({email,name,role,dealershipId});
-        toast('User created (pwd: 123456789)');
+        const tmpPass = Math.random().toString(36).slice(2) + Math.random().toString(36).toUpperCase().slice(2);
+        let uid = null;
+
+        try{
+          const cred = await createUserWithEmailAndPassword(tempAuth,email,tmpPass);
+          uid = cred.user.uid;
+        }catch(e){
+          // If already exists, we still allow profile creation / update
+          if(String(e.message||'').includes('auth/email-already-in-use')){ uid = null; }
+          else throw e;
+        }
+
+        // Find or create user profile entry in RTDB
+        if(!uid){
+          // find by email in /user (client-side lookup)
+          const snap = await get(ref(db,'user'));
+          const all = snap.val()||{};
+          const found = Object.entries(all).find(([id,u])=>(u?.email||'').toLowerCase()===email.toLowerCase());
+          uid = found?.[0] || null;
+        }
+
+        if(!uid){
+          // create a synthetic uid node (rare) — but normally uid will exist
+          toast('Auth user exists but RTDB uid not found; please reload and try again.', true);
+          return;
+        }
+
+        let dname=DEALERS[did]||did;
+        // attach displays list of that dealership
+        let displays=[];
+        try{ const ds=await get(ref(db,`dealership/${did}/displays`)); if(ds.exists()) displays=Object.keys(ds.val()||{}); }catch(e){}
+
+        await set(ref(db,`user/${uid}`),{
+          email,name,role,dealershipId:did,dealershipName:dname,displays,createdAt:Date.now()
+        });
+
+        // Send reset email so they set their own password
+        try{ await sendPasswordResetEmail(tempAuth,email); }catch(_){}
+        toast('User created + reset sent');
         $('#userEmail').value=''; $('#userName').value='';
         await refreshUsers();
-      }catch(e){ console.error(e); toast(e.message||'Create failed',true); }
-    });
+      }catch(e){ console.error(e); toast('Create failed',true); }
+      finally{ try{ await signOut(tempAuth);}catch(e){} try{ await deleteApp(tempApp);}catch(e){} }
+    }
 
-    $('#inviteUserBtn').addEventListener('click', async ()=>{
-      const email=$('#userEmail').value.trim(); if(!email){ toast('Enter email', true); return; }
-      try{ await sendPasswordResetEmail(auth, email); toast('If an account exists, a reset email was sent'); }
-      catch(e){ console.error(e); toast('Reset failed',true); }
-    });
-
-    // ---- Search/filters
-    $('#userSearch').addEventListener('input', debounce(refreshUsers,200));
+    // ===== Render users =====
+    $('#userSearch').addEventListener('input', debounce(()=>refreshUsers(), 200));
     $('#filterDealer').addEventListener('change', refreshUsers);
     $('#filterRole').addEventListener('change', refreshUsers);
 
-    // ---- List + actions
-    async function refreshUsers(){
+    async function refreshUsers(initial=false){
       const search=($('#userSearch').value||'').toLowerCase();
       const fDid=$('#filterDealer').value;
       const fRole=$('#filterRole').value;
 
-      let map={}; try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
-      const rows=Object.entries(map).map(([uid,v])=>({uid,...v}));
+      // load maps
+      let uMap={}; try{ const u=await get(ref(db,'user')); if(u.exists()) uMap=u.val(); }catch(e){}
+      const rows=Object.entries(uMap).map(([uid,v])=>({uid,...v}));
+
+      // activity map for device users
+      const { map:actMap, now } = await getActivityMap();
 
       const filtered=rows.filter(r=>{
         if(fDid && r.dealershipId!==fDid) return false;
@@ -172,7 +378,8 @@
       });
 
       const groups={admin:[],device:[],user:[],disabled:[]};
-      filtered.forEach(r=>{ const role=(r.role||'user');
+      filtered.forEach(r=>{
+        const role=(r.role||'user');
         if(role==='admin') groups.admin.push(r);
         else if(role==='device') groups.device.push(r);
         else if(role==='disabled') groups.disabled.push(r);
@@ -187,34 +394,35 @@
       const total=groups.admin.length+groups.device.length+groups.user.length+groups.disabled.length;
       $('#userEmpty').style.display= total? 'none':'block';
 
-      const dealers=await loadDealersMap();
       const renderGroup=(arr,gridId)=>{
         const grid=document.getElementById(gridId); grid.innerHTML='';
         arr.sort((a,b)=> (a.dealershipName||a.dealershipId||'').localeCompare(b.dealershipName||b.dealershipId||'') || (a.email||'').localeCompare(b.email||''));
-        const now=Date.now();
         arr.forEach(r=>{
           const dealer=r.dealershipName||r.dealershipId||'—';
           const isDevice=(r.role==='device');
-          const active=isDevice && r.updatedAt && (now-r.updatedAt) < 10*60*1000; // 10 min
+          const lastSeen = isDevice ? (actMap[r.uid]||0) : 0;
+          const active = isDevice && (now - lastSeen) < 10*60*1000;
 
           const card=document.createElement('div'); card.className='user-card';
           card.innerHTML=`
             <div class="user-header">
               <div class="user-name" title="Click to rename" data-rename="${r.uid}">
-                ${isDevice ? `<i class="dot ${active?'ok':'err'}" title="${active?'Active now':'Inactive'}"></i>` : ''} ${htmlEscape(r.name||'No name')}
+                ${isDevice ? `<i class="dot ${active?'ok':'err'}" title="${active ? 'Active now' : (lastSeen? ('Last seen '+timeAgo(lastSeen)) : 'No activity')}"></i>` : ''}
+                ${htmlEscape(r.name||'No name')}
               </div>
               <span class="badge">${htmlEscape(r.role||'user')}</span>
             </div>
             <div class="small muted" style="display:flex;gap:8px;flex-wrap:wrap">
               <span>${htmlEscape(r.email||'')}</span>
               <span class="badge">${htmlEscape(dealer)}</span>
+              ${isDevice && lastSeen ? `<span class="badge">last: ${timeAgo(lastSeen)}</span>`:''}
             </div>
             <div class="user-actions">
               <select data-uid="${r.uid}" class="select roleSel">
                 ${['user','admin','device','disabled'].map(v=>`<option value="${v}" ${v===(r.role||'user')?'selected':''}>${v}</option>`).join('')}
               </select>
               <select data-uid="${r.uid}" class="select dealerSel">
-                ${Object.entries(dealers).map(([id,nm])=>`<option value="${id}" ${id===(r.dealershipId||'')?'selected':''}>${nm}</option>`).join('')}
+                ${Object.entries(DEALERS).map(([id,nm])=>`<option value="${id}" ${id===(r.dealershipId||'')?'selected':''}>${nm}</option>`).join('')}
               </select>
               <button class="btn" data-reset="${htmlEscape(r.email||'')}">Reset password</button>
               <button class="btn danger" data-del="${r.uid}">Delete</button>
@@ -225,41 +433,36 @@
         // rename
         grid.querySelectorAll('[data-rename]').forEach(el=>{
           el.addEventListener('click', async ()=>{
-            const uid=el.getAttribute('data-rename');
-            const current=(el.textContent||'').trim();
-            const next=prompt('New name', current.replace(/^•?\s*/,''));
-            if(!next || next===current) return;
-            try{ await update(ref(db,`user/${uid}`),{name:next, updatedAt:Date.now()}); el.innerHTML = el.innerHTML.replace(current, htmlEscape(next)); toast('Name updated'); }
-            catch(e){ toast('Update failed',true); }
+            const uid=el.getAttribute('data-rename'); const current=(el.textContent||'').trim();
+            const next=prompt('New name', current||''); if(!next || next===current) return;
+            try{ await update(ref(db,`user/${uid}`),{name:next,updatedAt:Date.now()}); el.childNodes[0]; el.innerHTML = el.innerHTML.replace(current, htmlEscape(next)); toast('Name updated'); }catch(e){ toast('Update failed',true); }
           });
         });
         // role change
         grid.querySelectorAll('.roleSel').forEach(sel=>{
           sel.addEventListener('change', async (e)=>{ const uid=e.target.dataset.uid; const role=e.target.value;
-            try{ await update(ref(db,`user/${uid}`),{role, updatedAt:Date.now()}); toast('Role updated'); await refreshUsers(); }catch(err){ toast('Update failed',true); }
+            try{ await update(ref(db,`user/${uid}`),{role,updatedAt:Date.now()}); toast('Role updated'); await refreshUsers(); }catch(err){ toast('Update failed',true); }
           });
         });
         // move dealership
         grid.querySelectorAll('.dealerSel').forEach(sel=>{
-          sel.addEventListener('change', async (e)=>{ const uid=e.target.dataset.uid; const did=e.target.value;
-            const dealers=await loadDealersMap(); const name=dealers[did]||did;
-            try{ await update(ref(db,`user/${uid}`),{dealershipId:did, dealershipName:name, updatedAt:Date.now()}); toast('Moved'); }catch(err){ toast('Move failed',true); }
+          sel.addEventListener('change', async (e)=>{ const uid=e.target.dataset.uid; const did=e.target.value; const name=DEALERS[did]||did;
+            try{ await update(ref(db,`user/${uid}`),{dealershipId:did,dealershipName:name,updatedAt:Date.now()}); toast('Moved'); }catch(err){ toast('Move failed',true); }
           });
         });
         // reset
         grid.querySelectorAll('[data-reset]').forEach(btn=>{
           btn.addEventListener('click', async ()=>{
-            const email=btn.getAttribute('data-reset'); if(!email){ toast('No email',true); return; }
-            try{ await sendPasswordResetEmail(getAuth(), email); toast('If the account exists, reset email sent'); }
-            catch(err){ console.error(err); toast('Reset failed',true); }
+            const email=btn.getAttribute('data-reset'); if(!email) return toast('No email',true);
+            try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(err){ toast('Reset failed',true); }
           });
         });
         // delete
         grid.querySelectorAll('[data-del]').forEach(btn=>{
           btn.addEventListener('click', async ()=>{
-            const uid=btn.getAttribute('data-del'); if(!confirm('Delete this user?')) return;
-            try{ await remove(ref(db,`user/${uid}`)); toast('Deleted'); await refreshUsers(); }
-            catch(err){ console.error(err); toast('Delete failed',true); }
+            const uid=btn.getAttribute('data-del');
+            if(!confirm('Delete this user profile from database? (Auth account not removed)')) return;
+            try{ await remove(ref(db,`user/${uid}`)); toast('Deleted'); await refreshUsers(); }catch(err){ toast('Delete failed',true); }
           });
         });
       };
@@ -270,38 +473,59 @@
       renderGroup(groups.disabled,'gridDisabled');
     }
 
-    // ---- Duplicates
-    const DUP_SEL=new Set();
+    function timeAgo(ts){
+      const s=Math.max(0, Math.floor((Date.now()-ts)/1000));
+      if(s<60) return `${s}s`;
+      const m=Math.floor(s/60); if(m<60) return `${m}m`;
+      const h=Math.floor(m/60); if(h<24) return `${h}h`;
+      const d=Math.floor(h/24); return `${d}d`;
+    }
+
+    // ===== Duplicate finder =====
+    const DUP_SEL = new Set();
     $('#findDupBtn').addEventListener('click', async ()=>{
       DUP_SEL.clear(); $('#dupList').innerHTML='';
       let map={}; try{ const u=await get(ref(db,'user')); if(u.exists()) map=u.val(); }catch(e){}
       const rows=Object.entries(map).map(([uid,v])=>({uid,...v})).filter(r=> (r.role==='device') && r.name && r.dealershipId);
+
+      // group by dealershipId + normalized name
       const groups={};
       rows.forEach(r=>{
         const key=(r.dealershipId||'')+'|'+(r.name||'').toLowerCase().trim();
-        (groups[key]||(groups[key]=[])).push(r);
+        if(!groups[key]) groups[key]=[];
+        groups[key].push(r);
       });
-      const now=Date.now(); let any=false;
+
+      // activity snapshot for dots
+      const { map:actMap, now } = await getActivityMap();
+
+      let any=false;
       for(const [key,arr] of Object.entries(groups)){
-        if(arr.length<=1) continue; any=true;
+        if(arr.length<=1) continue;
+        any=true;
         arr.sort((a,b)=> (b.updatedAt||0)-(a.updatedAt||0));
-        const [did,name]=key.split('|');
         const holder=document.createElement('div'); holder.className='item';
+        const [did,name]=key.split('|');
         const inner=arr.map(r=>{
-          const active = (r.updatedAt && (now-r.updatedAt) < 10*60*1000);
+          const lastSeen = actMap[r.uid]||0;
+          const active = lastSeen && (now-lastSeen) < 10*60*1000;
           return `
             <label style="display:flex;align-items:center;gap:8px">
               <input type="checkbox" data-uid="${r.uid}"/>
-              <span>${active?'<i class="dot ok" title="Active now"></i>':'<i class="dot err" title="Inactive"></i>'}
-                ${htmlEscape(r.name)} <span class="tag">${htmlEscape(did)}</span>
-                <span class="badge">${active?'Likely active':'Likely unused'}</span></span>
+              <span>
+                <i class="dot ${active?'ok':'err'}"></i>
+                ${htmlEscape(r.name)} <span class="badge">${htmlEscape(r.email||'')}</span>
+                <span class="badge">${htmlEscape(r.dealershipName||did)}</span>
+                ${lastSeen? `<span class="badge">last: ${timeAgo(lastSeen)}</span>`:''}
+              </span>
             </label>`;
         }).join('<br/>');
-        holder.innerHTML = `<div class="col"><b>“${htmlEscape(name)}” in ${htmlEscape(did)}</b><div class="small muted">Select old/unused ones and delete</div></div><div>${inner}</div>`;
+        holder.innerHTML = `<div><b>“${htmlEscape(name)}” in ${htmlEscape(did)}</b><div class="small muted">Select old/unused ones and delete</div></div><div>${inner}</div>`;
         $('#dupList').appendChild(holder);
       }
       $('#dupBox').style.display='block';
       $('#dupEmpty').style.display= any? 'none':'block';
+
       $('#dupList').querySelectorAll('input[type="checkbox"]').forEach(cb=>{
         cb.addEventListener('change',()=>{ const uid=cb.dataset.uid; if(cb.checked) DUP_SEL.add(uid); else DUP_SEL.delete(uid); });
       });
@@ -309,15 +533,13 @@
 
     $('#deleteDupBtn').addEventListener('click', async ()=>{
       if(!DUP_SEL.size) { toast('Pick duplicates to delete'); return; }
-      if(!confirm(`Delete ${DUP_SEL.size} selected user(s)?`)) return;
+      if(!confirm(`Delete ${DUP_SEL.size} selected user(s) from database? (Auth accounts not removed)`)) return;
       try{
         await Promise.all(Array.from(DUP_SEL).map(uid=> remove(ref(db,`user/${uid}`)).catch(()=>{})));
         DUP_SEL.clear(); toast('Deleted'); $('#dupBox').style.display='none'; await refreshUsers();
       }catch(e){ toast('Delete failed',true); }
     });
-  </script>
 
-  <!-- Toast -->
-  <div id="toast" class="toast"></div>
+  </script>
 </body>
 </html>
