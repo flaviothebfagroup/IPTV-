@@ -4,9 +4,81 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>BFA IPTV — Home</title>
-  <link rel="stylesheet" href="assets/ui.css"/>
+
+  <!-- Optional PWA bits (safe to keep; remove if not used) -->
+  <link rel="manifest" href="/IPTV-/manifest.webmanifest" />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png" />
+  <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png" />
+
+  <style>
+    /* ===== Design tokens (monochrome + orange accent) ===== */
+    :root{
+      --bg:#f5f5f7; --fg:#111; --muted:#6e6e73; --panel:#fff; --border:rgba(0,0,0,.12);
+      --tile:#f2f2f7; --tileActive:#eaeaef; --accent:#ff9500; --shadow:0 14px 36px rgba(0,0,0,.10);
+      --radius:18px; --radius-lg:22px;
+    }
+    body.dark{
+      --bg:#0b0b0c; --fg:#fff; --muted:#9a9aa0; --panel:#121214; --border:rgba(255,255,255,.14);
+      --tile:#17171a; --tileActive:#1d1d21; --shadow:0 18px 48px rgba(0,0,0,.45);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--fg);
+      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
+    }
+    a{color:inherit; text-decoration:none}
+
+    /* ===== Topbar ===== */
+    .topbar{
+      position:sticky; top:0; z-index:50;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:14px 18px; background:var(--panel);
+      border-bottom:1px solid var(--border);
+      backdrop-filter:saturate(1.2) blur(8px);
+    }
+    .lhs{display:flex;align-items:center;gap:12px}
+    .logo{width:36px;height:36px;border-radius:10px;background:var(--tile) center/cover no-repeat;border:1px solid var(--border)}
+    .title{font-weight:900; letter-spacing:.3px}
+    .muted{color:var(--muted); font-size:12px}
+    .btn{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer}
+    .btn.primary{border-color:var(--accent); color:var(--accent); background:transparent}
+
+    /* ===== Shell ===== */
+    .wrap{max-width:1200px;margin:0 auto;padding:18px}
+
+    /* ===== Login card ===== */
+    .card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; box-shadow:var(--shadow)}
+    .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    @media (max-width:720px){ .row2{grid-template-columns:1fr} }
+    .label{font-size:12px; color:var(--muted); margin-bottom:6px}
+    .input{width:100%; padding:12px; background:transparent; border:1px solid var(--border); border-radius:12px; color:var(--fg); font-size:14px; outline:none}
+    .btn.solid{padding:12px;border-radius:12px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
+
+    /* ===== Bento ===== */
+    #grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+    @media (max-width:980px){ #grid{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:560px){ #grid{grid-template-columns:1fr} }
+    .tile{
+      display:flex; flex-direction:column; gap:8px; min-height:120px; padding:18px;
+      border:1px solid var(--border); border-radius:20px; background:var(--tile);
+      cursor:pointer; transition:transform .06s ease, border-color .2s, box-shadow .2s;
+    }
+    .tile:hover{ transform:translateY(-1px); border-color:var(--accent); box-shadow:0 8px 22px rgba(255,149,0,.15) }
+    .tile h3{margin:0; font-size:18px; font-weight:900; letter-spacing:.2px}
+    .tile p{margin:0; color:var(--muted); font-size:12px}
+
+    /* Toast */
+    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
+    .toast.show{opacity:1}
+    .toast.err{background:#ff453a;color:#fff}
+  </style>
 </head>
 <body>
+  <!-- Topbar -->
   <div class="topbar">
     <div class="lhs">
       <div id="brandLogo" class="logo" title="IPTV"></div>
@@ -14,8 +86,7 @@
     </div>
     <div class="rhs" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span id="adminEmail" class="muted"></span>
-      <button id="themeBtn" class="btn">☀︎/🌙</button>
-      <a class="btn primary" href="more.html">More</a>
+      <button id="themeBtn"  class="btn">☀︎/🌙</button>
       <button id="signOutBtn" class="btn primary">Sign out</button>
     </div>
   </div>
@@ -34,50 +105,115 @@
           <input id="password" class="input" type="password" placeholder="••••••••" autocomplete="current-password" />
         </div>
       </div>
-      <div class="row2">
+      <div class="row2" style="margin-top:10px">
         <button id="loginBtn" class="btn solid">Sign in</button>
         <button id="resetBtn" class="btn">Send reset link</button>
       </div>
-      <div class="small muted">Requires <b>role: "admin"</b> in <code>/user/{uid}</code>.</div>
+      <div class="muted" style="font-size:12px;margin-top:8px">Requires <b>role: "admin"</b> in <code>/user/{uid}</code>.</div>
     </div>
 
-    <!-- Bento -->
-    <div id="home" class="page">
-      <div id="homeGrid">
-        <a class="tile" href="dealership.html"><h3>Dealerships</h3><p>Add / rename (migrate) / delete</p></a>
-        <a class="tile" href="display.html"><h3>Displays</h3><p>Live list • channel • volume</p></a>
-        <a class="tile" href="user.html"><h3>Users</h3><p>Create • roles • duplicates</p></a>
-        <a class="tile" href="more.html#links"><h3>Links</h3><p>Quick access</p></a>
-        <a class="tile" href="more.html#analytics"><h3>Analytics</h3><p>Now • channels • dealers</p></a>
-        <a class="tile" href="more.html#schedule"><h3>Schedule</h3><p>Installs • reminders</p></a>
-        <a class="tile" href="more.html#backups"><h3>Backups</h3><p>Download / restore preview</p></a>
+    <!-- Not admin -->
+    <div id="notAdmin" class="card" style="display:none;max-width:720px;margin:40px auto">
+      <h2>Not authorized</h2>
+      <div class="muted" style="font-size:12px">Ask an admin to set your role to <b>admin</b> in the database.</div>
+    </div>
+
+    <!-- Home tiles -->
+    <div id="home" style="display:none">
+      <div class="card" style="margin-bottom:12px">
+        <div class="muted" style="font-size:12px">Tap a tile to open a page.</div>
+      </div>
+      <div id="grid">
+        <a class="tile" href="dealerships.html"><h3>Dealerships</h3><p>Add • rename • migrate • delete</p></a>
+        <a class="tile" href="displays.html"><h3>Displays</h3><p>Live list • channel • volume</p></a>
+        <a class="tile" href="users.html"><h3>Users</h3><p>Create • roles • duplicates</p></a>
+        <a class="tile" href="links.html"><h3>Links</h3><p>Quick access apps</p></a>
+        <a class="tile" href="analytics.html"><h3>Analytics</h3><p>Now • channels • dealers</p></a>
+        <a class="tile" href="schedule.html"><h3>Schedule</h3><p>Installs • reminders</p></a>
+        <a class="tile" href="backups.html"><h3>Backups</h3><p>Download • restore preview</p></a>
+        <a class="tile" href="remote-control.html"><h3>Remote</h3><p>Player remote control</p></a>
+        <a class="tile" href="settings.html"><h3>Settings</h3><p>GitHub sync • theme</p></a>
       </div>
     </div>
   </div>
+
   <div id="toast" class="toast"></div>
 
   <script type="module">
-    import { setupTheme, doLogin, auth, fb, db, LOGO_URL, $, toast } from './assets/core.js';
-    import { onAuthStateChanged, sendPasswordResetEmail, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    setupTheme();
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import {
+      getAuth, setPersistence, browserLocalPersistence,
+      signInWithEmailAndPassword, onAuthStateChanged,
+      sendPasswordResetEmail, signOut
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    document.getElementById('signOutBtn').addEventListener('click', ()=>signOut(auth));
-    document.getElementById('loginBtn').addEventListener('click', ()=> doLogin($('#email').value.trim(), $('#password').value));
-    document.getElementById('resetBtn').addEventListener('click', async ()=>{
+    // ===== Firebase config (yours) =====
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+      authDomain: "iptv-bfa.firebaseapp.com",
+      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+      projectId: "iptv-bfa",
+      storageBucket: "iptv-bfa.firebasestorage.app",
+      messagingSenderId: "838790935867",
+      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    };
+    const LOGO_URL = "/IPTV-/icons/icon-512.png";
+
+    // ===== App =====
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
+
+    // ===== Helpers =====
+    const $ = s => document.querySelector(s);
+    function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
+
+    // Theme + logo
+    const savedTheme = localStorage.getItem('iptv_theme') || 'light';
+    document.body.classList.toggle('dark', savedTheme==='dark');
+    $('#themeBtn').addEventListener('click', ()=>{
+      const dark = !document.body.classList.contains('dark');
+      document.body.classList.toggle('dark', dark);
+      localStorage.setItem('iptv_theme', dark ? 'dark' : 'light');
+    });
+    $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
+
+    // ===== Auth UI =====
+    $('#loginBtn').addEventListener('click', doLogin);
+    $('#resetBtn').addEventListener('click', async ()=>{
       const email = $('#email').value.trim();
       if(!email) return toast('Enter email', true);
       try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed', true); }
     });
+    $('#signOutBtn').addEventListener('click', ()=>signOut(auth));
+
+    async function doLogin(){
+      const email=$('#email').value.trim(), pass=$('#password').value;
+      if(!email||!pass) return toast('Fill email & password', true);
+      try{
+        await setPersistence(auth, browserLocalPersistence);
+        await signInWithEmailAndPassword(auth,email,pass);
+      }catch(e){ console.error(e); toast('Sign-in failed', true); }
+    }
+
+    function showLogin(){ $('#home').style.display='none'; $('#notAdmin').style.display='none'; $('#loginBox').style.display='block'; }
+    function showNotAdmin(){ $('#home').style.display='none'; $('#loginBox').style.display='none'; $('#notAdmin').style.display='block'; }
+    function showHome(){ $('#loginBox').style.display='none'; $('#notAdmin').style.display='none'; $('#home').style.display='block'; }
 
     onAuthStateChanged(auth, async (user)=>{
-      if(!user){
-        document.getElementById('home').classList.remove('active');
-        document.getElementById('loginBox').style.display='block';
-        return;
+      if(!user){ $('#adminEmail').textContent=''; showLogin(); return; }
+      $('#adminEmail').textContent = user.email || user.uid;
+      // Admin gate: /user/{uid}.role === 'admin'
+      try{
+        const snap = await get(ref(db, `user/${user.uid}`));
+        const u = snap.val() || {};
+        if(u.role === 'admin'){ showHome(); }
+        else { showNotAdmin(); }
+      }catch(e){
+        console.error(e);
+        showNotAdmin();
       }
-      document.getElementById('loginBox').style.display='none';
-      document.getElementById('home').classList.add('active');
-      document.getElementById('adminEmail').textContent = user.email || user.uid;
     });
   </script>
 </body>
