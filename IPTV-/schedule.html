@@ -1,1 +1,173 @@
-schedule.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>BFA IPTV — Schedule</title>
+<link rel="manifest" href="/IPTV-/manifest.webmanifest"/><meta name="theme-color" content="#000000"/>
+<link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png"/>
+<link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png"/>
+<link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png"/>
+<style>
+:root{--bg:#0b0b0c;--fg:#fff;--muted:#9a9aa0;--panel:#121214;--border:rgba(255,255,255,.14);--accent:#ff9500;--tile:#17171a;--tileActive:#1d1d21;--shadow:0 18px 48px rgba(0,0,0,.45);--radius:18px;--radius-lg:22px}
+body.light{--bg:#f5f5f7;--fg:#111;--muted:#6e6e73;--panel:#fff;--border:rgba(0,0,0,.12);--tile:#f2f2f7;--tileActive:#eaeaef;--shadow:0 14px 36px rgba(0,0,0,.10)}
+*{box-sizing:border-box} html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;margin:0}
+a{color:inherit}
+.topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;background:linear-gradient(0deg,transparent,rgba(0,0,0,.06));backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.lhs{display:flex;align-items:center;gap:12px}
+.logo{width:36px;height:36px;border-radius:10px;background:var(--tile) center/contain no-repeat;border:1px solid var(--border)}
+.title{font-weight:900}
+.btn{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer}
+.btn.primary{border-color:var(--accent);color:var(--accent);background:transparent}
+.nav{display:flex;gap:6px;flex-wrap:wrap}
+.wrap{max-width:1200px;margin:0 auto;padding:18px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}
+@media (max-width:720px){.row2,.row3{grid-template-columns:1fr}}
+.label{font-size:12px;color:var(--muted);margin-bottom:6px}
+.input{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
+.btn.solid{padding:12px;border-radius:12px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
+.list{margin:8px 0 0;padding:0;list-style:none}
+.item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;margin:8px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px}
+.small{font-size:12px;color:var(--muted)}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="lhs"><a href="./home.html" class="logo" id="brandLogo"></a><div class="title">Schedule</div></div>
+    <div class="nav">
+      <a class="btn" href="./dealerships.html">Dealers</a>
+      <a class="btn" href="./displays.html">Displays</a>
+      <a class="btn" href="./users.html">Users</a>
+      <a class="btn" href="./links.html">Links</a>
+      <a class="btn" href="./analytics.html">Analytics</a>
+      <a class="btn primary" href="./schedule.html">Schedule</a>
+      <a class="btn" href="./backups.html">Backups</a>
+      <a class="btn" href="./remote.html">Remote</a>
+      <button id="themeBtn" class="btn">☀︎/🌙</button>
+      <button id="signOutBtn" class="btn">Sign out</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <h2 style="margin:0 0 8px">Reminders (local)</h2>
+
+      <div class="row2">
+        <div><div class="label">Date / time</div><input id="schWhen" class="input" type="datetime-local"/></div>
+        <div><div class="label">Destination / address (optional)</div><input id="schDest" class="input" placeholder="Location / notes…"/></div>
+      </div>
+
+      <div class="row2">
+        <div><div class="label">Note</div><input id="schNote" class="input" placeholder="Installation / visit / reminder…"/></div>
+        <div style="display:flex;align-items:end;gap:10px;flex-wrap:wrap">
+          <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="schCreateAssets"/><span class="small">Create dealership/display now</span></label>
+          <button id="schAdd" class="btn solid">Add</button>
+        </div>
+      </div>
+
+      <div id="schAssets" style="display:none">
+        <div class="row3">
+          <div><div class="label">Dealership name</div><input id="schDealerName" class="input" placeholder="e.g., Genesis Winnipeg"/></div>
+          <div><div class="label">Dealership ID (auto if empty)</div><input id="schDealerId" class="input" placeholder="genesiswinnipeg"/></div>
+          <div><div class="label">Display ID (auto if empty)</div><input id="schDisplayId" class="input" placeholder="GW-001"/></div>
+        </div>
+      </div>
+
+      <ul id="schList" class="list"></ul>
+      <div id="schEmpty" class="small">No reminders.</div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getDatabase, ref, get, set, update, query, orderByChild, equalTo } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
+const LOGO_URL="https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
+const $=s=>document.querySelector(s);
+const savedTheme=localStorage.getItem('iptv_theme')||'light';
+document.body.classList.toggle('light',savedTheme==='light');
+$('#themeBtn').addEventListener('click',()=>{const isLight=!document.body.classList.contains('light');document.body.classList.toggle('light',isLight);localStorage.setItem('iptv_theme',isLight?'light':'dark');});
+$('#brandLogo').style.backgroundImage=`url("${LOGO_URL}")`;
+
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getDatabase(app);
+$('#signOutBtn').addEventListener('click',()=>signOut(auth));
+setPersistence(auth,browserLocalPersistence);
+onAuthStateChanged(auth,u=>{ if(!u){location.href='./home.html';} });
+
+const LS_SCH='iptv_admin_schedule';
+const schedule=JSON.parse(localStorage.getItem(LS_SCH)||'[]');
+function saveSchedule(){ localStorage.setItem(LS_SCH,JSON.stringify(schedule)); renderSchedule(); }
+function renderSchedule(){
+  const ul=$('#schList'); ul.innerHTML='';
+  if(!schedule.length){ $('#schEmpty').style.display='block'; return; }
+  $('#schEmpty').style.display='none';
+  schedule.sort((a,b)=>a.when.localeCompare(b.when));
+  schedule.forEach((r,i)=>{
+    const li=document.createElement('li'); li.className='item';
+    li.innerHTML=`<div><b>${new Date(r.when).toLocaleString()}</b>
+      <div class="small">${r.note||''}</div>
+      ${r.dest? `<div class="small">📍 ${r.dest}</div>`:''}
+      ${r.assets? `<div class="small">Assets: ${r.assets}</div>`:''}
+    </div><button class="btn" data-del="${i}">Delete</button>`;
+    ul.appendChild(li);
+  });
+  ul.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.del;schedule.splice(i,1);saveSchedule();}));
+}
+renderSchedule();
+
+$('#schCreateAssets').addEventListener('change',e=>{ $('#schAssets').style.display=e.target.checked?'block':'none'; });
+
+function toast(m){const t=document.querySelector('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+function makeDealerId(name){ const base=(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24); return base||('dealer_'+Date.now()); }
+function initialsFromName(name){ const raw=(name||'').trim(); if(!raw) return 'DS'; let parts=raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g)||[]; let a=parts[0]||'', b=parts[1]||''; let p=(a? a[0]:'')+(b? b[0]:''); if(p.length<2 && a.length>=2) p=a.slice(0,2); return p.toUpperCase(); }
+async function collectDisplays(did){ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const s=await get(qRef); return Object.keys(s.val()||{}); }
+function nextSuffix(list,pref){ let max=0; list.forEach(id=>{ const m=id.match(new RegExp('^'+pref+'-(\\d{3})$')); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; }}); return max+1; }
+
+$('#schAdd').addEventListener('click', async ()=>{
+  const when=$('#schWhen').value, note=$('#schNote').value.trim(), dest=$('#schDest').value.trim(), make=$('#schCreateAssets').checked;
+  if(!when||!note) return toast('Pick date/time and note');
+
+  let assets='';
+  if(make){
+    let dName=$('#schDealerName').value.trim();
+    let dId=$('#schDealerId').value.trim();
+    let displayId=$('#schDisplayId').value.trim();
+    if(!dName && !dId) return toast('Enter dealership name or id');
+
+    if(!dId) dId=makeDealerId(dName);
+    const exists=await get(ref(db,`dealershipPublic/${dId}`));
+    if(!exists.exists()){
+      await set(ref(db,`dealershipPublic/${dId}`),{name:dName||dId});
+      await set(ref(db,`dealership/${dId}`),{name:dName||dId,createdAt:Date.now(),createdBy:auth.currentUser?.email||'admin',displays:{}});
+    }
+    if(!displayId){
+      const friendly=(await get(ref(db,`dealershipPublic/${dId}`))).val()?.name||dId;
+      const pref=initialsFromName(friendly);
+      const existing=await collectDisplays(dId);
+      displayId=`${pref}-${String(nextSuffix(existing,pref)).padStart(3,'0')}`;
+    }
+    await set(ref(db,`dealership/${dId}/displays/${displayId}`),true);
+    await update(ref(db,`displays/${displayId}`),{channel:1,volume:0,muted:true,dealership:dId,timestamp:Date.now()});
+    assets=`${dId} • ${displayId}`;
+    $('#schDealerName').value='';$('#schDealerId').value='';$('#schDisplayId').value='';
+  }
+
+  schedule.push({when,note,dest,assets});
+  saveSchedule();
+  $('#schWhen').value='';$('#schNote').value='';$('#schDest').value='';$('#schCreateAssets').checked=false;$('#schAssets').style.display='none';
+  toast('Scheduled');
+});
+</script>
+</body>
+</html>
