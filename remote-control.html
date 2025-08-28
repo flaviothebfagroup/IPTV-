@@ -72,7 +72,7 @@
     .remote{display:none;width:100%;max-width:clamp(360px,92vw,440px);background:var(--panel);border:1px solid var(--border);border-radius:42px;padding:18px 18px 22px;box-shadow:var(--shadow)}
 
     /* Header (responsive, prevents overlaps) */
-    .hdr{ display:grid; grid-template-columns:auto 1fr auto; align-items:center; column-gap:10px; }
+    .hdr{ display:grid; grid-template-columns:auto 1fr auto; align-items:center; column-gap:10px; position:relative; z-index:2; }
     .pill{ justify-self:start;height:34px;padding:0 14px;border-radius:9999px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer }
     .pill .icon{ display:none; margin-left:6px; }
     @media (max-width:380px){ .pill .text{ display:none; } .pill .icon{ display:inline; } }
@@ -130,7 +130,7 @@
     .vol-fill{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg,var(--accent),#ffb866)}
 
     /* Overlays */
-    .chooser{position:fixed;inset:0;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.35)}
+    .chooser{position:fixed;inset:0;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.35);z-index:999}
     .chooser.show{display:flex}
     .sheet{width:min(640px,94vw);max-height:66vh;overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:14px 14px 10px;box-shadow:var(--shadow)}
     .sheet h4{margin:6px 8px 10px;font-size:14px;letter-spacing:.4px;color:var(--muted);text-transform:uppercase}
@@ -140,7 +140,7 @@
     .item small{color:var(--muted)}
     .item.active{border-color:var(--accent); box-shadow:0 0 0 2px rgba(255,149,0,.28)}
 
-    .toast{position:fixed;top:50px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none}
+    .toast{position:fixed;top:50px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;z-index:1000}
     .toast.show{opacity:1}
 
     .hint{display:none!important}
@@ -176,9 +176,8 @@
 
       let fired = false;
       function callSignIn() {
-        if (fired) return; // prevent double taps firing twice
+        if (fired) return; // prevent double taps
         fired = true;
-        // basic guard (don’t block browsers’ submit behavior)
         if (!email.value.trim() || !pass.value) { fired = false; return; }
 
         if (typeof window.signIn === 'function') {
@@ -194,18 +193,17 @@
           } else if (++tries > 50) {
             clearInterval(iv);
             console.warn('signIn not ready');
+            fired = false; // allow retry after timeout
           }
-          if (tries > 50) fired = false; // allow retry after timeout
         }, 100);
       }
 
-      // Fire on the earliest event available across browsers
+      // Fire on earliest event across engines
       if (btn) {
         btn.addEventListener('touchstart', (e)=>{ e.preventDefault(); callSignIn(); }, {passive:false});
         btn.addEventListener('pointerup',  (e)=>{ e.preventDefault(); callSignIn(); });
         btn.addEventListener('click',      (e)=>{ e.preventDefault(); callSignIn(); });
       }
-
       // ENTER key from inputs
       [email, pass].forEach(el => el && el.addEventListener('keydown', e => {
         if (e.key === 'Enter') { e.preventDefault(); callSignIn(); }
@@ -309,7 +307,7 @@
     function t(key){ return i18n[lang][key]; }
     function toast(msg){ const tEl=$('#toast'); tEl.textContent=msg; tEl.classList.add('show'); setTimeout(()=>tEl.classList.remove('show'),1400); }
 
-    // Login language chooser
+    /* ---------- Language chooser (login) ---------- */
     const langLink = $id('langLink'), langLinkText = $id('langLinkText');
     const langChooser = $id('langChooser'), langList = $id('langList');
     function openLangChooser(){ langList.querySelectorAll('.item').forEach(it=>it.classList.toggle('active', it.dataset.lang===lang)); langChooser.classList.add('show'); }
@@ -318,13 +316,14 @@
     langChooser.addEventListener('click', (e)=>{ if(e.target.id==='langChooser'){ closeLangChooser(); } });
     langList.addEventListener('click', (e)=>{ const item=e.target.closest('.item'); if(!item) return; setLang(item.dataset.lang); closeLangChooser(); });
 
-    // Header language segmented control
+    /* ---------- Header segmented control ---------- */
     const langToggle  = $id('langToggle');
     const langButtons = Array.from(langToggle.querySelectorAll('.seg-btn'));
     function updateLangButtons(){ langButtons.forEach(b=>{ const on=b.dataset.lang===lang; b.classList.toggle('active',on); b.setAttribute('aria-pressed', on?'true':'false'); }); }
     langButtons.forEach(b=> b.addEventListener('click', ()=> setLang(b.dataset.lang)));
     function setLang(newLang){ if(!newLang||newLang===lang) return; lang=newLang; localStorage.setItem('iptv_lang',lang); applyI18n(); updateLangButtons(); toast(i18n[lang].langToast); }
 
+    /* ---------- Apply i18n ---------- */
     function applyI18n(){
       document.documentElement.lang = i18n[lang].htmlLang;
       $id('email').placeholder = t('emailPH');
@@ -337,7 +336,6 @@
       const enRow = $('#langList .item[data-lang="en"]'); const frRow = $('#langList .item[data-lang="fr"]');
       if (enRow) { enRow.querySelector('b').textContent = i18n[lang].langEnglish; enRow.querySelector('small').textContent = 'EN'; }
       if (frRow) { frRow.querySelector('b').textContent = i18n[lang].langFrench; frRow.querySelector('small').textContent = 'FR'; }
-      const logo = document.querySelector('.logo'); if (logo) logo.setAttribute('aria-label', t('ariaLogo'));
       const sText = $('#btnSignOut .text'); if (sText) sText.textContent = t('btnSignOut');
       $id('currentDisplay').textContent = t('displayTitle'); $id('currentDisplay').title = t('titleTap');
       $id('chooserTitle').textContent = t('chooserAll');
@@ -377,6 +375,24 @@
     }
     window.signIn = signIn;
 
+    // -------- universal fastBind (touchstart/pointerup/click + keyboard) ----------
+    function fastBind(el, handler){
+      if(!el) return;
+      let locked = false;
+      const fire = (ev)=>{ if(locked) return; locked = true; try{ handler(ev); }finally{ setTimeout(()=>locked=false, 0); } };
+      el.addEventListener('touchstart', (e)=>{ e.preventDefault(); fire(e); }, {passive:false});
+      el.addEventListener('pointerup',  (e)=>{ e.preventDefault(); fire(e); });
+      el.addEventListener('click',      (e)=>{ e.preventDefault(); fire(e); });
+      el.addEventListener('keydown',    (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); fire(e);} });
+    }
+
+    async function safeSignOut(){
+      try { await signOut(auth); toast(lang==='fr'?'Déconnecté':'Signed out'); }
+      catch(e){ console.error(e); toast(lang==='fr'?'Échec de la déconnexion':'Sign out failed'); }
+    }
+    fastBind($id('btnSignOut'), ()=> safeSignOut());
+
+    // ---------- STATE ----------
     let dealershipId = null, displayIds = [], currentDisplay = null;
     let currentChannel = 1, previewChannel = 1;
     let volume = 50, muted = false;
@@ -432,7 +448,7 @@
     const savedTheme = localStorage.getItem('iptv_theme') || 'light';
     document.body.classList.toggle('light', savedTheme==='light');
     syncThemeSwitch();
-    $id('hdrSwitch').addEventListener('click', ()=>{
+    fastBind($id('hdrSwitch'), ()=>{
       const isLight = !document.body.classList.contains('light');
       document.body.classList.toggle('light', isLight);
       localStorage.setItem('iptv_theme', isLight ? 'light' : 'dark');
@@ -465,7 +481,7 @@
       if(saved && displayIds.includes(saved)){ switchDisplay(saved); }
       else if(displayIds.length){ switchDisplay(displayIds[0]); }
 
-      $id('currentDisplay').addEventListener('click', openChooser);
+      fastBind($id('currentDisplay'), ()=> openChooser());
       applyI18n(); updateLangButtons(); paintDial(currentChannel); updateVolumeUI();
     }
 
@@ -550,18 +566,19 @@
       }
     }
 
-    for (let i=1;i<=5;i++){ $id(`qch-${i}`).addEventListener('click', ()=>{ setActiveTileByIndex(i-1, 'right'); commitFocusedIfChannel(); }); }
-    $id('q-mute').addEventListener('click', ()=>toggleMute());
-    $id('dialSelect').addEventListener('click', ()=>commitFocusedIfChannel());
+    for (let i=1;i<=5;i++){ fastBind($id(`qch-${i}`), ()=>{ setActiveTileByIndex(i-1, 'right'); commitFocusedIfChannel(); }); }
+    fastBind($id('q-mute'), ()=> toggleMute());
+    fastBind($id('dialSelect'), ()=> commitFocusedIfChannel());
 
-    $id('arrowUp').addEventListener('click',   ()=> moveFocus(0,-1));
-    $id('arrowDown').addEventListener('click', ()=> moveFocus(0, 1));
-    $id('arrowLeft').addEventListener('click', ()=> moveFocus(-1,0));
-    $id('arrowRight').addEventListener('click',()=> moveFocus( 1,0));
+    fastBind($id('arrowUp'),   ()=> moveFocus(0,-1));
+    fastBind($id('arrowDown'), ()=> moveFocus(0, 1));
+    fastBind($id('arrowLeft'), ()=> moveFocus(-1,0));
+    fastBind($id('arrowRight'),()=> moveFocus( 1,0));
 
-    $id('volPlus').addEventListener('click',  ()=> volUp());
-    $id('volMinus').addEventListener('click', ()=> volDown());
+    fastBind($id('volPlus'),  ()=> volUp());
+    fastBind($id('volMinus'), ()=> volDown());
 
+    // Swipe focus with orange glow — ensure center button isn't hijacked
     const dial=$id('dial'); let sx=0, sy=0, tracking=false; const TH=28;
     dial.addEventListener('pointerdown',(e)=>{ 
       if ((e.target && e.target.id === 'dialSelect')) return; // don't capture when pressing center
