@@ -125,7 +125,7 @@
       background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02)),var(--panel);
       border:1px solid var(--border);display:grid;place-items:center;text-align:center;overflow:hidden;box-shadow:none
     }
-    /* make center tap always clickable above its contents */
+    /* content is non-interactive; button sits above it */
     #dialContent{position:relative;width:100%;height:100%;display:grid;place-items:center;z-index:1;pointer-events:none}
     .dial-select{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:56%;height:56%;border-radius:50%;background:transparent;border:0;cursor:pointer;z-index:2}
 
@@ -185,9 +185,12 @@
   <div class="login" id="login">
     <div class="logo" role="img" aria-label="IPTV logo"></div>
     <div class="card" id="loginCard">
-      <input type="email" id="email" placeholder="Email" autocomplete="email" />
-      <input type="password" id="password" placeholder="Password" autocomplete="current-password" />
-      <button id="btnEnter" type="button" onclick="window.signIn && window.signIn()">ENTER</button>
+      <!-- make it a real form for rock-solid mobile submit -->
+      <form id="loginForm" novalidate>
+        <input type="email" id="email" placeholder="Email" autocomplete="email" required />
+        <input type="password" id="password" placeholder="Password" autocomplete="current-password" required />
+        <button id="btnEnter" type="submit">ENTER</button>
+      </form>
 
       <!-- Minimal language link (bottom of card) -->
       <div class="lang-min">
@@ -200,18 +203,44 @@
   <!-- ENTER reliability hotfix -->
   <script>
     (function () {
+      const form  = document.getElementById('loginForm');
       const btn   = document.getElementById('btnEnter');
       const email = document.getElementById('email');
       const pass  = document.getElementById('password');
+
       function callSignIn() {
-        if (typeof window.signIn === 'function') { try { window.signIn(); } catch(e){} return; }
-        let tries=0; const iv=setInterval(()=>{ 
-          if (typeof window.signIn === 'function') { clearInterval(iv); try{ window.signIn(); }catch(e){}; }
-          else if(++tries>50){ clearInterval(iv); console.warn('signIn not ready'); }
-        },100);
+        // Guard: basic client-side requirements
+        if (!email.value.trim() || !pass.value) { return; }
+        if (typeof window.signIn === 'function') {
+          try { window.signIn(); } catch(e){}
+          return;
+        }
+        // Retry until module is ready
+        let tries = 0;
+        const iv = setInterval(() => {
+          if (typeof window.signIn === 'function') {
+            clearInterval(iv);
+            try { window.signIn(); } catch(e){}
+          } else if (++tries > 50) { // ~5s
+            clearInterval(iv);
+            console.warn('signIn not ready');
+          }
+        }, 100);
       }
-      if (btn) { btn.addEventListener('click', e=>{e.preventDefault();callSignIn();}); btn.onclick=e=>{e.preventDefault();callSignIn();}; }
-      [email,pass].forEach(el=> el && el.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); callSignIn(); } }));
+
+      // Submit is the most reliable on mobile
+      if (form) {
+        form.addEventListener('submit', (e) => { e.preventDefault(); callSignIn(); });
+      }
+      // Extra safety for taps
+      if (btn) {
+        btn.addEventListener('click', (e)=>{ e.preventDefault(); callSignIn(); });
+        btn.addEventListener('touchend', (e)=>{ e.preventDefault(); callSignIn(); }, {passive:false});
+      }
+      // Enter key in fields
+      [email,pass].forEach(el => el && el.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); callSignIn(); }
+      }));
     })();
   </script>
 
@@ -300,177 +329,62 @@
     import { getAuth, setPersistence, browserLocalPersistence, signOut, onAuthStateChanged, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import { getDatabase, ref, get, onValue, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    // ---------------- I18N ----------------
+    /* ---------------- I18N (same as before) ---------------- */
     const i18n = {
-      en: {
-        htmlLang: 'en',
-        emailPH: 'Email',
-        passwordPH: 'Password',
-        btnEnter: 'ENTER',
-        linkNoAccount: "Don’t have an account?",
-        linkCreate: 'Create your account',
-        btnSignOut: 'Sign out',
-        displayTitle: 'DISPLAY',
-        titleTap: 'Tap to select TV',
-        chooserAll: 'All TVs',
-        chooserMine: 'My TVs',
-        themeLight: 'Light mode',
-        themeDark: 'Dark mode',
-        needCreds: 'Enter email & password',
-        invalidLogin: 'Invalid login',
-        loginFailed: 'Login failed',
-        selectDisplay: 'Select a TV',
-        updateDenied: 'Update denied — check rules/display dealership',
-        mutedLabel: 'Mute',
-        mutedOn: 'Muted',
-        toastMuted: 'MUTED',
-        toastUnmuted: 'UNMUTED',
-        dialAria: 'Ring navigation',
-        arrows: {Up:'Up',Down:'Down',Left:'Left',Right:'Right',Select:'Select'},
-        CH: 'CH',
-        VOL: 'VOL',
-        channels: {1:'News',2:'Sports',3:'Cooking',4:'Nature',5:'Kids'},
-        ariaLogo: 'IPTV logo',
-        langToast: 'Language: English',
-        langChooserTitle: 'Choose your language',
-        langLinkPrefix: 'Language',
-        langEnglish: 'English',
-        langFrench: 'French',
-      },
-      fr: {
-        htmlLang: 'fr-CA',
-        emailPH: 'Courriel',
-        passwordPH: 'Mot de passe',
-        btnEnter: 'Se connecter',
-        linkNoAccount: 'Pas de compte ?',
-        linkCreate: 'Créez votre compte',
-        btnSignOut: 'Déconnexion',
-        displayTitle: 'ÉCRAN',
-        titleTap: 'Touchez pour choisir l’écran',
-        chooserAll: 'Tous les écrans',
-        chooserMine: 'Mes écrans',
-        themeLight: 'Mode clair',
-        themeDark: 'Mode sombre',
-        needCreds: 'Entrez votre courriel et votre mot de passe',
-        invalidLogin: 'Identifiants invalides',
-        loginFailed: 'Échec de la connexion',
-        selectDisplay: 'Sélectionnez un écran',
-        updateDenied: 'Mise à jour refusée — vérifiez les règles/la concession',
-        mutedLabel: 'Sourdine',
-        mutedOn: 'En sourdine',
-        toastMuted: 'SOURDINE',
-        toastUnmuted: 'SON ACTIVÉ',
-        dialAria: 'Navigation circulaire',
-        arrows: {Up:'Haut',Down:'Bas',Left:'Gauche',Right:'Droite',Select:'Sélectionner'},
-        CH: 'CH',
-        VOL: 'VOL',
-        channels: {1:'Nouvelles',2:'Sports',3:'Cuisine',4:'Nature',5:'Enfants'},
-        ariaLogo: 'logo IPTV',
-        langToast: 'Langue : Français',
-        langChooserTitle: 'Choisissez votre langue',
-        langLinkPrefix: 'Langue',
-        langEnglish: 'Anglais',
-        langFrench: 'Français',
-      }
+      en:{htmlLang:'en',emailPH:'Email',passwordPH:'Password',btnEnter:'ENTER',linkNoAccount:"Don’t have an account?",linkCreate:'Create your account',btnSignOut:'Sign out',displayTitle:'DISPLAY',titleTap:'Tap to select TV',chooserAll:'All TVs',chooserMine:'My TVs',themeLight:'Light mode',themeDark:'Dark mode',needCreds:'Enter email & password',invalidLogin:'Invalid login',loginFailed:'Login failed',selectDisplay:'Select a TV',updateDenied:'Update denied — check rules/display dealership',mutedLabel:'Mute',mutedOn:'Muted',toastMuted:'MUTED',toastUnmuted:'UNMUTED',dialAria:'Ring navigation',arrows:{Up:'Up',Down:'Down',Left:'Left',Right:'Right',Select:'Select'},CH:'CH',VOL:'VOL',channels:{1:'News',2:'Sports',3:'Cooking',4:'Nature',5:'Kids'},ariaLogo:'IPTV logo',langToast:'Language: English',langChooserTitle:'Choose your language',langLinkPrefix:'Language',langEnglish:'English',langFrench:'French'},
+      fr:{htmlLang:'fr-CA',emailPH:'Courriel',passwordPH:'Mot de passe',btnEnter:'Se connecter',linkNoAccount:'Pas de compte ?',linkCreate:'Créez votre compte',btnSignOut:'Déconnexion',displayTitle:'ÉCRAN',titleTap:'Touchez pour choisir l’écran',chooserAll:'Tous les écrans',chooserMine:'Mes écrans',themeLight:'Mode clair',themeDark:'Mode sombre',needCreds:'Entrez votre courriel et votre mot de passe',invalidLogin:'Identifiants invalides',loginFailed:'Échec de la connexion',selectDisplay:'Sélectionnez un écran',updateDenied:'Mise à jour refusée — vérifiez les règles/la concession',mutedLabel:'Sourdine',mutedOn:'En sourdine',toastMuted:'SOURDINE',toastUnmuted:'SON ACTIVÉ',dialAria:'Navigation circulaire',arrows:{Up:'Haut',Down:'Bas',Left:'Gauche',Right:'Droite',Select:'Sélectionner'},CH:'CH',VOL:'VOL',channels:{1:'Nouvelles',2:'Sports',3:'Cuisine',4:'Nature',5:'Enfants'},ariaLogo:'logo IPTV',langToast:'Langue : Français',langChooserTitle:'Choisissez votre langue',langLinkPrefix:'Langue',langEnglish:'Anglais',langFrench:'Français'}
     };
-
     let lang = localStorage.getItem('iptv_lang') || ((navigator.language||'en').toLowerCase().startsWith('fr') ? 'fr' : 'en');
-
     const $  = (s)=>document.querySelector(s);
+    const $id = (s)=>document.getElementById(s);
     function t(key){ return i18n[lang][key]; }
     function toast(msg){ const tEl=$('#toast'); tEl.textContent=msg; tEl.classList.add('show'); setTimeout(()=>tEl.classList.remove('show'),1400); }
 
-    /* ---------- Login: minimal language link + chooser ---------- */
-    const langLink = document.getElementById('langLink');
-    const langLinkText = document.getElementById('langLinkText');
-    const langChooser = document.getElementById('langChooser');
-    const langList = document.getElementById('langList');
-
-    function openLangChooser(){
-      document.querySelectorAll('#langList .item').forEach(it=>{
-        it.classList.toggle('active', it.dataset.lang === lang);
-      });
-      langChooser.classList.add('show');
-    }
+    /* ---------- Login language chooser ---------- */
+    const langLink = $id('langLink'), langLinkText = $id('langLinkText');
+    const langChooser = $id('langChooser'), langList = $id('langList');
+    function openLangChooser(){ langList.querySelectorAll('.item').forEach(it=>it.classList.toggle('active', it.dataset.lang===lang)); langChooser.classList.add('show'); }
     function closeLangChooser(){ langChooser.classList.remove('show'); }
-
     langLink.addEventListener('click', openLangChooser);
     langChooser.addEventListener('click', (e)=>{ if(e.target.id==='langChooser'){ closeLangChooser(); } });
-    langList.addEventListener('click', (e)=>{
-      const item = e.target.closest('.item');
-      if(!item) return;
-      setLang(item.dataset.lang);
-      closeLangChooser();
-    });
+    langList.addEventListener('click', (e)=>{ const item=e.target.closest('.item'); if(!item) return; setLang(item.dataset.lang); closeLangChooser(); });
 
-    /* ---------- Header: segmented control (unchanged) ---------- */
-    const langToggle  = document.getElementById('langToggle');
+    /* ---------- Header segmented control ---------- */
+    const langToggle  = $id('langToggle');
     const langButtons = Array.from(langToggle.querySelectorAll('.seg-btn'));
-    function updateLangButtons(){
-      langButtons.forEach(b=>{
-        const on = b.dataset.lang === lang;
-        b.classList.toggle('active', on);
-        b.setAttribute('aria-pressed', on ? 'true' : 'false');
-      });
-    }
+    function updateLangButtons(){ langButtons.forEach(b=>{ const on=b.dataset.lang===lang; b.classList.toggle('active',on); b.setAttribute('aria-pressed', on?'true':'false'); }); }
     langButtons.forEach(b=> b.addEventListener('click', ()=> setLang(b.dataset.lang)));
-
-    function setLang(newLang){
-      if (!newLang || newLang===lang) return;
-      lang = newLang;
-      localStorage.setItem('iptv_lang', lang);
-      applyI18n();
-      updateLangButtons();
-      toast(i18n[lang].langToast);
-    }
+    function setLang(newLang){ if(!newLang||newLang===lang) return; lang=newLang; localStorage.setItem('iptv_lang',lang); applyI18n(); updateLangButtons(); toast(i18n[lang].langToast); }
 
     /* ---------- Apply i18n ---------- */
     function applyI18n(){
       document.documentElement.lang = i18n[lang].htmlLang;
-
-      // login texts
-      $('#email').placeholder = t('emailPH');
-      $('#password').placeholder = t('passwordPH');
-      $('#btnEnter').textContent = t('btnEnter');
-      $('#signupLink').childNodes[0].textContent = t('linkNoAccount') + ' ';
-      $('#signupA').textContent = t('linkCreate');
+      $id('email').placeholder = t('emailPH');
+      $id('password').placeholder = t('passwordPH');
+      $id('btnEnter').textContent = t('btnEnter');
+      $id('signupLink').childNodes[0].textContent = t('linkNoAccount') + ' ';
+      $id('signupA').textContent = t('linkCreate');
       langLinkText.textContent = `${t('langLinkPrefix')}: ${lang==='fr'? i18n[lang].langFrench : i18n[lang].langEnglish}`;
-      $('#langChooserTitle').textContent = t('langChooserTitle');
-      const enRow = $('#langList .item[data-lang="en"]');
-      const frRow = $('#langList .item[data-lang="fr"]');
+      $id('langChooserTitle').textContent = t('langChooserTitle');
+      const enRow = $('#langList .item[data-lang="en"]'); const frRow = $('#langList .item[data-lang="fr"]');
       if (enRow) { enRow.querySelector('b').textContent = i18n[lang].langEnglish; enRow.querySelector('small').textContent = 'EN'; }
       if (frRow) { frRow.querySelector('b').textContent = i18n[lang].langFrench; frRow.querySelector('small').textContent = 'FR'; }
-
-      const logo = document.querySelector('.logo');
-      if (logo) logo.setAttribute('aria-label', t('ariaLogo'));
-
-      // header
-      const signOutText = $('#btnSignOut .text');
-      if (signOutText) signOutText.textContent = t('btnSignOut');
-      $('#currentDisplay').textContent = t('displayTitle');
-      $('#currentDisplay').title = t('titleTap');
-
-      // chooser (TV list)
-      $('#chooserTitle').textContent = t('chooserAll');
-
-      // dial aria + arrows
-      $('#dial').setAttribute('aria-label', t('dialAria'));
-      $('#arrowUp').setAttribute('aria-label', i18n[lang].arrows.Up);
-      $('#arrowDown').setAttribute('aria-label', i18n[lang].arrows.Down);
-      $('#arrowLeft').setAttribute('aria-label', i18n[lang].arrows.Left);
-      $('#arrowRight').setAttribute('aria-label', i18n[lang].arrows.Right);
-      $('#dialSelect').setAttribute('aria-label', i18n[lang].arrows.Select);
-
-      // channel labels + mute
-      for (let i=1;i<=5;i++) {
-        const el = document.getElementById('lbl-'+i);
-        if (el) el.textContent = i18n[lang].channels[i];
-      }
-      document.getElementById('muteLabel').textContent = muted ? t('mutedOn') : t('mutedLabel');
+      const logo = document.querySelector('.logo'); if (logo) logo.setAttribute('aria-label', t('ariaLogo'));
+      const sText = $('#btnSignOut .text'); if (sText) sText.textContent = t('btnSignOut');
+      $id('currentDisplay').textContent = t('displayTitle'); $id('currentDisplay').title = t('titleTap');
+      $id('chooserTitle').textContent = t('chooserAll');
+      $id('dial').setAttribute('aria-label', t('dialAria'));
+      $id('arrowUp').setAttribute('aria-label', i18n[lang].arrows.Up);
+      $id('arrowDown').setAttribute('aria-label', i18n[lang].arrows.Down);
+      $id('arrowLeft').setAttribute('aria-label', i18n[lang].arrows.Left);
+      $id('arrowRight').setAttribute('aria-label', i18n[lang].arrows.Right);
+      $id('dialSelect').setAttribute('aria-label', i18n[lang].arrows.Select);
+      for (let i=1;i<=5;i++){ const el=$id('lbl-'+i); if(el) el.textContent=i18n[lang].channels[i]; }
+      $id('muteLabel').textContent = muted ? t('mutedOn') : t('mutedLabel');
       paintDial(currentChannel);
     }
 
-    // ---------------- Firebase ----------------
+    /* ---------------- Firebase ---------------- */
     const firebaseConfig = {
       apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
       authDomain: "iptv-bfa.firebaseapp.com",
@@ -480,7 +394,6 @@
       messagingSenderId: "838790935867",
       appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
     };
-
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
@@ -494,7 +407,6 @@
     let displayUnsub = null;
     let isAdmin = false;
 
-    const $id = (s)=>document.getElementById(s);
     function haptic(){ if(navigator.vibrate){ try{ navigator.vibrate(10);}catch(e){} } }
     function updateVolumeUI(){ $id('volFill').style.width = volume + '%'; }
     function channelName(ch){ return (i18n[lang].channels[ch] || (lang==='fr' ? `Chaîne ${ch}` : `Channel ${ch}`)); }
@@ -506,28 +418,17 @@
       if(!ring) return;
       const map = { right:['75%','50%'], left:['25%','50%'], up:['50%','25%'], down:['50%','75%'] };
       const [gx,gy] = map[dir] || ['60%','50%'];
-      ring.style.setProperty('--glow-x', gx);
-      ring.style.setProperty('--glow-y', gy);
-      ring.classList.add('show-glow');
-      setTimeout(()=> ring.classList.remove('show-glow'), 260);
+      ring.style.setProperty('--glow-x', gx); ring.style.setProperty('--glow-y', gy);
+      ring.classList.add('show-glow'); setTimeout(()=> ring.classList.remove('show-glow'), 260);
     }
 
     // ---------- Animations ----------
     function animateDialTo(ch, dir){
       const content=$id('dialContent'); if(!content){ paintDial(ch); return; }
-      const axis=(dir==='up'||dir==='down')?'Y':'X';
-      const amt=(dir==='left'||dir==='up')?-26:26;
-      const out = content.animate(
-        [{transform:`translate${axis}(0px)`,opacity:1},
-         {transform:`translate${axis}(${amt}px)`,opacity:.6}],
-        {duration:130,easing:'ease-out'}
-      );
+      const axis=(dir==='up'||dir==='down')?'Y':'X'; const amt=(dir==='left'||dir==='up')?-26:26;
+      const out = content.animate([{transform:`translate${axis}(0px)`,opacity:1},{transform:`translate${axis}(${amt}px)`,opacity:.6}],{duration:130,easing:'ease-out'});
       out.finished.then(()=>{ paintDial(ch);
-        content.animate(
-          [{transform:`translate${axis}(${ -amt }px)`,opacity:.6},
-           {transform:`translate${axis}(0px)`,opacity:1}],
-          {duration:130,easing:'ease-out'}
-        );
+        content.animate([{transform:`translate${axis}(${-amt}px)`,opacity:.6},{transform:`translate${axis}(0px)`,opacity:1}],{duration:130,easing:'ease-out'});
       }).catch(()=>{});
     }
 
@@ -535,7 +436,7 @@
       const clamped = Math.max(0, Math.min(IDX_TO_ID.length-1, i));
       if (clamped === focusedIndex) return;
       focusedIndex = clamped;
-      IDX_TO_ID.forEach((id,idx)=>{ const el=document.getElementById(id); if(el){ el.classList.toggle('active', idx===focusedIndex); } });
+      IDX_TO_ID.forEach((id,idx)=>{ const el=$id(id); if(el){ el.classList.toggle('active', idx===focusedIndex); } });
       if (focusedIndex <= 4) {
         const nextCh = focusedIndex + 1;
         if (nextCh !== previewChannel) { previewChannel = nextCh; animateDialTo(previewChannel, dir || 'right'); flashGlow(dir || 'right'); }
@@ -593,7 +494,6 @@
 
     // ---------- DATA LOADING ----------
     async function afterLogin(user){
-      // profile (singular -> plural fallback)
       let uSnap = await get(ref(db, `user/${user.uid}`));
       if(!uSnap.exists()) uSnap = await get(ref(db, `users/${user.uid}`));
       const u = uSnap.val() || {};
@@ -681,7 +581,7 @@
           currentChannel = preview;
           paintDial(currentChannel);
           updateDisplay();
-          const tileEl = document.getElementById(IDX_TO_ID[focusedIndex]);
+          const tileEl = $id(IDX_TO_ID[focusedIndex]);
           const dc = $id('dialContent');
           if (tileEl) { tileEl.classList.add('pulsing'); setTimeout(()=>tileEl.classList.remove('pulsing'), 260); }
           if (dc) { dc.classList.add('pulse'); setTimeout(()=>dc.classList.remove('pulse'), 280); }
@@ -692,9 +592,7 @@
       }
     }
 
-    for (let i=1;i<=5;i++){
-      document.getElementById(`qch-${i}`).addEventListener('click', ()=>{ setActiveTileByIndex(i-1, 'right'); commitFocusedIfChannel(); });
-    }
+    for (let i=1;i<=5;i++){ $id(`qch-${i}`).addEventListener('click', ()=>{ setActiveTileByIndex(i-1, 'right'); commitFocusedIfChannel(); }); }
     $id('q-mute').addEventListener('click', ()=>toggleMute());
     $id('dialSelect').addEventListener('click', ()=>commitFocusedIfChannel());
 
@@ -703,13 +601,16 @@
     $id('arrowLeft').addEventListener('click', ()=> moveFocus(-1,0));
     $id('arrowRight').addEventListener('click',()=> moveFocus( 1,0));
 
-    // Volume buttons (restored)
+    // Volume buttons
     $id('volPlus').addEventListener('click',  ()=> volUp());
     $id('volMinus').addEventListener('click', ()=> volDown());
 
-    const dial=$id('dial');
-    let sx=0, sy=0, tracking=false; const TH=28;
-    dial.addEventListener('pointerdown',(e)=>{ tracking=true; sx=e.clientX; sy=e.clientY; dial.setPointerCapture(e.pointerId); });
+    // Swipe focus with orange glow — ensure center button isn't hijacked
+    const dial=$id('dial'); let sx=0, sy=0, tracking=false; const TH=28;
+    dial.addEventListener('pointerdown',(e)=>{ 
+      if ((e.target && e.target.id === 'dialSelect')) return; // don't capture when pressing center
+      tracking=true; sx=e.clientX; sy=e.clientY; dial.setPointerCapture(e.pointerId);
+    });
     dial.addEventListener('pointerup',(e)=>{ if(!tracking) return; tracking=false; const dx=e.clientX-sx, dy=e.clientY-sy;
       if(Math.abs(dx)>Math.abs(dy) && Math.abs(dx)>TH){ moveFocus(dx>0?+1:-1,0); }
       else if(Math.abs(dy)>TH){ moveFocus(0, dy<0?-1:+1); }
@@ -717,7 +618,7 @@
     dial.addEventListener('pointercancel',()=>{ tracking=false; });
 
     // Initial paint & i18n
-    IDX_TO_ID.forEach((id,idx)=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active', idx===focusedIndex); });
+    IDX_TO_ID.forEach((id,idx)=>{ const el=$id(id); if(el) el.classList.toggle('active', idx===focusedIndex); });
     applyI18n(); updateLangButtons();
     paintDial(currentChannel); updateVolumeUI();
 
