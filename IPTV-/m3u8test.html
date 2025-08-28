@@ -2,11 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-  />
-  <title>M3U8 Link Tester — BFA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum=1, user-scalable=no" />
+  <title>BFA — M3U8 Link Tester</title>
 
   <!-- Video.js -->
   <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
@@ -14,123 +11,71 @@
 
   <style>
     :root{
-      --bg:#0b0c10; --panel:#14151a; --muted:#9aa1ac; --fg:#e8ecf1; --primary:#0ea5e9; --primary-2:#0284c7; --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444; --ring:rgba(14,165,233,.35);
+      --brand: #ff6a00; /* BRAND_ORANGE — replace if your BFA orange differs */
+      --brand-2: #e85f00;
+      --bg:#0b0c10; --panel:#14151a; --muted:#9aa1ac; --fg:#e8ecf1; --ring:rgba(255,106,0,.28);
     }
-    /* Light mode defaults (overridden by [data-theme="light"]) */
     [data-theme="light"]{
-      --bg:#fafafa; --panel:#ffffff; --muted:#6b7280; --fg:#0f172a; --primary:#007aff; --primary-2:#005aca; --ring:rgba(0,122,255,.25);
+      --bg:#fafafa; --panel:#ffffff; --muted:#6b7280; --fg:#0f172a; --ring:rgba(255,106,0,.22);
     }
-
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body {
-      margin: 0; background: var(--bg); color: var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
-    }
-
-    .wrap {
-      max-width: 1200px; margin: 24px auto; padding: 0 16px; display: grid; gap: 16px;
-      grid-template-columns: 1fr; grid-template-areas:
-          "header"
-          "player"
-          "controls"
-          "sidebar";
-    }
-    @media (min-width: 980px){
-      .wrap {
-        grid-template-columns: 2fr 1fr;
-        grid-template-areas:
-          "header header"
-          "player sidebar"
-          "controls sidebar";
-      }
-    }
-
-    .card {
-      background: var(--panel);
-      border: 1px solid rgba(255,255,255,.06);
-      border-radius: 16px; padding: 16px;
-      box-shadow: 0 8px 30px rgba(0,0,0,.18);
-    }
-    .header { grid-area: header; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .title { display: flex; align-items: center; gap: 12px; }
-    .badge { font-size: 12px; color: var(--muted); }
-    .grow { flex: 1; }
-
-    .player-card { grid-area: player; padding: 0; overflow: hidden; }
-    .player-head { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.06); display:flex; align-items:center; gap:10px; }
-    .now { font-weight: 600; }
-    .status-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--ok); box-shadow: 0 0 0 3px rgba(34,197,94,.2); }
-    .status-dot.err { background: var(--danger); box-shadow: 0 0 0 3px rgba(239,68,68,.25); }
-    .video-shell { position: relative; background: #000; }
-    /* 16:9 box */
-    .video-shell::before { content:""; display:block; padding-top:56.25%; }
-    .video-js { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; }
-    .errorbar {
-      display: none; padding: 10px 14px; background: rgba(239,68,68,.12); color:#fecaca; border-top:1px solid rgba(239,68,68,.3);
-      font-size: 14px;
-    }
-    .errorbar.show { display:block; }
-
-    .controls { grid-area: controls; display: grid; gap: 12px; grid-template-columns: repeat(12, 1fr); align-items: center; }
-    .controls .card { padding: 12px; display:flex; align-items:center; gap: 10px; flex-wrap: wrap; }
-    .row { display:flex; gap:8px; flex-wrap: wrap; align-items:center; }
-
-    button, input, select, textarea {
-      background: #0f1116; color: var(--fg); border:1px solid rgba(255,255,255,.1);
-      padding: 10px 12px; border-radius: 10px; font-size: 14px; outline: none;
-    }
-    [data-theme="light"] button, [data-theme="light"] input, [data-theme="light"] select, [data-theme="light"] textarea {
-      background: #fff; border-color: #e5e7eb; color: var(--fg);
-    }
-    button { cursor: pointer; }
-    .btn { background: var(--primary); border-color: transparent; }
-    .btn:hover { background: var(--primary-2); }
-    .btn-ghost { background: transparent; }
-    .btn-outline { background: transparent; border-color: var(--primary); color: var(--primary); }
-    .btn-outline:hover { background: var(--primary); color: #fff; }
-
-    input[type="range"] { accent-color: var(--primary); }
-
-    .sidebar { grid-area: sidebar; display: grid; gap: 12px; }
-    .search { display:flex; gap:8px; }
-    .list {
-      max-height: 520px; overflow: auto; padding: 6px;
-      border-radius: 12px; border: 1px solid rgba(255,255,255,.08);
-      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
-    }
-    .chan { display:flex; align-items:center; justify-content: space-between; gap:12px; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
-    .chan:hover { background: rgba(14,165,233,.08); }
-    .chan .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .chan .num { color: var(--muted); min-width: 28px; text-align:right; font-variant-numeric: tabular-nums; }
-
-    .subtle { color: var(--muted); }
-    .hint { font-size: 12px; color: var(--muted); }
-    .footer-hint { margin-top: 8px; }
-
-    .pill { padding: 6px 10px; border-radius: 999px; background: rgba(14,165,233,.12); color: #bae6fd; border: 1px solid rgba(14,165,233,.25); font-size: 12px; }
-    .spacer { flex:1; }
-
-    .kbd { border:1px solid rgba(255,255,255,.2); border-bottom-width:3px; padding: 1px 6px; border-radius:6px; font-size:12px; color: var(--muted);}
-    .right { margin-left:auto; }
-
-    .hidden { display:none !important; }
-    .ring:focus { box-shadow: 0 0 0 3px var(--ring); border-color: transparent; }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+    .wrap{max-width:1200px;margin:24px auto;padding:0 16px;display:grid;gap:16px;grid-template-columns:1fr;grid-template-areas:"header" "player" "controls" "sidebar"}
+    @media (min-width:980px){.wrap{grid-template-columns:2fr 1fr;grid-template-areas:"header header" "player sidebar" "controls sidebar"}}
+    .card{background:var(--panel);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,.18)}
+    .header{grid-area:header;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .title{display:flex;align-items:center;gap:12px}
+    .logo{height:28px;width:auto}
+    .badge{font-size:12px;color:var(--muted)}
+    .player-card{grid-area:player;padding:0;overflow:hidden}
+    .player-head{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
+    .now{font-weight:700}
+    .status-dot{width:8px;height:8px;border-radius:999px;background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.2)}
+    .status-dot.err{background:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.25)}
+    .video-shell{position:relative;background:#000}
+    .video-shell::before{content:"";display:block;padding-top:56.25%}
+    .video-js{position:absolute!important;inset:0;width:100%!important;height:100%!important}
+    .errorbar{display:none;padding:10px 14px;background:rgba(239,68,68,.12);color:#fecaca;border-top:1px solid rgba(239,68,68,.3);font-size:14px}
+    .errorbar.show{display:block}
+    .controls{grid-area:controls;display:grid;gap:12px;grid-template-columns:repeat(12,1fr);align-items:center}
+    .controls .card{padding:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    button,input,select,textarea{background:#0f1116;color:var(--fg);border:1px solid rgba(255,255,255,.1);padding:10px 12px;border-radius:10px;font-size:14px;outline:none}
+    [data-theme="light"] button,[data-theme="light"] input,[data-theme="light"] select,[data-theme="light"] textarea{background:#fff;border-color:#e5e7eb}
+    button{cursor:pointer}
+    .btn{background:var(--brand);border-color:transparent}
+    .btn:hover{background:var(--brand-2)}
+    .btn-ghost{background:transparent}
+    .btn-outline{background:transparent;border-color:var(--brand);color:var(--brand)}
+    .btn-outline:hover{background:var(--brand);color:#fff}
+    input[type="range"]{accent-color:var(--brand)}
+    .sidebar{grid-area:sidebar;display:grid;gap:12px}
+    .search{display:flex;gap:8px}
+    .list{max-height:520px;overflow:auto;padding:6px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01))}
+    .chan{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer}
+    .chan:hover{background:rgba(255,106,0,.12)}
+    .chan .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .chan .num{color:var(--muted);min-width:28px;text-align:right;font-variant-numeric:tabular-nums}
+    .subtle{color:var(--muted)}
+    .hint{font-size:12px;color:var(--muted)}
+    .pill{padding:6px 10px;border-radius:999px;background:rgba(255,106,0,.12);color:#ffd7c2;border:1px solid rgba(255,106,0,.25);font-size:12px}
+    .spacer{flex:1}
+    .kbd{border:1px solid rgba(255,255,255,.2);border-bottom-width:3px;padding:1px 6px;border-radius:6px;font-size:12px;color:var(--muted)}
+    .right{margin-left:auto}
+    .ring:focus{box-shadow:0 0 0 3px var(--ring);border-color:transparent}
+    .drop{border:2px dashed rgba(255,255,255,.18);border-radius:12px;padding:10px 12px;width:100%;text-align:center}
+    .drop.drag{border-color:var(--brand);background:rgba(255,106,0,.06)}
   </style>
 </head>
 <body>
-
   <div class="wrap">
-
     <div class="header">
       <div class="title">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-          <path d="M3 7h18M5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" stroke="currentColor" stroke-width="1.4"/>
-          <rect x="8" y="3" width="8" height="4" rx="1" stroke="currentColor" stroke-width="1.4"/>
-        </svg>
+        <img id="bfaLogo" class="logo" alt="BFA" />
         <div>
-          <div style="font-weight:700; letter-spacing:.2px">M3U8 Link Tester</div>
-          <div class="badge">Clean • Fast • Cross-browser</div>
+          <div style="font-weight:800;letter-spacing:.2px">BFA — M3U8 Link Tester</div>
+          <div class="badge">Clean • Orange • Cross-browser</div>
         </div>
       </div>
       <div class="row">
@@ -149,15 +94,7 @@
         <div class="subtle" id="metaInfo"></div>
       </div>
       <div class="video-shell">
-        <video
-          id="videoPlayer"
-          class="video-js vjs-default-skin"
-          playsinline
-          webkit-playsinline
-          controls
-          preload="auto"
-          data-setup="{}"
-        >
+        <video id="videoPlayer" class="video-js vjs-default-skin" playsinline webkit-playsinline controls preload="auto" data-setup="{}">
           <source src="" type="application/x-mpegURL" />
         </video>
       </div>
@@ -168,49 +105,46 @@
     </div>
 
     <div class="controls">
-      <!-- Playback controls -->
       <div class="card" style="grid-column: span 12;">
         <div class="row">
-          <button id="prevBtn" class="btn ring" title="Previous (←)">⏮ Prev</button>
-          <button id="playPauseBtn" class="btn ring" title="Space">▶️ Play</button>
-          <button id="nextBtn" class="btn ring" title="Next (→)">Next ⏭</button>
-
-          <button id="muteBtn" class="btn-ghost ring" title="M">
-            🔇 Mute
-          </button>
-          <input id="vol" class="ring" type="range" min="0" max="1" step="0.05" value="0.8" style="width:140px" title="Volume" />
-          <button id="pipBtn" class="btn-ghost ring" title="Picture-in-Picture">🗔 PiP</button>
-          <button id="fsBtn" class="btn-ghost ring" title="F">⛶ Fullscreen</button>
-
+          <button id="prevBtn" class="btn ring">⏮ Prev</button>
+          <button id="playPauseBtn" class="btn ring">▶️ Play</button>
+          <button id="nextBtn" class="btn ring">Next ⏭</button>
+          <button id="muteBtn" class="btn-ghost ring">🔇 Mute</button>
+          <input id="vol" class="ring" type="range" min="0" max="1" step="0.05" value="0.8" style="width:140px" />
+          <button id="pipBtn" class="btn-ghost ring">🗔 PiP</button>
+          <button id="fsBtn" class="btn-ghost ring">⛶ Fullscreen</button>
           <span class="spacer"></span>
-
           <input id="channelNum" class="ring" type="number" min="1" placeholder="Channel #" style="width:110px" />
-          <button id="gotoBtn" class="btn ring" title="Enter">Go</button>
-
+          <button id="gotoBtn" class="btn ring">Go</button>
           <span class="pill">Shortcuts: <span class="kbd">←</span>/<span class="kbd">→</span>, <span class="kbd">Space</span>, <span class="kbd">M</span>, <span class="kbd">F</span>, <span class="kbd">P</span></span>
         </div>
       </div>
 
-      <!-- Add single URL -->
+      <!-- Add URL(s) -->
       <div class="card" style="grid-column: span 12;">
         <div class="row" style="width:100%">
-          <input id="customUrl" class="ring grow" placeholder="Paste a .m3u8 URL and press Add & Play…" />
+          <input id="customUrl" class="ring grow" placeholder="Paste a .m3u8 URL (or many, separated by new lines)…" />
           <button id="addBtn" class="btn ring">Add & Play</button>
           <button id="copyBtn" class="btn-ghost ring" title="Copy current stream URL">Copy URL</button>
-          <span class="hint right">If a URL fails, it’s usually CORS/HTTPS/Geo.</span>
         </div>
+        <div id="drop" class="drop hint">Drop a <b>.m3u</b>/<b>.txt</b> file or raw URLs here to add many at once</div>
       </div>
 
       <!-- Import M3U text -->
       <div class="card" style="grid-column: span 12;">
         <div class="row" style="width:100%">
           <textarea id="m3uText" class="ring" placeholder="#EXTM3U
-#EXTINF:-1 tvg-id=\"...\",My Channel
-https://example.com/live/playlist.m3u8" style="width:100%; height:110px;"></textarea>
+#EXTINF:-1 tvg-id=&quot;...&quot;,My Channel
+https://example.com/live/playlist.m3u8
+
+# or paste multiple lines of pure .m3u8 URLs without #EXTINF
+https://a/b/c1.m3u8
+https://a/b/c2.m3u8" style="width:100%; height:110px;"></textarea>
         </div>
         <div class="row">
-          <button id="parseBtn" class="btn ring">Parse M3U & Add</button>
-          <span class="hint">Understands #EXTINF names. New channels are appended.</span>
+          <button id="parseBtn" class="btn ring">Parse & Add</button>
+          <span class="hint">Understands full M3U or plain lines of URLs.</span>
         </div>
       </div>
     </div>
@@ -227,25 +161,48 @@ https://example.com/live/playlist.m3u8" style="width:100%; height:110px;"></text
           </select>
         </div>
         <div id="list" class="list" role="listbox" aria-label="Channel list"></div>
-        <div class="footer-hint hint">
-          Double-click a channel to play. Enter on <b>Channel #</b> also jumps.
+        <div class="hint" style="margin-top:8px">Double-click a channel to play. Enter on <b>Channel #</b> jumps.</div>
+      </div>
+
+      <!-- Google Sheet / Apps Script loader -->
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:6px">Load channels from Google Sheet</div>
+        <select id="sheetMode" class="ring" style="width:100%;margin-bottom:8px">
+          <option value="csv">CSV (Publish to web)</option>
+          <option value="json">Apps Script JSON</option>
+        </select>
+        <input id="sheetUrl" class="ring" placeholder="Paste CSV or Web App JSON URL…" style="width:100%;margin-bottom:8px" />
+        <div class="row">
+          <button id="loadSheetBtn" class="btn ring">Load from Sheet</button>
+          <label class="hint" style="display:flex;align-items:center;gap:6px">
+            <input id="autoRefresh" type="checkbox" /> Auto-refresh (2 min)
+          </label>
+        </div>
+        <div class="hint" style="margin-top:8px">
+          CSV headers: <b>num,name,url</b> or <b>name,url</b>.<br/>
+          JSON: <code>[{num,name,url},…]</code> or <code>{channels:[…]}</code>.
         </div>
       </div>
 
       <div class="card">
         <div style="font-weight:600; margin-bottom:6px">Help</div>
         <div class="hint">
-          • If playback fails, try Safari (native HLS) or another stream.<br/>
           • Many public test URLs die over time; add your own.<br/>
-          • Volume/theme remembered per browser.<br/>
+          • If playback fails, try Safari (native HLS) or another stream.<br/>
+          • Theme / volume / sheet URL are remembered per browser.
         </div>
       </div>
     </div>
-
   </div>
 
   <script>
-    // -------- Theme persistence --------
+    // ====== CONFIGURE BRAND + LOGO ======
+    const BRAND_ORANGE = '#ff6a00'; // change if you use a different BFA orange
+    const BFA_LOGO_SRC = '/IPTV-/icons/icon-192.png'; // set to your BFA logo path
+    document.documentElement.style.setProperty('--brand', BRAND_ORANGE);
+    document.getElementById('bfaLogo').src = BFA_LOGO_SRC;
+
+    // ====== Theme persistence ======
     const preferred = localStorage.getItem("theme") ||
       (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? "light" : "dark");
     document.documentElement.setAttribute("data-theme", preferred);
@@ -256,7 +213,7 @@ https://example.com/live/playlist.m3u8" style="width:100%; height:110px;"></text
       localStorage.setItem("theme", next);
     });
 
-    // -------- Default channels (can be reset) --------
+    // ====== Defaults ======
     const defaultChannels = [
       { num: 1, name: '6ter (1080p)', url: 'https://viamotionhsi.netplus.ch/live/eds/6ter/browser-HLS8/6ter.m3u8' },
       { num: 2, name: '20 Minutes TV (1080p)', url: 'https://live-20minutestv.digiteka.com/1961167769/index.m3u8' },
@@ -283,42 +240,19 @@ https://example.com/live/playlist.m3u8" style="width:100%; height:110px;"></text
       { num: 23, name: 'Weather Channel', url: 'https://weatherchannel.akamaized.net/streams/weatherchannel/playlist.m3u8' },
     ];
 
-    // -------- State --------
+    // ====== State & helpers ======
     let channels = JSON.parse(localStorage.getItem("channels") || "null") || defaultChannels.slice();
     let currentIdx = -1;
+    const $ = s => document.querySelector(s);
+    const listEl = $("#list"), nowTitle = $("#nowTitle"), metaInfo = $("#metaInfo"), statusDot = $("#statusDot"), errorbar = $("#errorbar");
 
-    // -------- Helpers --------
-    const $ = sel => document.querySelector(sel);
-    const listEl = $("#list");
-    const nowTitle = $("#nowTitle");
-    const metaInfo = $("#metaInfo");
-    const statusDot = $("#statusDot");
-    const errorbar = $("#errorbar");
+    function persist(){ localStorage.setItem("channels", JSON.stringify(channels)); }
+    function setStatus(ok){ statusDot.classList.toggle("err", !ok); }
+    function showError(msg){ errorbar.innerHTML = "<strong>Playback error.</strong> " + (msg || ""); errorbar.classList.add("show"); setStatus(false); }
+    function clearError(){ errorbar.classList.remove("show"); }
 
-    function renumber() {
-      channels = channels
-        .map((c,i) => ({...c, num: i+1}))
-        .sort((a,b) => a.num - b.num);
-      persist();
-    }
-    function persist() {
-      localStorage.setItem("channels", JSON.stringify(channels));
-    }
-    function setStatus(ok) {
-      statusDot.classList.toggle("err", !ok);
-    }
-    function showError(msg) {
-      errorbar.textContent = "";
-      errorbar.innerHTML = "<strong>Playback error.</strong> " + (msg || errorbar.innerHTML);
-      errorbar.classList.add("show");
-      setStatus(false);
-    }
-    function clearError() {
-      errorbar.classList.remove("show");
-    }
-
-    // -------- Render channel list --------
-    function renderList() {
+    function escapeHtml(s){ return s.replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m])); }
+    function renderList(){
       const q = $("#search").value.toLowerCase();
       const sort = $("#sortSel").value;
       let view = channels.slice();
@@ -327,58 +261,34 @@ https://example.com/live/playlist.m3u8" style="width:100%; height:110px;"></text
       if (sort === "num-desc") view.sort((a,b)=>b.num-a.num);
       if (sort === "name-asc") view.sort((a,b)=>a.name.localeCompare(b.name));
       if (sort === "name-desc") view.sort((a,b)=>b.name.localeCompare(a.name));
-
       listEl.innerHTML = "";
-      for (const c of view) {
+      for (const c of view){
         const row = document.createElement("div");
-        row.className = "chan";
-        row.tabIndex = 0;
-        row.setAttribute("role","option");
-        row.innerHTML = `
-          <div class="name">${c.num}. ${escapeHtml(c.name)}</div>
-          <div class="num">#${c.num}</div>
-        `;
+        row.className = "chan"; row.tabIndex = 0; row.setAttribute("role","option");
+        row.innerHTML = `<div class="name">${c.num}. ${escapeHtml(c.name)}</div><div class="num">#${c.num}</div>`;
         row.addEventListener("click", () => playByNum(c.num));
         row.addEventListener("dblclick", () => playByNum(c.num));
-        row.addEventListener("keydown", (e) => { if (e.key === "Enter") playByNum(c.num); });
+        row.addEventListener("keydown", e => { if (e.key === "Enter") playByNum(c.num); });
         listEl.appendChild(row);
       }
     }
-    function escapeHtml(s){ return s.replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m])); }
 
-    // -------- Player --------
+    // ====== Player ======
     const player = videojs("videoPlayer", {
       html5: { vhs: { overrideNative: true } },
       controlBar: { volumePanel: { inline: false } },
-      fluid: false,
-      inactivityTimeout: 2000
+      fluid: false, inactivityTimeout: 2000
     });
-    // Keep crossOrigin for PiP safety where possible
     try { player.tech_.el_.crossOrigin = "anonymous"; } catch {}
-
-    // Load saved volume
     const savedVol = parseFloat(localStorage.getItem("volume") || "0.8");
     player.volume(isFinite(savedVol) ? savedVol : 0.8);
     $("#vol").value = player.volume();
-
-    player.on("error", () => {
-      const err = player.error();
-      showError(err && err.message ? err.message : "Unknown error.");
-    });
+    player.on("error", () => { const err = player.error(); showError(err && err.message ? err.message : "Unknown error."); });
     player.on("playing", () => { clearError(); setStatus(true); updateMeta(); });
     player.on("loadedmetadata", updateMeta);
+    function updateMeta(){ const tech = player.tech(true); const dur = player.duration(); metaInfo.textContent = (tech ? tech.name_ : "html5") + (isFinite(dur)&&dur>0 ? ` • ${fmtTime(dur)}` : ""); }
+    function fmtTime(s){ const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), ss=Math.floor(s%60); return (h?h+":":"") + String(m).padStart(2,"0") + ":" + String(ss).padStart(2,"0"); }
 
-    function updateMeta(){
-      const tech = player.tech(true);
-      const dur = player.duration();
-      metaInfo.textContent = (tech ? tech.name_ : "html5") + (isFinite(dur) && dur>0 ? ` • ${fmtTime(dur)}` : "");
-    }
-    function fmtTime(s){
-      const h = Math.floor(s/3600), m = Math.floor((s%3600)/60); const ss = Math.floor(s%60);
-      return (h?h+":":"") + String(m).padStart(2,"0") + ":" + String(ss).padStart(2,"0");
-    }
-
-    // -------- Channel controls --------
     function playIndex(idx){
       if (idx<0 || idx>=channels.length) return;
       currentIdx = idx;
@@ -386,141 +296,145 @@ https://example.com/live/playlist.m3u8" style="width:100%; height:110px;"></text
       nowTitle.textContent = `Now Playing: ${ch.num}. ${ch.name}`;
       clearError(); setStatus(true);
       try {
-        player.src({ type: "application/x-mpegURL", src: ch.url });
-        player.play().catch(() => {
-          // Autoplay blocked — show hint but keep source loaded
-          showError("Autoplay is blocked by the browser. Press Play ▶️.");
-        });
-      } catch (e) {
-        showError(String(e));
-      }
+        player.src({ type:"application/x-mpegURL", src: ch.url });
+        player.play().catch(()=> showError("Autoplay is blocked. Press Play ▶️."));
+      } catch (e) { showError(String(e)); }
     }
-    function playByNum(num){
-      const idx = channels.findIndex(c => c.num === Number(num));
-      if (idx !== -1) playIndex(idx);
-    }
+    function playByNum(num){ const idx = channels.findIndex(c => c.num === Number(num)); if (idx !== -1) playIndex(idx); }
     function prev(){ if (!channels.length) return; playIndex((currentIdx - 1 + channels.length) % channels.length); }
     function next(){ if (!channels.length) return; playIndex((currentIdx + 1) % channels.length); }
 
-    // Buttons
+    // ====== Controls ======
     $("#prevBtn").addEventListener("click", prev);
     $("#nextBtn").addEventListener("click", next);
-    $("#gotoBtn").addEventListener("click", () => {
-      const val = Number($("#channelNum").value);
-      if (!val) return;
-      playByNum(val);
-    });
-
+    $("#gotoBtn").addEventListener("click", () => { const v = Number($("#channelNum").value); if (v) playByNum(v); });
     const playPauseBtn = $("#playPauseBtn");
-    function syncPlayBtn(){
-      const p = !player.paused();
-      playPauseBtn.textContent = p ? "⏸ Pause" : "▶️ Play";
-    }
-    playPauseBtn.addEventListener("click", () => {
-      if (player.paused()) player.play(); else player.pause();
-      syncPlayBtn();
-    });
-    player.on("pause", syncPlayBtn);
-    player.on("play", syncPlayBtn);
-
-    // Volume/Mute
-    $("#vol").addEventListener("input", e => {
-      player.volume(parseFloat(e.target.value));
-      localStorage.setItem("volume", String(player.volume()));
-    });
-    $("#muteBtn").addEventListener("click", () => {
-      player.muted(!player.muted());
-      $("#muteBtn").textContent = player.muted() ? "🔊 Unmute" : "🔇 Mute";
-    });
-
-    // PiP / Fullscreen
+    function syncPlayBtn(){ playPauseBtn.textContent = player.paused() ? "▶️ Play" : "⏸ Pause"; }
+    playPauseBtn.addEventListener("click", () => { player.paused() ? player.play() : player.pause(); syncPlayBtn(); });
+    player.on("pause", syncPlayBtn); player.on("play", syncPlayBtn);
+    $("#vol").addEventListener("input", e => { player.volume(parseFloat(e.target.value)); localStorage.setItem("volume", String(player.volume())); });
+    $("#muteBtn").addEventListener("click", () => { player.muted(!player.muted()); $("#muteBtn").textContent = player.muted() ? "🔊 Unmute" : "🔇 Mute"; });
     $("#pipBtn").addEventListener("click", async () => {
-      const el = player.el().querySelector("video");
-      if (!document.pictureInPictureEnabled || !el) return;
-      try {
-        if (document.pictureInPictureElement) await document.exitPictureInPicture();
-        else await el.requestPictureInPicture();
-      } catch {}
+      const el = player.el().querySelector("video"); if (!document.pictureInPictureEnabled || !el) return;
+      try { if (document.pictureInPictureElement) await document.exitPictureInPicture(); else await el.requestPictureInPicture(); } catch {}
     });
     $("#fsBtn").addEventListener("click", () => player.isFullscreen() ? player.exitFullscreen() : player.requestFullscreen());
-
-    // Add & Copy
-    $("#addBtn").addEventListener("click", () => {
-      const url = $("#customUrl").value.trim();
-      if (!url) return alert("Paste a .m3u8 URL.");
-      const exists = channels.find(c => c.url === url);
-      if (exists) return (playByNum(exists.num), alert(`Already exists as #${exists.num}: ${exists.name}`));
-      const name = `Custom Channel #${channels.length + 1}`;
-      channels.push({ num: channels.length + 1, name, url });
-      persist(); renderList();
-      playIndex(channels.length - 1);
-      $("#customUrl").value = "";
+    document.addEventListener("keydown", (e) => {
+      if (e.repeat) return;
+      switch (e.code){
+        case "ArrowLeft": return prev();
+        case "ArrowRight": return next();
+        case "Space": e.preventDefault(); return player.paused()?player.play():player.pause();
+        case "KeyM": player.muted(!player.muted()); $("#muteBtn").textContent = player.muted() ? "🔊 Unmute" : "🔇 Mute"; break;
+        case "KeyF": player.isFullscreen() ? player.exitFullscreen() : player.requestFullscreen(); break;
+        case "KeyP": $("#pipBtn").click(); break;
+        case "Enter": const n = Number($("#channelNum").value); if (n) playByNum(n);
+      }
     });
+
+    // ====== Add single or many URLs ======
+    $("#addBtn").addEventListener("click", () => {
+      const raw = $("#customUrl").value.trim();
+      if (!raw) return alert("Paste one or more .m3u8 URLs (each on a new line).");
+      const urls = extractUrls(raw);
+      if (!urls.length) return alert("No .m3u8 URLs found.");
+      let added = 0;
+      for (const u of urls){
+        if (channels.some(c => c.url === u)) continue;
+        channels.push({ num: channels.length + 1, name: guessNameFromUrl(u), url: u }); added++;
+      }
+      persist(); renderList();
+      if (added) playIndex(channels.length - 1);
+      $("#customUrl").value = "";
+      alert(`Added ${added} URL(s).`);
+    });
+
     $("#copyBtn").addEventListener("click", async () => {
-      const cur = channels[currentIdx];
-      if (!cur) return;
+      const cur = channels[currentIdx]; if (!cur) return;
       try { await navigator.clipboard.writeText(cur.url); alert("Copied stream URL."); } catch { alert(cur.url); }
     });
 
-    // Parse M3U
+    // Drag & drop (.m3u / .txt or raw text)
+    const drop = $("#drop");
+    drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("drag"); });
+    drop.addEventListener("dragleave", () => drop.classList.remove("drag"));
+    drop.addEventListener("drop", async (e) => {
+      e.preventDefault(); drop.classList.remove("drag");
+      if (e.dataTransfer.files && e.dataTransfer.files.length){
+        const file = e.dataTransfer.files[0]; const txt = await file.text(); addFromAny(txt);
+      } else {
+        const txt = e.dataTransfer.getData("text/plain"); addFromAny(txt);
+      }
+    });
+
+    // Paste M3U text
     $("#parseBtn").addEventListener("click", () => {
       const txt = $("#m3uText").value;
-      if (!txt.trim()) return alert("Paste M3U text first.");
-      const parsed = parseM3U(txt);
-      if (!parsed.length) return alert("No entries found.");
-      for (const p of parsed) {
-        if (channels.some(c => c.url === p.url)) continue;
-        channels.push({ num: channels.length + 1, name: p.name || `Custom #${channels.length+1}`, url: p.url });
-      }
-      persist(); renderList();
-      alert(`Added ${parsed.length} item(s).`);
+      if (!txt.trim()) return alert("Paste M3U text or URLs first.");
+      addFromAny(txt);
       $("#m3uText").value = "";
     });
 
+    function addFromAny(text){
+      const entries = parseM3U(text);
+      let added = 0;
+      if (entries.length){
+        for (const p of entries){
+          if (!p.url) continue;
+          if (channels.some(c => c.url === p.url)) continue;
+          channels.push({ num: channels.length + 1, name: p.name || guessNameFromUrl(p.url), url: p.url }); added++;
+        }
+      } else {
+        const urls = extractUrls(text);
+        for (const u of urls){
+          if (channels.some(c => c.url === u)) continue;
+          channels.push({ num: channels.length + 1, name: guessNameFromUrl(u), url: u }); added++;
+        }
+      }
+      persist(); renderList();
+      if (added) playIndex(channels.length - 1);
+      alert(`Added ${added} channel(s).`);
+    }
+
     function parseM3U(text){
       const lines = text.split(/\r?\n/);
-      const out = [];
-      let curName = null;
-      for (const raw of lines) {
+      const out = []; let curName = null;
+      for (const raw of lines){
         const line = raw.trim();
         if (!line || line.startsWith("#EXTM3U")) continue;
-        if (line.startsWith("#EXTINF")) {
-          // Try to capture after comma
-          const m = line.match(/#EXTINF:[^,]*,(.*)$/);
-          curName = m ? m[1].trim() : null;
-        } else if (/^https?:\/\/.+/i.test(line) && line.toLowerCase().includes(".m3u8")) {
-          out.push({ name: curName, url: line });
-          curName = null;
+        if (line.startsWith("#EXTINF")){
+          const m = line.match(/#EXTINF:[^,]*,(.*)$/); curName = m ? m[1].trim() : null;
+        } else if (/^https?:\/\/.+/i.test(line) && line.toLowerCase().includes(".m3u8")){
+          out.push({ name: curName, url: line }); curName = null;
         }
       }
       return out;
     }
+    function extractUrls(text){
+      const urls = [];
+      for (const m of text.matchAll(/https?:\/\/[^\s"'<>]+\.m3u8[^\s"'<>]*/gi)){ urls.push(m[0]); }
+      return Array.from(new Set(urls));
+    }
+    function guessNameFromUrl(u){
+      try{ const p = new URL(u).pathname.split("/").filter(Boolean); return decodeURIComponent(p[p.length-1]).replace(/\.(m3u8|playlist)$/i,""); }catch{return "Custom Channel";}
+    }
 
-    // Search/sort
-    $("#search").addEventListener("input", renderList);
-    $("#sortSel").addEventListener("change", renderList);
-
-    // Export/Import/Reset
+    // ====== Export / Import / Reset ======
     $("#exportBtn").addEventListener("click", () => {
-      const blob = new Blob([JSON.stringify(channels, null, 2)], {type: "application/json"});
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "channels.json";
-      a.click();
-      URL.revokeObjectURL(a.href);
+      const blob = new Blob([JSON.stringify(channels, null, 2)], {type:"application/json"});
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "channels.json"; a.click(); URL.revokeObjectURL(a.href);
     });
     $("#importBtn").addEventListener("click", async () => {
-      const input = document.createElement("input");
-      input.type = "file"; input.accept = "application/json";
+      const input = document.createElement("input"); input.type = "file"; input.accept = "application/json";
       input.onchange = async () => {
         const file = input.files[0]; if (!file) return;
         try {
           const txt = await file.text();
           const arr = JSON.parse(txt);
-          if (!Array.isArray(arr)) throw new Error("Invalid JSON.");
-          channels = arr.map((c,i)=>({ num: i+1, name: String(c.name||`Imported #${i+1}`), url: String(c.url||"") })).filter(c=>c.url);
-          persist(); renderList();
-          alert(`Imported ${channels.length} channel(s).`);
+          const list = Array.isArray(arr) ? arr : (Array.isArray(arr.channels)?arr.channels:[]);
+          if (!list.length) throw new Error("Invalid JSON.");
+          channels = list.map((c,i)=>({ num:i+1, name:String(c.name||`Imported #${i+1}`), url:String(c.url||"") })).filter(c=>c.url);
+          persist(); renderList(); alert(`Imported ${channels.length} channel(s).`);
         } catch (e) { alert("Import failed: "+e.message); }
       };
       input.click();
@@ -528,37 +442,99 @@ https://example.com/live/playlist.m3u8" style="width:100%; height:110px;"></text
     $("#resetBtn").addEventListener("click", () => {
       if (!confirm("Reset channel list to defaults?")) return;
       channels = defaultChannels.slice();
-      renumber(); renderList();
+      persist(); renderList();
     });
 
-    // Keyboard shortcuts (debounced to avoid double jumps)
-    let keyHold = {};
-    document.addEventListener("keydown", (e) => {
-      if (e.repeat) return; // Prevent double fire
-      keyHold[e.code] = true;
-      switch (e.code) {
-        case "ArrowLeft": prev(); break;
-        case "ArrowRight": next(); break;
-        case "Space": e.preventDefault(); player.paused() ? player.play() : player.pause(); break;
-        case "KeyM": player.muted(!player.muted()); $("#muteBtn").textContent = player.muted() ? "🔊 Unmute" : "🔇 Mute"; break;
-        case "KeyF": player.isFullscreen() ? player.exitFullscreen() : player.requestFullscreen(); break;
-        case "KeyP": $("#pipBtn").click(); break;
-        case "Enter":
-          const num = Number($("#channelNum").value);
-          if (num) playByNum(num);
-          break;
+    // ====== Google Sheet loader ======
+    const sheetMode = $("#sheetMode"), sheetUrl = $("#sheetUrl"), loadBtn = $("#loadSheetBtn"), autoRefresh = $("#autoRefresh");
+    // restore saved source
+    sheetMode.value = localStorage.getItem("sheetMode") || "csv";
+    sheetUrl.value = localStorage.getItem("sheetUrl") || "";
+    autoRefresh.checked = localStorage.getItem("sheetAuto") === "1";
+    let refreshTimer = null;
+
+    loadBtn.addEventListener("click", async () => {
+      const mode = sheetMode.value, url = sheetUrl.value.trim();
+      if (!url) return alert("Paste the CSV or JSON Web App URL.");
+      try{
+        if (mode === "csv"){
+          channels = await loadFromGoogleCSV(url);
+        } else {
+          channels = await loadFromAppsScript(url);
+        }
+        reindex(channels); persist(); renderList();
+        alert(`Loaded ${channels.length} channel(s) from sheet.`);
+        localStorage.setItem("sheetMode", mode);
+        localStorage.setItem("sheetUrl", url);
+        handleAutoRefresh();
+      } catch (e){
+        alert("Load failed: "+e.message);
       }
     });
-    document.addEventListener("keyup", (e) => { keyHold[e.code] = false; });
+    autoRefresh.addEventListener("change", handleAutoRefresh);
+    function handleAutoRefresh(){
+      localStorage.setItem("sheetAuto", autoRefresh.checked ? "1":"0");
+      if (refreshTimer){ clearInterval(refreshTimer); refreshTimer = null; }
+      if (autoRefresh.checked && sheetUrl.value.trim()){
+        refreshTimer = setInterval(()=> loadBtn.click(), 120000); // 2 min
+      }
+    }
+    async function loadFromGoogleCSV(url){
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const csv = await res.text();
+      const rows = parseCSV(csv); // array of arrays
+      if (!rows.length) return [];
+      const headers = rows[0].map(h => String(h||"").toLowerCase().trim());
+      const dataRows = rows.slice(1).filter(r => r.some(x => String(x||"").trim().length));
+      const idxNum = headers.indexOf("num");
+      const idxName = headers.indexOf("name");
+      const idxUrl = headers.indexOf("url");
+      if (idxUrl === -1) throw new Error("CSV must include a 'url' column");
+      const list = dataRows.map((r,i)=>({
+        num: idxNum>-1 ? Number(r[idxNum]||i+1) : i+1,
+        name: idxName>-1 ? String(r[idxName]||`Channel #${i+1}`) : `Channel #${i+1}`,
+        url: String(r[idxUrl]||"").trim()
+      })).filter(x => x.url);
+      return list;
+    }
+    async function loadFromAppsScript(url){
+      const res = await fetch(url, { cache:"no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const list = Array.isArray(json) ? json : (Array.isArray(json.channels) ? json.channels : null);
+      if (!list) throw new Error("JSON must be an array or {channels:[…]}");
+      return list.map((c,i)=>({ num:Number(c.num||i+1), name:String(c.name||`Channel #${i+1}`), url:String(c.url||"") })).filter(x=>x.url);
+    }
+    function parseCSV(text){
+      const out = []; let row = [], cur = "", inQ = false;
+      for (let i=0;i<text.length;i++){
+        const ch = text[i], nxt = text[i+1];
+        if (inQ){
+          if (ch === '"' && nxt === '"'){ cur += '"'; i++; }
+          else if (ch === '"'){ inQ = false; }
+          else cur += ch;
+        } else {
+          if (ch === '"'){ inQ = true; }
+          else if (ch === ','){ row.push(cur); cur=""; }
+          else if (ch === '\n'){ row.push(cur); out.push(row); row=[]; cur=""; }
+          else if (ch === '\r'){ /* skip */ }
+          else cur += ch;
+        }
+      }
+      row.push(cur); out.push(row);
+      return out.filter(r => r.length>1 || (r.length===1 && r[0].trim().length));
+    }
+    function reindex(list){ list.forEach((c,i)=> c.num = i+1); }
 
-    // Enter on inputs
-    $("#channelNum").addEventListener("keydown", e => { if (e.key==="Enter") $("#gotoBtn").click(); });
-    $("#customUrl").addEventListener("keydown", e => { if (e.key==="Enter") $("#addBtn").click(); });
-
-    // Init
+    // ====== Search & init ======
+    $("#search").addEventListener("input", renderList);
+    $("#sortSel").addEventListener("change", renderList);
     renderList();
-    // Auto-play first channel if you want:
-    // playIndex(0);
+    // Auto-load from URL ?sheet=<csv-or-json>
+    const qp = new URLSearchParams(location.search);
+    const sheetQ = qp.get("sheet");
+    if (sheetQ){ sheetUrl.value = sheetQ; loadBtn.click(); }
   </script>
 </body>
 </html>
