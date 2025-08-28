@@ -1,104 +1,263 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>IPTV Channel Tester</title>
-  <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet"/>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+  />
+  <title>M3U8 Link Tester — BFA</title>
+
+  <!-- Video.js -->
+  <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+  <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+
   <style>
+    :root{
+      --bg:#0b0c10; --panel:#14151a; --muted:#9aa1ac; --fg:#e8ecf1; --primary:#0ea5e9; --primary-2:#0284c7; --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444; --ring:rgba(14,165,233,.35);
+    }
+    /* Light mode defaults (overridden by [data-theme="light"]) */
+    [data-theme="light"]{
+      --bg:#fafafa; --panel:#ffffff; --muted:#6b7280; --fg:#0f172a; --primary:#007aff; --primary-2:#005aca; --ring:rgba(0,122,255,.25);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background: #fafafa;
-      margin: 0;
-      padding: 2rem;
-      color: #333;
-      text-align: center;
-      max-width: 800px;
-      margin-left: auto;
-      margin-right: auto;
+      margin: 0; background: var(--bg); color: var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
     }
-    h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
-    #channelName { font-size: 1.2rem; color: #555; margin-bottom: 1.2rem; }
-    #videoPlayer {
-      width: 720px; height: 405px;
-      max-width: 100%;
-      border-radius: 14px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-      margin-bottom: 1.5rem;
+
+    .wrap {
+      max-width: 1200px; margin: 24px auto; padding: 0 16px; display: grid; gap: 16px;
+      grid-template-columns: 1fr; grid-template-areas:
+          "header"
+          "player"
+          "controls"
+          "sidebar";
     }
-    .controls-container {
-      display: flex; flex-wrap: wrap;
-      justify-content: center; gap: 12px;
-      margin-bottom: 1rem;
+    @media (min-width: 980px){
+      .wrap {
+        grid-template-columns: 2fr 1fr;
+        grid-template-areas:
+          "header header"
+          "player sidebar"
+          "controls sidebar";
+      }
     }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 16px; padding: 16px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.18);
+    }
+    .header { grid-area: header; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .title { display: flex; align-items: center; gap: 12px; }
+    .badge { font-size: 12px; color: var(--muted); }
+    .grow { flex: 1; }
+
+    .player-card { grid-area: player; padding: 0; overflow: hidden; }
+    .player-head { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.06); display:flex; align-items:center; gap:10px; }
+    .now { font-weight: 600; }
+    .status-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--ok); box-shadow: 0 0 0 3px rgba(34,197,94,.2); }
+    .status-dot.err { background: var(--danger); box-shadow: 0 0 0 3px rgba(239,68,68,.25); }
+    .video-shell { position: relative; background: #000; }
+    /* 16:9 box */
+    .video-shell::before { content:""; display:block; padding-top:56.25%; }
+    .video-js { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; }
+    .errorbar {
+      display: none; padding: 10px 14px; background: rgba(239,68,68,.12); color:#fecaca; border-top:1px solid rgba(239,68,68,.3);
+      font-size: 14px;
+    }
+    .errorbar.show { display:block; }
+
+    .controls { grid-area: controls; display: grid; gap: 12px; grid-template-columns: repeat(12, 1fr); align-items: center; }
+    .controls .card { padding: 12px; display:flex; align-items:center; gap: 10px; flex-wrap: wrap; }
+    .row { display:flex; gap:8px; flex-wrap: wrap; align-items:center; }
+
     button, input, select, textarea {
-      font-size: 1rem;
-      padding: 10px 14px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      outline: none;
-      box-sizing: border-box;
+      background: #0f1116; color: var(--fg); border:1px solid rgba(255,255,255,.1);
+      padding: 10px 12px; border-radius: 10px; font-size: 14px; outline: none;
     }
-    button {
-      background-color: #007aff;
-      color: white;
-      cursor: pointer;
-      transition: background 0.2s;
+    [data-theme="light"] button, [data-theme="light"] input, [data-theme="light"] select, [data-theme="light"] textarea {
+      background: #fff; border-color: #e5e7eb; color: var(--fg);
     }
-    button:hover {
-      background-color: #005aca;
+    button { cursor: pointer; }
+    .btn { background: var(--primary); border-color: transparent; }
+    .btn:hover { background: var(--primary-2); }
+    .btn-ghost { background: transparent; }
+    .btn-outline { background: transparent; border-color: var(--primary); color: var(--primary); }
+    .btn-outline:hover { background: var(--primary); color: #fff; }
+
+    input[type="range"] { accent-color: var(--primary); }
+
+    .sidebar { grid-area: sidebar; display: grid; gap: 12px; }
+    .search { display:flex; gap:8px; }
+    .list {
+      max-height: 520px; overflow: auto; padding: 6px;
+      border-radius: 12px; border: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
     }
-    input[type="number"] { width: 70px; }
-    select { min-width: 220px; }
-    textarea {
-      width: 100%;
-      max-width: 720px;
-      height: 80px;
-      margin-bottom: 10px;
-      resize: vertical;
-    }
-    .custom-stream-section {
-      margin-top: 2rem;
-      text-align: left;
-      max-width: 720px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    label {
-      font-weight: bold;
-      display: block;
-      margin-bottom: 6px;
-    }
+    .chan { display:flex; align-items:center; justify-content: space-between; gap:12px; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
+    .chan:hover { background: rgba(14,165,233,.08); }
+    .chan .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chan .num { color: var(--muted); min-width: 28px; text-align:right; font-variant-numeric: tabular-nums; }
+
+    .subtle { color: var(--muted); }
+    .hint { font-size: 12px; color: var(--muted); }
+    .footer-hint { margin-top: 8px; }
+
+    .pill { padding: 6px 10px; border-radius: 999px; background: rgba(14,165,233,.12); color: #bae6fd; border: 1px solid rgba(14,165,233,.25); font-size: 12px; }
+    .spacer { flex:1; }
+
+    .kbd { border:1px solid rgba(255,255,255,.2); border-bottom-width:3px; padding: 1px 6px; border-radius:6px; font-size:12px; color: var(--muted);}
+    .right { margin-left:auto; }
+
+    .hidden { display:none !important; }
+    .ring:focus { box-shadow: 0 0 0 3px var(--ring); border-color: transparent; }
   </style>
 </head>
 <body>
 
-  <h1>IPTV Channel Tester</h1>
-  <div id="channelName">Select a channel</div>
+  <div class="wrap">
 
-  <video id="videoPlayer" class="video-js vjs-default-skin" controls preload="auto" data-setup="{}">
-    <source src="" type="application/x-mpegURL"/>
-  </video>
+    <div class="header">
+      <div class="title">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+          <path d="M3 7h18M5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" stroke="currentColor" stroke-width="1.4"/>
+          <rect x="8" y="3" width="8" height="4" rx="1" stroke="currentColor" stroke-width="1.4"/>
+        </svg>
+        <div>
+          <div style="font-weight:700; letter-spacing:.2px">M3U8 Link Tester</div>
+          <div class="badge">Clean • Fast • Cross-browser</div>
+        </div>
+      </div>
+      <div class="row">
+        <button id="themeBtn" class="btn-ghost ring" title="Toggle theme">🌓 Theme</button>
+        <button id="exportBtn" class="btn-outline ring" title="Export channels JSON">Export</button>
+        <button id="importBtn" class="btn-outline ring" title="Import channels JSON">Import</button>
+        <button id="resetBtn" class="btn-outline ring" title="Reset to defaults">Reset</button>
+      </div>
+    </div>
 
-  <div class="controls-container">
-    <button onclick="prevChannel()">⏮ Prev</button>
-    <button onclick="nextChannel()">Next ⏭</button>
-    <input type="number" id="channelInput" min="1" placeholder="Channel #"/>
-    <button onclick="goToChannel()">Go</button>
-    <select id="channelSelect" onchange="onSelectChange()">
-      <option value="">Choose Channel</option>
-    </select>
+    <div class="player-card card">
+      <div class="player-head">
+        <div id="statusDot" class="status-dot"></div>
+        <div class="now" id="nowTitle">No channel playing</div>
+        <div class="spacer"></div>
+        <div class="subtle" id="metaInfo"></div>
+      </div>
+      <div class="video-shell">
+        <video
+          id="videoPlayer"
+          class="video-js vjs-default-skin"
+          playsinline
+          webkit-playsinline
+          controls
+          preload="auto"
+          data-setup="{}"
+        >
+          <source src="" type="application/x-mpegURL" />
+        </video>
+      </div>
+      <div id="errorbar" class="errorbar">
+        <strong>Playback error.</strong>
+        Tip: Some streams block cross-origin playback, are region-locked, or require HTTPS. Try another URL, use HTTPS, or test in Safari (native HLS). If autoplay is blocked, press Play.
+      </div>
+    </div>
+
+    <div class="controls">
+      <!-- Playback controls -->
+      <div class="card" style="grid-column: span 12;">
+        <div class="row">
+          <button id="prevBtn" class="btn ring" title="Previous (←)">⏮ Prev</button>
+          <button id="playPauseBtn" class="btn ring" title="Space">▶️ Play</button>
+          <button id="nextBtn" class="btn ring" title="Next (→)">Next ⏭</button>
+
+          <button id="muteBtn" class="btn-ghost ring" title="M">
+            🔇 Mute
+          </button>
+          <input id="vol" class="ring" type="range" min="0" max="1" step="0.05" value="0.8" style="width:140px" title="Volume" />
+          <button id="pipBtn" class="btn-ghost ring" title="Picture-in-Picture">🗔 PiP</button>
+          <button id="fsBtn" class="btn-ghost ring" title="F">⛶ Fullscreen</button>
+
+          <span class="spacer"></span>
+
+          <input id="channelNum" class="ring" type="number" min="1" placeholder="Channel #" style="width:110px" />
+          <button id="gotoBtn" class="btn ring" title="Enter">Go</button>
+
+          <span class="pill">Shortcuts: <span class="kbd">←</span>/<span class="kbd">→</span>, <span class="kbd">Space</span>, <span class="kbd">M</span>, <span class="kbd">F</span>, <span class="kbd">P</span></span>
+        </div>
+      </div>
+
+      <!-- Add single URL -->
+      <div class="card" style="grid-column: span 12;">
+        <div class="row" style="width:100%">
+          <input id="customUrl" class="ring grow" placeholder="Paste a .m3u8 URL and press Add & Play…" />
+          <button id="addBtn" class="btn ring">Add & Play</button>
+          <button id="copyBtn" class="btn-ghost ring" title="Copy current stream URL">Copy URL</button>
+          <span class="hint right">If a URL fails, it’s usually CORS/HTTPS/Geo.</span>
+        </div>
+      </div>
+
+      <!-- Import M3U text -->
+      <div class="card" style="grid-column: span 12;">
+        <div class="row" style="width:100%">
+          <textarea id="m3uText" class="ring" placeholder="#EXTM3U
+#EXTINF:-1 tvg-id=\"...\",My Channel
+https://example.com/live/playlist.m3u8" style="width:100%; height:110px;"></textarea>
+        </div>
+        <div class="row">
+          <button id="parseBtn" class="btn ring">Parse M3U & Add</button>
+          <span class="hint">Understands #EXTINF names. New channels are appended.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="card">
+        <div class="search">
+          <input id="search" class="ring grow" placeholder="Search channels…" />
+          <select id="sortSel" class="ring">
+            <option value="num-asc"># ↑</option>
+            <option value="num-desc"># ↓</option>
+            <option value="name-asc">Name A→Z</option>
+            <option value="name-desc">Name Z→A</option>
+          </select>
+        </div>
+        <div id="list" class="list" role="listbox" aria-label="Channel list"></div>
+        <div class="footer-hint hint">
+          Double-click a channel to play. Enter on <b>Channel #</b> also jumps.
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:600; margin-bottom:6px">Help</div>
+        <div class="hint">
+          • If playback fails, try Safari (native HLS) or another stream.<br/>
+          • Many public test URLs die over time; add your own.<br/>
+          • Volume/theme remembered per browser.<br/>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <div class="custom-stream-section">
-    <label for="customStreamUrl">Paste a new .m3u8 URL here and add to channel list:</label>
-    <textarea id="customStreamUrl" placeholder="Paste .m3u8 URL here..."></textarea>
-    <button onclick="addCustomStream()">Add & Play Custom Channel</button>
-  </div>
-
-  <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
   <script>
-    // Predefined channel list
-    const channels = [
+    // -------- Theme persistence --------
+    const preferred = localStorage.getItem("theme") ||
+      (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", preferred);
+    document.getElementById("themeBtn").addEventListener("click", () => {
+      const cur = document.documentElement.getAttribute("data-theme");
+      const next = cur === "light" ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", next);
+      localStorage.setItem("theme", next);
+    });
+
+    // -------- Default channels (can be reset) --------
+    const defaultChannels = [
       { num: 1, name: '6ter (1080p)', url: 'https://viamotionhsi.netplus.ch/live/eds/6ter/browser-HLS8/6ter.m3u8' },
       { num: 2, name: '20 Minutes TV (1080p)', url: 'https://live-20minutestv.digiteka.com/1961167769/index.m3u8' },
       { num: 3, name: 'A12 TV (720p)', url: 'https://video1.getstreamhosting.com:1936/8420/8420/playlist.m3u8' },
@@ -109,7 +268,7 @@
       { num: 8, name: 'Africanews French', url: 'https://cdn-euronews.akamaized.net/live/eds/africanews-fr/25050/index.m3u8' },
       { num: 9, name: 'Al Jazeera English', url: 'https://live-hls-web-aje.getaj.net/AJE/01.m3u8' },
       { num: 10, name: 'Al Jazeera Arabic', url: 'https://live-hls-web-ajm.getaj.net/AJM/01.m3u8' },
-      { num: 11, name: 'ARTE (French/German)', url: 'https://artestrasp.akamaized.net/hls/arteplus7/de/stream.m3u8' },
+      { num: 11, name: 'ARTE (FR/DE)', url: 'https://artestrasp.akamaized.net/hls/arteplus7/de/stream.m3u8' },
       { num: 12, name: 'BBC News', url: 'https://bbcmedia.ic.llnwd.net/stream/bbcmedia_news_mf_p' },
       { num: 13, name: 'Bloomberg TV', url: 'https://live-ws-tx.smartstream.tv/bloombergtv/bloombergtv_720p/playlist.m3u8' },
       { num: 14, name: 'CGTN English', url: 'https://video.cgtn.com/lives/live.m3u8' },
@@ -124,103 +283,282 @@
       { num: 23, name: 'Weather Channel', url: 'https://weatherchannel.akamaized.net/streams/weatherchannel/playlist.m3u8' },
     ];
 
-    const player = videojs('videoPlayer');
-    const nameEl = document.getElementById('channelName');
-    const selectEl = document.getElementById('channelSelect');
-    let current = -1;
+    // -------- State --------
+    let channels = JSON.parse(localStorage.getItem("channels") || "null") || defaultChannels.slice();
+    let currentIdx = -1;
 
-    // Populate dropdown with channels
-    function populateChannels() {
-      selectEl.innerHTML = '<option value="">Choose Channel</option>';
-      channels.forEach(ch => {
-        const opt = document.createElement('option');
-        opt.value = ch.num;
-        opt.text = `${ch.num}. ${ch.name}`;
-        selectEl.appendChild(opt);
-      });
+    // -------- Helpers --------
+    const $ = sel => document.querySelector(sel);
+    const listEl = $("#list");
+    const nowTitle = $("#nowTitle");
+    const metaInfo = $("#metaInfo");
+    const statusDot = $("#statusDot");
+    const errorbar = $("#errorbar");
+
+    function renumber() {
+      channels = channels
+        .map((c,i) => ({...c, num: i+1}))
+        .sort((a,b) => a.num - b.num);
+      persist();
+    }
+    function persist() {
+      localStorage.setItem("channels", JSON.stringify(channels));
+    }
+    function setStatus(ok) {
+      statusDot.classList.toggle("err", !ok);
+    }
+    function showError(msg) {
+      errorbar.textContent = "";
+      errorbar.innerHTML = "<strong>Playback error.</strong> " + (msg || errorbar.innerHTML);
+      errorbar.classList.add("show");
+      setStatus(false);
+    }
+    function clearError() {
+      errorbar.classList.remove("show");
     }
 
-    // Play channel by index
-    function playChannel(idx) {
-      if (idx >= 0 && idx < channels.length) {
-        const ch = channels[idx];
-        current = idx;
-        nameEl.textContent = `Now Playing: ${ch.num}. ${ch.name}`;
-        player.src({ type: 'application/x-mpegURL', src: ch.url });
-        player.play();
-        selectEl.value = ch.num;
-        document.getElementById('channelInput').value = '';
-        document.getElementById('customStreamUrl').value = '';
+    // -------- Render channel list --------
+    function renderList() {
+      const q = $("#search").value.toLowerCase();
+      const sort = $("#sortSel").value;
+      let view = channels.slice();
+      if (q) view = view.filter(c => (c.name + " " + c.num + " " + c.url).toLowerCase().includes(q));
+      if (sort === "num-asc") view.sort((a,b)=>a.num-b.num);
+      if (sort === "num-desc") view.sort((a,b)=>b.num-a.num);
+      if (sort === "name-asc") view.sort((a,b)=>a.name.localeCompare(b.name));
+      if (sort === "name-desc") view.sort((a,b)=>b.name.localeCompare(a.name));
+
+      listEl.innerHTML = "";
+      for (const c of view) {
+        const row = document.createElement("div");
+        row.className = "chan";
+        row.tabIndex = 0;
+        row.setAttribute("role","option");
+        row.innerHTML = `
+          <div class="name">${c.num}. ${escapeHtml(c.name)}</div>
+          <div class="num">#${c.num}</div>
+        `;
+        row.addEventListener("click", () => playByNum(c.num));
+        row.addEventListener("dblclick", () => playByNum(c.num));
+        row.addEventListener("keydown", (e) => { if (e.key === "Enter") playByNum(c.num); });
+        listEl.appendChild(row);
       }
     }
+    function escapeHtml(s){ return s.replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m])); }
 
-    // Previous channel
-    function prevChannel() {
-      if (channels.length === 0) return;
-      playChannel((current - 1 + channels.length) % channels.length);
+    // -------- Player --------
+    const player = videojs("videoPlayer", {
+      html5: { vhs: { overrideNative: true } },
+      controlBar: { volumePanel: { inline: false } },
+      fluid: false,
+      inactivityTimeout: 2000
+    });
+    // Keep crossOrigin for PiP safety where possible
+    try { player.tech_.el_.crossOrigin = "anonymous"; } catch {}
+
+    // Load saved volume
+    const savedVol = parseFloat(localStorage.getItem("volume") || "0.8");
+    player.volume(isFinite(savedVol) ? savedVol : 0.8);
+    $("#vol").value = player.volume();
+
+    player.on("error", () => {
+      const err = player.error();
+      showError(err && err.message ? err.message : "Unknown error.");
+    });
+    player.on("playing", () => { clearError(); setStatus(true); updateMeta(); });
+    player.on("loadedmetadata", updateMeta);
+
+    function updateMeta(){
+      const tech = player.tech(true);
+      const dur = player.duration();
+      metaInfo.textContent = (tech ? tech.name_ : "html5") + (isFinite(dur) && dur>0 ? ` • ${fmtTime(dur)}` : "");
+    }
+    function fmtTime(s){
+      const h = Math.floor(s/3600), m = Math.floor((s%3600)/60); const ss = Math.floor(s%60);
+      return (h?h+":":"") + String(m).padStart(2,"0") + ":" + String(ss).padStart(2,"0");
     }
 
-    // Next channel
-    function nextChannel() {
-      if (channels.length === 0) return;
-      playChannel((current + 1) % channels.length);
-    }
-
-    // Go to channel by number
-    function goToChannel() {
-      const num = parseInt(document.getElementById('channelInput').value, 10);
-      if (isNaN(num)) {
-        alert('Please enter a valid channel number.');
-        return;
-      }
-      const idx = channels.findIndex(ch => ch.num === num);
-      if (idx !== -1) {
-        playChannel(idx);
-      } else {
-        alert('Channel not found!');
+    // -------- Channel controls --------
+    function playIndex(idx){
+      if (idx<0 || idx>=channels.length) return;
+      currentIdx = idx;
+      const ch = channels[idx];
+      nowTitle.textContent = `Now Playing: ${ch.num}. ${ch.name}`;
+      clearError(); setStatus(true);
+      try {
+        player.src({ type: "application/x-mpegURL", src: ch.url });
+        player.play().catch(() => {
+          // Autoplay blocked — show hint but keep source loaded
+          showError("Autoplay is blocked by the browser. Press Play ▶️.");
+        });
+      } catch (e) {
+        showError(String(e));
       }
     }
+    function playByNum(num){
+      const idx = channels.findIndex(c => c.num === Number(num));
+      if (idx !== -1) playIndex(idx);
+    }
+    function prev(){ if (!channels.length) return; playIndex((currentIdx - 1 + channels.length) % channels.length); }
+    function next(){ if (!channels.length) return; playIndex((currentIdx + 1) % channels.length); }
 
-    // Dropdown select changed
-    function onSelectChange() {
-      const num = parseInt(selectEl.value, 10);
-      const idx = channels.findIndex(ch => ch.num === num);
-      if (idx !== -1) {
-        playChannel(idx);
+    // Buttons
+    $("#prevBtn").addEventListener("click", prev);
+    $("#nextBtn").addEventListener("click", next);
+    $("#gotoBtn").addEventListener("click", () => {
+      const val = Number($("#channelNum").value);
+      if (!val) return;
+      playByNum(val);
+    });
+
+    const playPauseBtn = $("#playPauseBtn");
+    function syncPlayBtn(){
+      const p = !player.paused();
+      playPauseBtn.textContent = p ? "⏸ Pause" : "▶️ Play";
+    }
+    playPauseBtn.addEventListener("click", () => {
+      if (player.paused()) player.play(); else player.pause();
+      syncPlayBtn();
+    });
+    player.on("pause", syncPlayBtn);
+    player.on("play", syncPlayBtn);
+
+    // Volume/Mute
+    $("#vol").addEventListener("input", e => {
+      player.volume(parseFloat(e.target.value));
+      localStorage.setItem("volume", String(player.volume()));
+    });
+    $("#muteBtn").addEventListener("click", () => {
+      player.muted(!player.muted());
+      $("#muteBtn").textContent = player.muted() ? "🔊 Unmute" : "🔇 Mute";
+    });
+
+    // PiP / Fullscreen
+    $("#pipBtn").addEventListener("click", async () => {
+      const el = player.el().querySelector("video");
+      if (!document.pictureInPictureEnabled || !el) return;
+      try {
+        if (document.pictureInPictureElement) await document.exitPictureInPicture();
+        else await el.requestPictureInPicture();
+      } catch {}
+    });
+    $("#fsBtn").addEventListener("click", () => player.isFullscreen() ? player.exitFullscreen() : player.requestFullscreen());
+
+    // Add & Copy
+    $("#addBtn").addEventListener("click", () => {
+      const url = $("#customUrl").value.trim();
+      if (!url) return alert("Paste a .m3u8 URL.");
+      const exists = channels.find(c => c.url === url);
+      if (exists) return (playByNum(exists.num), alert(`Already exists as #${exists.num}: ${exists.name}`));
+      const name = `Custom Channel #${channels.length + 1}`;
+      channels.push({ num: channels.length + 1, name, url });
+      persist(); renderList();
+      playIndex(channels.length - 1);
+      $("#customUrl").value = "";
+    });
+    $("#copyBtn").addEventListener("click", async () => {
+      const cur = channels[currentIdx];
+      if (!cur) return;
+      try { await navigator.clipboard.writeText(cur.url); alert("Copied stream URL."); } catch { alert(cur.url); }
+    });
+
+    // Parse M3U
+    $("#parseBtn").addEventListener("click", () => {
+      const txt = $("#m3uText").value;
+      if (!txt.trim()) return alert("Paste M3U text first.");
+      const parsed = parseM3U(txt);
+      if (!parsed.length) return alert("No entries found.");
+      for (const p of parsed) {
+        if (channels.some(c => c.url === p.url)) continue;
+        channels.push({ num: channels.length + 1, name: p.name || `Custom #${channels.length+1}`, url: p.url });
       }
+      persist(); renderList();
+      alert(`Added ${parsed.length} item(s).`);
+      $("#m3uText").value = "";
+    });
+
+    function parseM3U(text){
+      const lines = text.split(/\r?\n/);
+      const out = [];
+      let curName = null;
+      for (const raw of lines) {
+        const line = raw.trim();
+        if (!line || line.startsWith("#EXTM3U")) continue;
+        if (line.startsWith("#EXTINF")) {
+          // Try to capture after comma
+          const m = line.match(/#EXTINF:[^,]*,(.*)$/);
+          curName = m ? m[1].trim() : null;
+        } else if (/^https?:\/\/.+/i.test(line) && line.toLowerCase().includes(".m3u8")) {
+          out.push({ name: curName, url: line });
+          curName = null;
+        }
+      }
+      return out;
     }
 
-    // Add custom stream as new channel and play
-    function addCustomStream() {
-      const url = document.getElementById('customStreamUrl').value.trim();
-      if (!url) {
-        alert('Please paste a valid .m3u8 stream URL.');
-        return;
-      }
-      // Check if URL already exists in channels
-      const existing = channels.find(ch => ch.url === url);
-      if (existing) {
-        alert(`Stream already added as Channel ${existing.num}: ${existing.name}`);
-        playChannel(channels.findIndex(ch => ch.url === url));
-        return;
-      }
-      // Assign next channel number
-      const maxNum = channels.reduce((max, ch) => ch.num > max ? ch.num : max, 0);
-      const newNum = maxNum + 1;
-      const newName = `Custom Channel #${newNum}`;
-      const newChannel = { num: newNum, name: newName, url };
-      channels.push(newChannel);
-      populateChannels();
-      playChannel(channels.length - 1);
-      alert(`Added ${newName} to channel list.`);
-    }
+    // Search/sort
+    $("#search").addEventListener("input", renderList);
+    $("#sortSel").addEventListener("change", renderList);
 
-    // Initialize on page load
-    populateChannels();
-    // Optional: play first channel automatically
-    // playChannel(0);
+    // Export/Import/Reset
+    $("#exportBtn").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(channels, null, 2)], {type: "application/json"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "channels.json";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+    $("#importBtn").addEventListener("click", async () => {
+      const input = document.createElement("input");
+      input.type = "file"; input.accept = "application/json";
+      input.onchange = async () => {
+        const file = input.files[0]; if (!file) return;
+        try {
+          const txt = await file.text();
+          const arr = JSON.parse(txt);
+          if (!Array.isArray(arr)) throw new Error("Invalid JSON.");
+          channels = arr.map((c,i)=>({ num: i+1, name: String(c.name||`Imported #${i+1}`), url: String(c.url||"") })).filter(c=>c.url);
+          persist(); renderList();
+          alert(`Imported ${channels.length} channel(s).`);
+        } catch (e) { alert("Import failed: "+e.message); }
+      };
+      input.click();
+    });
+    $("#resetBtn").addEventListener("click", () => {
+      if (!confirm("Reset channel list to defaults?")) return;
+      channels = defaultChannels.slice();
+      renumber(); renderList();
+    });
 
+    // Keyboard shortcuts (debounced to avoid double jumps)
+    let keyHold = {};
+    document.addEventListener("keydown", (e) => {
+      if (e.repeat) return; // Prevent double fire
+      keyHold[e.code] = true;
+      switch (e.code) {
+        case "ArrowLeft": prev(); break;
+        case "ArrowRight": next(); break;
+        case "Space": e.preventDefault(); player.paused() ? player.play() : player.pause(); break;
+        case "KeyM": player.muted(!player.muted()); $("#muteBtn").textContent = player.muted() ? "🔊 Unmute" : "🔇 Mute"; break;
+        case "KeyF": player.isFullscreen() ? player.exitFullscreen() : player.requestFullscreen(); break;
+        case "KeyP": $("#pipBtn").click(); break;
+        case "Enter":
+          const num = Number($("#channelNum").value);
+          if (num) playByNum(num);
+          break;
+      }
+    });
+    document.addEventListener("keyup", (e) => { keyHold[e.code] = false; });
+
+    // Enter on inputs
+    $("#channelNum").addEventListener("keydown", e => { if (e.key==="Enter") $("#gotoBtn").click(); });
+    $("#customUrl").addEventListener("keydown", e => { if (e.key==="Enter") $("#addBtn").click(); });
+
+    // Init
+    renderList();
+    // Auto-play first channel if you want:
+    // playIndex(0);
   </script>
-
 </body>
 </html>
