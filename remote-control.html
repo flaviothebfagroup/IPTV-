@@ -156,7 +156,6 @@
     <div class="card" id="loginCard">
       <input type="email" id="email" placeholder="Email" autocomplete="email" />
       <input type="password" id="password" placeholder="Password" autocomplete="current-password" />
-      <!-- simple button (no form) for max compatibility -->
       <button id="btnEnter" type="button">ENTER</button>
 
       <!-- Minimal language link (bottom of card) -->
@@ -176,7 +175,7 @@
 
       let fired = false;
       function callSignIn() {
-        if (fired) return; // prevent double taps
+        if (fired) return;
         fired = true;
         if (!email.value.trim() || !pass.value) { fired = false; return; }
 
@@ -184,7 +183,6 @@
           try { window.signIn(); } catch(e) { fired = false; }
           return;
         }
-        // Retry until module is ready (up to ~5s)
         let tries = 0;
         const iv = setInterval(() => {
           if (typeof window.signIn === 'function') {
@@ -193,18 +191,16 @@
           } else if (++tries > 50) {
             clearInterval(iv);
             console.warn('signIn not ready');
-            fired = false; // allow retry after timeout
+            fired = false;
           }
         }, 100);
       }
 
-      // Fire on earliest event across engines
       if (btn) {
         btn.addEventListener('touchstart', (e)=>{ e.preventDefault(); callSignIn(); }, {passive:false});
         btn.addEventListener('pointerup',  (e)=>{ e.preventDefault(); callSignIn(); });
         btn.addEventListener('click',      (e)=>{ e.preventDefault(); callSignIn(); });
       }
-      // ENTER key from inputs
       [email, pass].forEach(el => el && el.addEventListener('keydown', e => {
         if (e.key === 'Enter') { e.preventDefault(); callSignIn(); }
       }));
@@ -307,6 +303,24 @@
     function t(key){ return i18n[lang][key]; }
     function toast(msg){ const tEl=$('#toast'); tEl.textContent=msg; tEl.classList.add('show'); setTimeout(()=>tEl.classList.remove('show'),1400); }
 
+    /* ---------- Per-element de-duped binder (fixes double-fire without blocking others) ---------- */
+    const TAP_GUARD_MS = 280;
+    const lastTapForEl = new WeakMap();
+    function fastBind(el, handler){
+      if(!el) return;
+      const invoke = (e)=>{
+        const now = performance.now ? performance.now() : Date.now();
+        const last = lastTapForEl.get(el) || 0;
+        if (now - last < TAP_GUARD_MS) { e.preventDefault(); return; }
+        lastTapForEl.set(el, now);
+        try { handler(e); } catch(_) {}
+      };
+      el.addEventListener('pointerup', (e)=>{ e.preventDefault(); invoke(e); }, {passive:false});
+      el.addEventListener('touchend',  (e)=>{ e.preventDefault(); invoke(e); }, {passive:false});
+      el.addEventListener('click',     (e)=>{ e.preventDefault(); invoke(e); });
+      el.addEventListener('keydown',   (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); invoke(e); }});
+    }
+
     /* ---------- Language chooser (login) ---------- */
     const langLink = $id('langLink'), langLinkText = $id('langLinkText');
     const langChooser = $id('langChooser'), langList = $id('langList');
@@ -320,7 +334,7 @@
     const langToggle  = $id('langToggle');
     const langButtons = Array.from(langToggle.querySelectorAll('.seg-btn'));
     function updateLangButtons(){ langButtons.forEach(b=>{ const on=b.dataset.lang===lang; b.classList.toggle('active',on); b.setAttribute('aria-pressed', on?'true':'false'); }); }
-    langButtons.forEach(b=> b.addEventListener('click', ()=> setLang(b.dataset.lang)));
+    langButtons.forEach(b=> fastBind(b, ()=> setLang(b.dataset.lang)));
     function setLang(newLang){ if(!newLang||newLang===lang) return; lang=newLang; localStorage.setItem('iptv_lang',lang); applyI18n(); updateLangButtons(); toast(i18n[lang].langToast); }
 
     /* ---------- Apply i18n ---------- */
@@ -374,17 +388,6 @@
       catch(e){ console.error(e); toast(e?.code==='auth/invalid-credential'? t('invalidLogin') : t('loginFailed')); }
     }
     window.signIn = signIn;
-
-    // -------- universal fastBind (touchstart/pointerup/click + keyboard) ----------
-    function fastBind(el, handler){
-      if(!el) return;
-      let locked = false;
-      const fire = (ev)=>{ if(locked) return; locked = true; try{ handler(ev); }finally{ setTimeout(()=>locked=false, 0); } };
-      el.addEventListener('touchstart', (e)=>{ e.preventDefault(); fire(e); }, {passive:false});
-      el.addEventListener('pointerup',  (e)=>{ e.preventDefault(); fire(e); });
-      el.addEventListener('click',      (e)=>{ e.preventDefault(); fire(e); });
-      el.addEventListener('keydown',    (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); fire(e);} });
-    }
 
     async function safeSignOut(){
       try { await signOut(auth); toast(lang==='fr'?'Déconnecté':'Signed out'); }
@@ -445,6 +448,7 @@
       setActiveTileByIndex(next, dir);
     }
 
+    // ---------- THEME ----------
     const savedTheme = localStorage.getItem('iptv_theme') || 'light';
     document.body.classList.toggle('light', savedTheme==='light');
     syncThemeSwitch();
@@ -575,14 +579,15 @@
     fastBind($id('arrowLeft'), ()=> moveFocus(-1,0));
     fastBind($id('arrowRight'),()=> moveFocus( 1,0));
 
+    // Bind volume controls (per-element guard keeps them responsive)
     fastBind($id('volPlus'),  ()=> volUp());
     fastBind($id('volMinus'), ()=> volDown());
 
     // Swipe focus with orange glow — ensure center button isn't hijacked
     const dial=$id('dial'); let sx=0, sy=0, tracking=false; const TH=28;
     dial.addEventListener('pointerdown',(e)=>{ 
-      if ((e.target && e.target.id === 'dialSelect')) return; // don't capture when pressing center
-      tracking=true; sx=e.clientX; sy=e.clientY; dial.setPointerCapture(e.pointerId);
+      if ((e.target && e.target.id === 'dialSelect')) return;
+      tracking=true; sx=e.clientX; sy=e.clientY; dial.setPointerCapture?.(e.pointerId);
     });
     dial.addEventListener('pointerup',(e)=>{ if(!tracking) return; tracking=false; const dx=e.clientX-sx, dy=e.clientY-sy;
       if(Math.abs(dx)>Math.abs(dy) && Math.abs(dx)>TH){ moveFocus(dx>0?+1:-1,0); }
