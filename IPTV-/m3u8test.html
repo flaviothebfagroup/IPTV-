@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>IPTV Remote Player</title>
+  <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet"/>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #fafafa;
+      margin: 0;
+      padding: 2rem;
+      color: #333;
+      text-align: center;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
+    #channelName { font-size: 1.2rem; color: #555; margin-bottom: 1.2rem; }
+    #videoPlayer {
+      width: 720px; height: 405px;
+      max-width: 100%;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      margin-bottom: 1.5rem;
+    }
+    .controls-container {
+      display: flex; flex-wrap: wrap;
+      justify-content: center; gap: 12px;
+      margin-bottom: 1rem;
+    }
+    button, input, select, textarea {
+      font-size: 1rem;
+      padding: 10px 14px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      outline: none;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #007aff;
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background-color: #005aca;
+    }
+    input[type="number"] { width: 70px; }
+    select { min-width: 220px; }
+    textarea {
+      width: 100%;
+      max-width: 720px;
+      height: 80px;
+      margin-bottom: 10px;
+      resize: vertical;
+    }
+    .custom-stream-section {
+      margin-top: 2rem;
+      text-align: left;
+      max-width: 720px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>IPTV Remote Player</h1>
+  <div id="channelName">Select a channel</div>
+
+  <video id="videoPlayer" class="video-js vjs-default-skin" controls preload="auto" data-setup="{}">
+    <source src="" type="application/x-mpegURL"/>
+  </video>
+
+  <div class="controls-container">
+    <button onclick="prevChannel()">⏮ Prev</button>
+    <button onclick="nextChannel()">Next ⏭</button>
+    <input type="number" id="channelInput" min="1" placeholder="Channel #"/>
+    <button onclick="goToChannel()">Go</button>
+    <select id="channelSelect" onchange="onSelectChange()">
+      <option value="">Choose Channel</option>
+    </select>
+  </div>
+
+  <div class="custom-stream-section">
+    <label for="customStreamUrl">Test Custom Stream (.m3u8 URL):</label>
+    <textarea id="customStreamUrl" placeholder="Paste .m3u8 URL here..."></textarea>
+    <button onclick="playCustomStream()">Play Custom Stream</button>
+  </div>
+
+  <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+  <script>
+    // FULL CHANNEL LIST - add or edit channels here
+    const channels = [
+      { num: 1, name: '6ter (1080p)', url: 'https://viamotionhsi.netplus.ch/live/eds/6ter/browser-HLS8/6ter.m3u8' },
+      { num: 2, name: '20 Minutes TV (1080p)', url: 'https://live-20minutestv.digiteka.com/1961167769/index.m3u8' },
+      { num: 3, name: 'A12 TV (720p)', url: 'https://video1.getstreamhosting.com:1936/8420/8420/playlist.m3u8' },
+      { num: 4, name: 'ADN TV+', url: 'https://d3b73b34o7cvkq.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-gz2sgqzp076kf/adn.m3u8' },
+      { num: 5, name: 'Africa 24 (1080p)', url: 'https://africa24.vedge.infomaniak.com/livecast/ik:africa24/manifest.m3u8' },
+      { num: 6, name: 'Africa 24 Sport', url: 'https://africa24.vedge.infomaniak.com/livecast/ik:africa24sport/manifest.m3u8' },
+      { num: 7, name: 'Africanews English', url: 'https://d35j504z0x2vu2.cloudfront.net/v1/master/0bc8e8376bd8417a1b6761138aa41c26c7309312/africanews/africanews-en.m3u8' },
+      { num: 8, name: 'Africanews French', url: 'https://cdn-euronews.akamaized.net/live/eds/africanews-fr/25050/index.m3u8' },
+      { num: 9, name: 'Al Jazeera English', url: 'https://live-hls-web-aje.getaj.net/AJE/01.m3u8' },
+      { num: 10, name: 'Al Jazeera Arabic', url: 'https://live-hls-web-ajm.getaj.net/AJM/01.m3u8' },
+      { num: 11, name: 'ARTE (French/German)', url: 'https://artestrasp.akamaized.net/hls/arteplus7/de/stream.m3u8' },
+      { num: 12, name: 'BBC News', url: 'https://bbcmedia.ic.llnwd.net/stream/bbcmedia_news_mf_p' },
+      { num: 13, name: 'Bloomberg TV', url: 'https://live-ws-tx.smartstream.tv/bloombergtv/bloombergtv_720p/playlist.m3u8' },
+      { num: 14, name: 'CGTN English', url: 'https://video.cgtn.com/lives/live.m3u8' },
+      { num: 15, name: 'CNN International', url: 'https://cnn-cdn-live.cnn.com/cnn/live/2022/08/16/cnnus.stream.m3u8' },
+      { num: 16, name: 'Euronews English', url: 'https://cdn-euronews.akamaized.net/live/eds/euronews-en/25050/index.m3u8' },
+      { num: 17, name: 'France 24 English', url: 'https://static.france24.com/live/F24_EN_LO_HLS/live_web.m3u8' },
+      { num: 18, name: 'France 24 French', url: 'https://static.france24.com/live/F24_FR_LO_HLS/live_web.m3u8' },
+      { num: 19, name: 'NHK World-Japan', url: 'https://nhkworld-jp-live.akamaized.net/hls/live/2020/nhkworld/index.m3u8' },
+      { num: 20, name: 'Sky News UK', url: 'https://skynewsau-lh.akamaihd.net/i/skynews_1@119320/master.m3u8' },
+      { num: 21, name: 'TLC HD', url: 'https://tlc-lh.akamaihd.net/i/tlc_1@119320/master.m3u8' },
+      { num: 22, name: 'TV5MONDE', url: 'https://tv5monde-lh.akamaihd.net/i/tv5monde_1@119320/master.m3u8' },
+      { num: 23, name: 'Weather Channel', url: 'https://weatherchannel.akamaized.net/streams/weatherchannel/playlist.m3u8' },
+      // You can add more channels here
+    ];
+
+    const player = videojs('videoPlayer');
+    const nameEl = document.getElementById('channelName');
+    const selectEl = document.getElementById('channelSelect');
+    let current = -1;
+
+    // Populate dropdown with channel list
+    function populateChannels() {
+      channels.forEach(ch => {
+        const opt = document.createElement('option');
+        opt.value = ch.num;
+        opt.text = `${ch.num}. ${ch.name}`;
+        selectEl.add(opt);
+      });
+    }
+
+    // Play channel by index in channels array
+    function playChannel(idx) {
+      if (idx >= 0 && idx < channels.length) {
+        const ch = channels[idx];
+        current = idx;
+        nameEl.textContent = `Now Playing: ${ch.num}. ${ch.name}`;
+        player.src({ type: 'application/x-mpegURL', src: ch.url });
+        player.play();
+        selectEl.value = ch.num;
+        document.getElementById('channelInput').value = '';
+        // Clear custom stream box when playing preset channel
+        document.getElementById('customStreamUrl').value = '';
+      }
+    }
+
+    // Play previous channel
+    function prevChannel() {
+      playChannel((current - 1 + channels.length) % channels.length);
+    }
+
+    // Play next channel
+    function nextChannel() {
+      playChannel((current + 1) % channels.length);
+    }
+
+    // Go to channel by number entered
+    function goToChannel() {
+      const num = parseInt(document.getElementById('channelInput').value, 10);
+      if (isNaN(num)) {
+        alert('Please enter a valid channel number.');
+        return;
+      }
+      const idx = channels.findIndex(ch => ch.num === num);
+      if (idx !== -1) {
+        playChannel(idx);
+      } else {
+        alert('Channel not found!');
+      }
+    }
+
+    // Select channel from dropdown
+    function onSelectChange() {
+      const num = parseInt(selectEl.value, 10);
+      const idx = channels.findIndex(ch => ch.num === num);
+      if (idx !== -1) {
+        playChannel(idx);
+      }
+    }
+
+    // Play any custom stream URL pasted in the textarea
+    function playCustomStream() {
+      const url = document.getElementById('customStreamUrl').value.trim();
+      if (!url) {
+        alert('Please paste a valid .m3u8 stream URL.');
+        return;
+      }
+      nameEl.textContent = `Now Playing: Custom Stream`;
+      player.src({ type: 'application/x-mpegURL', src: url });
+      player.play();
+      selectEl.value = '';
+      document.getElementById('channelInput').value = '';
+      current = -1; // reset current channel because we are playing custom
+    }
+
+    // Initialize
+    populateChannels();
+    // Optional: auto play first channel on load
+    // playChannel(0);
+
+  </script>
+
+</body>
+</html>
