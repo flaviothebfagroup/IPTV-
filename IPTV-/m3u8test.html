@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>IPTV Remote Player</title>
+  <title>IPTV Channel Tester</title>
   <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet"/>
   <style>
     body {
@@ -72,7 +72,7 @@
 </head>
 <body>
 
-  <h1>IPTV Remote Player</h1>
+  <h1>IPTV Channel Tester</h1>
   <div id="channelName">Select a channel</div>
 
   <video id="videoPlayer" class="video-js vjs-default-skin" controls preload="auto" data-setup="{}">
@@ -90,14 +90,14 @@
   </div>
 
   <div class="custom-stream-section">
-    <label for="customStreamUrl">Test Custom Stream (.m3u8 URL):</label>
+    <label for="customStreamUrl">Paste a new .m3u8 URL here and add to channel list:</label>
     <textarea id="customStreamUrl" placeholder="Paste .m3u8 URL here..."></textarea>
-    <button onclick="playCustomStream()">Play Custom Stream</button>
+    <button onclick="addCustomStream()">Add & Play Custom Channel</button>
   </div>
 
   <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
   <script>
-    // FULL CHANNEL LIST - add or edit channels here
+    // Predefined channel list
     const channels = [
       { num: 1, name: '6ter (1080p)', url: 'https://viamotionhsi.netplus.ch/live/eds/6ter/browser-HLS8/6ter.m3u8' },
       { num: 2, name: '20 Minutes TV (1080p)', url: 'https://live-20minutestv.digiteka.com/1961167769/index.m3u8' },
@@ -122,7 +122,6 @@
       { num: 21, name: 'TLC HD', url: 'https://tlc-lh.akamaihd.net/i/tlc_1@119320/master.m3u8' },
       { num: 22, name: 'TV5MONDE', url: 'https://tv5monde-lh.akamaihd.net/i/tv5monde_1@119320/master.m3u8' },
       { num: 23, name: 'Weather Channel', url: 'https://weatherchannel.akamaized.net/streams/weatherchannel/playlist.m3u8' },
-      // You can add more channels here
     ];
 
     const player = videojs('videoPlayer');
@@ -130,17 +129,18 @@
     const selectEl = document.getElementById('channelSelect');
     let current = -1;
 
-    // Populate dropdown with channel list
+    // Populate dropdown with channels
     function populateChannels() {
+      selectEl.innerHTML = '<option value="">Choose Channel</option>';
       channels.forEach(ch => {
         const opt = document.createElement('option');
         opt.value = ch.num;
         opt.text = `${ch.num}. ${ch.name}`;
-        selectEl.add(opt);
+        selectEl.appendChild(opt);
       });
     }
 
-    // Play channel by index in channels array
+    // Play channel by index
     function playChannel(idx) {
       if (idx >= 0 && idx < channels.length) {
         const ch = channels[idx];
@@ -150,22 +150,23 @@
         player.play();
         selectEl.value = ch.num;
         document.getElementById('channelInput').value = '';
-        // Clear custom stream box when playing preset channel
         document.getElementById('customStreamUrl').value = '';
       }
     }
 
-    // Play previous channel
+    // Previous channel
     function prevChannel() {
+      if (channels.length === 0) return;
       playChannel((current - 1 + channels.length) % channels.length);
     }
 
-    // Play next channel
+    // Next channel
     function nextChannel() {
+      if (channels.length === 0) return;
       playChannel((current + 1) % channels.length);
     }
 
-    // Go to channel by number entered
+    // Go to channel by number
     function goToChannel() {
       const num = parseInt(document.getElementById('channelInput').value, 10);
       if (isNaN(num)) {
@@ -180,7 +181,7 @@
       }
     }
 
-    // Select channel from dropdown
+    // Dropdown select changed
     function onSelectChange() {
       const num = parseInt(selectEl.value, 10);
       const idx = channels.findIndex(ch => ch.num === num);
@@ -189,24 +190,34 @@
       }
     }
 
-    // Play any custom stream URL pasted in the textarea
-    function playCustomStream() {
+    // Add custom stream as new channel and play
+    function addCustomStream() {
       const url = document.getElementById('customStreamUrl').value.trim();
       if (!url) {
         alert('Please paste a valid .m3u8 stream URL.');
         return;
       }
-      nameEl.textContent = `Now Playing: Custom Stream`;
-      player.src({ type: 'application/x-mpegURL', src: url });
-      player.play();
-      selectEl.value = '';
-      document.getElementById('channelInput').value = '';
-      current = -1; // reset current channel because we are playing custom
+      // Check if URL already exists in channels
+      const existing = channels.find(ch => ch.url === url);
+      if (existing) {
+        alert(`Stream already added as Channel ${existing.num}: ${existing.name}`);
+        playChannel(channels.findIndex(ch => ch.url === url));
+        return;
+      }
+      // Assign next channel number
+      const maxNum = channels.reduce((max, ch) => ch.num > max ? ch.num : max, 0);
+      const newNum = maxNum + 1;
+      const newName = `Custom Channel #${newNum}`;
+      const newChannel = { num: newNum, name: newName, url };
+      channels.push(newChannel);
+      populateChannels();
+      playChannel(channels.length - 1);
+      alert(`Added ${newName} to channel list.`);
     }
 
-    // Initialize
+    // Initialize on page load
     populateChannels();
-    // Optional: auto play first channel on load
+    // Optional: play first channel automatically
     // playChannel(0);
 
   </script>
