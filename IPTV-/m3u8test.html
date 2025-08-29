@@ -14,7 +14,7 @@
     --bg:#fafafa; --fg:#1f2937;
     --panel:#ffffff; --line:#e5e7eb; --muted:#6b7280;
     --radius:14px;
-    --btn-h:46px;            /* unified control height */
+    --btn-h:46px;                 /* unified control height */
     --ring:rgba(255,106,0,.45);
   }
   [data-theme="dark"]{
@@ -46,13 +46,18 @@
     font-size:14px;height:var(--btn-h);padding:0 12px;border-radius:10px;border:1px solid var(--line);
     background:var(--panel);color:var(--fg);outline:none;
   }
-  textarea{height:auto;min-height:92px;padding:10px 12px;line-height:1.45}
+  /* Primary/secondary buttons */
   .btn{
-    background:linear-gradient(180deg,var(--brand),var(--brand-2));color:#fff;border:0
+    background:linear-gradient(180deg,var(--brand),var(--brand-2));color:#fff;border:0;
+    box-shadow:0 6px 16px rgba(255,106,0,.28);
+    transition:transform .06s ease, filter .15s ease, box-shadow .2s ease;
   }
+  .btn:hover{filter:brightness(1.03)}
+  .btn:active{transform:translateY(1px); box-shadow:0 4px 10px rgba(255,106,0,.22)}
   .btn-outline{background:transparent;border-color:var(--brand);color:var(--brand)}
   .btn-outline:hover{background:var(--brand);color:#fff}
   .tag{font-size:12px;color:var(--muted)}
+  textarea{height:auto;min-height:110px;padding:10px 12px;line-height:1.45}
 
   /* Icon buttons */
   .btn-remote{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 14px}
@@ -76,10 +81,10 @@
   @keyframes bfaPulse{ 0%{box-shadow:0 0 0 0 var(--ring);opacity:1} 70%{box-shadow:0 0 0 10px rgba(255,106,0,0);opacity:.75} 100%{box-shadow:0 0 0 0 rgba(255,106,0,0);opacity:1} }
 
   /* Cards */
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px; overflow:hidden}
 
   /* Player */
-  .player{padding:0;overflow:hidden}
+  .player{padding:0}
   .ph{
     padding:10px 12px;border-bottom:1px solid var(--line);
     display:flex;align-items:center;gap:8px;min-height:42px
@@ -105,23 +110,34 @@
   .controls .btn,.controls button{min-width:0;justify-self:stretch}
   .vol{height:var(--btn-h); width:100%}
 
-  /* Channel select row */
-  .select-row{
-    display:grid;gap:8px;align-items:center;justify-items:center;margin-top:10px;
-    grid-template-columns:140px 100px 1fr; /* # | Go | dropdown */
+  /* ==== Input GROUPS (keeps things inside boundaries neatly) ==== */
+  .igroup{
+    display:grid;gap:0;margin-top:10px;
+    grid-template-columns:160px 110px 1fr;  /* Channel # | Go | Dropdown */
+    border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--panel)
   }
-  #chanSelect{width:100%}
+  .igroup > *{ border:0; border-radius:0; height:var(--btn-h); }
+  .igroup > * + *{ border-left:1px solid var(--line) }
+  .igroup .btn{ border-radius:0 }  /* middle button flat so group looks single */
+  #chanSelect{ width:100% }
 
-  /* Custom area */
-  .custom{margin-top:14px}
+  /* Custom section box for textarea (inside boundaries) */
+  .textwrap{
+    border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--panel);
+    margin-top:6px
+  }
+  .textwrap textarea{ border:0; border-radius:0; width:100%; min-height:120px }
+
+  /* Action rows */
   .row{display:grid;gap:8px}
   .row.cols-2{grid-template-columns:1fr 1fr}
-  .row.cols-3{grid-template-columns:180px 1fr 1fr}
+  .row.cols-3{grid-template-columns:220px 1fr 1fr}
+
   @media (max-width:560px){
     .controls{grid-template-columns:repeat(3,1fr);grid-auto-rows:var(--btn-h)}
     .controls > *:nth-child(n+4){grid-column:span 1}
-    .select-row{grid-template-columns:1fr 100px; grid-auto-rows:var(--btn-h)}
-    #chanSelect{grid-column:1 / -1}
+    .igroup{grid-template-columns:1fr; }
+    .igroup > * + *{ border-left:0; border-top:1px solid var(--line) }
     .row.cols-3{grid-template-columns:1fr}
   }
 
@@ -216,24 +232,30 @@
         </button>
       </div>
 
-      <div class="select-row">
+      <!-- Input group keeps boxes inside the card neatly -->
+      <div class="igroup" role="group" aria-label="Channel jump">
         <input id="chanInput" class="remote-focus" type="number" min="1" placeholder="Channel #" />
-        <button id="goBtn" class="btn btn-remote"><span class="ico" aria-hidden="true">
-          <!-- target -->
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path></svg>
-        </span><span class="lbl">Go</span></button>
+        <button id="goBtn" class="btn btn-remote">
+          <span class="ico" aria-hidden="true">
+            <!-- target -->
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path></svg>
+          </span><span class="lbl">Go</span>
+        </button>
         <select id="chanSelect" class="remote-focus">
           <option value="">Choose Channel</option>
         </select>
       </div>
+
       <div id="loadStatus" class="tag" style="margin-top:8px"></div>
     </div>
 
     <!-- Custom stream area -->
     <div class="card custom">
       <label for="bulkTextarea" style="font-weight:700;display:block;margin-bottom:6px">Paste one or many .m3u8 (one per line). Optional name after a comma.</label>
-      <textarea id="bulkTextarea" placeholder="https://example.com/stream1.m3u8, My Channel
+      <div class="textwrap">
+        <textarea id="bulkTextarea" placeholder="https://example.com/stream1.m3u8, My Channel
 https://example.com/stream2.m3u8"></textarea>
+      </div>
 
       <div class="row cols-2" style="margin-top:8px">
         <button id="addLocalBtn" class="btn btn-remote">
@@ -419,7 +441,7 @@ https://example.com/stream2.m3u8"></textarea>
           if (autoPlayFirst) playIndex(0);
           return;
         }
-      }catch(e){ console.warn('WebApp failed:', e.message); loadStatus.textContent = 'Web App fetch failed; trying CSV…'; }
+      }catch(e){ console.warn('Web App failed:', e.message); loadStatus.textContent = 'Web App fetch failed; trying CSV…'; }
     }
 
     // 2) Range CSV B2:C
@@ -499,6 +521,8 @@ https://example.com/stream2.m3u8"></textarea>
   const addLocalBtn = document.getElementById('addLocalBtn');
   const addSheetBtn = document.getElementById('addSheetBtn');
 
+  function setAddMsg(t){ addMsg.textContent=t; setTimeout(()=> addMsg.textContent='', 5000); }
+
   addLocalBtn.addEventListener('click', ()=>{
     blink(addLocalBtn);
     const items = parseBulk(bulkEl.value.trim()); if(!items.length) return setAddMsg('Paste at least one valid .m3u8 (optional name after comma).');
@@ -511,7 +535,7 @@ https://example.com/stream2.m3u8"></textarea>
   addSheetBtn.addEventListener('click', async ()=>{
     blink(addSheetBtn);
     const items = parseBulk(bulkEl.value.trim()); if(!items.length) return setAddMsg('Paste at least one valid .m3u8 (optional name after comma).');
-    const webapp = webAppEl.value.trim(); if(!/^https?:\/\//i.test(webapp)) return setAddMsg('Paste a valid Apps Script Web App URL.');
+    const webapp = document.getElementById('webAppUrl').value.trim(); if(!/^https?:\/\//i.test(webapp)) return setAddMsg('Paste a valid Apps Script Web App URL.');
     let ok=0, fail=0;
     for (const it of items){
       try{
@@ -531,7 +555,6 @@ https://example.com/stream2.m3u8"></textarea>
       return isM3U8(url)?{url,name}:null;
     }).filter(Boolean);
   }
-  function setAddMsg(t){ addMsg.textContent=t; setTimeout(()=> addMsg.textContent='', 5000); }
 </script>
 </body>
 </html>
