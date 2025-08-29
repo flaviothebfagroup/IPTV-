@@ -43,6 +43,7 @@
   .tag{font-size:12px;color:var(--muted)}
   textarea{height:auto;min-height:110px;padding:10px 12px;line-height:1.45}
 
+  /* Icon buttons + remote focus (keyboard-only) */
   .btn-remote{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 14px}
   .ico{display:inline-block;width:20px;height:20px;line-height:0;flex:0 0 20px}
   .lbl{line-height:1}
@@ -56,7 +57,8 @@
   @keyframes bfaBlink{0%,100%{opacity:.95}50%{opacity:.4}}
   @keyframes bfaPulse{0%{box-shadow:0 0 0 0 var(--ring);opacity:1}70%{box-shadow:0 0 0 10px rgba(255,106,0,0);opacity:.75}100%{box-shadow:0 0 0 0 rgba(255,106,0,0);opacity:1}}
 
-  .stack > * + *{ margin-top: var(--gap); }   /* bento spacing */
+  /* Bento spacing */
+  .stack > * + *{ margin-top: var(--gap); }
 
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;overflow:hidden}
 
@@ -217,7 +219,7 @@ https://example.com/stream2"></textarea>
   // defaults
   const DEFAULT_SHEET_ID = '1Oh69mDuOCuy27YDYpInoVfcw3o4TlFutQEGYamBXSHE';
   const DEFAULT_SHEET_GID = '824459168';
-  const DEFAULT_WEBAPP   = 'https://script.google.com/macros/s/AKfycbzHIqQFXOFz75yFiYDF3iKblaO37pph_o3uvzbbz4g8DWOEKFXqBsIqhnM_O33Z5RAKJw/exec';
+  const DEFAULT_WEBAPP   = 'https://script.google.com/macros/s/AKfycbyKFo_jbKUqSwmrre3Xn2lK0PR7mB4IwskGEKmk0-VfjSLB5YvcKAsclEHi8se_SQLanA/exec';
 
   // theme
   const themeSel = document.getElementById('themeSel');
@@ -295,16 +297,18 @@ https://example.com/stream2"></textarea>
     // C) CSV B2:C
     try{
       const rangeCsv = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${encodeURIComponent(gid)}&range=${encodeURIComponent('B2:C')}`;
-      const txt = await fetchCsv(rangeCsv); const rows=parseCSV(txt);
-      const list = rows.map(r=>({url:(r[0]||'').trim(), name:(r[1]||'').trim()})).filter(x=>isUrl(x.url));
+      const txt = await fetchCsv(rangeCsv);
+      const rows = parseCSV(txt);
+      const list = rows.map(r => ({ url:(r[0]||'').trim(), name:(r[1]||'').trim() })).filter(x => isUrl(x.url));
       if (list.length){ setList(list, 'CSV B2:C'); if(autoPlayFirst) playIndex(0); return; }
     }catch(_){}
 
     // D) CSV full (B/C)
     try{
       const fullCsv = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${encodeURIComponent(gid)}`;
-      const txt = await fetchCsv(fullCsv); const rows=parseCSV(txt);
-      const list = rows.slice(1).map(r=>({url:(r[1]||'').trim(), name:(r[2]||'').trim()})).filter(x=>isUrl(x.url));
+      const txt = await fetchCsv(fullCsv);
+      const rows = parseCSV(txt);
+      const list = rows.slice(1).map(r => ({ url:(r[1]||'').trim(), name:(r[2]||'').trim() })).filter(x => isUrl(x.url));
       if (list.length){ setList(list, 'CSV full'); if(autoPlayFirst) playIndex(0); return; }
     }catch(_){}
 
@@ -400,9 +404,9 @@ https://example.com/stream2"></textarea>
     populate(); return added;
   }
 
+  // Try POST; if blocked (CORS), use JSONP GET (?fn=add&callback=)
   async function addToSheet(items){
     const base = document.getElementById('webAppUrl').value.trim(); if (!isUrl(base)) return false;
-    // Try POST; if CORS blocks, use JSONP (GET)
     let ok=0;
     for (const it of items){
       const payload = JSON.stringify({url:it.url, name:it.name||''});
@@ -412,10 +416,7 @@ https://example.com/stream2"></textarea>
         if (!good) throw new Error('POST blocked');
         ok++;
       }catch(_){
-        // JSONP fallback
-        try{
-          await jsonpAdd(base, it.url, it.name||''); ok++;
-        }catch(__){}
+        try{ await jsonpAdd(base, it.url, it.name||''); ok++; }catch(__){}
       }
     }
     return ok===items.length;
@@ -441,6 +442,8 @@ https://example.com/stream2"></textarea>
     }).filter(Boolean);
   }
   function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+  // CSV helpers reused above…
 
   // initial load
   loadFromSheet(true);
