@@ -1,231 +1,374 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>BFA IPTV — Admin</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>BFA IPTV — Dealerships</title>
+<style>
+  :root{
+    --bg:#f5f5f7;--fg:#111;--muted:#6e6e73;--panel:#fff;--border:rgba(0,0,0,.12);
+    --tile:#f2f2f7;--tileActive:#ededf2;--shadow:0 14px 36px rgba(0,0,0,.10);
+    --accent:#ff9500;--danger:#e11d48;
+    --rad:16px; --pad:16px; --gap:10px; --btnH:40px; --btnFS:14px; --stroke:#111;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
+  a{color:inherit;text-decoration:none}
 
-  <!-- PWA bits -->
-  <link rel="manifest" href="/IPTV-/manifest.webmanifest" />
-  <meta name="theme-color" content="#000000" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png" />
-  <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png" />
-  <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png" />
+  /* Topbar */
+  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--border)}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:900}
+  .brand-title{letter-spacing:.2px}
+  .logo{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--tile) center/cover no-repeat}
+  .inline-actions{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .btn, a.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:var(--btnH);padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:700;font-size:var(--btnFS);line-height:1;white-space:nowrap;cursor:pointer;text-decoration:none}
+  .btn:hover, a.btn:hover{border-color:var(--accent);background:var(--tileActive)}
+  .btn.danger{background:transparent;border-color:rgba(225,29,72,.35);color:var(--danger)}
+  .btn.danger:hover{background:#fff1f3;border-color:var(--danger)}
+  #hamburger{margin-left:auto;display:none;align-items:center;justify-content:center;height:36px;width:40px;border-radius:10px;border:1px solid var(--border);background:transparent;cursor:pointer}
 
-  <style>
-    :root{
-      --bg:#0b0b0c;--fg:#fff;--muted:#9a9aa0;--panel:#121214;--border:rgba(255,255,255,.14);
-      --accent:#ff9500;--tile:#17171a;--tileActive:#1d1d21;--shadow:0 18px 48px rgba(0,0,0,.45);
-      --radius:18px;--radius-lg:22px;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444
-    }
-    body.light{
-      --bg:#f5f5f7;--fg:#111;--muted:#6e6e73;--panel:#fff;--border:rgba(0,0,0,.12);
-      --tile:#f2f2f7;--tileActive:#eaeaef;--shadow:0 14px 36px rgba(0,0,0,.10)
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;margin:0}
-    a{color:inherit;text-decoration:none}
+  /* Mobile menu */
+  #navMenu{display:none;position:fixed;inset:0;z-index:60;background:var(--bg);color:inherit;overflow:auto;padding:16px 16px 28px}
+  #navMenu.open{display:block}
+  .menu-close{position:fixed;top:10px;right:10px;height:36px;width:36px;border-radius:10px;border:1px solid var(--border);background:transparent;cursor:pointer}
+  .menu-head{display:flex;align-items:center;gap:10px;margin:8px 0 6px}
+  .menu-title{font-weight:900}
+  .menu-sec{margin-top:16px;margin-bottom:6px;font-size:12px;color:var(--muted)}
+  .menu{list-style:none;margin:0;padding:0;border-top:1px solid var(--border)}
+  .menu li{border-bottom:1px solid var(--border)}
+  .menu a,.rowbtn{display:block;width:100%;text-align:left;padding:14px 4px;background:transparent;border:0;color:inherit;text-decoration:none;font:inherit;font-weight:800;cursor:pointer}
+  .rowbtn.danger{color:#e11d48}
 
-    /* Shell */
-    .wrap{max-width:1200px;margin:0 auto;padding:18px}
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow)}
-    .page{display:none}
-    .page.active{display:block}
-    .crumb{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:999px;padding:0 12px;background:var(--tile);margin-bottom:12px;cursor:pointer;height:34px}
-    .crumb b{font-size:12px}
+  /* Shell */
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:var(--pad);box-shadow:var(--shadow)}
+  .muted{color:var(--muted);font-size:12px}
+  details.legend{margin:8px 0} details.legend summary{cursor:pointer;font-weight:800}
 
-    /* Bento home */
-    #homeGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-    @media (max-width:980px){#homeGrid{grid-template-columns:repeat(2,1fr)}}
-    @media (max-width:560px){#homeGrid{grid-template-columns:1fr}}
-    .tile{display:flex;flex-direction:column;gap:8px;min-height:120px;padding:16px;border:1px solid var(--border);border-radius:20px;background:var(--tile);cursor:pointer;transition:transform .08s,border-color .2s,box-shadow .2s}
-    .tile:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 8px 22px rgba(255,149,0,.15)}
-    .tile h3{margin:0;font-size:16px}
-    .tile p{margin:0;color:var(--muted);font-size:12px}
+  /* Legend grid */
+  .legend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:8px}
+  .legend-item{display:flex;gap:10px;align-items:flex-start;background:var(--tile);border:1px solid var(--border);border-radius:12px;padding:10px}
+  .legend-item .iconbtn{flex:0 0 36px}
 
-    /* Inputs */
-    .row{display:grid;grid-template-columns:1fr auto;gap:10px;margin:10px 0}
-    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
-    .row3{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin:10px 0}
-    .row4{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin:10px 0}
-    @media (max-width:720px){.row,.row2,.row3,.row4{grid-template-columns:1fr;gap:8px}}
-    .label{font-size:12px;color:var(--muted);margin-bottom:6px}
-    .input,.select{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
-    .input::placeholder{color:var(--muted)}
-    .btn{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
-    .btn.primary{border-color:var(--accent);color:var(--accent);background:transparent}
-    .btn.solid{padding:12px;border-radius:12px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
-    .btn.danger{border-color:#ff6b6b;color:#ff6b6b}
-    .muted{color:var(--muted);font-size:12px}
-    .small{font-size:12px}
+  /* Inputs */
+  .inputbar{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .input{flex:1;min-width:220px;height:var(--btnH);padding:0 14px;background:transparent;border:1px solid var(--border);border-radius:9999px;color:var(--fg);font-size:var(--btnFS);line-height:1;outline:none}
+  .input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-    /* Lists / items */
-    .list{margin:8px 0 0;padding:0;list-style:none}
-    .empty{padding:12px;border:1px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center}
-    .item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px;margin:8px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap}
-    .split{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .col{display:flex;flex-direction:column;gap:6px;min-width:200px}
-    .tag{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:transparent;font-size:12px;color:var(--muted)}
-    .online{display:inline-flex;align-items:center;gap:6px;font-size:12px}
-    .dot{width:8px;height:8px;border-radius:999px;background:#999}
-    .dot.ok{background:var(--ok)}
-    .dot.warn{background:var(--warn)}
-    .dot.err{background:var(--err)}
-    .vol{display:flex;align-items:center;gap:8px}
-    .vol input[type="range"]{width:140px;accent-color:var(--accent)}
-    @media (max-width:560px){ .vol input[type="range"]{width:100%} }
+  /* List */
+  .list{list-style:none;margin:14px 0 0;padding:0}
+  .item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;background:var(--tile);border:1px solid var(--border);border-radius:16px;padding:12px;margin:10px 0}
+  .title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .tag{padding:2px 8px;border:1px solid var(--border);border-radius:9999px;background:transparent;font-size:12px;color:var(--muted)}
+  .actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .iconbtn{height:36px;width:36px;padding:0;border-radius:10px;border:1px solid var(--border);background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+  .iconbtn:hover{border-color:var(--accent);background:var(--panel)}
+  .iconbtn.danger{color:var(--danger);border-color:rgba(225,29,72,.35)}
+  .icon{stroke:var(--stroke);stroke-width:2;fill:none}
+  .icon-danger{stroke:#e11d48}
 
-    /* Users grid */
-    .user-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
-    .user-card{background:var(--tile);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
-    .user-header{display:flex;align-items:center;justify-content:space-between;gap:8px}
-    .user-name{font-weight:800}
-    .badge{border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:11px;color:var(--muted)}
-    .user-actions{display:flex;gap:8px;flex-wrap:wrap}
+  /* Sub-panels */
+  .sub{grid-column:1/-1;margin-top:8px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px}
+  .sub h4{margin:0 0 8px}
+  .sublist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+  .subitem{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--tile);border:1px solid var(--border);border-radius:10px;padding:8px}
+  .iframeWrap{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9;margin-top:8px}
+  .iframeWrap iframe{width:100%;height:100%;border:0}
 
-    /* Links grid */
-    .apps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
-    @media (max-width:1060px){ .apps-grid{grid-template-columns:repeat(2,1fr)} }
-    @media (max-width:560px){ .apps-grid{grid-template-columns:1fr} }
-    .app-tile{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:16px;background:var(--tile);text-decoration:none;color:inherit;transition:transform .1s, box-shadow .2s, border-color .2s}
-    .app-tile:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 8px 22px rgba(255,149,0,.15)}
-    .app-emoji{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--tileActive);border:1px solid var(--border);font-size:20px}
-    .app-logo{width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:var(--tileActive) center/cover no-repeat}
-    .app-info{display:flex;flex-direction:column;gap:2px}
-    .app-title{font-weight:800}
-    .app-desc{font-size:12px;color:var(--muted)}
-    .apps-note{margin-top:6px;font-size:12px;color:var(--muted)}
+  @media (max-width:680px){.inline-actions{display:none}#hamburger{display:inline-flex}}
+  @media (min-width:901px){ #navMenu{display:none!important} }
 
-    /* Analytics */
-    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:8px 0}
-    @media (max-width:980px){.stats{grid-template-columns:repeat(2,1fr)}}
-    @media (max-width:560px){.stats{grid-template-columns:1fr}}
-    .stat{background:var(--tile);border:1px solid var(--border);border-radius:12px;padding:14px}
-    .stat b{font-size:22px}
-    .bar{height:10px;background:var(--tileActive);border:1px solid var(--border);border-radius:999px;overflow:hidden}
-    .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#ffb866)}
-
-    /* Toast */
-    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
-    .toast.show{opacity:1}
-    .toast.err{background:#ff453a;color:#fff}
-
-    /* === Consistent topbar + hamburger (shared) === */
-    .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(0deg,transparent,rgba(0,0,0,.06));backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
-    .lhs{display:flex;align-items:center;gap:10px}
-    .brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.3px}
-    .logo{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:var(--tile) center/cover no-repeat}
-    #hamburger{margin-left:auto;height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:none}
-    #navMenu{margin-left:auto}
-    .nav-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    @media (max-width:900px){
-      #hamburger{display:inline-flex;align-items:center;justify-content:center}
-      #navMenu{display:none;position:absolute;top:58px;left:0;right:0;background:linear-gradient(0deg,rgba(0,0,0,.06),rgba(0,0,0,.06));backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:10px}
-      #navMenu.open{display:block}
-      .nav-actions{flex-direction:column;align-items:stretch}
-      .nav-actions .btn, .nav-actions a.btn{width:100%}
-    }
-  </style>
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;z-index:99}
+  .toast.show{opacity:1} .toast.err{background:#ff453a;color:#fff}
+</style>
 </head>
 <body>
 
-  <!-- Topbar (standardized) -->
-  <div class="topbar" role="banner">
-    <div class="lhs">
-      <a class="brand" href="home.html" aria-label="BFA IPTV Home">
-        <div id="brandLogo" class="logo" title="IPTV" aria-hidden="true"></div>
-        <span>BFA IPTV — Admin</span>
-      </a>
-    </div>
-    <button id="hamburger" aria-label="Menu" aria-controls="navMenu" aria-expanded="false">☰</button>
-    <nav id="navMenu" aria-label="Primary">
-      <div class="nav-actions">
-        <a class="btn" href="home.html">Home</a>
-        <a class="btn" href="dealerships.html">Dealerships</a>
-        <a class="btn" href="displays.html">Displays</a>
-        <a class="btn" href="users.html">Users</a>
-        <a class="btn" href="links.html">Links</a>
-        <a class="btn" href="analytics.html">Analytics</a>
-        <a class="btn" href="schedule.html">Schedule</a>
-        <span id="adminEmail" class="muted"></span>
-        <button id="themeBtn"  class="btn" type="button">☀︎/🌙</button>
-        <button id="reloadBtn" class="btn" type="button">Reload</button>
-        <button id="syncBtn" class="btn primary" type="button">Sync → GitHub</button>
-        <button id="settingsBtn" class="btn primary" type="button">Settings</button>
-        <button id="signOutBtn" class="btn primary" type="button">Sign out</button>
-      </div>
-    </nav>
+<!-- Header -->
+<div class="topbar" role="banner">
+  <a class="brand" href="home.html" aria-label="BFA IPTV Home">
+    <div class="logo" id="brandLogo" aria-hidden="true"></div>
+    <span class="brand-title">BFA IPTV — Dealerships</span>
+  </a>
+  <div class="inline-actions" aria-label="Primary">
+    <a class="btn" href="home.html">Home</a>
+    <a class="btn" href="dealerships.html">Dealerships</a>
+    <a class="btn" href="displays.html">Displays</a>
+    <a class="btn" href="users.html">Users</a>
+    <a class="btn" href="links.html">Links</a>
+    <a class="btn" href="analytics.html">Analytics</a>
+    <a class="btn" href="schedule.html">Schedule</a>
+    <button id="logoutBtn" class="btn" title="Sign out">Logout</button>
   </div>
+  <button id="hamburger" aria-label="Menu" aria-controls="navMenu" aria-expanded="false">☰</button>
+</div>
 
-  <div class="wrap">
-    <!-- Login -->
-    <div id="loginBox" class="card" style="max-width:520px;margin:40px auto;display:none">
-      <h2 style="margin:0 0 12px">Admin Sign In</h2>
-      <div class="row2">
-        <div>
-          <div class="label">Email</div>
-          <input id="email" class="input" type="email" placeholder="you@company.com" autocomplete="email" />
-        </div>
-        <div>
-          <div class="label">Password</div>
-          <input id="password" class="input" type="password" placeholder="••••••••" autocomplete="current-password" />
-        </div>
-      </div>
-      <div class="row2">
-        <button id="loginBtn" class="btn solid">Sign in</button>
-        <button id="resetBtn" class="btn">Send reset link</button>
-      </div>
-      <div class="small muted">Requires <b>role: "admin"</b> in <code>/user/{uid}</code>.</div>
+<!-- Mobile menu -->
+<nav id="navMenu" aria-label="Menu" aria-hidden="true">
+  <button class="menu-close" data-close aria-label="Close">✕</button>
+  <div class="menu-head"><div class="logo" style="width:28px;height:28px"></div><div class="menu-title">BFA IPTV</div></div>
+  <div class="menu-sec">Navigation</div>
+  <ul class="menu">
+    <li><a href="home.html">Home</a></li>
+    <li><a href="dealerships.html">Dealerships</a></li>
+    <li><a href="displays.html">Displays</a></li>
+    <li><a href="users.html">Users</a></li>
+    <li><a href="links.html">Links</a></li>
+    <li><a href="analytics.html">Analytics</a></li>
+    <li><a href="schedule.html">Schedule</a></li>
+    <li><button id="logoutBtnMobile" class="rowbtn danger">Logout</button></li>
+  </ul>
+</nav>
+
+<div class="wrap">
+  <div class="card">
+    <h2 style="margin:0">Dealerships</h2>
+    <div class="muted">Create, edit public name, migrate ID, delete. Tap icons for actions.</div>
+
+    <details class="legend">
+      <summary>Icon legend</summary>
+      <div id="legendGrid" class="legend-grid"></div>
+    </details>
+
+    <div class="inputbar">
+      <input id="dealerName" class="input" placeholder="New dealership name (e.g., Genesis Winnipeg)"/>
+      <button id="addBtn" class="btn">Add</button>
+      <button id="reloadList" class="btn">Reload</button>
     </div>
 
-    <!-- Not admin -->
-    <div id="notAdmin" class="card" style="display:none;max-width:720px;margin:40px auto">
-      <h2>Not authorized</h2>
-      <div class="muted small">Ask an admin to set your role to <b>admin</b> in the database.</div>
-    </div>
+    <div class="muted" style="margin-top:6px">Creates <code>/dealership/{ID}</code> and <code>/dealershipPublic/{ID}</code>. ID allows letters, numbers, CAPS, <b>-</b>, <b>_</b>.</div>
 
-    <!-- HOME (bento) -->
-    <div id="home" class="page">
-      <div id="homeGrid">
-        <div class="tile" data-page="dealers"><h3>Dealerships</h3><p>Add / rename (migrate) / delete</p></div>
-        <div class="tile" data-page="displays"><h3>Displays</h3><p>Live list • channel • volume</p></div>
-        <div class="tile" data-page="users"><h3>Users</h3><p>Create • roles • duplicates</p></div>
-        <div class="tile" data-page="links"><h3>Links</h3><p>Quick access</p></div>
-        <div class="tile" data-page="analytics"><h3>Analytics</h3><p>Now • channels • dealers</p></div>
-        <div class="tile" data-page="schedule"><h3>Schedule</h3><p>Installs • reminders</p></div>
-        <div class="tile" data-page="backups"><h3>Backups</h3><p>Download / restore preview</p></div>
-      </div>
-    </div>
-
-    <!-- PAGES ... (UNCHANGED content below) -->
-    <!-- Dealerships -->
-    <!-- Displays -->
-    <!-- Users -->
-    <!-- Links -->
-    <!-- Analytics -->
-    <!-- Schedule -->
-    <!-- Backups -->
-    <!-- (Everything below here is your original code; only header changed) -->
-
+    <ul id="list" class="list"></ul>
+    <div id="empty" class="muted" style="display:none">No dealerships.</div>
   </div>
+</div>
 
-  <div id="toast" class="toast"></div>
+<div id="toast" class="toast"></div>
 
-  <!-- Settings dialog (unchanged) -->
-  <dialog id="settingsDlg" style="border:0;padding:0;border-radius:18px;max-width:720px;width:96vw">
-    <!-- ... unchanged inner content ... -->
-  </dialog>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getDatabase, ref, get, set, update, remove, query, orderByChild, equalTo } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-  <!-- === Your original <script type="module"> (UNCHANGED) === -->
-  <script type="module">
-    /* (all your existing admin.js logic preserved exactly as you shared) */
-    /* ... FULL ORIGINAL SCRIPT CONTENT HERE (unchanged) ... */
-  </script>
+/* ===== Firebase ===== */
+const firebaseConfig = { apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e" };
+const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
+const app = initializeApp(firebaseConfig); const auth=getAuth(app); const db=getDatabase(app);
 
-  <!-- Tiny hamburger toggler (no dependency, safe anywhere at end) -->
-  <script>
-    (()=>{const b=document.getElementById('hamburger');const m=document.getElementById('navMenu');if(!b||!m)return;b.addEventListener('click',()=>{const o=m.classList.toggle('open');b.setAttribute('aria-expanded',String(o));});window.addEventListener('resize',()=>{if(window.innerWidth>900){m.classList.remove('open');b.setAttribute('aria-expanded','false');}});})();
-  </script>
+/* ===== helpers ===== */
+const $=s=>document.querySelector(s);
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));}
+function toast(msg,err=false){const t=$("#toast");t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2200);}
+function sanitizeId(raw){ let id=(raw||'').replace(/[^A-Za-z0-9\-_]/g,'').slice(0,40); if(!id){ id=(raw||'').normalize('NFKD').replace(/[^\w\-]+/g,'').slice(0,40);} return id; }
+document.getElementById('brandLogo').style.backgroundImage=`url("${LOGO_URL}")`;
+
+/* ===== minimalist icons (same ones used on buttons) ===== */
+const I={
+  eye:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7"/><circle cx="12" cy="12" r="3"/></svg>`,
+  users:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><circle cx="9" cy="8" r="4"/><path d="M17 11a4 4 0 1 0-4-4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/><path d="M17 22c0-2 .8-3.8 2-5"/></svg>`,
+  edit:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>`,
+  swap:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M17 7H7l4-4M7 17h10l-4 4"/></svg>`,
+  trash:()=>`<svg class="icon icon-danger" viewBox="0 0 24 24" width="18" height="18"><path d="M3 6h18"/><path d="M8 6l1-2h6l1 2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,
+  open:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v7h-7"/></svg>`
+};
+
+/* ===== auth gate + logout ===== */
+onAuthStateChanged(auth, async (user)=>{
+  if(!user){ location.href='home.html'; return; }
+  const u = (await get(ref(db, 'user/'+user.uid))).val()||{};
+  if(u.role!=='admin'){ document.body.innerHTML = `
+      <div style="padding:40px">
+        <div class="card"><h3>Not authorized</h3>
+        <div class="muted">Ask an admin to set your role to <b>admin</b> in the database.</div></div>
+      </div>`; return;
+  }
+  loadList();
+});
+$('#logoutBtn')?.addEventListener('click', ()=> signOut(auth).then(()=>location.href='home.html'));
+$('#logoutBtnMobile')?.addEventListener('click', ()=> signOut(auth).then(()=>location.href='home.html'));
+
+/* ===== legend content (same SVGs) ===== */
+(function renderLegend(){
+  const items=[
+    {icon:I.eye(),   title:'Preview TVs', desc:'Open a live preview inline (iframe).'},
+    {icon:I.users(), title:'Users',       desc:'Show users under the card.'},
+    {icon:I.edit(),  title:'Edit name',   desc:'Change public dealership name.'},
+    {icon:I.swap(),  title:'Rename ID',   desc:'Migrate dealership ID and update references.'},
+    {icon:I.trash(), title:'Delete',      desc:'Remove dealership (only if it has no TVs).'},
+    {icon:I.open(),  title:'Open tab',    desc:'Open a TV preview in a new tab.'}
+  ];
+  const g = document.getElementById('legendGrid');
+  g.innerHTML = items.map(i=>`
+    <div class="legend-item">
+      <button class="iconbtn" disabled>${i.icon}</button>
+      <div><b>${i.title}</b><div class="muted">${i.desc}</div></div>
+    </div>`).join('');
+})();
+
+/* ===== data ops ===== */
+$("#reloadList").addEventListener('click', loadList);
+
+async function countDisplaysForDealer(id){
+  try{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; }
+  catch(e){ return 0; }
+}
+function previewUrlFor(displayId){
+  /* Use ONE player for all displays via ?display= */
+  return `https://flaviothebfagroup.github.io/IPTV-/player.html?display=${encodeURIComponent(displayId)}`;
+}
+
+async function loadList(){
+  $("#list").innerHTML='';
+  let map={}; try{ const snap=await get(ref(db,'dealershipPublic')); map=snap.val()||{}; }catch(e){ map={}; }
+  if(!Object.keys(map).length){ try{ const s2=await get(ref(db,'dealership')); const raw=s2.val()||{}; for(const id of Object.keys(raw)) map[id]={name: raw[id]?.name||id}; }catch(e){} }
+  const ids=Object.keys(map).sort();
+  $("#empty").style.display = ids.length? 'none':'block';
+
+  for(const id of ids){
+    const dName = map[id]?.name || id;
+    const li=document.createElement('li'); li.className='item'; li.dataset.id=id;
+    const count = await countDisplaysForDealer(id);
+    li.innerHTML=`
+      <div class="title">
+        <b>${esc(dName)}</b>
+        <span class="tag">${esc(id)}</span>
+        <span class="muted">${count} TV${count===1?'':'s'}</span>
+      </div>
+      <div class="actions">
+        <button class="iconbtn" title="Preview TVs" data-act="preview">${I.eye()}</button>
+        <button class="iconbtn" title="Show users" data-act="users">${I.users()}</button>
+        <button class="iconbtn" title="Edit public name" data-act="edit">${I.edit()}</button>
+        <button class="iconbtn" title="Rename ID (migrate)" data-act="rename">${I.swap()}</button>
+        <button class="iconbtn danger" title="Delete" data-act="delete">${I.trash()}</button>
+      </div>`;
+    $("#list").appendChild(li);
+  }
+
+  $("#list").onclick = async (e)=>{
+    const btn=e.target.closest('.iconbtn'); if(!btn) return;
+    const li=btn.closest('.item'); const id=li.dataset.id; const act=btn.dataset.act;
+    if(act==='edit') await editName(id);
+    else if(act==='rename') await renameId(id);
+    else if(act==='delete') await delDealer(id);
+    else if(act==='preview') await toggleDisplaysUnder(li,id);
+    else if(act==='users') await toggleUsersUnder(li,id);
+  };
+
+  $("#addBtn").onclick = async ()=>{
+    const name=$("#dealerName").value.trim(); if(!name) return toast('Enter a name',true);
+    const suggested = name.replace(/\s+/g,'').replace(/[^A-Za-z0-9\-_]/g,'').slice(0,40);
+    const id = sanitizeId(suggested||name);
+    try{
+      const exists = (await get(ref(db,'dealershipPublic/'+id))).exists() || (await get(ref(db,'dealership/'+id))).exists();
+      if(exists){ toast('ID exists — choose another',true); return; }
+      const meta={ name, createdAt:Date.now(), createdBy: auth.currentUser?.email||'admin', displays:{} };
+      await set(ref(db,'dealership/'+id), meta);
+      await set(ref(db,'dealershipPublic/'+id), { name });
+      $("#dealerName").value=''; toast('Dealership added'); loadList();
+    }catch(e){ toast('Create failed',true); }
+  };
+}
+
+async function editName(id){
+  const cur=(await get(ref(db,'dealershipPublic/'+id))).val()?.name||id;
+  const next=prompt('Public name',cur); if(!next || next===cur) return;
+  try{ await set(ref(db,'dealershipPublic/'+id),{name:next}); try{await update(ref(db,'dealership/'+id),{name:next});}catch(_){}
+       toast('Name updated'); loadList(); }catch(e){ toast('Update failed',true); }
+}
+async function renameId(oldId){
+  const asked = prompt('New dealership ID (letters/numbers/-/_; CAPS allowed):', oldId);
+  const newId = sanitizeId(asked||''); if(!newId || newId===oldId) return;
+  if(!confirm(`Migrate ${oldId} → ${newId}? Displays & users will be updated.`)) return;
+  try{
+    const existsPub=(await get(ref(db,'dealershipPublic/'+newId))).exists();
+    const existsMeta=(await get(ref(db,'dealership/'+newId))).exists();
+    if(existsPub||existsMeta){ alert('Target ID exists.'); return; }
+    const pubName=(await get(ref(db,'dealershipPublic/'+oldId))).val()?.name||oldId;
+    await set(ref(db,'dealershipPublic/'+newId),{name:pubName});
+    const meta=(await get(ref(db,'dealership/'+oldId))).val()||{}; if(Object.keys(meta).length) await set(ref(db,'dealership/'+newId),meta);
+
+    /* move displays */
+    const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(oldId));
+    const dMap=(await get(qRef)).val()||{}; for(const did of Object.keys(dMap)){
+      await update(ref(db,'displays/'+did),{dealership:newId, timestamp:Date.now()});
+      try{ await remove(ref(db,'dealership/'+oldId+'/displays/'+did)); }catch(_){}
+      try{ await set(ref(db,'dealership/'+newId+'/displays/'+did),true); }catch(_){}
+    }
+    /* update users */
+    const users=(await get(ref(db,'user'))).val()||{}; for(const uid of Object.keys(users)){
+      if(users[uid]?.dealershipId===oldId) await update(ref(db,'user/'+uid),{dealershipId:newId,dealershipName:pubName});
+    }
+    await remove(ref(db,'dealershipPublic/'+oldId)).catch(()=>{});
+    await remove(ref(db,'dealership/'+oldId)).catch(()=>{});
+    toast('ID migrated'); loadList();
+  }catch(e){ toast('Rename failed',true); }
+}
+async function delDealer(id){
+  const cnt = await (async()=>{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; })();
+  if(cnt>0){ alert(`This dealership still has ${cnt} TV(s). Remove/migrate first.`); return; }
+  if(!confirm(`Delete ${id}?`)) return;
+  try{ await remove(ref(db,'dealershipPublic/'+id)).catch(()=>{}); await remove(ref(db,'dealership/'+id)).catch(()=>{});
+       toast('Deleted'); loadList(); }catch(e){ toast('Delete failed',true); }
+}
+
+function closeSubs(li){ li.querySelectorAll('.sub').forEach(n=>n.remove()); }
+
+async function toggleUsersUnder(li, id){
+  const opened=li.querySelector('.sub.users'); if(opened){ opened.remove(); return; }
+  closeSubs(li);
+  const all=(await get(ref(db,'user'))).val()||{};
+  const list=Object.entries(all).map(([uid,v])=>({uid,...v})).filter(u=>u.dealershipId===id)
+    .sort((a,b)=> (a.role||'').localeCompare(b.role||'') || (a.name||'').localeCompare(b.name||''));
+  const sub=document.createElement('div'); sub.className='sub users';
+  sub.innerHTML=`<h4>Users</h4>
+    <ul class="sublist">
+      ${list.length? list.map(u=>`<li class="subitem"><span><b>${esc(u.name||'No name')}</b><br><span class="muted">${esc(u.email||'')}</span></span><span class="tag">${esc(u.role||'user')}</span></li>`).join(''): `<li class="subitem"><span class="muted">No users in this dealership.</span></li>`}
+    </ul>`;
+  li.appendChild(sub);
+}
+
+async function toggleDisplaysUnder(li, id){
+  const opened=li.querySelector('.sub.displays'); if(opened){ opened.remove(); return; }
+  closeSubs(li);
+  const snap=await get(query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)));
+  const map=snap.val()||{}; const ids=Object.keys(map).sort();
+  const sub=document.createElement('div'); sub.className='sub displays';
+  sub.innerHTML=`<h4>Displays</h4>
+    ${ids.length? `<ul class="sublist">${
+      ids.map(did=>`<li class="subitem" data-did="${esc(did)}">
+        <span><b>${esc(did)}</b></span>
+        <span style="display:flex;gap:6px">
+          <button class="btn" style="height:32px;padding:0 10px" data-preview="${esc(did)}" title="Preview">${`<svg class="icon" viewBox='0 0 24 24' width='16' height='16'><path d='M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7'/><circle cx='12' cy='12' r='3'/></svg>`}</button>
+          <a class="btn" style="height:32px;padding:0 10px" href="${previewUrlFor(did)}" target="_blank" rel="noopener" title="Open in new tab">${`<svg class="icon" viewBox='0 0 24 24' width='16' height='16'><path d='M14 3h7v7'/><path d='M10 14 21 3'/><path d='M21 14v7h-7'/></svg>`}</a>
+        </span></li>`).join('')
+    }</ul>` : `<div class="muted">No TVs yet.</div>`}
+    <div class="iframeWrap" style="display:none"></div>`;
+  li.appendChild(sub);
+
+  /* hook preview buttons */
+  sub.querySelectorAll('[data-preview]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const did=btn.getAttribute('data-preview');
+      const wrap=sub.querySelector('.iframeWrap'); wrap.style.display='block';
+      wrap.innerHTML=`<iframe
+          title="Preview ${did}"
+          src="${previewUrlFor(did)}"
+          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+          allowfullscreen
+        ></iframe>`;
+    });
+  });
+}
+
+/* minimal mobile menu */
+(() => {
+  const ham=document.getElementById('hamburger'),menu=document.getElementById('navMenu');
+  const close=()=>{menu.classList.remove('open');ham?.setAttribute('aria-expanded','false');document.body.style.overflow='';};
+  const open =()=>{menu.classList.add('open');ham?.setAttribute('aria-expanded','true'); document.body.style.overflow='hidden';};
+  ham?.addEventListener('click',()=>menu.classList.contains('open')?close():open());
+  menu?.addEventListener('click',(e)=>{ if(e.target.matches('[data-close]')||e.target.closest('a')||e.target.id==='logoutBtnMobile') close(); });
+  window.addEventListener('resize',()=>{ if(window.innerWidth>900) close(); });
+})();
+</script>
 </body>
 </html>
