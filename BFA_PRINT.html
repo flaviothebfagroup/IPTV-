@@ -2,98 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
   <title>Digital Signage — Player</title>
-
   <style>
-    /* ==== Minimal Mono Theme (black/white + orange accent) ==== */
-    :root{
-      --bg:#000; --fg:#fff; --muted:#b3b3b3; --panel:rgba(255,255,255,.06);
-      --border:rgba(255,255,255,.15); --accent:#ff9500; --ok:#22c55e; --err:#ef4444;
-    }
+    :root{ --bg:#000; --fg:#fff; --muted:#b3b3b3; --panel:rgba(255,255,255,.06); --border:rgba(255,255,255,.15); --accent:#ff9500; --ok:#22c55e; --err:#ef4444; }
     *{margin:0;padding:0;box-sizing:border-box}
     html,body{height:100%}
-    body{
-      background:var(--bg); color:var(--fg); font-family: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
-      overflow:hidden; position:relative;
-    }
-
-    /* Video layer */
+    body{ background:var(--bg); color:var(--fg); font-family: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; overflow:hidden; position:relative; }
     .video-container{position:absolute; inset:0; background:#000}
     video{width:100%; height:100%; object-fit:cover; background:#000}
-
-    /* Loading (minimal) */
-    .loading-overlay{
-      position:absolute; inset:0; background:rgba(0,0,0,.85); display:flex; align-items:center; justify-content:center;
-      z-index:100; opacity:0; pointer-events:none; transition:opacity .25s;
-    }
+    .loading-overlay{ position:absolute; inset:0; background:rgba(0,0,0,.85); display:flex; align-items:center; justify-content:center; z-index:100; opacity:0; pointer-events:none; transition:opacity .25s; }
     .loading-overlay.active{opacity:1; pointer-events:auto}
-    .spinner{
-      width:54px; height:54px; border-radius:50%;
-      border:3px solid rgba(255,255,255,.15); border-top-color:#fff; animation:spin 1s linear infinite;
-    }
+    .spinner{ width:54px; height:54px; border-radius:50%; border:3px solid rgba(255,255,255,.15); border-top-color:#fff; animation:spin 1s linear infinite; }
     @keyframes spin{to{transform:rotate(360deg)}}
-
-    /* Channel chip */
-    .channel-info{
-      position:absolute; top:18px; left:18px;
-      background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:10px 14px; z-index:50;
-      opacity:0; transform:translateY(-8px); transition:opacity .25s, transform .25s;
-    }
+    .channel-info{ position:absolute; top:18px; left:18px; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:10px 14px; z-index:50; opacity:0; transform:translateY(-8px); transition:opacity .25s, transform .25s; }
     .channel-info.show{opacity:1; transform:translateY(0)}
     .channel-name{font-weight:800}
     .channel-sub{font-size:12px; color:var(--muted); display:flex; gap:10px; align-items:center}
     .live-dot{width:8px;height:8px;border-radius:50%; background:var(--accent); box-shadow:0 0 0 0 rgba(255,149,0,.7); animation:pulse 2s infinite}
     @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,149,0,.7)} 70%{box-shadow:0 0 0 8px rgba(255,149,0,0)} 100%{box-shadow:0 0 0 0 rgba(255,149,0,0)}}
-
-    /* Status bar (right-bottom) */
-    .status-bar{
-      position:absolute; right:18px; bottom:18px; display:flex; gap:10px; align-items:center;
-      background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:8px 12px; font-size:12px; z-index:50;
-    }
+    .status-bar{ position:absolute; right:18px; bottom:18px; display:flex; gap:10px; align-items:center; background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:8px 12px; font-size:12px; z-index:50; }
     .status-dot{width:10px;height:10px;border-radius:50%; background:var(--ok)}
     .status-dot.disconnected{background:var(--err)}
     .divider{opacity:.45}
-
-    /* Display ID (left-bottom) */
-    .display-id{
-      position:absolute; left:18px; bottom:18px; z-index:50;
-      background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:8px 12px; font-size:12px; color:#fff;
-    }
-
-    /* Error toast (center) */
-    .error-message{
-      position:absolute; inset:auto 50% 50% auto; transform:translate(50%,-50%);
-      background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.4); color:#fff;
-      padding:14px 18px; border-radius:14px; display:none; z-index:80; text-align:center;
-    }
+    .display-id{ position:absolute; left:18px; bottom:18px; z-index:50; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:8px 12px; font-size:12px; color:#fff; }
+    .error-message{ position:absolute; inset:auto 50% 50% auto; transform:translate(50%,-50%); background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.4); color:#fff; padding:14px 18px; border-radius:14px; display:none; z-index:80; text-align:center; }
     .error-message.show{display:block}
     .error-title{font-weight:800; margin-bottom:4px; color:var(--err)}
     .error-text{font-size:12px; color:#fff}
-
-    /* Transition (simple fade to black) */
     .transition-overlay{position:absolute; inset:0; background:#000; z-index:40; opacity:0; pointer-events:none; transition:opacity .25s}
     .transition-overlay.active{opacity:1}
-
-    /* Volume HUD (center-bottom, monochrome) */
-    .volume-control{
-      position:absolute; left:50%; bottom:100px; transform:translateX(-50%);
-      display:flex; align-items:center; gap:12px; z-index:70;
-      background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:10px 12px;
-      opacity:0; pointer-events:none; transition:opacity .2s;
-    }
+    .volume-control{ position:absolute; left:50%; bottom:100px; transform:translateX(-50%); display:flex; align-items:center; gap:12px; z-index:70; background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:10px 12px; opacity:0; pointer-events:none; transition:opacity .2s; }
     .volume-control.show{opacity:1; pointer-events:auto}
-    .vol-btn{
-      width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:transparent; color:#fff; font-size:18px; cursor:pointer;
-    }
+    .vol-btn{ width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:transparent; color:#fff; font-size:18px; cursor:pointer; }
     .vol-track{width:160px; height:8px; border-radius:6px; background:rgba(255,255,255,.12); position:relative; overflow:hidden; border:1px solid var(--border)}
     .vol-fill{position:absolute; left:0; top:0; bottom:0; width:0%; background:var(--accent)}
     .vol-percent{font-weight:800; min-width:46px; text-align:right}
-
-    /* Inline SVG speaker icon */
     .vol-icon{width:22px;height:22px; display:block}
     .bar{opacity:0; transition:opacity .15s}
     .icon-muted .bar, .icon-level-0 .bar{opacity:0}
@@ -102,34 +46,19 @@
     .icon-level-3 #bar1, .icon-level-3 #bar2, .icon-level-3 #bar3{opacity:1}
     .icon-muted #x1, .icon-muted #x2{opacity:1}
     #x1,#x2{opacity:0; stroke:var(--err); stroke-width:2; stroke-linecap:round}
-
-    /* Big on-screen indicator (when remote changes volume) */
-    .volume-float{
-      position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-      background:rgba(0,0,0,.92); border:1px solid var(--border); color:#fff; padding:26px 36px; border-radius:18px; font-weight:900; font-size:40px; z-index:90;
-      animation:fadeHud 1.8s ease forwards;
-    }
+    .volume-float{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,.92); border:1px solid var(--border); color:#fff; padding:26px 36px; border-radius:18px; font-weight:900; font-size:40px; z-index:90; animation:fadeHud 1.8s ease forwards; }
     @keyframes fadeHud{0%{opacity:0; transform:translate(-50%,-50%) scale(.96)} 15%{opacity:1; transform:translate(-50%,-50%) scale(1)} 85%{opacity:1} 100%{opacity:0}}
-
-    /* Hide on unsupported environments gracefully */
-    @media (prefers-reduced-motion:reduce){
-      .transition-overlay,.channel-info,.loading-overlay{transition:none}
-    }
+    @media (prefers-reduced-motion:reduce){ .transition-overlay,.channel-info,.loading-overlay{transition:none} }
   </style>
 </head>
 <body>
-  <!-- Volume HUD -->
   <div class="volume-control" id="volumeHud" aria-live="polite">
     <button class="vol-btn" id="muteBtn" title="Mute/Unmute" aria-label="Mute/Unmute">
-      <!-- SVG speaker (works on Signagelive / embedded browsers) -->
       <svg id="volSvg" class="vol-icon icon-muted" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <!-- speaker body -->
         <path d="M3 10v4h4l5 4V6l-5 4H3Z"/>
-        <!-- waves -->
         <path id="bar1" class="bar" d="M16 9a3 3 0 0 1 0 6" />
         <path id="bar2" class="bar" d="M18.5 7a6 6 0 0 1 0 10" />
         <path id="bar3" class="bar" d="M21 5a9 9 0 0 1 0 14" />
-        <!-- mute X -->
         <line id="x1" x1="2" y1="2" x2="22" y2="22"/>
         <line id="x2" x1="22" y1="2" x2="2" y2="22"/>
       </svg>
@@ -140,12 +69,10 @@
     <div class="vol-percent" id="volPct">0%</div>
   </div>
 
-  <!-- Video -->
   <div class="video-container">
     <video id="videoPlayer" autoplay muted playsinline></video>
   </div>
 
-  <!-- Overlays -->
   <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
 
   <div class="channel-info" id="channelInfo">
@@ -169,32 +96,26 @@
 
   <div class="transition-overlay" id="fade"></div>
 
-  <!-- HLS.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
 
-  <!-- ===== Player logic (non-module) ===== -->
   <script>
-    // ======== CONFIG (edit these) ========
     const CONFIG = {
-      displayId: 'BFA_PRINT',                  // <— set this TV’s ID
-      dealershipName: 'BFA_PRINT',             // <— must match your Firebase data
+      displayId: 'BFA_PRINT',
+      dealershipName: 'BFA_PRINT',
       channels: [
         { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
-        { id:2, name:'Sports', url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8', type:'hls' }, // NOTE: http may be blocked on https pages
+        { id:2, name:'Sports', url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8', type:'hls' }, /* http may be blocked */
         { id:3, name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
         { id:4, name:'Nature', url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8', type:'hls' },
         { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
       ]
     };
 
-    // ======== STATE ========
     let hls=null, retry=0, switching=false;
     window.currentChannel = 1;
-    window.currentVolume  = 0;  // 0..100
+    window.currentVolume  = 0;
     window.isMuted        = true;
     let lastVolume = 50;
-
-    // Shorthands
     const $ = (id)=>document.getElementById(id);
 
     document.addEventListener('DOMContentLoaded', ()=>{
@@ -212,22 +133,17 @@
       v.addEventListener('canplay',   ()=> showLoading(false));
       v.addEventListener('stalled',   ()=> showLoading(true));
       v.addEventListener('error',     onVideoError);
-      // controls (for touch panels, if connected locally)
       $('volUp').onclick   = ()=> volumeUp();
       $('volDown').onclick = ()=> volumeDown();
       $('muteBtn').onclick = ()=> toggleMute();
     }
 
-    // ----- Volume / Icon (SVG works on Signagelive) -----
     function initVolumeUI(){
-      const sv = $('volSvg');
-      const v  = $('videoPlayer');
       const savedVol  = localStorage.getItem('displayVolume');
       const savedMute = localStorage.getItem('displayMuted');
-
       if(savedVol !== null){ window.currentVolume = parseInt(savedVol,10); lastVolume = window.currentVolume || 50; }
       if(savedMute !== null){ window.isMuted = (savedMute === 'true'); }
-
+      const v = $('videoPlayer');
       v.volume = (window.currentVolume||0)/100;
       v.muted  = !!window.isMuted;
       renderVolumeUI();
@@ -236,22 +152,17 @@
       const pct = Math.max(0, Math.min(100, window.currentVolume|0));
       $('volFill').style.width = pct + '%';
       $('volPct').textContent = (window.isMuted || pct===0) ? '0%' : (pct + '%');
-
       const cls = window.isMuted || pct===0 ? 'icon-muted' :
                   pct < 30 ? 'icon-level-1' : pct < 70 ? 'icon-level-2' : 'icon-level-3';
       $('volSvg').className.baseVal = 'vol-icon ' + cls;
-      hudFlash(); // briefly show HUD on any update
+      hudFlash();
     }
     function toggleMute(){ window.isMuted ? unmute() : mute(); }
-    function mute(){
-      const v=$('videoPlayer'); window.isMuted=true; v.muted=true;
-      localStorage.setItem('displayMuted','true'); renderVolumeUI();
-    }
+    function mute(){ const v=$('videoPlayer'); window.isMuted=true; v.muted=true; localStorage.setItem('displayMuted','true'); renderVolumeUI(); }
     function unmute(){
       const v=$('videoPlayer');
       if(window.currentVolume===0){ window.currentVolume = lastVolume || 50; v.volume = window.currentVolume/100; }
-      window.isMuted=false; v.muted=false;
-      v.play().catch(()=>{});
+      window.isMuted=false; v.muted=false; v.play().catch(()=>{});
       localStorage.setItem('displayMuted','false'); renderVolumeUI();
     }
     function setVolume(vol){
@@ -265,135 +176,59 @@
     }
     function volumeUp(){ if(window.isMuted) unmute(); setVolume(window.currentVolume + 10); }
     function volumeDown(){ setVolume(window.currentVolume - 10); }
-
-    // Float indicator when remote changes volume
-    function showFloat(text){
-      const old = document.querySelector('.volume-float'); if(old) old.remove();
-      const el = document.createElement('div'); el.className='volume-float'; el.textContent=text;
-      document.body.appendChild(el); setTimeout(()=>el.remove(), 1800);
-    }
-    function hudFlash(){
-      const hud = $('volumeHud');
-      hud.classList.add('show');
-      clearTimeout(hud._t);
-      hud._t = setTimeout(()=> hud.classList.remove('show'), 1500);
-    }
-
-    // Expose for remote control (Firebase listener)
+    function showFloat(text){ const old = document.querySelector('.volume-float'); if(old) old.remove(); const el = document.createElement('div'); el.className='volume-float'; el.textContent=text; document.body.appendChild(el); setTimeout(()=>el.remove(), 1800); }
+    function hudFlash(){ const hud = $('volumeHud'); hud.classList.add('show'); clearTimeout(hud._t); hud._t = setTimeout(()=> hud.classList.remove('show'), 1500); }
     window.applyVolumeSettings = function(volume, muted){
       let changed=false;
       if(typeof volume==='number' && volume!==window.currentVolume){ setVolume(volume); changed=true; }
-      if(typeof muted==='boolean' && muted!==window.isMuted){
-        muted ? mute() : unmute(); changed=true;
-      }
-      if(changed){
-        const label = (window.isMuted||window.currentVolume===0) ? 'MUTED' : ('VOL ' + window.currentVolume + '%');
-        showFloat(label);
-      }
+      if(typeof muted==='boolean' && muted!==window.isMuted){ muted ? mute() : unmute(); changed=true; }
+      if(changed){ const label = (window.isMuted||window.currentVolume===0) ? 'MUTED' : ('VOL ' + window.currentVolume + '%'); showFloat(label); }
     };
 
-    // ----- Channels -----
     function loadChannel(channelNumber){
       if(switching) return;
       const ch = CONFIG.channels.find(c=>c.id===channelNumber);
       if(!ch){ console.warn('Channel not found', channelNumber); return; }
-
-      switching = true;
-      $('fade').classList.add('active');
-
+      switching = true; $('fade').classList.add('active');
       setTimeout(()=>{
-        window.currentChannel = channelNumber;
-        updateChannelInfo(ch);
-
+        window.currentChannel = channelNumber; updateChannelInfo(ch);
         const v = $('videoPlayer');
         if(Hls.isSupported()){
           if(hls) { try{ hls.destroy(); }catch(e){} hls=null; }
-          hls = new Hls({
-            enableWorker:true, lowLatencyMode:true,
-            maxBufferLength:30, maxBufferSize:60*1000*1000,
-            manifestLoadingTimeOut:10000, manifestLoadingMaxRetry:3,
-            levelLoadingTimeOut:10000, levelLoadingMaxRetry:4
-          });
-          hls.attachMedia(v);
-          hls.loadSource(ch.url);
-          hls.on(Hls.Events.MANIFEST_PARSED, ()=> {
-            v.play().then(()=>{ v.volume = window.currentVolume/100; v.muted = window.isMuted; }).catch(()=>{});
-          });
+          hls = new Hls({ enableWorker:true, lowLatencyMode:true, maxBufferLength:30, maxBufferSize:60*1000*1000, manifestLoadingTimeOut:10000, manifestLoadingMaxRetry:3, levelLoadingTimeOut:10000, levelLoadingMaxRetry:4 });
+          hls.attachMedia(v); hls.loadSource(ch.url);
+          hls.on(Hls.Events.MANIFEST_PARSED, ()=> { v.play().then(()=>{ v.volume = window.currentVolume/100; v.muted = window.isMuted; }).catch(()=>{}); });
           hls.on(Hls.Events.ERROR, onHlsError);
         } else if (v.canPlayType('application/vnd.apple.mpegurl')){
-          v.src = ch.url;
-          v.play().then(()=>{ v.volume = window.currentVolume/100; v.muted = window.isMuted; }).catch(()=>{});
-        } else {
-          showError('HLS not supported on this device');
-        }
-
+          v.src = ch.url; v.play().then(()=>{ v.volume = window.currentVolume/100; v.muted = window.isMuted; }).catch(()=>{});
+        } else { showError('HLS not supported on this device'); }
         setTimeout(()=>{ $('fade').classList.remove('active'); switching=false; }, 240);
       }, 140);
     }
-    window.loadChannel = loadChannel; // used by remote
-
-    function updateChannelInfo(ch){
-      $('chName').textContent = ch.name || ('Channel ' + ch.id);
-      $('chNum').textContent  = ch.id;
-      const box = $('channelInfo');
-      box.classList.add('show'); clearTimeout(box._t);
-      box._t = setTimeout(()=> box.classList.remove('show'), 4000);
-    }
-
-    // ----- Errors & status -----
-    function onHlsError(evt, data){
-      if(!data || !data.fatal) return;
+    window.loadChannel = loadChannel;
+    function updateChannelInfo(ch){ $('chName').textContent = ch.name || ('Channel ' + ch.id); $('chNum').textContent  = ch.id; const box = $('channelInfo'); box.classList.add('show'); clearTimeout(box._t); box._t = setTimeout(()=> box.classList.remove('show'), 4000); }
+    function onHlsError(evt, data){ if(!data || !data.fatal) return;
       switch(data.type){
-        case Hls.ErrorTypes.NETWORK_ERROR:
-          if(retry<3){ retry++; setTimeout(()=> hls && hls.startLoad(), 1500); }
-          else showError('Network error');
-          break;
-        case Hls.ErrorTypes.MEDIA_ERROR:
-          try{ hls.recoverMediaError(); }catch(e){ showError('Media error'); }
-          break;
-        default:
-          showError('Stream error'); setTimeout(()=> loadChannel(window.currentChannel), 3000);
+        case Hls.ErrorTypes.NETWORK_ERROR: if(retry<3){ retry++; setTimeout(()=> hls && hls.startLoad(), 1500); } else showError('Network error'); break;
+        case Hls.ErrorTypes.MEDIA_ERROR: try{ hls.recoverMediaError(); }catch(e){ showError('Media error'); } break;
+        default: showError('Stream error'); setTimeout(()=> loadChannel(window.currentChannel), 3000);
       }
     }
-    function onVideoError(){
-      showError('Playback error'); setTimeout(()=> loadChannel(window.currentChannel), 3000);
-    }
+    function onVideoError(){ showError('Playback error'); setTimeout(()=> loadChannel(window.currentChannel), 3000); }
     function showError(msg){ $('errText').textContent = msg; $('errToast').classList.add('show'); }
     function hideError(){ $('errToast').classList.remove('show'); }
     function showLoading(flag){ const el=$('loading'); if(flag){ el.classList.add('active'); } else { el.classList.remove('active'); hideError(); } }
-    function setStatus(connected, msg){
-      const dot=$('statusDot'), txt=$('statusText');
-      dot.classList.toggle('disconnected', !connected);
-      txt.textContent = connected ? 'Connected' : ('Disconnected' + (msg?` — ${msg}`:''));
-    }
+    function setStatus(connected, msg){ const dot=$('statusDot'), txt=$('statusText'); dot.classList.toggle('disconnected', !connected); txt.textContent = connected ? 'Connected' : ('Disconnected' + (msg?` — ${msg}`:'')); }
     window.setStatus = setStatus;
-
-    function tickClock(){
-      const t = new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'});
-      $('clock').textContent = t;
-    }
-
-    // Pause buffering when hidden (saves bandwidth on some devices)
-    document.addEventListener('visibilitychange',()=>{
-      if(!hls) return;
-      if(document.hidden){ try{ hls.stopLoad(); }catch(e){} }
-      else { try{ hls.startLoad(); }catch(e){} }
-    });
-
-    // BrightSign quirk: ensure unmute works a moment after load if volume>0
-    if(navigator.userAgent.includes('BrightSign')){
-      setTimeout(()=>{ const v=$('videoPlayer'); if(window.currentVolume>0 && !window.isMuted){ v.muted=false; v.volume=window.currentVolume/100; } }, 1500);
-    }
+    function tickClock(){ const t = new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'}); $('clock').textContent = t; }
+    document.addEventListener('visibilitychange',()=>{ if(!hls) return; if(document.hidden){ try{ hls.stopLoad(); }catch(e){} } else { try{ hls.startLoad(); }catch(e){} } });
+    if(navigator.userAgent.includes('BrightSign')){ setTimeout(()=>{ const v=$('videoPlayer'); if(window.currentVolume>0 && !window.isMuted){ v.muted=false; v.volume=window.currentVolume/100; } }, 1500); }
   </script>
 
-  <!-- ===== Firebase (module) — EMBED-SAFE ===== -->
+  <!-- Firebase (module) -->
   <script type="module">
-    import { getApps, initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import {
-      initializeAuth, getAuth, setPersistence,
-      browserLocalPersistence, inMemoryPersistence,
-      onAuthStateChanged, signInAnonymously
-    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
     const firebaseConfig = {
@@ -406,22 +241,11 @@
       appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
     };
 
-    const EMBEDDED = new URLSearchParams(location.search).has('embedded');
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    await setPersistence(auth, inMemoryPersistence);   // <<<<< prevents the iframe from clobbering your admin session
+    const db   = getDatabase(app);
 
-    const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-
-    // Use in-memory auth when embedded so it cannot overwrite your admin session
-    let auth;
-    try {
-      auth = initializeAuth(app, { persistence: EMBEDDED ? inMemoryPersistence : browserLocalPersistence });
-    } catch (e) {
-      auth = getAuth(app);
-      try { await setPersistence(auth, EMBEDDED ? inMemoryPersistence : browserLocalPersistence); } catch (_) {}
-    }
-
-    const db = getDatabase(app);
-
-    // Sign in anonymously (in memory when embedded)
     signInAnonymously(auth).catch(e => {
       console.error('[auth]', e);
       window.setStatus(false, 'anon auth failed');
@@ -433,65 +257,53 @@
       const displayId      = CONFIG.displayId;
       const dealershipName = CONFIG.dealershipName;
 
-      // In preview (embedded), do NOT write any device profile / heartbeat.
-      if (!EMBEDDED) {
-        // (a) register/update device profile (role:device)
-        try {
-          await update(ref(db, `user/${user.uid}`), {
-            role: 'device',
-            name: displayId,
-            dealershipId: dealershipName,
-            updatedAt: Date.now()
-          });
-        } catch (e) {
-          console.warn('[user write denied]', e);
-          window.setStatus(false, 'cannot write user profile');
-          return;
-        }
-
-        // (b) ensure displays/{displayId}.dealership == dealershipName
-        try {
-          const dRef = ref(db, `displays/${displayId}`);
-          const snap = await get(dRef);
-          if (!snap.exists()) {
-            await update(dRef, { channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() });
-          } else {
-            const cur = snap.val() || {};
-            if (cur.dealership !== dealershipName) {
-              await update(dRef, { dealership:dealershipName });
-            }
-          }
-        } catch (e) {
-          console.warn('[display setup denied]', e);
-          window.setStatus(false, 'display/dealership mismatch');
-          // continue to subscribe anyway
-        }
-
-        // (c) heartbeat
-        try{
-          const hbRef = ref(db, `displays/${displayId}`);
-          const beat  = async ()=>{ try{ await update(hbRef, { lastSeenAt: Date.now(), updatedAt: Date.now() }); }catch(e){} };
-          beat(); setInterval(beat, 15000);
-        }catch(e){}
+      try {
+        await update(ref(db, `user/${user.uid}`), {
+          role: 'device',
+          name: displayId,
+          dealershipId: dealershipName,
+          updatedAt: Date.now()
+        });
+      } catch (e) {
+        console.warn('[user write denied]', e);
+        window.setStatus(false, 'cannot write user profile');
+        return;
       }
 
-      // (d) live subscribe (works for preview too; if missing/denied we just show disconnected)
+      try {
+        const dRef = ref(db, `displays/${displayId}`);
+        const snap = await get(dRef);
+        if (!snap.exists()) {
+          await update(dRef, { channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() });
+        } else {
+          const cur = snap.val() || {};
+          if (cur.dealership !== dealershipName) {
+            await update(dRef, { dealership:dealershipName });
+          }
+        }
+      } catch (e) {
+        console.warn('[display setup denied]', e);
+        window.setStatus(false, 'display/dealership mismatch');
+        return;
+      }
+
       const dref = ref(db, `displays/${displayId}`);
       onValue(dref, (snap) => {
         const data = snap.val();
-        if (!data) { window.setStatus(false, 'no data'); return; }
-
-        if (typeof data.channel === 'number' && data.channel !== window.currentChannel) {
-          window.loadChannel(data.channel);
-        }
-        if (data.volume !== undefined || data.muted !== undefined) {
-          window.applyVolumeSettings(data.volume, data.muted);
-        }
+        if (!data) return;
+        if (typeof data.channel === 'number' && data.channel !== window.currentChannel) window.loadChannel(data.channel);
+        if (data.volume !== undefined || data.muted !== undefined) window.applyVolumeSettings(data.volume, data.muted);
         window.setStatus(true, '');
       }, (err) => {
         console.error('[listener]', err);
         window.setStatus(false, err?.code === 'PERMISSION_DENIED' ? 'permission denied' : 'listener error');
       });
+
+      try{
+        const hbRef = ref(db, `displays/${displayId}`);
+        const beat  = async ()=>{ try{ await update(hbRef, { lastSeenAt: Date.now(), updatedAt: Date.now() }); }catch(e){} };
+        beat(); setInterval(beat, 15000);
+      }catch(e){}
     });
   </script>
 </body>
