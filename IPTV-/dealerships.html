@@ -16,19 +16,12 @@
   body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
   a{color:inherit;text-decoration:none}
 
-  /* Top */
-  .top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px var(--pad);background:linear-gradient(0deg,transparent,rgba(0,0,0,.06));backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
-  .lhs{display:flex;align-items:center;gap:10px}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:900}
-  .logo{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:var(--tile) center/cover no-repeat}
-  .chip{display:inline-flex;align-items:center;justify-content:center;height:var(--btnH);padding:0 14px;border:1px solid var(--border);border-radius:9999px;background:var(--tile);font-weight:700;font-size:var(--btnFS);line-height:1;white-space:nowrap}
-
-  /* Shell */
+  /* Cards / layout */
   .wrap{max-width:1100px;margin:0 auto;padding:18px}
   .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:var(--pad);box-shadow:var(--shadow)}
   .muted{color:var(--muted);font-size:12px}
 
-  /* Input bar */
+  /* Inputs */
   .inputbar{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap}
   .input{
     flex:1;min-width:220px;height:var(--btnH);padding:0 14px;background:transparent;border:1px solid var(--border);
@@ -54,7 +47,7 @@
     align-items:center;background:var(--tile);border:1px solid var(--border);border-radius:16px;padding:12px;margin:10px 0;
   }
   .title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .tag{padding:2px 8px;border:1px solid var(--border);border-radius:9999px;background:transparent;font-size:12px;color:var(--muted)}
+  .tag{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:transparent;font-size:12px;color:var(--muted)}
   .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
   .spacer{height:6px}
 
@@ -63,33 +56,53 @@
     .actions .btn, .actions a.btn{min-width:110px;justify-content:center}
   }
 
-  /* Mobile */
-  @media (max-width:680px){
-    .item{grid-template-columns:1fr}
-    .actions{justify-content:flex-start}
-    .btn, a.btn{width:auto}
-  }
-
   /* Toast */
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;z-index:99}
   .toast.show{opacity:1}
   .toast.err{background:#ff453a;color:#fff}
+
+  /* === Consistent topbar + hamburger (shared) === */
+  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(0deg,transparent,rgba(0,0,0,.06));backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .lhs{display:flex;align-items:center;gap:10px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.3px}
+  .logo{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:var(--tile) center/cover no-repeat}
+  #hamburger{margin-left:auto;height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:none}
+  #navMenu{margin-left:auto}
+  .nav-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  @media (max-width:900px){
+    #hamburger{display:inline-flex;align-items:center;justify-content:center}
+    #navMenu{display:none;position:absolute;top:58px;left:0;right:0;background:linear-gradient(0deg,rgba(0,0,0,.06),rgba(0,0,0,.06));backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:10px}
+    #navMenu.open{display:block}
+    .nav-actions{flex-direction:column;align-items:stretch}
+    .nav-actions .btn, .nav-actions a.btn{width:100%}
+  }
 </style>
 </head>
 <body>
 
-<!-- Top bar -->
-<div class="top">
+<!-- Topbar (standardized) -->
+<div class="topbar" role="banner">
   <div class="lhs">
-    <div class="logo" id="brandLogo" title="IPTV"></div>
-    <div class="brand">BFA IPTV — Admin</div>
+    <a class="brand" href="home.html" aria-label="BFA IPTV Home">
+      <div class="logo" id="brandLogo" title="IPTV" aria-hidden="true"></div>
+      <span>BFA IPTV — Dealerships</span>
+    </a>
   </div>
-  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <a class="chip" href="home.html">← Home</a>
-    <span id="who" class="muted"></span>
-    <button id="reloadBtn" class="btn">Reload</button>
-    <button id="signOutBtn" class="btn">Sign out</button>
-  </div>
+  <button id="hamburger" aria-label="Menu" aria-controls="navMenu" aria-expanded="false">☰</button>
+  <nav id="navMenu" aria-label="Primary">
+    <div class="nav-actions">
+      <a class="btn" href="home.html">Home</a>
+      <a class="btn" href="dealerships.html">Dealerships</a>
+      <a class="btn" href="displays.html">Displays</a>
+      <a class="btn" href="users.html">Users</a>
+      <a class="btn" href="links.html">Links</a>
+      <a class="btn" href="analytics.html">Analytics</a>
+      <a class="btn" href="schedule.html">Schedule</a>
+      <span id="who" class="muted"></span>
+      <button id="reloadBtn" class="btn" type="button">Reload</button>
+      <button id="signOutBtn" class="btn primary" type="button">Sign out</button>
+    </div>
+  </nav>
 </div>
 
 <div class="wrap">
@@ -159,7 +172,7 @@ $("#signOutBtn").addEventListener('click', ()=>signOut(auth).then(()=>location.h
 $("#reloadBtn").addEventListener('click', loadList);
 $("#reloadList").addEventListener('click', loadList);
 
-/* ---------- CRUD ---------- */
+/* ---------- CRUD (unchanged logic) ---------- */
 async function loadList(){
   $("#list").innerHTML='';
   let map={};
@@ -296,6 +309,11 @@ $("#addBtn").addEventListener('click', async ()=>{
     console.error(e); toast('Create failed (check rules)', true);
   }
 });
+</script>
+
+<!-- Tiny hamburger toggler -->
+<script>
+  (()=>{const b=document.getElementById('hamburger');const m=document.getElementById('navMenu');if(!b||!m)return;b.addEventListener('click',()=>{const o=m.classList.toggle('open');b.setAttribute('aria-expanded',String(o));});window.addEventListener('resize',()=>{if(window.innerWidth>900){m.classList.remove('open');b.setAttribute('aria-expanded','false');}});})();
 </script>
 </body>
 </html>
