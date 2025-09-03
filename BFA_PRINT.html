@@ -386,10 +386,14 @@
     }
   </script>
 
-  <!-- ===== Firebase (module) ===== -->
+  <!-- ===== Firebase (module) — EMBED-SAFE ===== -->
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getApps, initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import {
+      initializeAuth, getAuth, setPersistence,
+      browserLocalPersistence, inMemoryPersistence,
+      onAuthStateChanged, signInAnonymously
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
     const firebaseConfig = {
@@ -402,11 +406,22 @@
       appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db   = getDatabase(app);
+    const EMBEDDED = new URLSearchParams(location.search).has('embedded');
 
-    // Anonymous sign-in
+    const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+
+    // Use in-memory auth when embedded so it cannot overwrite your admin session
+    let auth;
+    try {
+      auth = initializeAuth(app, { persistence: EMBEDDED ? inMemoryPersistence : browserLocalPersistence });
+    } catch (e) {
+      auth = getAuth(app);
+      try { await setPersistence(auth, EMBEDDED ? inMemoryPersistence : browserLocalPersistence); } catch (_) {}
+    }
+
+    const db = getDatabase(app);
+
+    // Sign in anonymously (in memory when embedded)
     signInAnonymously(auth).catch(e => {
       console.error('[auth]', e);
       window.setStatus(false, 'anon auth failed');
@@ -418,43 +433,53 @@
       const displayId      = CONFIG.displayId;
       const dealershipName = CONFIG.dealershipName;
 
-      // (a) register/update device profile (role:device) so rules can read
-      try {
-        await update(ref(db, `user/${user.uid}`), {
-          role: 'device',
-          name: displayId,           // used by admin duplicate-cleaner
-          dealershipId: dealershipName,
-          updatedAt: Date.now()
-        });
-      } catch (e) {
-        console.warn('[user write denied]', e);
-        window.setStatus(false, 'cannot write user profile');
-        return;
-      }
-
-      // (b) ensure displays/{displayId}.dealership == dealershipName
-      try {
-        const dRef = ref(db, `displays/${displayId}`);
-        const snap = await get(dRef);
-        if (!snap.exists()) {
-          await update(dRef, { channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() });
-        } else {
-          const cur = snap.val() || {};
-          if (cur.dealership !== dealershipName) {
-            await update(dRef, { dealership:dealershipName });
-          }
+      // In preview (embedded), do NOT write any device profile / heartbeat.
+      if (!EMBEDDED) {
+        // (a) register/update device profile (role:device)
+        try {
+          await update(ref(db, `user/${user.uid}`), {
+            role: 'device',
+            name: displayId,
+            dealershipId: dealershipName,
+            updatedAt: Date.now()
+          });
+        } catch (e) {
+          console.warn('[user write denied]', e);
+          window.setStatus(false, 'cannot write user profile');
+          return;
         }
-      } catch (e) {
-        console.warn('[display setup denied]', e);
-        window.setStatus(false, 'display/dealership mismatch');
-        return;
+
+        // (b) ensure displays/{displayId}.dealership == dealershipName
+        try {
+          const dRef = ref(db, `displays/${displayId}`);
+          const snap = await get(dRef);
+          if (!snap.exists()) {
+            await update(dRef, { channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() });
+          } else {
+            const cur = snap.val() || {};
+            if (cur.dealership !== dealershipName) {
+              await update(dRef, { dealership:dealershipName });
+            }
+          }
+        } catch (e) {
+          console.warn('[display setup denied]', e);
+          window.setStatus(false, 'display/dealership mismatch');
+          // continue to subscribe anyway
+        }
+
+        // (c) heartbeat
+        try{
+          const hbRef = ref(db, `displays/${displayId}`);
+          const beat  = async ()=>{ try{ await update(hbRef, { lastSeenAt: Date.now(), updatedAt: Date.now() }); }catch(e){} };
+          beat(); setInterval(beat, 15000);
+        }catch(e){}
       }
 
-      // (c) live subscribe
+      // (d) live subscribe (works for preview too; if missing/denied we just show disconnected)
       const dref = ref(db, `displays/${displayId}`);
       onValue(dref, (snap) => {
         const data = snap.val();
-        if (!data) return;
+        if (!data) { window.setStatus(false, 'no data'); return; }
 
         if (typeof data.channel === 'number' && data.channel !== window.currentChannel) {
           window.loadChannel(data.channel);
@@ -467,13 +492,6 @@
         console.error('[listener]', err);
         window.setStatus(false, err?.code === 'PERMISSION_DENIED' ? 'permission denied' : 'listener error');
       });
-
-      // (d) heartbeat — marks this device as "newest" (helps admin clean dupes)
-      try{
-        const hbRef = ref(db, `displays/${displayId}`);
-        const beat  = async ()=>{ try{ await update(hbRef, { lastSeenAt: Date.now(), updatedAt: Date.now() }); }catch(e){} };
-        beat(); setInterval(beat, 15000);
-      }catch(e){}
     });
   </script>
 </body>
