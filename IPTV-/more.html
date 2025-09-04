@@ -45,9 +45,9 @@
   .muted{color:var(--muted);font-size:12px}
   details.legend{margin:8px 0} details.legend summary{cursor:pointer;font-weight:800}
 
-  /* Legend grid — simplified (no grey fill) */
+  /* Legend grid — white tiles (no grey) */
   .legend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:8px}
-  .legend-item{display:flex;gap:10px;align-items:flex-start;background:transparent;border:1px solid var(--border);border-radius:12px;padding:10px}
+  .legend-item{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px}
   .legend-item .iconbtn{flex:0 0 36px}
 
   /* Inputs */
@@ -81,7 +81,7 @@
   @media (max-width:680px){.inline-actions{display:none}#hamburger{display:inline-flex}}
   @media (min-width:901px){ #navMenu{display:none!important} }
 
-  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:9999px;font-weight:900;opacity:0;transition:opacity .25s;z-index:99}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;z-index:99}
   .toast.show{opacity:1} .toast.err{background:#ff453a;color:#fff}
 </style>
 </head>
@@ -128,7 +128,7 @@
     <h2 style="margin:0">Dealerships</h2>
     <div class="muted">Create, edit public name, migrate ID, delete. Tap icons for actions.</div>
 
-    <details class="legend">
+    <details class="legend" open>
       <summary>Icon legend</summary>
       <div id="legendGrid" class="legend-grid"></div>
     </details>
@@ -215,9 +215,15 @@ function defaultUrlForId(id){
   return `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(id)}.html`;
 }
 function isAbsoluteUrl(u){ try{ return new URL(u), true; }catch{ return false; } }
+function sameOrigin(u){ try{ return new URL(u, location.href).origin === location.origin; }catch{ return false; } }
 
 /* ===== Preview builder (safe) ===== */
-/* IMPORTANT: keep module scripts so the player can run (follow channel/volume). */
+/* Remove ALL module scripts (Firebase auth lives there) */
+function stripModuleScripts(html){
+  return html.replace(/<script[^>]*type=['"]module['"][^>]*>[\s\S]*?<\/script>/gi,
+    '<!-- BFA_PREVIEW: module script stripped -->');
+}
+/* Force HLS to run without Web Workers inside sandbox */
 function forceDisableHlsWorkers(html){
   html = html.replace(/enableWorker\s*:\s*true/gi, 'enableWorker:false');
   html = html.replace(/new\s+Hls\(\s*\{\s*/g, m => `${m}enableWorker:false, `);
@@ -228,18 +234,23 @@ async function buildSafeBlobUrl(realUrl){
   if(!res.ok) return null;
   let html = await res.text();
   const baseHref = realUrl.replace(/[^/]*$/, '');
-  // preserve relative assets
   html = html.replace(/<head([^>]*)>/i, (m,a)=>`<head${a}><base href="${baseHref}">`);
-  // DO NOT strip module scripts anymore (we want the player logic)
+  html = stripModuleScripts(html);
   html = forceDisableHlsWorkers(html);
   const blob = new Blob([html], {type:'text/html'});
   return URL.createObjectURL(blob);
 }
+/* Decide best URL for preview (blob on same origin; direct if fetch blocked). */
+async function urlForPreview(realUrl){
+  const abs = isAbsoluteUrl(realUrl) ? realUrl : defaultUrlForId(realUrl);
+  if (sameOrigin(abs)) {
+    try { const blob = await buildSafeBlobUrl(abs); if (blob) return blob; } catch {}
+  }
+  return abs; // fallback (e.g., CodePen or fetch blocked)
+}
 async function openSafeTabFromUrl(url){
-  const u = isAbsoluteUrl(url) ? url : defaultUrlForId(url);
-  const blobUrl = await buildSafeBlobUrl(u);
-  if(!blobUrl){ toast('Could not build preview', true); return; }
-  const win = window.open(blobUrl, '_blank', 'noopener');
+  const src = await urlForPreview(url);
+  const win = window.open(src, '_blank', 'noopener');
   if(!win) toast('Popup blocked — enable popups', true);
 }
 
@@ -273,7 +284,7 @@ async function loadList(){
         <button class="iconbtn" title="Show users" data-act="users">${I.users()}</button>
         <button class="iconbtn" title="Edit public name" data-act="edit">${I.edit()}</button>
         <button class="iconbtn" title="Rename ID (migrate)" data-act="rename">${I.swap()}</button>
-        <button class="iconbtn" title="Open tab" data-act="safe">${I.open()}</button>
+        <button class="iconbtn" title="Open (safe tab)" data-act="safe">${I.open()}</button>
         <button class="iconbtn danger" title="Delete" data-act="delete">${I.trash()}</button>
       </div>`;
     $("#list").appendChild(li);
@@ -384,7 +395,7 @@ async function toggleDisplaysUnder(li, id){
           <div class="subright">
             <button class="iconbtn" title="Save URL" data-save="${safeId}">${I.save()}</button>
             <button class="iconbtn" title="Preview"  data-preview="${safeId}">${I.eye()}</button>
-            <button class="iconbtn" title="Open tab" data-open="${safeId}">${I.open()}</button>
+            <button class="iconbtn" title="Open (safe tab)" data-open="${safeId}">${I.open()}</button>
           </div>
         </li>`;
       }).join('')
@@ -405,34 +416,33 @@ async function toggleDisplaysUnder(li, id){
     });
   });
 
-  // Preview inline (isolated blob so admin login is safe)
+  // Preview inline (now with allow-same-origin to avoid Origin:null CORS)
   sub.querySelectorAll('[data-preview]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       const did = btn.getAttribute('data-preview');
       const row = btn.closest('.subitem');
-      const url = row.querySelector('.urlinput').value.trim() || defaultUrlForId(did);
+      const real = row.querySelector('.urlinput').value.trim() || defaultUrlForId(did);
       const wrap=sub.querySelector('.iframeWrap'); wrap.style.display='block';
       wrap.innerHTML=`<div class="muted" style="padding:14px">Loading preview…</div>`;
-      const real = isAbsoluteUrl(url)?url:defaultUrlForId(url);
-      const blobUrl = await buildSafeBlobUrl(real);
-      if(!blobUrl){ wrap.innerHTML=`<div class="muted" style="padding:14px">Could not build preview.</div>`; return; }
+      const src = await urlForPreview(real);
       wrap.innerHTML=`<iframe
         title="Preview ${esc(did)}"
-        src="${blobUrl}"
-        sandbox="allow-scripts allow-forms allow-pointer-lock allow-orientation-lock allow-presentation allow-popups allow-popups-to-escape-sandbox"
+        src="${src}"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-orientation-lock allow-presentation allow-popups allow-popups-to-escape-sandbox"
         allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+        referrerpolicy="no-referrer"
         allowfullscreen
       ></iframe>`;
     });
   });
 
-  // Open in new tab (isolated)
+  // Open in new tab (safe: blob if possible, else real URL)
   sub.querySelectorAll('[data-open]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       const did = btn.getAttribute('data-open');
       const row = btn.closest('.subitem');
-      const url = row.querySelector('.urlinput').value.trim() || defaultUrlForId(did);
-      openSafeTabFromUrl(url);
+      const real = row.querySelector('.urlinput').value.trim() || defaultUrlForId(did);
+      openSafeTabFromUrl(real);
     });
   });
 }
