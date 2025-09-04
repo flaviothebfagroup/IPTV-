@@ -5,57 +5,74 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 <title>BFA IPTV — Dealerships</title>
 <style>
+  /* ===== Theme ===== */
   :root{
-    --bg:#f5f5f7;--fg:#111;--muted:#6e6e73;--panel:#fff;--border:rgba(0,0,0,.12);
-    --tile:#f2f2f7;--tileActive:#ededf2;--shadow:0 14px 36px rgba(0,0,0,.10);
-    --accent:#ff9500;--danger:#e11d48;
-    --rad:16px; --pad:16px; --gap:10px; --btnH:40px; --btnFS:14px; --stroke:#111;
+    --bg:#f6f7fb; --fg:#141414; --muted:#6e6e73; --panel:#fff; --tile:#f1f2f6;
+    --border:rgba(0,0,0,.14); --shadow:0 12px 28px rgba(0,0,0,.08);
+    --accent:#ff9500; --danger:#e11d48; --ok:#22c55e;
+    --rad:16px; --pad:16px; --gap:10px; --btnH:40px; --btnFS:14px;
+    --stroke:#141414; --stroke-w:1.7; /* thinner icons */
   }
+  [data-theme="dark"]{
+    --bg:#0d0f12; --fg:#f5f6f9; --muted:#a5a7ad; --panel:#14171b; --tile:#171a20;
+    --border:rgba(255,255,255,.14); --shadow:0 12px 28px rgba(0,0,0,.35);
+    --stroke:#eaecef;
+  }
+
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
   a{color:inherit;text-decoration:none}
+  .muted{color:var(--muted);font-size:12px}
 
-  /* Topbar */
-  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--border)}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:900}
-  .brand-title{letter-spacing:.2px}
+  /* ===== Topbar (centered nav) ===== */
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+    gap:10px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--border)
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-weight:900;justify-self:start}
   .logo{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--tile) center/cover no-repeat}
-  .inline-actions{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .btn, a.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:var(--btnH);padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:700;font-size:var(--btnFS);line-height:1;white-space:nowrap;cursor:pointer;text-decoration:none}
-  .btn:hover, a.btn:hover{border-color:var(--accent);background:var(--tileActive)}
-  .btn.danger{background:transparent;border-color:rgba(225,29,72,.35);color:var(--danger)}
-  .btn.danger:hover{background:#fff1f3;border-color:var(--danger)}
-  #hamburger{margin-left:auto;display:none;align-items:center;justify-content:center;height:36px;width:40px;border-radius:10px;border:1px solid var(--border);background:transparent;cursor:pointer}
+
+  .nav-center{justify-self:center;display:flex;gap:10px;align-items:center}
+  .navlink{
+    display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;border:1px solid transparent;
+    font-weight:800;opacity:.9
+  }
+  .navlink:hover{opacity:1;border-color:var(--border)}
+  .navlink.active{outline:2px solid var(--accent);outline-offset:0;background:var(--panel)}
+  .nav-icon{width:18px;height:18px;stroke:var(--stroke);stroke-width:var(--stroke-w);fill:none}
+  .nav-right{justify-self:end;display:flex;gap:8px;align-items:center}
+  .ghost{height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--border);background:transparent;cursor:pointer}
+  .ghost:hover{border-color:var(--accent)}
+  .ghost svg{pointer-events:none}
 
   /* Mobile menu */
-  #navMenu{display:none;position:fixed;inset:0;z-index:60;background:var(--bg);color:inherit;overflow:auto;padding:16px 16px 28px}
+  #hamburger{display:none;align-items:center;justify-content:center;height:36px;width:40px;border-radius:10px;border:1px solid var(--border);background:transparent;cursor:pointer}
+  #navMenu{display:none;position:fixed;inset:0;z-index:60;background:var(--bg);overflow:auto;padding:18px}
   #navMenu.open{display:block}
-  .menu-close{position:fixed;top:10px;right:10px;height:36px;width:36px;border-radius:10px;border:1px solid var(--border);background:transparent;cursor:pointer}
-  .menu-head{display:flex;align-items:center;gap:10px;margin:8px 0 6px}
-  .menu-title{font-weight:900}
-  .menu-sec{margin-top:16px;margin-bottom:6px;font-size:12px;color:var(--muted)}
-  .menu{list-style:none;margin:0;padding:0;border-top:1px solid var(--border)}
-  .menu li{border-bottom:1px solid var(--border)}
-  .menu a,.rowbtn{display:block;width:100%;text-align:left;padding:14px 4px;background:transparent;border:0;color:inherit;text-decoration:none;font:inherit;font-weight:800;cursor:pointer}
-  .rowbtn.danger{color:#e11d48}
+  .menu-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .menu-list{display:grid;gap:10px}
+  .menu-item{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--panel)}
+  .menu-item.active{outline:2px solid var(--accent)}
+  .menu-item svg{width:18px;height:18px;stroke:var(--stroke);stroke-width:var(--stroke-w);fill:none}
 
-  /* Shell */
-  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  /* ===== Shell ===== */
+  .wrap{max-width:1100px;margin:10px auto 40px;padding:18px}
   .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:var(--pad);box-shadow:var(--shadow)}
-  .muted{color:var(--muted);font-size:12px}
   details.legend{margin:8px 0} details.legend summary{cursor:pointer;font-weight:800}
+  .legend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:8px}
+  .legend-tile{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px}
 
-  /* Legend */
-  .legend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:8px}
-  .legend-item{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px}
-  .legend-item .iconbtn{flex:0 0 36px}
-
-  /* Inputs */
+  /* Inputs / buttons */
   .inputbar{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap}
-  .input{flex:1;min-width:220px;height:var(--btnH);padding:0 14px;background:transparent;border:1px solid var(--border);border-radius:9999px;color:var(--fg);font-size:var(--btnFS);line-height:1;outline:none}
+  .input{flex:1;min-width:220px;height:var(--btnH);padding:0 14px;background:transparent;border:1px solid var(--border);border-radius:9999px;color:var(--fg);font-size:var(--btnFS)}
   .input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:var(--btnH);padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);font-weight:800;cursor:pointer}
+  .btn:hover{border-color:var(--accent)}
+  .btn.danger{color:var(--danger);background:transparent;border-color:rgba(225,29,72,.35)}
+  .btn.danger:hover{border-color:var(--danger);background-color:rgba(225,29,72,.06)}
 
-  /* List */
+  /* Dealership list */
   .list{list-style:none;margin:14px 0 0;padding:0}
   .item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;background:var(--tile);border:1px solid var(--border);border-radius:16px;padding:12px;margin:10px 0}
   .title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -64,75 +81,93 @@
   .iconbtn{height:36px;width:36px;padding:0;border-radius:10px;border:1px solid var(--border);background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
   .iconbtn:hover{border-color:var(--accent);background:var(--panel)}
   .iconbtn.danger{color:var(--danger);border-color:rgba(225,29,72,.35)}
-  .icon{stroke:var(--stroke);stroke-width:2;fill:none}
+  .icon{stroke:var(--stroke);stroke-width:var(--stroke-w);fill:none}
   .icon-danger{stroke:#e11d48}
+  .iconbtn svg{pointer-events:none}
 
-  /* Sub-panels */
-  .sub{grid-column:1/-1;margin-top:8px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px}
-  .sub h4{margin:0 0 8px}
-  .sublist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px} /* <= narrower to avoid mobile overflow */
-  .subitem{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;background:var(--tile);border:1px solid var(--border);border-radius:10px;padding:10px}
-  .subleft{flex:1 1 auto;min-width:0}
-  .subright{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-  .chipbtn{height:32px;padding:0 12px;border-radius:9999px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:800;cursor:pointer}
-  .chipbtn:hover{border-color:var(--accent)}
+  /* Display card (merged preview + controls) */
+  .disp-card{grid-column:1/-1;border:1px solid var(--border);border-radius:14px;padding:10px;background:var(--panel);margin-top:8px}
+  .disp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+  .disp-title{font-weight:900}
+  .head-actions{display:flex;gap:6px}
+  .ctrl-btn{height:32px;width:32px;border-radius:10px;border:1px solid var(--border);background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+  .ctrl-btn:hover{border-color:var(--accent)}
+  .ctrl-btn svg{pointer-events:none}
 
-  /* Remote controls OUTSIDE the video */
-  .controlWrap{display:none;margin-top:8px}
-  .remote{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px;background:var(--tile);border:1px solid var(--border);border-radius:12px}
-  .remote .pill{height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:9999px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:800}
-  .iconbtn.sm{height:28px;width:28px;border-radius:999px;background:#fff}
-  .meter{display:flex;align-items:center;gap:6px}
-  .meter input[type="range"]{width:140px;height:6px;border-radius:999px;-webkit-appearance:none;background:#eee;border:1px solid var(--border)}
-  .meter input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);border:1px solid #d7d7d7}
+  .disp-grid{display:grid;grid-template-columns:1.45fr 1fr;gap:10px}
+  @media (max-width:900px){ .disp-grid{grid-template-columns:1fr} }
 
-  /* Preview frame */
-  .iframeWrap{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9;margin-top:8px}
-  .iframeWrap iframe{width:100%;height:100%;border:0;background:#000}
+  .preview-card{border:1px solid var(--border);background:var(--tile);border-radius:12px;padding:8px}
+  .iframeWrap{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#000;aspect-ratio:16/9}
+  .iframeWrap iframe{width:100%;height:100%;border:0}
 
-  @media (max-width:680px){.inline-actions{display:none}#hamburger{display:inline-flex}}
-  @media (min-width:901px){ #navMenu{display:none!important} }
+  .ctrl-card{border:1px solid var(--border);background:var(--tile);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px}
+  .line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .pill-sm{height:30px;padding:0 10px;border:1px solid var(--border);border-radius:9999px;background:var(--panel);font-weight:800}
+  .slider{appearance:none;width:100%;height:8px;border-radius:999px;background:linear-gradient(90deg,var(--accent) var(--pct,0%), rgba(127,127,127,.25) 0);border:1px solid var(--border)}
+  .slider::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;background:var(--panel);border:2px solid var(--accent)}
+  .pct{min-width:34px;text-align:right;font-weight:800}
 
+  /* URL pop-in (inside preview boundaries) */
+  .url-pop{display:none;margin-top:8px;gap:8px}
+  .url-pop.show{display:flex}
+  .url-input{flex:1;height:34px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--fg);padding:0 10px}
+
+  /* Toast */
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;z-index:99}
   .toast.show{opacity:1} .toast.err{background:#ff453a;color:#fff}
+
+  /* Responsive header */
+  @media (max-width:820px){
+    .nav-center{display:none}
+    #hamburger{display:inline-flex}
+  }
 </style>
 </head>
 <body>
 
-<!-- Header -->
+<!-- ===== Header ===== -->
 <div class="topbar" role="banner">
+  <!-- Brand -->
   <a class="brand" href="home.html" aria-label="BFA IPTV Home">
     <div class="logo" id="brandLogo" aria-hidden="true"></div>
-    <span class="brand-title">BFA IPTV — Dealerships</span>
+    <span class="brand-title">BFA IPTV</span>
   </a>
-  <div class="inline-actions" aria-label="Primary">
-    <a class="btn" href="home.html">Home</a>
-    <a class="btn" href="dealerships.html" style="outline:2px solid var(--accent);background:#fff">Dealerships</a>
-    <a class="btn" href="displays.html">Displays</a>
-    <a class="btn" href="users.html">Users</a>
-    <a class="btn" href="links.html">Links</a>
-    <a class="btn" href="analytics.html">Analytics</a>
-    <a class="btn" href="schedule.html">Schedule</a>
-    <button id="logoutBtn" class="btn" title="Sign out">Logout</button>
+
+  <!-- Centered nav -->
+  <nav class="nav-center" aria-label="Main">
+    <a class="navlink" href="home.html"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 10 12 3l9 7"/><path d="M5 10v10h14V10"/></svg> Home</a>
+    <a class="navlink active" href="dealerships.html"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 7h18"/><path d="M5 7v13h14V7"/><path d="M9 7V4h6v3"/></svg> Dealerships</a>
+    <a class="navlink" href="displays.html"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/></svg> Displays</a>
+    <a class="navlink" href="users.html"><svg class="nav-icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7"/><path d="M17 11a4 4 0 1 0-4-4"/><path d="M17 22c0-2 .8-3.8 2-5"/></svg> Users</a>
+    <a class="navlink" href="links.html"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"/><path d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"/></svg> Links</a>
+    <a class="navlink" href="analytics.html"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 13v5"/><path d="M12 9v9"/><path d="M17 5v13"/></svg> Analytics</a>
+    <a class="navlink" href="schedule.html"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4"/><path d="M3 11h18"/></svg> Schedule</a>
+  </nav>
+
+  <!-- Right utilities -->
+  <div class="nav-right">
+    <button id="themeBtn" class="ghost" title="Toggle theme" aria-label="Toggle theme">
+      <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
+    </button>
+    <button id="logoutBtn" class="ghost" title="Sign out">Logout</button>
+    <button id="hamburger" aria-label="Menu" aria-controls="navMenu" aria-expanded="false">☰</button>
   </div>
-  <button id="hamburger" aria-label="Menu" aria-controls="navMenu" aria-expanded="false">☰</button>
 </div>
 
-<!-- Mobile menu -->
+<!-- Mobile menu (with icons) -->
 <nav id="navMenu" aria-label="Menu" aria-hidden="true">
-  <button class="menu-close" data-close aria-label="Close">✕</button>
-  <div class="menu-head"><div class="logo" style="width:28px;height:28px"></div><div class="menu-title">BFA IPTV</div></div>
-  <div class="menu-sec">Navigation</div>
-  <ul class="menu">
-    <li><a href="home.html">Home</a></li>
-    <li><a href="dealerships.html">Dealerships</a></li>
-    <li><a href="displays.html">Displays</a></li>
-    <li><a href="users.html">Users</a></li>
-    <li><a href="links.html">Links</a></li>
-    <li><a href="analytics.html">Analytics</a></li>
-    <li><a href="schedule.html">Schedule</a></li>
-    <li><button id="logoutBtnMobile" class="rowbtn danger">Logout</button></li>
-  </ul>
+  <div class="menu-head"><div class="logo" style="width:28px;height:28px"></div><div style="font-weight:900">BFA IPTV</div></div>
+  <div class="menu-list">
+    <a class="menu-item" href="home.html"><svg viewBox="0 0 24 24"><path d="M3 10 12 3l9 7"/><path d="M5 10v10h14V10"/></svg> Home</a>
+    <a class="menu-item active" href="dealerships.html"><svg viewBox="0 0 24 24"><path d="M3 7h18"/><path d="M5 7v13h14V7"/><path d="M9 7V4h6v3"/></svg> Dealerships</a>
+    <a class="menu-item" href="displays.html"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/></svg> Displays</a>
+    <a class="menu-item" href="users.html"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7"/><path d="M17 11a4 4 0 1 0-4-4"/><path d="M17 22c0-2 .8-3.8 2-5"/></svg> Users</a>
+    <a class="menu-item" href="links.html"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"/><path d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"/></svg> Links</a>
+    <a class="menu-item" href="analytics.html"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 13v5"/><path d="M12 9v9"/><path d="M17 5v13"/></svg> Analytics</a>
+    <a class="menu-item" href="schedule.html"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4"/><path d="M3 11h18"/></svg> Schedule</a>
+    <button id="logoutBtnMobile" class="btn danger" style="width:100%;margin-top:6px">Logout</button>
+  </div>
 </nav>
 
 <div class="wrap">
@@ -142,7 +177,7 @@
 
     <details class="legend">
       <summary>Icon legend</summary>
-      <div id="legendGrid" class="legend-grid"></div>
+      <div class="legend-grid" id="legendGrid"></div>
     </details>
 
     <div class="inputbar">
@@ -161,78 +196,129 @@
 <div id="toast" class="toast"></div>
 
 <script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import { getDatabase, ref, get, set, update, remove, query, orderByChild, equalTo } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-
 /* ===== Firebase ===== */
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getAuth, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getDatabase, ref, get, set, update, remove, query, orderByChild, equalTo, onValue, off } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
 const firebaseConfig = { apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e" };
 const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
-const app = initializeApp(firebaseConfig); const auth=getAuth(app); const db=getDatabase(app);
 
 /* ===== helpers ===== */
 const $=s=>document.querySelector(s);
-function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));}
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
 function toast(msg,err=false){const t=$("#toast");t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2200);}
 function sanitizeId(raw){ let id=(raw||'').replace(/[^A-Za-z0-9\-_]/g,'').slice(0,40); if(!id){ id=(raw||'').normalize('NFKD').replace(/[^\w\-]+/g,'').slice(0,40);} return id; }
 document.getElementById('brandLogo').style.backgroundImage=`url("${LOGO_URL}")`;
 
+/* ===== theme ===== */
+(function themeInit(){
+  const saved = localStorage.getItem('bfa_theme') || 'light';
+  if(saved==='dark') document.documentElement.setAttribute('data-theme','dark');
+  $("#themeBtn").addEventListener('click',()=>{
+    const dark = document.documentElement.getAttribute('data-theme')==='dark';
+    document.documentElement.setAttribute('data-theme', dark?'light':'dark');
+    localStorage.setItem('bfa_theme', dark?'light':'dark');
+  });
+})();
+
+/* ===== icons ===== */
 const I={
-  eye:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7"/><circle cx="12" cy="12" r="3"/></svg>`,
-  users:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><circle cx="9" cy="8" r="4"/><path d="M17 11a4 4 0 1 0-4-4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/><path d="M17 22c0-2 .8-3.8 2-5"/></svg>`,
-  edit:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>`,
-  swap:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M17 7H7l4-4M7 17h10l-4 4"/></svg>`,
-  trash:()=>`<svg class="icon icon-danger" viewBox="0 0 24 24" width="18" height="18"><path d="M3 6h18"/><path d="M8 6l1-2h6l1 2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,
-  open:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v7h-7"/></svg>`,
-  left:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M15 18l-6-6 6-6"/></svg>`,
-  right:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M9 6l6 6-6 6"/></svg>`,
-  vol:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M3 10v4h4l5 4V6l-5 4Z"/><path d="M16 9a3 3 0 0 1 0 6"/></svg>`,
-  mute:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M3 10v4h4l5 4V6l-5 4Z"/><path d="M2 2l20 20"/></svg>`
+  /* row action: SHOW TVs (not preview) */
+  monitor:()=>`<svg class="icon" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 22h8"/></svg>`,
+  eye:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7"/><circle cx="12" cy="12" r="3"/></svg>`,
+  users:()=>`<svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7"/><path d="M17 11a4 4 0 1 0-4-4"/><path d="M17 22c0-2 .8-3.8 2-5"/></svg>`,
+  edit:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>`,
+  swap:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="M17 7H7l4-4M7 17h10l-4 4"/></svg>`,
+  trash:()=>`<svg class="icon icon-danger" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6l1-2h6l1 2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,
+  open:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v7h-7"/></svg>`,
+  save:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="M4 4h12l4 4v12H4z"/><path d="M16 20v-6H8v6"/><path d="M8 4v5h6V4"/></svg>`,
+  link:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"/><path d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"/></svg>`,
+  prev:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="M11 18 5 12l6-6"/><path d="M19 18V6"/></svg>`,
+  next:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="m13 6 6 6-6 6"/><path d="M5 6v12"/></svg>`,
+  mute:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6l-5 4H3Z"/><path d="M22 9 16 15M16 9l6 6"/></svg>`
 };
 
-/* ===== auth gate + logout ===== */
-onAuthStateChanged(auth, async (user)=>{
-  if(!user){ location.href='home.html'; return; }
-  const u = (await get(ref(db, 'user/'+user.uid))).val()||{};
-  if(u.role!=='admin'){ document.body.innerHTML = `
-      <div style="padding:40px">
-        <div class="card"><h3>Not authorized</h3>
-        <div class="muted">Ask an admin to set your role to <b>admin</b> in the database.</div></div>
-      </div>`; return;
-  }
-  loadList();
-});
-$('#logoutBtn')?.addEventListener('click', ()=> signOut(auth).then(()=>location.href='home.html'));
-$('#logoutBtnMobile')?.addEventListener('click', ()=> signOut(auth).then(()=>location.href='home.html'));
-
-/* ===== legend content ===== */
+/* Legend */
 (function renderLegend(){
   const items=[
-    {icon:I.eye(),   title:'Preview TVs', desc:'Inline preview (keeps your admin login).'},
-    {icon:I.users(), title:'Users',       desc:'Show users under the card.'},
-    {icon:I.edit(),  title:'Edit name',   desc:'Change public dealership name.'},
-    {icon:I.swap(),  title:'Rename ID',   desc:'Migrate dealership ID & refs.'},
-    {icon:'URL',     title:'Edit URL',    desc:'Store a custom preview URL for each TV.'},
-    {icon:I.open(),  title:'Open tab',    desc:'Open preview in a new tab.'},
-    {icon:`<svg class="icon icon-danger" viewBox="0 0 24 24" width="18" height="18"><path d="M3 6h18"/><path d="M8 6l1-2h6l1 2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,  title:'Delete', desc:'Only if it has no TVs.'}
+    {icon:I.monitor(), title:'Show TVs',   desc:'Reveal TVs under the card.'},
+    {icon:I.eye(),     title:'Preview TV', desc:'Inline preview (safe, keeps admin).'},
+    {icon:I.link(),    title:'Change URL', desc:'Edit preview URL inside card.'},
+    {icon:I.users(),   title:'Users',      desc:'Show users below.'},
+    {icon:I.edit(),    title:'Edit name',  desc:'Change public name.'},
+    {icon:I.swap(),    title:'Rename ID',  desc:'Migrate ID & refs.'},
+    {icon:I.open(),    title:'Open tab',   desc:'Open preview in isolated tab.'},
+    {icon:`<svg class="icon icon-danger" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6l1-2h6l1 2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`, title:'Delete', desc:'Only if no TVs.'}
   ];
   const g = document.getElementById('legendGrid');
   g.innerHTML = items.map(i=>`
-    <div class="legend-item">
+    <div class="legend-tile">
       <button class="iconbtn" disabled>${i.icon}</button>
       <div><b>${i.title}</b><div class="muted">${i.desc}</div></div>
     </div>`).join('');
 })();
 
-/* ===== URL helpers ===== */
+/* ===== URL + preview helpers ===== */
 function defaultUrlForId(id){
   return `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(id)}.html`;
 }
-function isAbsoluteUrl(u){ try{ new URL(u); return true; }catch{ return false; } }
-function withEmbed(u){
-  try { const x=new URL(u); x.searchParams.set('embed','1'); return x.href; }
-  catch { return u + (u.includes('?')?'&':'?') + 'embed=1'; }
+function isAbsoluteUrl(u){ try{ return new URL(u), true; }catch{ return false; } }
+function forceDisableHlsWorkers(html){
+  html = html.replace(/enableWorker\s*:\s*true/gi, 'enableWorker:false');
+  html = html.replace(/new\s+Hls\(\s*\{\s*/g, m => `${m}enableWorker:false, `);
+  return html;
 }
+async function buildSafeBlobUrl(realUrl){
+  const res = await fetch(realUrl, {cache:'no-store'});
+  if(!res.ok) return null;
+  let html = await res.text();
+  const baseHref = realUrl.replace(/[^/]*$/, '');
+  html = html.replace(/<head([^>]*)>/i, (m,a)=>`<head${a}><base href="${baseHref}">`);
+  html = forceDisableHlsWorkers(html);
+  return URL.createObjectURL(new Blob([html], {type:'text/html'}));
+}
+async function openSafeTabFromUrl(url){
+  const u = isAbsoluteUrl(url) ? url : defaultUrlForId(url);
+  const blobUrl = await buildSafeBlobUrl(u);
+  if(!blobUrl){ toast('Could not build preview', true); return; }
+  const win = window.open(blobUrl, '_blank', 'noopener');
+  if(!win) toast('Popup blocked — enable popups', true);
+}
+
+/* ===== mobile menu ===== */
+(() => {
+  const ham=$("#hamburger"), menu=$("#navMenu");
+  const close=()=>{menu.classList.remove('open');ham?.setAttribute('aria-expanded','false');document.body.style.overflow='';};
+  const open =()=>{menu.classList.add('open');ham?.setAttribute('aria-expanded','true'); document.body.style.overflow='hidden';};
+  ham?.addEventListener('click',()=>menu.classList.contains('open')?close():open());
+  menu?.addEventListener('click',(e)=>{ if(e.target.closest('a')||e.target.id==='logoutBtnMobile') close(); });
+  window.addEventListener('resize',()=>{ if(window.innerWidth>820) close(); });
+})();
+
+/* ===== App init ===== */
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getDatabase(app);
+
+async function initAuth(){
+  try{ await setPersistence(auth, browserLocalPersistence); }catch(e){}
+  onAuthStateChanged(auth, async (user)=>{
+    if(!user){ location.href='home.html'; return; }
+    try{
+      const snap=await get(ref(db, 'user/'+user.uid));
+      const u = snap.val()||{};
+      if(u.role!=='admin'){ alert('Admin only'); await signOut(auth); location.href='home.html'; return; }
+      await loadList();
+    }catch(e){
+      toast('Could not verify admin role', true);
+      await loadList();
+    }
+  });
+  $('#logoutBtn')?.addEventListener('click', ()=> signOut(auth).then(()=>location.href='home.html'));
+  $('#logoutBtnMobile')?.addEventListener('click', ()=> signOut(auth).then(()=>location.href='home.html'));
+}
+initAuth();
 
 /* ===== data ops ===== */
 $("#reloadList").addEventListener('click', loadList);
@@ -240,15 +326,6 @@ $("#reloadList").addEventListener('click', loadList);
 async function countDisplaysForDealer(id){
   try{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; }
   catch(e){ return 0; }
-}
-
-async function listDisplays(dealershipId){
-  const snap=await get(query(ref(db,'displays'),orderByChild('dealership'),equalTo(dealershipId)));
-  return Object.keys(snap.val()||{}).sort();
-}
-async function getPreviewUrl(displayId){
-  const s=await get(ref(db,'displays/'+displayId)); const v=s.val()||{};
-  return v.previewUrl || defaultUrlForId(displayId);
 }
 
 async function loadList(){
@@ -269,11 +346,11 @@ async function loadList(){
         <span class="muted">${count} TV${count===1?'':'s'}</span>
       </div>
       <div class="actions">
-        <button class="iconbtn" title="Preview TVs" data-act="preview">${I.eye()}</button>
+        <button class="iconbtn" title="Show TVs" data-act="show">${I.monitor()}</button>
         <button class="iconbtn" title="Show users" data-act="users">${I.users()}</button>
         <button class="iconbtn" title="Edit public name" data-act="edit">${I.edit()}</button>
         <button class="iconbtn" title="Rename ID (migrate)" data-act="rename">${I.swap()}</button>
-        <button class="iconbtn" title="Open tab" data-act="safe">${I.open()}</button>
+        <button class="iconbtn" title="Open any TV in new tab" data-act="safe">${I.open()}</button>
         <button class="iconbtn danger" title="Delete" data-act="delete">${I.trash()}</button>
       </div>`;
     $("#list").appendChild(li);
@@ -285,9 +362,9 @@ async function loadList(){
     if(act==='edit') await editName(id);
     else if(act==='rename') await renameId(id);
     else if(act==='delete') await delDealer(id);
-    else if(act==='preview') await toggleDisplaysUnder(li,id);
+    else if(act==='show') await toggleDisplaysUnder(li,id);     /* this replaces the old "eye" here */
     else if(act==='users') await toggleUsersUnder(li,id);
-    else if(act==='safe') { const dids=await listDisplays(id); if(dids.length){ const u = await getPreviewUrl(dids[0]); window.open(withEmbed(u),'_blank','noopener'); } else toast('No TVs yet',true); }
+    else if(act==='safe')  await openSafeTabFromUrl(id);        /* open by dealership id fallback */
   };
 
   $("#addBtn").onclick = async ()=>{
@@ -323,14 +400,12 @@ async function renameId(oldId){
     await set(ref(db,'dealershipPublic/'+newId),{name:pubName});
     const meta=(await get(ref(db,'dealership/'+oldId))).val()||{}; if(Object.keys(meta).length) await set(ref(db,'dealership/'+newId),meta);
 
-    /* move displays */
     const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(oldId));
     const dMap=(await get(qRef)).val()||{}; for(const did of Object.keys(dMap)){
       await update(ref(db,'displays/'+did),{dealership:newId, timestamp:Date.now()});
       try{ await remove(ref(db,'dealership/'+oldId+'/displays/'+did)); }catch(_){}
       try{ await set(ref(db,'dealership/'+newId+'/displays/'+did),true); }catch(_){}
     }
-    /* update users */
     const users=(await get(ref(db,'user'))).val()||{}; for(const uid of Object.keys(users)){
       if(users[uid]?.dealershipId===oldId) await update(ref(db,'user/'+uid),{dealershipId:newId,dealershipName:pubName});
     }
@@ -347,8 +422,8 @@ async function delDealer(id){
        toast('Deleted'); loadList(); }catch(e){ toast('Delete failed',true); }
 }
 
-function closeSubs(li){ li.querySelectorAll('.sub').forEach(n=>n.remove()); }
-
+/* ===== Users panel ===== */
+function closeSubs(li){ li.querySelectorAll('.disp-card, .sub.users').forEach(n=>n.remove()); }
 async function toggleUsersUnder(li, id){
   const opened=li.querySelector('.sub.users'); if(opened){ opened.remove(); return; }
   closeSubs(li);
@@ -357,122 +432,158 @@ async function toggleUsersUnder(li, id){
     .sort((a,b)=> (a.role||'').localeCompare(b.role||'') || (a.name||'').localeCompare(b.name||''));
   const sub=document.createElement('div'); sub.className='sub users';
   sub.innerHTML=`<h4>Users</h4>
-    <ul class="sublist">
-      ${list.length? list.map(u=>`<li class="subitem"><span><b>${esc(u.name||'No name')}</b><br><span class="muted">${esc(u.email||'')}</span></span><span class="tag">${esc(u.role||'user')}</span></li>`).join(''): `<li class="subitem"><span class="muted">No users in this dealership.</span></li>`}
+    <ul style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">
+      ${list.length? list.map(u=>`<li style="display:flex;justify-content:space-between;gap:8px;border:1px solid var(--border);background:var(--tile);border-radius:10px;padding:8px">
+        <span><b>${esc(u.name||'No name')}</b><br><span class="muted">${esc(u.email||'')}</span></span><span class="tag">${esc(u.role||'user')}</span>
+      </li>`).join(''): `<li class="muted" style="padding:8px;border:1px solid var(--border);border-radius:10px">No users in this dealership.</li>`}
     </ul>`;
   li.appendChild(sub);
 }
 
+/* ===== Displays (merged card: preview + controls) ===== */
+const liveListeners = new Map(); // did -> {ref, cb}
+function unsubscribeDisplay(did){ const e = liveListeners.get(did); if(e){ off(e.ref, 'value', e.cb); liveListeners.delete(did); } }
+
 async function toggleDisplaysUnder(li, id){
-  const opened=li.querySelector('.sub.displays'); if(opened){ opened.remove(); return; }
+  // close existing
+  if(li.querySelector('.disp-card')){
+    li.querySelectorAll('.disp-card').forEach(card=>{
+      const did = card.getAttribute('data-did');
+      if(did) unsubscribeDisplay(did);
+      card.remove();
+    });
+    return;
+  }
   closeSubs(li);
+
   const snap=await get(query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)));
   const map=snap.val()||{}; const ids=Object.keys(map).sort();
-
-  const sub=document.createElement('div'); sub.className='sub displays';
-  sub.innerHTML=`<h4>Displays</h4>
-    ${ids.length? `<ul class="sublist">${
-      ids.map(did=>{
-        const safeId = esc(did);
-        return `<li class="subitem" data-did="${safeId}">
-          <div class="subleft"><div style="font-weight:700;margin-bottom:6px">${safeId}</div></div>
-          <div class="subright">
-            <button class="chipbtn" data-url="${safeId}">URL</button>
-            <button class="chipbtn" data-preview="${safeId}">Preview</button>
-            <button class="chipbtn" data-open="${safeId}">Open</button>
-          </div>
-        </li>`;
-      }).join('')
-    }</ul>` : `<div class="muted">No TVs yet.</div>`}
-    <div class="controlWrap">
-      <div class="remote">
-        <span class="pill">Display <b data-role="did">—</b></span>
-        <span class="pill">On channel <b data-role="ch">—</b></span>
-        <button class="iconbtn sm" data-prev aria-label="Previous channel">${I.left()}</button>
-        <button class="iconbtn sm" data-next aria-label="Next channel">${I.right()}</button>
-        <button class="iconbtn sm" data-mute aria-label="Mute toggle">${I.vol()}</button>
-        <span class="meter">
-          <input type="range" min="0" max="100" value="50" data-vol>
-          <span class="pill" data-role="voltxt">50%</span>
-        </span>
-        <button class="iconbtn sm" data-open aria-label="Open in new tab">${I.open()}</button>
-      </div>
-    </div>
-    <div class="iframeWrap" style="display:none"></div>`;
-  li.appendChild(sub);
-
-  // URL edit button
-  sub.querySelectorAll('[data-url]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      const did = btn.getAttribute('data-url');
-      const cur = await getPreviewUrl(did);
-      const next = prompt('Preview URL for '+did, cur);
-      if(!next || next===cur) return;
-      try{ await update(ref(db, 'displays/'+did), { previewUrl:next, timestamp:Date.now() }); toast('URL saved'); }
-      catch(e){ toast('Save failed', true); }
-    });
-  });
-
-  // Shared control references (inside this sub only)
-  const ctrlWrap = sub.querySelector('.controlWrap');
-  const didEl    = sub.querySelector('[data-role="did"]');
-  const chEl     = sub.querySelector('[data-role="ch"]');
-  const volRange = sub.querySelector('[data-vol]');
-  const volTxt   = sub.querySelector('[data-role="voltxt"]');
-  const muteBtn  = sub.querySelector('[data-mute]');
-
-  let currentDid = null, currentUrl = null, ch=1, vol=50, muted=true;
-
-  async function loadState(did){
-    try{ const s=await get(ref(db,'displays/'+did)); const v=s.val()||{};
-      ch=v.channel??1; vol=v.volume??50; muted = (v.muted!==undefined)?v.muted:true;
-      chEl.textContent=ch; volRange.value=vol; volTxt.textContent=(muted||vol===0)?'0%':(vol+'%');
-      muteBtn.innerHTML = muted?`${I.mute()}`:`${I.vol()}`;
-    }catch(e){}
+  if(!ids.length){
+    const card = document.createElement('div'); card.className='disp-card';
+    card.innerHTML = `<div class="muted">No TVs yet.</div>`;
+    li.appendChild(card); return;
   }
-  const send = async (patch)=>{ try{ await update(ref(db,'displays/'+currentDid), {...patch, timestamp:Date.now()}); }catch(e){} };
 
-  // Preview (shows controls and video)
-  sub.querySelectorAll('[data-preview]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      currentDid = btn.getAttribute('data-preview');
-      didEl.textContent = currentDid;
-      currentUrl = await getPreviewUrl(currentDid);
-      await loadState(currentDid);
+  for(const did of ids){
+    const data = map[did] || {};
+    const pvUrl = data.previewUrl || defaultUrlForId(did);
 
-      const wrap=sub.querySelector('.iframeWrap');
-      wrap.style.display='block';
-      wrap.innerHTML=`<iframe title="Preview ${esc(currentDid)}" src="${withEmbed(isAbsoluteUrl(currentUrl)?currentUrl:defaultUrlForId(currentUrl))}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
-      ctrlWrap.style.display='block';
+    const card = document.createElement('div'); 
+    card.className='disp-card'; card.setAttribute('data-did', did);
+    card.innerHTML = `
+      <div class="disp-head">
+        <div class="disp-title">${esc(did)}</div>
+        <div class="head-actions">
+          <button class="ctrl-btn" title="Change URL" data-urlbtn>${I.link()}</button>
+          <button class="ctrl-btn" title="Preview inline" data-preview>${I.eye()}</button>
+          <button class="ctrl-btn" title="Open in new tab (safe)" data-open>${I.open()}</button>
+        </div>
+      </div>
+
+      <div class="disp-grid">
+        <!-- Preview -->
+        <div class="preview-card">
+          <div class="iframeWrap" data-iframe></div>
+          <div class="url-pop" data-urlpop>
+            <input class="url-input" data-url value="${esc(pvUrl)}" placeholder="${esc(defaultUrlForId(did))}"/>
+            <button class="btn" data-urlsave>${I.save()} Save</button>
+            <button class="btn" data-urlcancel>Cancel</button>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="ctrl-card">
+          <div class="line">
+            <span class="pill-sm" data-chlabel>On channel ${Number(data.channel||1)}</span>
+            <button class="ctrl-btn" data-prev title="Previous">${I.prev()}</button>
+            <button class="ctrl-btn" data-next title="Next">${I.next()}</button>
+            <button class="ctrl-btn" data-mute title="Mute/Unmute">${I.mute()}</button>
+          </div>
+          <div class="line" style="width:100%">
+            <input type="range" min="0" max="100" value="${Number(data.volume??0)}" class="slider" data-vol style="--pct:${Number(data.volume??0)}%">
+            <span class="pct" data-pct>${Math.max(0,Number(data.volume??0))}%</span>
+          </div>
+        </div>
+      </div>
+    `;
+    li.appendChild(card);
+
+    /* Actions */
+    const iframeWrap = card.querySelector('[data-iframe]');
+    const urlBtn    = card.querySelector('[data-urlbtn]');
+    const urlPop    = card.querySelector('[data-urlpop]');
+    const urlInput  = card.querySelector('[data-url]');
+    const urlSave   = card.querySelector('[data-urlsave]');
+    const urlCancel = card.querySelector('[data-urlcancel]');
+
+    urlBtn.addEventListener('click', ()=>{ urlPop.classList.toggle('show'); if(urlPop.classList.contains('show')) urlInput.focus(); });
+    urlCancel.addEventListener('click', ()=> urlPop.classList.remove('show'));
+    urlSave.addEventListener('click', async ()=>{
+      const val = urlInput.value.trim() || defaultUrlForId(did);
+      try{
+        await update(ref(db,'displays/'+did), { previewUrl: val, timestamp: Date.now() });
+        toast('URL saved'); urlPop.classList.remove('show');
+      }catch(e){ toast('Save failed',true); }
     });
-  });
 
-  // Open in new tab
-  sub.querySelectorAll('[data-open]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      const did = btn.getAttribute('data-open');
-      const url = await getPreviewUrl(did);
-      window.open(withEmbed(isAbsoluteUrl(url)?url:defaultUrlForId(url)),'_blank','noopener');
+    // Preview inline (single, inside card)
+    card.querySelector('[data-preview]').addEventListener('click', async ()=>{
+      const url = (urlInput.value.trim() || defaultUrlForId(did));
+      iframeWrap.innerHTML = `<div class="muted" style="padding:10px">Loading…</div>`;
+      const blobUrl = await buildSafeBlobUrl(isAbsoluteUrl(url)?url:defaultUrlForId(url));
+      if(!blobUrl){ iframeWrap.innerHTML=`<div class="muted" style="padding:10px">Could not build preview.</div>`; return; }
+      iframeWrap.innerHTML = `<iframe src="${blobUrl}"
+        sandbox="allow-scripts allow-forms allow-pointer-lock allow-orientation-lock allow-presentation allow-popups allow-popups-to-escape-sandbox"
+        allow="autoplay; fullscreen; encrypted-media; picture-in-picture"></iframe>`;
     });
-  });
 
-  // Remote control handlers (operate on selected preview target)
-  sub.querySelector('[data-prev]').onclick = ()=>{ if(!currentDid) return; ch=Math.max(1,(ch|0)-1); chEl.textContent=ch; send({channel:ch}); };
-  sub.querySelector('[data-next]').onclick = ()=>{ if(!currentDid) return; ch=(ch|0)+1; chEl.textContent=ch; send({channel:ch}); };
-  volRange.oninput = ()=>{ if(!currentDid) return; const v=+volRange.value|0; vol=v; volTxt.textContent=(muted||v===0)?'0%':(v+'%'); };
-  volRange.onchange= ()=>{ if(!currentDid) return; const v=+volRange.value|0; vol=v; send({volume:v}); };
-  muteBtn.onclick   = ()=>{ if(!currentDid) return; muted=!muted; muteBtn.innerHTML = muted?`${I.mute()}`:`${I.vol()}`; volTxt.textContent=(muted||(+volRange.value===0))?'0%':(volRange.value+'%'); send({muted}); };
+    // Open in new tab (safe)
+    card.querySelector('[data-open]').addEventListener('click', ()=> openSafeTabFromUrl(urlInput.value.trim() || did));
+
+    // Remote controls
+    const chLabel = card.querySelector('[data-chlabel]');
+    const prevBtn = card.querySelector('[data-prev]');
+    const nextBtn = card.querySelector('[data-next]');
+    const muteBtn = card.querySelector('[data-mute]');
+    const vol = card.querySelector('[data-vol]');
+    const pct = card.querySelector('[data-pct]');
+
+    prevBtn.addEventListener('click', async ()=>{
+      const snap = await get(ref(db,'displays/'+did));
+      const cur  = snap.val() || {};
+      const next = Math.max(1, Number(cur.channel||1)-1);
+      await update(ref(db,'displays/'+did), { channel: next, timestamp: Date.now() });
+    });
+    nextBtn.addEventListener('click', async ()=>{
+      const snap = await get(ref(db,'displays/'+did));
+      const cur  = snap.val() || {};
+      const next = Number(cur.channel||1)+1;
+      await update(ref(db,'displays/'+did), { channel: next, timestamp: Date.now() });
+    });
+    muteBtn.addEventListener('click', async ()=>{
+      const snap = await get(ref(db,'displays/'+did));
+      const cur  = snap.val() || {};
+      await update(ref(db,'displays/'+did), { muted: !cur.muted, timestamp: Date.now() });
+    });
+    vol.addEventListener('input', ()=>{
+      pct.textContent = vol.value+'%';
+      vol.style.setProperty('--pct', vol.value+'%');
+    });
+    vol.addEventListener('change', async ()=>{
+      await update(ref(db,'displays/'+did), { volume: Number(vol.value), muted: Number(vol.value)===0, timestamp: Date.now() });
+    });
+
+    // Live sync for this display
+    const r = ref(db,'displays/'+did);
+    const cb = (snap)=>{
+      const d = snap.val() || {};
+      chLabel.textContent = `On channel ${Number(d.channel||1)}`;
+      const vv = Math.max(0, Number(d.volume||0));
+      vol.value = vv; pct.textContent = vv+'%'; vol.style.setProperty('--pct', vv+'%');
+    };
+    onValue(r, cb); liveListeners.set(did,{ref:r,cb});
+  }
 }
-
-/* minimal mobile menu */
-(() => {
-  const ham=document.getElementById('hamburger'),menu=document.getElementById('navMenu');
-  const close=()=>{menu.classList.remove('open');ham?.setAttribute('aria-expanded','false');document.body.style.overflow='';};
-  const open =()=>{menu.classList.add('open');ham?.setAttribute('aria-expanded','true'); document.body.style.overflow='hidden';};
-  ham?.addEventListener('click',()=>menu.classList.contains('open')?close():open());
-  menu?.addEventListener('click',(e)=>{ if(e.target.matches('[data-close]')||e.target.closest('a')||e.target.id==='logoutBtnMobile') close(); });
-  window.addEventListener('resize',()=>{ if(window.innerWidth>900) close(); });
-})();
 </script>
 </body>
 </html>
