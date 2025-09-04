@@ -45,9 +45,9 @@
   .muted{color:var(--muted);font-size:12px}
   details.legend{margin:8px 0} details.legend summary{cursor:pointer;font-weight:800}
 
-  /* Legend grid */
+  /* Legend grid (simplified – white tiles) */
   .legend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:8px}
-  .legend-item{display:flex;gap:10px;align-items:flex-start;background:var(--tile);border:1px solid var(--border);border-radius:12px;padding:10px}
+  .legend-item{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px}
   .legend-item .iconbtn{flex:0 0 36px}
 
   /* Inputs */
@@ -162,7 +162,7 @@ function toast(msg,err=false){const t=$("#toast");t.textContent=msg;t.className=
 function sanitizeId(raw){ let id=(raw||'').replace(/[^A-Za-z0-9\-_]/g,'').slice(0,40); if(!id){ id=(raw||'').normalize('NFKD').replace(/[^\w\-]+/g,'').slice(0,40);} return id; }
 document.getElementById('brandLogo').style.backgroundImage=`url("${LOGO_URL}")`;
 
-/* ===== minimalist icons (same ones used on buttons) ===== */
+/* ===== minimalist icons ===== */
 const I={
   eye:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7"/><circle cx="12" cy="12" r="3"/></svg>`,
   users:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><circle cx="9" cy="8" r="4"/><path d="M17 11a4 4 0 1 0-4-4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/><path d="M17 22c0-2 .8-3.8 2-5"/></svg>`,
@@ -187,7 +187,7 @@ onAuthStateChanged(auth, async (user)=>{
 $('#logoutBtn')?.addEventListener('click', ()=> signOut(auth).then(()=>location.href='home.html'));
 $('#logoutBtnMobile')?.addEventListener('click', ()=> signOut(auth).then(()=>location.href='home.html'));
 
-/* ===== legend content (same SVGs) ===== */
+/* ===== legend content ===== */
 (function renderLegend(){
   const items=[
     {icon:I.eye(),   title:'Preview TVs', desc:'Open a live preview inline (iframe).'},
@@ -195,7 +195,7 @@ $('#logoutBtnMobile')?.addEventListener('click', ()=> signOut(auth).then(()=>loc
     {icon:I.edit(),  title:'Edit name',   desc:'Change public dealership name.'},
     {icon:I.swap(),  title:'Rename ID',   desc:'Migrate dealership ID and update references.'},
     {icon:I.trash(), title:'Delete',      desc:'Remove dealership (only if it has no TVs).'},
-    {icon:I.open(),  title:'Open tab',    desc:'Opens an isolated tab (sandboxed) so your admin login stays intact.'}
+    {icon:I.open(),  title:'Open tab',    desc:'Isolated tab (sandboxed) — admin login stays intact.'}
   ];
   const g = document.getElementById('legendGrid');
   g.innerHTML = items.map(i=>`
@@ -205,21 +205,30 @@ $('#logoutBtnMobile')?.addEventListener('click', ()=> signOut(auth).then(()=>loc
     </div>`).join('');
 })();
 
-/* ===== data ops ===== */
-$("#reloadList").addEventListener('click', loadList);
+/* ===== utilities ===== */
 
-async function countDisplaysForDealer(id){
-  try{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; }
-  catch(e){ return 0; }
-}
-function previewUrlFor(displayId){
-  /* Use your per-display files */
-  return `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(displayId)}.html`;
+/* Prefer /Displays/{ID}.html, but fall back to /{ID}.html if needed. */
+async function resolvePreviewUrl(id){
+  const paths = [
+    `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(id)}.html`,
+    `https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html`,
+    // tolerate missing ".html" just in case
+    `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(id)}`,
+    `https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}`
+  ];
+  for(const url of paths){
+    try{
+      const r = await fetch(url, {method:'HEAD', cache:'no-store'});
+      if(r.ok) return url;
+    }catch(e){}
+  }
+  return null;
 }
 
-/* open in a truly isolated new tab using a sandboxed iframe wrapper (Blob) */
-function openIsolatedTab(id){
-  const url = previewUrlFor(id);
+/* truly isolated new-tab wrapper (sandboxed iframe inside a Blob page) */
+async function openIsolatedTab(id){
+  const url = await resolvePreviewUrl(id);
+  if(!url){ toast('Preview file not found', true); return; }
   const html = `<!doctype html><html><head><meta charset="utf-8">
     <title>Preview — ${id}</title>
     <meta name="referrer" content="no-referrer">
@@ -234,6 +243,13 @@ function openIsolatedTab(id){
   const blob = new Blob([html], {type:'text/html'});
   const win = window.open(URL.createObjectURL(blob), '_blank', 'noopener');
   if(!win) toast('Popup blocked — enable popups', true);
+}
+
+$("#reloadList").addEventListener('click', loadList);
+
+async function countDisplaysForDealer(id){
+  try{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; }
+  catch(e){ return 0; }
 }
 
 async function loadList(){
@@ -365,19 +381,28 @@ async function toggleDisplaysUnder(li, id){
     <div class="iframeWrap" style="display:none"></div>`;
   li.appendChild(sub);
 
-  /* inline preview (sandboxed, isolated — won’t affect admin auth) */
+  /* inline preview (sandboxed & isolated — won’t affect admin auth) */
   sub.querySelectorAll('[data-preview]').forEach(btn=>{
-    btn.addEventListener('click',()=>{
+    btn.addEventListener('click', async ()=>{
       const did=btn.getAttribute('data-preview');
       const wrap=sub.querySelector('.iframeWrap'); wrap.style.display='block';
-      wrap.innerHTML=`<iframe
-          title="Preview ${did}"
-          src="${previewUrlFor(did)}"
-          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-          sandbox="allow-scripts allow-forms allow-modals allow-pointer-lock allow-presentation allow-popups allow-popups-to-escape-sandbox"
-          referrerpolicy="no-referrer"
-          allowfullscreen
-        ></iframe>`;
+      wrap.innerHTML=`<div class="muted" style="padding:14px">Loading preview…</div>`;
+      const url = await resolvePreviewUrl(did);
+      if(url){
+        wrap.innerHTML=`<iframe
+            title="Preview ${did}"
+            src="${url}"
+            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+            sandbox="allow-scripts allow-forms allow-modals allow-pointer-lock allow-presentation allow-popups allow-popups-to-escape-sandbox"
+            referrerpolicy="no-referrer"
+            allowfullscreen
+          ></iframe>`;
+      }else{
+        wrap.innerHTML=`<div class="muted" style="padding:14px">
+          File not found for <b>${esc(did)}</b>.<br/>
+          Expected <code>/Displays/${esc(did)}.html</code> or <code>/${esc(did)}.html</code>.
+        </div>`;
+      }
     });
   });
 }
