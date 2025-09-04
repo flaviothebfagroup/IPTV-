@@ -7,7 +7,7 @@
 <style>
   :root{
     --bg:#f5f5f7;--fg:#111;--muted:#6e6e73;--panel:#fff;--border:rgba(0,0,0,.12);
-    --tile:#f2f2f7;--tileActive:#ededf2;--shadow:0 14px 36px rgba(0,0,0,.10);
+    --tile:#f7f7fa;--tileActive:#ededf2;--shadow:0 14px 36px rgba(0,0,0,.10);
     --accent:#ff9500;--danger:#e11d48;
     --rad:16px; --pad:16px; --gap:10px; --btnH:40px; --btnFS:14px; --stroke:#111;
   }
@@ -25,6 +25,9 @@
   .btn:hover, a.btn:hover{border-color:var(--accent);background:var(--tileActive)}
   .btn.danger{background:transparent;border-color:rgba(225,29,72,.35);color:var(--danger)}
   .btn.danger:hover{background:#fff1f3;border-color:var(--danger)}
+  /* current page */
+  .inline-actions .btn[href="dealerships.html"]{outline:2px solid var(--accent);background:#fff}
+
   #hamburger{margin-left:auto;display:none;align-items:center;justify-content:center;height:36px;width:40px;border-radius:10px;border:1px solid var(--border);background:transparent;cursor:pointer}
 
   /* Mobile menu */
@@ -70,25 +73,32 @@
   /* Sub-panels */
   .sub{grid-column:1/-1;margin-top:8px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px}
   .sub h4{margin:0 0 8px}
-  .sublist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px} /* <= narrower to avoid mobile overflow */
-  .subitem{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;background:var(--tile);border:1px solid var(--border);border-radius:10px;padding:10px}
-  .subleft{flex:1 1 auto;min-width:0}
-  .subright{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-  .chipbtn{height:32px;padding:0 12px;border-radius:9999px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:800;cursor:pointer}
-  .chipbtn:hover{border-color:var(--accent)}
 
-  /* Remote controls OUTSIDE the video */
-  .controlWrap{display:none;margin-top:8px}
-  .remote{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px;background:var(--tile);border:1px solid var(--border);border-radius:12px}
-  .remote .pill{height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:9999px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:800}
+  /* Unified TV cards */
+  .tvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;margin-top:6px}
+  @media (max-width:420px){ .tvgrid{grid-template-columns:1fr} }
+  .tvcard{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:10px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .tvhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .tvtitle{font-weight:900;margin-right:auto}
+  .chip{height:32px;padding:0 12px;border-radius:9999px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:800;cursor:pointer}
+  .chip:hover{border-color:var(--accent)}
+  .remote{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--tile);border:1px solid var(--border);border-radius:12px;padding:8px}
+  .pill{height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:9999px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:800}
   .iconbtn.sm{height:28px;width:28px;border-radius:999px;background:#fff}
   .meter{display:flex;align-items:center;gap:6px}
   .meter input[type="range"]{width:140px;height:6px;border-radius:999px;-webkit-appearance:none;background:#eee;border:1px solid var(--border)}
   .meter input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);border:1px solid #d7d7d7}
 
-  /* Preview frame */
-  .iframeWrap{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9;margin-top:8px}
-  .iframeWrap iframe{width:100%;height:100%;border:0;background:#000}
+  .tvframe{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9}
+  .tvframe iframe{width:100%;height:100%;border:0;background:#000}
 
   @media (max-width:680px){.inline-actions{display:none}#hamburger{display:inline-flex}}
   @media (min-width:901px){ #navMenu{display:none!important} }
@@ -107,7 +117,7 @@
   </a>
   <div class="inline-actions" aria-label="Primary">
     <a class="btn" href="home.html">Home</a>
-    <a class="btn" href="dealerships.html" style="outline:2px solid var(--accent);background:#fff">Dealerships</a>
+    <a class="btn" href="dealerships.html">Dealerships</a>
     <a class="btn" href="displays.html">Displays</a>
     <a class="btn" href="users.html">Users</a>
     <a class="btn" href="links.html">Links</a>
@@ -177,6 +187,7 @@ function toast(msg,err=false){const t=$("#toast");t.textContent=msg;t.className=
 function sanitizeId(raw){ let id=(raw||'').replace(/[^A-Za-z0-9\-_]/g,'').slice(0,40); if(!id){ id=(raw||'').normalize('NFKD').replace(/[^\w\-]+/g,'').slice(0,40);} return id; }
 document.getElementById('brandLogo').style.backgroundImage=`url("${LOGO_URL}")`;
 
+/* icons */
 const I={
   eye:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7"/><circle cx="12" cy="12" r="3"/></svg>`,
   users:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><circle cx="9" cy="8" r="4"/><path d="M17 11a4 4 0 1 0-4-4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/><path d="M17 22c0-2 .8-3.8 2-5"/></svg>`,
@@ -241,10 +252,9 @@ async function countDisplaysForDealer(id){
   try{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; }
   catch(e){ return 0; }
 }
-
 async function listDisplays(dealershipId){
   const snap=await get(query(ref(db,'displays'),orderByChild('dealership'),equalTo(dealershipId)));
-  return Object.keys(snap.val()||{}).sort();
+  return Object.keys(s.val()||{}).sort();
 }
 async function getPreviewUrl(displayId){
   const s=await get(ref(db,'displays/'+displayId)); const v=s.val()||{};
@@ -273,7 +283,7 @@ async function loadList(){
         <button class="iconbtn" title="Show users" data-act="users">${I.users()}</button>
         <button class="iconbtn" title="Edit public name" data-act="edit">${I.edit()}</button>
         <button class="iconbtn" title="Rename ID (migrate)" data-act="rename">${I.swap()}</button>
-        <button class="iconbtn" title="Open tab" data-act="safe">${I.open()}</button>
+        <button class="iconbtn" title="Open first TV in new tab" data-act="safe">${I.open()}</button>
         <button class="iconbtn danger" title="Delete" data-act="delete">${I.trash()}</button>
       </div>`;
     $("#list").appendChild(li);
@@ -357,111 +367,100 @@ async function toggleUsersUnder(li, id){
     .sort((a,b)=> (a.role||'').localeCompare(b.role||'') || (a.name||'').localeCompare(b.name||''));
   const sub=document.createElement('div'); sub.className='sub users';
   sub.innerHTML=`<h4>Users</h4>
-    <ul class="sublist">
-      ${list.length? list.map(u=>`<li class="subitem"><span><b>${esc(u.name||'No name')}</b><br><span class="muted">${esc(u.email||'')}</span></span><span class="tag">${esc(u.role||'user')}</span></li>`).join(''): `<li class="subitem"><span class="muted">No users in this dealership.</span></li>`}
-    </ul>`;
+    <div class="tvgrid">
+      ${list.length? list.map(u=>`<div class="tvcard"><div class="tvhead"><div class="tvtitle">${esc(u.name||'No name')}</div><span class="pill">${esc(u.role||'user')}</span></div><div class="muted">${esc(u.email||'')}</div></div>`).join(''): `<div class="muted">No users in this dealership.</div>`}
+    </div>`;
   li.appendChild(sub);
+}
+
+/* Build one unified TV card */
+function buildTvCard(did){
+  const card=document.createElement('div'); card.className='tvcard'; card.dataset.did=did;
+  card.innerHTML=`
+    <div class="tvhead">
+      <div class="tvtitle">${esc(did)}</div>
+      <button class="chip" data-url>URL</button>
+      <button class="chip" data-preview>Preview</button>
+      <button class="chip" data-open>Open</button>
+    </div>
+    <div class="remote">
+      <span class="pill">On channel <b data-ch>—</b></span>
+      <button class="iconbtn sm" data-prev aria-label="Previous channel">${I.left()}</button>
+      <button class="iconbtn sm" data-next aria-label="Next channel">${I.right()}</button>
+      <button class="iconbtn sm" data-mute aria-label="Mute toggle">${I.vol()}</button>
+      <span class="meter"><input type="range" min="0" max="100" value="50" data-vol><span class="pill" data-voltxt>50%</span></span>
+    </div>
+    <div class="tvframe" hidden></div>
+  `;
+
+  const chEl = card.querySelector('[data-ch]');
+  const volRange = card.querySelector('[data-vol]');
+  const volTxt = card.querySelector('[data-voltxt]');
+  const muteBtn = card.querySelector('[data-mute]');
+  const frame = card.querySelector('.tvframe');
+
+  let ch=1, vol=50, muted=true, currentUrl=null;
+
+  const loadState = async ()=>{
+    try{ const s=await get(ref(db,'displays/'+did)); const v=s.val()||{};
+      ch=v.channel??1; vol=v.volume??50; muted=(v.muted!==undefined)?v.muted:true;
+      chEl.textContent=ch; volRange.value=vol; volTxt.textContent=(muted||vol===0)?'0%':(vol+'%');
+      muteBtn.innerHTML = muted?`${I.mute()}`:`${I.vol()}`;
+    }catch(e){}
+  };
+
+  const send = async (patch)=>{ try{ await update(ref(db,'displays/'+did), {...patch, timestamp:Date.now()}); }catch(e){} };
+
+  // URL
+  card.querySelector('[data-url]').onclick = async ()=>{
+    const cur = currentUrl || await getPreviewUrl(did);
+    const next = prompt('Preview URL for '+did, cur);
+    if(!next || next===cur) return;
+    try{ await update(ref(db, 'displays/'+did), { previewUrl:next, timestamp:Date.now() }); currentUrl=next; toast('URL saved'); }
+    catch(e){ toast('Save failed', true); }
+  };
+
+  // Preview
+  card.querySelector('[data-preview]').onclick = async ()=>{
+    await loadState();
+    if(!currentUrl) currentUrl = await getPreviewUrl(did);
+    frame.hidden=false;
+    frame.innerHTML = `<iframe title="Preview ${esc(did)}" src="${withEmbed(isAbsoluteUrl(currentUrl)?currentUrl:defaultUrlForId(currentUrl))}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+  };
+
+  // Open in new tab
+  card.querySelector('[data-open]').onclick = async ()=>{
+    const u = currentUrl || await getPreviewUrl(did);
+    window.open(withEmbed(isAbsoluteUrl(u)?u:defaultUrlForId(u)),'_blank','noopener');
+  };
+
+  // Remote
+  card.querySelector('[data-prev]').onclick = ()=>{ ch=Math.max(1,(ch|0)-1); chEl.textContent=ch; send({channel:ch}); };
+  card.querySelector('[data-next]').onclick = ()=>{ ch=(ch|0)+1; chEl.textContent=ch; send({channel:ch}); };
+  volRange.oninput = ()=>{ const v=+volRange.value|0; vol=v; volTxt.textContent=(muted||v===0)?'0%':(v+'%'); };
+  volRange.onchange= ()=>{ const v=+volRange.value|0; vol=v; send({volume:v}); };
+  muteBtn.onclick   = ()=>{ muted=!muted; muteBtn.innerHTML = muted?`${I.mute()}`:`${I.vol()}`; volTxt.textContent=(muted||(+volRange.value===0))?'0%':(volRange.value+'%'); send({muted}); };
+
+  // Initialize state once for the labels
+  loadState();
+  return card;
 }
 
 async function toggleDisplaysUnder(li, id){
   const opened=li.querySelector('.sub.displays'); if(opened){ opened.remove(); return; }
   closeSubs(li);
-  const snap=await get(query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)));
-  const map=snap.val()||{}; const ids=Object.keys(map).sort();
+
+  const dids = await listDisplays(id);
 
   const sub=document.createElement('div'); sub.className='sub displays';
   sub.innerHTML=`<h4>Displays</h4>
-    ${ids.length? `<ul class="sublist">${
-      ids.map(did=>{
-        const safeId = esc(did);
-        return `<li class="subitem" data-did="${safeId}">
-          <div class="subleft"><div style="font-weight:700;margin-bottom:6px">${safeId}</div></div>
-          <div class="subright">
-            <button class="chipbtn" data-url="${safeId}">URL</button>
-            <button class="chipbtn" data-preview="${safeId}">Preview</button>
-            <button class="chipbtn" data-open="${safeId}">Open</button>
-          </div>
-        </li>`;
-      }).join('')
-    }</ul>` : `<div class="muted">No TVs yet.</div>`}
-    <div class="controlWrap">
-      <div class="remote">
-        <span class="pill">Display <b data-role="did">—</b></span>
-        <span class="pill">On channel <b data-role="ch">—</b></span>
-        <button class="iconbtn sm" data-prev aria-label="Previous channel">${I.left()}</button>
-        <button class="iconbtn sm" data-next aria-label="Next channel">${I.right()}</button>
-        <button class="iconbtn sm" data-mute aria-label="Mute toggle">${I.vol()}</button>
-        <span class="meter">
-          <input type="range" min="0" max="100" value="50" data-vol>
-          <span class="pill" data-role="voltxt">50%</span>
-        </span>
-        <button class="iconbtn sm" data-open aria-label="Open in new tab">${I.open()}</button>
-      </div>
-    </div>
-    <div class="iframeWrap" style="display:none"></div>`;
+                 ${dids.length? `<div class="tvgrid"></div>` : `<div class="muted">No TVs yet.</div>`}`;
   li.appendChild(sub);
 
-  // URL edit button
-  sub.querySelectorAll('[data-url]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      const did = btn.getAttribute('data-url');
-      const cur = await getPreviewUrl(did);
-      const next = prompt('Preview URL for '+did, cur);
-      if(!next || next===cur) return;
-      try{ await update(ref(db, 'displays/'+did), { previewUrl:next, timestamp:Date.now() }); toast('URL saved'); }
-      catch(e){ toast('Save failed', true); }
-    });
-  });
-
-  // Shared control references (inside this sub only)
-  const ctrlWrap = sub.querySelector('.controlWrap');
-  const didEl    = sub.querySelector('[data-role="did"]');
-  const chEl     = sub.querySelector('[data-role="ch"]');
-  const volRange = sub.querySelector('[data-vol]');
-  const volTxt   = sub.querySelector('[data-role="voltxt"]');
-  const muteBtn  = sub.querySelector('[data-mute]');
-
-  let currentDid = null, currentUrl = null, ch=1, vol=50, muted=true;
-
-  async function loadState(did){
-    try{ const s=await get(ref(db,'displays/'+did)); const v=s.val()||{};
-      ch=v.channel??1; vol=v.volume??50; muted = (v.muted!==undefined)?v.muted:true;
-      chEl.textContent=ch; volRange.value=vol; volTxt.textContent=(muted||vol===0)?'0%':(vol+'%');
-      muteBtn.innerHTML = muted?`${I.mute()}`:`${I.vol()}`;
-    }catch(e){}
+  const grid = sub.querySelector('.tvgrid');
+  for(const did of dids){
+    grid.appendChild(buildTvCard(did));
   }
-  const send = async (patch)=>{ try{ await update(ref(db,'displays/'+currentDid), {...patch, timestamp:Date.now()}); }catch(e){} };
-
-  // Preview (shows controls and video)
-  sub.querySelectorAll('[data-preview]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      currentDid = btn.getAttribute('data-preview');
-      didEl.textContent = currentDid;
-      currentUrl = await getPreviewUrl(currentDid);
-      await loadState(currentDid);
-
-      const wrap=sub.querySelector('.iframeWrap');
-      wrap.style.display='block';
-      wrap.innerHTML=`<iframe title="Preview ${esc(currentDid)}" src="${withEmbed(isAbsoluteUrl(currentUrl)?currentUrl:defaultUrlForId(currentUrl))}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
-      ctrlWrap.style.display='block';
-    });
-  });
-
-  // Open in new tab
-  sub.querySelectorAll('[data-open]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      const did = btn.getAttribute('data-open');
-      const url = await getPreviewUrl(did);
-      window.open(withEmbed(isAbsoluteUrl(url)?url:defaultUrlForId(url)),'_blank','noopener');
-    });
-  });
-
-  // Remote control handlers (operate on selected preview target)
-  sub.querySelector('[data-prev]').onclick = ()=>{ if(!currentDid) return; ch=Math.max(1,(ch|0)-1); chEl.textContent=ch; send({channel:ch}); };
-  sub.querySelector('[data-next]').onclick = ()=>{ if(!currentDid) return; ch=(ch|0)+1; chEl.textContent=ch; send({channel:ch}); };
-  volRange.oninput = ()=>{ if(!currentDid) return; const v=+volRange.value|0; vol=v; volTxt.textContent=(muted||v===0)?'0%':(v+'%'); };
-  volRange.onchange= ()=>{ if(!currentDid) return; const v=+volRange.value|0; vol=v; send({volume:v}); };
-  muteBtn.onclick   = ()=>{ if(!currentDid) return; muted=!muted; muteBtn.innerHTML = muted?`${I.mute()}`:`${I.vol()}`; volTxt.textContent=(muted||(+volRange.value===0))?'0%':(volRange.value+'%'); send({muted}); };
 }
 
 /* minimal mobile menu */
