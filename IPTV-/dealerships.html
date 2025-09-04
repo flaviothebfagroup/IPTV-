@@ -20,38 +20,49 @@
 
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
-
   a{color:inherit;text-decoration:none}
   .muted{color:var(--muted);font-size:12px}
-  .tag{padding:2px 8px;border:1px solid var(--border);border-radius:9999px;background:transparent;font-size:12px;color:var(--muted)}
 
-  /* ===== Topbar / Nav ===== */
-  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--border)}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:900}
-  .brand-title{letter-spacing:.2px}
+  /* ===== Topbar (centered nav) ===== */
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+    gap:10px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--border)
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-weight:900;justify-self:start}
   .logo{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--tile) center/cover no-repeat}
 
-  .nav{display:flex;gap:8px;align-items:center;margin-left:auto;flex-wrap:wrap}
-  .pill{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);font-weight:700}
-  .pill:hover{border-color:var(--accent)}
-  .pill.active{outline:2px solid var(--accent); outline-offset:0; background:var(--panel)}
+  .nav-center{justify-self:center;display:flex;gap:12px;align-items:center}
+  .navlink{
+    display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;border:1px solid transparent;
+    font-weight:800;opacity:.9
+  }
+  .navlink:hover{opacity:1;border-color:var(--border)}
+  .navlink.active{outline:2px solid var(--accent);outline-offset:0;background:var(--panel)}
+  .nav-icon{width:18px;height:18px;stroke:var(--stroke);stroke-width:2;fill:none}
+  .nav-right{justify-self:end;display:flex;gap:8px;align-items:center}
   .ghost{height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--border);background:transparent;cursor:pointer}
   .ghost:hover{border-color:var(--accent)}
   .ghost svg{pointer-events:none}
+
+  /* Mobile menu (fallback) */
+  #hamburger{display:none;align-items:center;justify-content:center;height:36px;width:40px;border-radius:10px;border:1px solid var(--border);background:transparent;cursor:pointer}
+  #navMenu{display:none;position:fixed;inset:0;z-index:60;background:var(--bg);overflow:auto;padding:18px}
+  #navMenu.open{display:block}
+  .menu-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .menu a,.menu button{display:flex;align-items:center;gap:10px;width:100%;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--panel);margin:6px 0}
+  .menu .active{outline:2px solid var(--accent)}
 
   /* ===== Shell ===== */
   .wrap{max-width:1100px;margin:10px auto 40px;padding:18px}
   .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:var(--pad);box-shadow:var(--shadow)}
   details.legend{margin:8px 0} details.legend summary{cursor:pointer;font-weight:800}
-
-  /* Legend (simple, white tiles) */
   .legend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:8px}
   .legend-tile{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px}
-  .legend-tile .iconbtn{flex:0 0 36px}
 
-  /* Inputs / Buttons */
+  /* Inputs / buttons */
   .inputbar{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap}
-  .input{flex:1;min-width:220px;height:var(--btnH);padding:0 14px;background:transparent;border:1px solid var(--border);border-radius:9999px;color:var(--fg);font-size:var(--btnFS);line-height:1;outline:none}
+  .input{flex:1;min-width:220px;height:var(--btnH);padding:0 14px;background:transparent;border:1px solid var(--border);border-radius:9999px;color:var(--fg);font-size:var(--btnFS)}
   .input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:var(--btnH);padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);font-weight:800;cursor:pointer}
   .btn:hover{border-color:var(--accent)}
@@ -62,6 +73,7 @@
   .list{list-style:none;margin:14px 0 0;padding:0}
   .item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;background:var(--tile);border:1px solid var(--border);border-radius:16px;padding:12px;margin:10px 0}
   .title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .tag{padding:2px 8px;border:1px solid var(--border);border-radius:9999px;background:transparent;font-size:12px;color:var(--muted)}
   .actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
   .iconbtn{height:36px;width:36px;padding:0;border-radius:10px;border:1px solid var(--border);background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
   .iconbtn:hover{border-color:var(--accent);background:var(--panel)}
@@ -70,64 +82,90 @@
   .icon-danger{stroke:#e11d48}
   .iconbtn svg{pointer-events:none}
 
-  /* Sub-panels for displays */
-  .sub{grid-column:1/-1;margin-top:8px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px}
-  .sub h4{margin:0 0 8px}
-  .disp-row{display:grid;grid-template-columns:360px 1fr;gap:12px}
-  @media (max-width:880px){ .disp-row{grid-template-columns:1fr} }
-
-  /* Left: control card */
-  .ctrl-card{border:1px solid var(--border);background:var(--tile);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px}
-  .ctrl-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
-  .ctrl-title{font-weight:900}
-  .chip{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 10px;border-radius:9999px;border:1px solid var(--border);background:var(--panel);font-weight:700}
-  .url-chip{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
-  .ctrl-line{display:flex;align-items:center;gap:8px}
-  .pill-sm{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:9999px;background:var(--panel);font-weight:800}
+  /* Display card (merged preview + controls) */
+  .disp-card{grid-column:1/-1;border:1px solid var(--border);border-radius:14px;padding:12px;background:var(--panel);margin-top:8px}
+  .disp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+  .disp-title{font-weight:900}
+  .head-actions{display:flex;gap:6px}
   .ctrl-btn{height:32px;width:32px;border-radius:10px;border:1px solid var(--border);background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
   .ctrl-btn:hover{border-color:var(--accent)}
+  .ctrl-btn svg{pointer-events:none}
+
+  .disp-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:12px}
+  @media (max-width:900px){ .disp-grid{grid-template-columns:1fr} }
+
+  .preview-card{border:1px solid var(--border);background:var(--tile);border-radius:12px;padding:10px}
+  .iframeWrap{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#000;aspect-ratio:16/9}
+  .iframeWrap iframe{width:100%;height:100%;border:0}
+
+  .ctrl-card{border:1px solid var(--border);background:var(--tile);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:10px}
+  .line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .pill-sm{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:9999px;background:var(--panel);font-weight:800}
   .slider{appearance:none;width:100%;height:8px;border-radius:999px;background:linear-gradient(90deg,var(--accent) var(--pct,0%), rgba(127,127,127,.25) 0);border:1px solid var(--border)}
   .slider::-webkit-slider-thumb{appearance:none;width:18px;height:18px;border-radius:50%;background:var(--panel);border:2px solid var(--accent)}
   .pct{min-width:34px;text-align:right;font-weight:800}
 
-  /* Right: preview card */
-  .preview-card{border:1px solid var(--border);background:var(--tile);border-radius:14px;padding:10px}
-  .iframeWrap{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9}
-  .iframeWrap iframe{width:100%;height:100%;border:0}
+  /* URL pop-in (inside preview boundaries) */
+  .url-pop{display:none;margin-top:8px;gap:8px}
+  .url-pop.show{display:flex}
+  .url-input{flex:1;height:34px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--fg);padding:0 10px}
 
-  /* URL editor pop */
-  .url-edit{display:none;gap:8px}
-  .url-edit.show{display:flex}
-  .url-input{flex:1;height:32px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--fg);padding:0 10px}
-
+  /* Toast */
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;z-index:99}
   .toast.show{opacity:1} .toast.err{background:#ff453a;color:#fff}
+
+  /* Responsive header: show hamburger under 820px */
+  @media (max-width:820px){
+    .nav-center{display:none}
+    #hamburger{display:inline-flex}
+  }
 </style>
 </head>
 <body>
 
-<!-- ===== Header / Nav ===== -->
+<!-- ===== Header ===== -->
 <div class="topbar" role="banner">
+  <!-- Brand -->
   <a class="brand" href="home.html" aria-label="BFA IPTV Home">
     <div class="logo" id="brandLogo" aria-hidden="true"></div>
     <span class="brand-title">BFA IPTV</span>
   </a>
 
-  <nav class="nav" aria-label="Main navigation">
-    <a class="pill" href="home.html">Home</a>
-    <a class="pill active" href="dealerships.html">Dealerships</a>
-    <a class="pill" href="displays.html">Displays</a>
-    <a class="pill" href="users.html">Users</a>
-    <a class="pill" href="links.html">Links</a>
-    <a class="pill" href="analytics.html">Analytics</a>
-    <a class="pill" href="schedule.html">Schedule</a>
-    <button id="themeBtn" class="ghost" title="Toggle theme" aria-label="Toggle theme">
-      <svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
-    </button>
-    <button id="logoutBtn" class="pill" title="Sign out">Logout</button>
+  <!-- Centered nav -->
+  <nav class="nav-center" aria-label="Main">
+    <a class="navlink" href="home.html"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 10 12 3l9 7"/><path d="M5 10v10h14V10"/></svg> Home</a>
+    <a class="navlink active" href="dealerships.html"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 7h18"/><path d="M5 7v13h14V7"/><path d="M9 7V4h6v3"/></svg> Dealerships</a>
+    <a class="navlink" href="displays.html"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/></svg> Displays</a>
+    <a class="navlink" href="users.html"><svg class="nav-icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7"/><path d="M17 11a4 4 0 1 0-4-4"/><path d="M17 22c0-2 .8-3.8 2-5"/></svg> Users</a>
+    <a class="navlink" href="links.html"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"/><path d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"/></svg> Links</a>
+    <a class="navlink" href="analytics.html"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 13v5"/><path d="M12 9v9"/><path d="M17 5v13"/></svg> Analytics</a>
+    <a class="navlink" href="schedule.html"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4"/><path d="M3 11h18"/></svg> Schedule</a>
   </nav>
+
+  <!-- Right utilities -->
+  <div class="nav-right">
+    <button id="themeBtn" class="ghost" title="Toggle theme" aria-label="Toggle theme">
+      <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
+    </button>
+    <button id="logoutBtn" class="ghost" title="Sign out">Logout</button>
+    <button id="hamburger" aria-label="Menu" aria-controls="navMenu" aria-expanded="false">☰</button>
+  </div>
 </div>
+
+<!-- Mobile menu -->
+<nav id="navMenu" aria-label="Menu" aria-hidden="true">
+  <div class="menu-head"><div class="logo" style="width:28px;height:28px"></div><div style="font-weight:900">BFA IPTV</div></div>
+  <div class="menu">
+    <a href="home.html">Home</a>
+    <a class="active" href="dealerships.html">Dealerships</a>
+    <a href="displays.html">Displays</a>
+    <a href="users.html">Users</a>
+    <a href="links.html">Links</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="schedule.html">Schedule</a>
+    <button id="logoutBtnMobile" class="btn danger" style="width:100%;margin-top:8px">Logout</button>
+  </div>
+</nav>
 
 <div class="wrap">
   <div class="card">
@@ -163,8 +201,7 @@ import { getDatabase, ref, get, set, update, remove, query, orderByChild, equalT
 const firebaseConfig = { apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e" };
 const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-await setPersistence(auth, browserLocalPersistence);
+const auth = getAuth(app); await setPersistence(auth, browserLocalPersistence);
 const db = getDatabase(app);
 
 /* ===== helpers ===== */
@@ -186,30 +223,31 @@ document.getElementById('brandLogo').style.backgroundImage=`url("${LOGO_URL}")`;
   });
 })();
 
-/* ===== minimalist icons ===== */
+/* ===== icons ===== */
 const I={
-  eye:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7"/><circle cx="12" cy="12" r="3"/></svg>`,
-  users:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><circle cx="9" cy="8" r="4"/><path d="M17 11a4 4 0 1 0-4-4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/><path d="M17 22c0-2 .8-3.8 2-5"/></svg>`,
-  edit:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>`,
-  swap:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M17 7H7l4-4M7 17h10l-4 4"/></svg>`,
-  trash:()=>`<svg class="icon icon-danger" viewBox="0 0 24 24" width="18" height="18"><path d="M3 6h18"/><path d="M8 6l1-2h6l1 2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,
-  open:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v7h-7"/></svg>`,
-  save:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M4 4h12l4 4v12H4z"/><path d="M16 20v-6H8v6"/><path d="M8 4v5h6V4"/></svg>`,
-  prev:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M11 18 5 12l6-6"/><path d="M19 18V6"/></svg>`,
-  next:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="m13 6 6 6-6 6"/><path d="M5 6v12"/></svg>`,
-  mute:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M3 10v4h4l5 4V6l-5 4H3Z"/><path d="M22 9 16 15M16 9l6 6"/></svg>`
+  eye:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7"/><circle cx="12" cy="12" r="3"/></svg>`,
+  users:()=>`<svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7"/><path d="M17 11a4 4 0 1 0-4-4"/><path d="M17 22c0-2 .8-3.8 2-5"/></svg>`,
+  edit:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>`,
+  swap:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="M17 7H7l4-4M7 17h10l-4 4"/></svg>`,
+  trash:()=>`<svg class="icon icon-danger" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6l1-2h6l1 2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,
+  open:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v7h-7"/></svg>`,
+  save:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="M4 4h12l4 4v12H4z"/><path d="M16 20v-6H8v6"/><path d="M8 4v5h6V4"/></svg>`,
+  link:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"/><path d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"/></svg>`,
+  prev:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="M11 18 5 12l6-6"/><path d="M19 18V6"/></svg>`,
+  next:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="m13 6 6 6-6 6"/><path d="M5 6v12"/></svg>`,
+  mute:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6l-5 4H3Z"/><path d="M22 9 16 15M16 9l6 6"/></svg>`
 };
 
-/* ===== legend content ===== */
+/* Legend (simplified, no gray tiles) */
 (function renderLegend(){
   const items=[
-    {icon:I.eye(),   title:'Preview TVs', desc:'Inline preview (safe, keeps admin login).'},
-    {icon:I.users(), title:'Users',       desc:'Show users under the card.'},
-    {icon:I.edit(),  title:'Edit name',   desc:'Change public dealership name.'},
-    {icon:I.swap(),  title:'Rename ID',   desc:'Migrate dealership ID & refs.'},
-    {icon:I.save(),  title:'Save URL',    desc:'Persist preview URL for each TV.'},
+    {icon:I.eye(),   title:'Preview TVs', desc:'Inline preview (safe).'},
+    {icon:I.users(), title:'Users',       desc:'Show users below.'},
+    {icon:I.edit(),  title:'Edit name',   desc:'Change public name.'},
+    {icon:I.swap(),  title:'Rename ID',   desc:'Migrate ID & refs.'},
+    {icon:I.link(),  title:'Change URL',  desc:'Edit preview URL inside card.'},
     {icon:I.open(),  title:'Open tab',    desc:'Open preview in isolated tab.'},
-    {icon:`<svg class="icon icon-danger" viewBox="0 0 24 24" width="18" height="18"><path d="M3 6h18"/><path d="M8 6l1-2h6l1 2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,  title:'Delete', desc:'Only if it has no TVs.'}
+    {icon:`<svg class="icon icon-danger" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6l1-2h6l1 2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`, title:'Delete', desc:'Only if no TVs.'}
   ];
   const g = document.getElementById('legendGrid');
   g.innerHTML = items.map(i=>`
@@ -219,13 +257,11 @@ const I={
     </div>`).join('');
 })();
 
-/* ===== URL helpers ===== */
+/* ===== URL + preview helpers ===== */
 function defaultUrlForId(id){
   return `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(id)}.html`;
 }
 function isAbsoluteUrl(u){ try{ return new URL(u), true; }catch{ return false; } }
-
-/* ===== Safe preview (keeps admin session) ===== */
 function forceDisableHlsWorkers(html){
   html = html.replace(/enableWorker\s*:\s*true/gi, 'enableWorker:false');
   html = html.replace(/new\s+Hls\(\s*\{\s*/g, m => `${m}enableWorker:false, `);
@@ -261,19 +297,25 @@ onAuthStateChanged(auth, async (user)=>{
   loadList();
 });
 $('#logoutBtn')?.addEventListener('click', ()=> signOut(auth).then(()=>location.href='home.html'));
+$('#logoutBtnMobile')?.addEventListener('click', ()=> signOut(auth).then(()=>location.href='home.html'));
 
-/* ===== core data ops ===== */
+/* ===== mobile menu ===== */
+(() => {
+  const ham=$("#hamburger"), menu=$("#navMenu");
+  const close=()=>{menu.classList.remove('open');ham?.setAttribute('aria-expanded','false');document.body.style.overflow='';};
+  const open =()=>{menu.classList.add('open');ham?.setAttribute('aria-expanded','true'); document.body.style.overflow='hidden';};
+  ham?.addEventListener('click',()=>menu.classList.contains('open')?close():open());
+  menu?.addEventListener('click',(e)=>{ if(e.target.closest('a')||e.target.id==='logoutBtnMobile') close(); });
+  window.addEventListener('resize',()=>{ if(window.innerWidth>820) close(); });
+})();
+
+/* ===== data ops ===== */
 $("#reloadList").addEventListener('click', loadList);
 
 async function countDisplaysForDealer(id){
   try{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; }
   catch(e){ return 0; }
 }
-async function listDisplays(dealershipId){
-  const snap = await get(query(ref(db,'displays'), orderByChild('dealership'), equalTo(dealershipId)));
-  return Object.keys(snap.val() || {}).sort();
-}
-
 async function loadList(){
   $("#list").innerHTML='';
   let map={}; try{ const snap=await get(ref(db,'dealershipPublic')); map=snap.val()||{}; }catch(e){ map={}; }
@@ -361,7 +403,7 @@ async function renameId(oldId){
   }catch(e){ toast('Rename failed',true); }
 }
 async function delDealer(id){
-  const cnt = await countDisplaysForDealer(id);
+  const cnt = await (async()=>{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; })();
   if(cnt>0){ alert(`This dealership still has ${cnt} TV(s). Remove/migrate first.`); return; }
   if(!confirm(`Delete ${id}?`)) return;
   try{ await remove(ref(db,'dealershipPublic/'+id)).catch(()=>{}); await remove(ref(db,'dealership/'+id)).catch(()=>{});
@@ -369,7 +411,7 @@ async function delDealer(id){
 }
 
 /* ===== Users panel ===== */
-function closeSubs(li){ li.querySelectorAll('.sub').forEach(n=>n.remove()); }
+function closeSubs(li){ li.querySelectorAll('.disp-card, .sub.users').forEach(n=>n.remove()); }
 async function toggleUsersUnder(li, id){
   const opened=li.querySelector('.sub.users'); if(opened){ opened.remove(); return; }
   closeSubs(li);
@@ -386,123 +428,115 @@ async function toggleUsersUnder(li, id){
   li.appendChild(sub);
 }
 
-/* ===== Displays panel (controls + preview) ===== */
-const liveListeners = new Map(); // key: displayId -> {ref, cb}
-
-function unsubscribeDisplay(did){
-  const e = liveListeners.get(did);
-  if(e){ off(e.ref, 'value', e.cb); liveListeners.delete(did); }
-}
+/* ===== Displays (merged card: preview + controls) ===== */
+const liveListeners = new Map(); // did -> {ref, cb}
+function unsubscribeDisplay(did){ const e = liveListeners.get(did); if(e){ off(e.ref, 'value', e.cb); liveListeners.delete(did); } }
 
 async function toggleDisplaysUnder(li, id){
-  const opened=li.querySelector('.sub.displays'); 
-  if(opened){ 
-    opened.querySelectorAll('[data-did]').forEach(n=>unsubscribeDisplay(n.dataset.did));
-    opened.remove(); 
-    return; 
+  // close any existing for this dealership
+  const opened = li.querySelector('.disp-card'); 
+  if(opened){ // remove all and unsubscribe
+    li.querySelectorAll('.disp-card').forEach(card=>{
+      const did = card.getAttribute('data-did');
+      if(did) unsubscribeDisplay(did);
+      card.remove();
+    });
+    return;
   }
   closeSubs(li);
 
-  // Build container
-  const sub=document.createElement('div'); sub.className='sub displays';
-  sub.innerHTML=`<h4>Displays</h4><div id="dispWrap" style="display:grid;gap:10px"></div>`;
-  li.appendChild(sub);
-  const wrap=sub.querySelector('#dispWrap');
-
-  // List displays
-  const ids = await listDisplays(id);
-
+  // fetch displays
+  const snap=await get(query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)));
+  const map=snap.val()||{}; const ids=Object.keys(map).sort();
   if(!ids.length){
-    wrap.innerHTML = `<div class="muted">No TVs yet.</div>`;
-    return;
+    const card = document.createElement('div'); card.className='disp-card';
+    card.innerHTML = `<div class="muted">No TVs yet.</div>`;
+    li.appendChild(card); return;
   }
 
-  // For each display, create row with controls + preview
-  const snap = await get(query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)));
-  const all = snap.val() || {};
-
   for(const did of ids){
-    const data = all[did] || {};
+    const data = map[did] || {};
     const pvUrl = data.previewUrl || defaultUrlForId(did);
-    const row = document.createElement('div');
-    row.className = 'disp-row';
-    row.dataset.did = did;
 
-    row.innerHTML = `
-      <div class="ctrl-card">
-        <div class="ctrl-head">
-          <div class="ctrl-title">${esc(did)}</div>
-          <div class="ctrl-line">
-            <button class="ctrl-btn" title="Save URL" data-save>${I.save()}</button>
-            <button class="ctrl-btn" title="Preview inline" data-preview>${I.eye()}</button>
-            <button class="ctrl-btn" title="Open (safe tab)" data-open>${I.open()}</button>
+    const card = document.createElement('div'); 
+    card.className='disp-card'; card.setAttribute('data-did', did);
+    card.innerHTML = `
+      <div class="disp-head">
+        <div class="disp-title">${esc(did)}</div>
+        <div class="head-actions">
+          <button class="ctrl-btn" title="Change URL" data-urlbtn>${I.link()}</button>
+          <button class="ctrl-btn" title="Preview inline" data-preview>${I.eye()}</button>
+          <button class="ctrl-btn" title="Open (safe tab)" data-open>${I.open()}</button>
+        </div>
+      </div>
+
+      <div class="disp-grid">
+        <!-- Preview -->
+        <div class="preview-card">
+          <div class="iframeWrap" data-iframe></div>
+          <div class="url-pop" data-urlpop>
+            <input class="url-input" data-url value="${esc(pvUrl)}" placeholder="${esc(defaultUrlForId(did))}"/>
+            <button class="btn" data-urlsave>${I.save()} Save</button>
+            <button class="btn" data-urlcancel>Cancel</button>
           </div>
         </div>
 
-        <!-- URL chip + editor -->
-        <div class="ctrl-line">
-          <button class="chip url-chip" data-urlchip title="Tap to edit URL">${esc(pvUrl)}</button>
+        <!-- Controls -->
+        <div class="ctrl-card">
+          <div class="line">
+            <span class="pill-sm" data-chlabel>On channel ${Number(data.channel||1)}</span>
+            <button class="ctrl-btn" data-prev title="Previous">${I.prev()}</button>
+            <button class="ctrl-btn" data-next title="Next">${I.next()}</button>
+            <button class="ctrl-btn" data-mute title="Mute/Unmute">${I.mute()}</button>
+          </div>
+          <div class="line">
+            <input type="range" min="0" max="100" value="${Number(data.volume??0)}" class="slider" data-vol style="--pct:${Number(data.volume??0)}%">
+            <span class="pct" data-pct>${Math.max(0,Number(data.volume??0))}%</span>
+          </div>
         </div>
-        <div class="url-edit" data-urledit>
-          <input class="url-input" data-url placeholder="${esc(defaultUrlForId(did))}" value="${esc(pvUrl)}"/>
-          <button class="btn" data-urlsave>Save</button>
-          <button class="btn" data-urlcancel>Cancel</button>
-        </div>
-
-        <!-- Remote mini controller -->
-        <div class="ctrl-line" style="gap:6px">
-          <span class="pill-sm" data-chlabel>On channel ${Number(data.channel||1)}</span>
-          <button class="ctrl-btn" data-prev title="Previous">${I.prev()}</button>
-          <button class="ctrl-btn" data-next title="Next">${I.next()}</button>
-          <button class="ctrl-btn" data-mute title="Mute/Unmute">${I.mute()}</button>
-        </div>
-        <div class="ctrl-line">
-          <input type="range" min="0" max="100" value="${Number(data.volume??0)}" class="slider" data-vol style="--pct:${Number(data.volume??0)}%">
-          <span class="pct" data-pct>${Math.max(0,Number(data.volume??0))}%</span>
-        </div>
-      </div>
-
-      <div class="preview-card">
-        <div class="iframeWrap" data-iframe></div>
       </div>
     `;
-    wrap.appendChild(row);
+    li.appendChild(card);
 
-    // URL chip editor handlers
-    const chip = row.querySelector('[data-urlchip]');
-    const editor = row.querySelector('[data-urledit]');
-    const urlInput = row.querySelector('[data-url]');
-    row.querySelector('[data-urlsave]').addEventListener('click', async()=>{
-      const url = (urlInput.value.trim() || defaultUrlForId(did));
+    /* Actions */
+    const iframeWrap = card.querySelector('[data-iframe]');
+    const urlBtn    = card.querySelector('[data-urlbtn]');
+    const urlPop    = card.querySelector('[data-urlpop]');
+    const urlInput  = card.querySelector('[data-url]');
+    const urlSave   = card.querySelector('[data-urlsave]');
+    const urlCancel = card.querySelector('[data-urlcancel]');
+
+    urlBtn.addEventListener('click', ()=>{ urlPop.classList.toggle('show'); if(urlPop.classList.contains('show')) urlInput.focus(); });
+    urlCancel.addEventListener('click', ()=> urlPop.classList.remove('show'));
+    urlSave.addEventListener('click', async ()=>{
+      const val = urlInput.value.trim() || defaultUrlForId(did);
       try{
-        await update(ref(db,'displays/'+did),{ previewUrl:url, timestamp:Date.now() });
-        chip.textContent = url; editor.classList.remove('show'); toast('URL saved');
-      }catch(e){ toast('Save failed', true); }
+        await update(ref(db,'displays/'+did), { previewUrl: val, timestamp: Date.now() });
+        toast('URL saved'); urlPop.classList.remove('show');
+      }catch(e){ toast('Save failed',true); }
     });
-    row.querySelector('[data-urlcancel]').addEventListener('click', ()=>{ editor.classList.remove('show'); });
-    chip.addEventListener('click', ()=>{ editor.classList.add('show'); urlInput.focus(); });
 
-    // Preview inline
-    row.querySelector('[data-preview]').addEventListener('click', async ()=>{
-      const url = chip.textContent.trim() || defaultUrlForId(did);
-      const el = row.querySelector('[data-iframe]'); el.innerHTML = `<div class="muted" style="padding:10px">Loading…</div>`;
+    // Inline preview
+    card.querySelector('[data-preview]').addEventListener('click', async ()=>{
+      const url = (urlInput.value.trim() || defaultUrlForId(did));
+      iframeWrap.innerHTML = `<div class="muted" style="padding:10px">Loading…</div>`;
       const blobUrl = await buildSafeBlobUrl(isAbsoluteUrl(url)?url:defaultUrlForId(url));
-      if(!blobUrl){ el.innerHTML=`<div class="muted" style="padding:10px">Could not build preview.</div>`; return; }
-      el.innerHTML = `<iframe src="${blobUrl}"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-orientation-lock allow-presentation allow-popups allow-popups-to-escape-sandbox"
-          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"></iframe>`;
+      if(!blobUrl){ iframeWrap.innerHTML=`<div class="muted" style="padding:10px">Could not build preview.</div>`; return; }
+      iframeWrap.innerHTML = `<iframe src="${blobUrl}"
+        sandbox="allow-scripts allow-forms allow-pointer-lock allow-orientation-lock allow-presentation allow-popups allow-popups-to-escape-sandbox"
+        allow="autoplay; fullscreen; encrypted-media; picture-in-picture"></iframe>`;
     });
 
-    // Open safe tab
-    row.querySelector('[data-open]').addEventListener('click', ()=> openSafeTabFromUrl(chip.textContent.trim() || did));
+    // Open in new tab (safe)
+    card.querySelector('[data-open]').addEventListener('click', ()=> openSafeTabFromUrl(urlInput.value.trim() || did));
 
     // Remote controls
-    const chLabel = row.querySelector('[data-chlabel]');
-    const prevBtn = row.querySelector('[data-prev]');
-    const nextBtn = row.querySelector('[data-next]');
-    const muteBtn = row.querySelector('[data-mute]');
-    const vol = row.querySelector('[data-vol]');
-    const pct = row.querySelector('[data-pct]');
+    const chLabel = card.querySelector('[data-chlabel]');
+    const prevBtn = card.querySelector('[data-prev]');
+    const nextBtn = card.querySelector('[data-next]');
+    const muteBtn = card.querySelector('[data-mute]');
+    const vol = card.querySelector('[data-vol]');
+    const pct = card.querySelector('[data-pct]');
 
     prevBtn.addEventListener('click', async ()=>{
       const snap = await get(ref(db,'displays/'+did));
@@ -529,7 +563,7 @@ async function toggleDisplaysUnder(li, id){
       await update(ref(db,'displays/'+did), { volume: Number(vol.value), muted: Number(vol.value)===0, timestamp: Date.now() });
     });
 
-    // Live listener to keep UI in sync
+    // Live sync for this display
     const r = ref(db,'displays/'+did);
     const cb = (snap)=>{
       const d = snap.val() || {};
@@ -537,12 +571,26 @@ async function toggleDisplaysUnder(li, id){
       const vv = Math.max(0, Number(d.volume||0));
       vol.value = vv; pct.textContent = vv+'%'; vol.style.setProperty('--pct', vv+'%');
     };
-    onValue(r, cb);
-    liveListeners.set(did,{ref:r,cb});
+    onValue(r, cb); liveListeners.set(did,{ref:r,cb});
   }
 }
 
-/* ===== end modules ===== */
+/* ===== Users panel binder ===== */
+async function toggleUsersUnder(li, id){
+  const opened=li.querySelector('.sub.users'); if(opened){ opened.remove(); return; }
+  closeSubs(li);
+  const all=(await get(ref(db,'user'))).val()||{};
+  const list=Object.entries(all).map(([uid,v])=>({uid,...v})).filter(u=>u.dealershipId===id)
+    .sort((a,b)=> (a.role||'').localeCompare(b.role||'') || (a.name||'').localeCompare(b.name||''));
+  const sub=document.createElement('div'); sub.className='sub users';
+  sub.innerHTML=`<h4>Users</h4>
+    <ul style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">
+      ${list.length? list.map(u=>`<li style="display:flex;justify-content:space-between;gap:8px;border:1px solid var(--border);background:var(--tile);border-radius:10px;padding:8px">
+        <span><b>${esc(u.name||'No name')}</b><br><span class="muted">${esc(u.email||'')}</span></span><span class="tag">${esc(u.role||'user')}</span>
+      </li>`).join(''): `<li class="muted" style="padding:8px;border:1px solid var(--border);border-radius:10px">No users in this dealership.</li>`}
+    </ul>`;
+  li.appendChild(sub);
+}
 </script>
 </body>
 </html>
