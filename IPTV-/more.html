@@ -45,7 +45,7 @@
   .muted{color:var(--muted);font-size:12px}
   details.legend{margin:8px 0} details.legend summary{cursor:pointer;font-weight:800}
 
-  /* Legend grid (simplified – white tiles) */
+  /* Legend grid (white tiles) */
   .legend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:8px}
   .legend-item{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px}
   .legend-item .iconbtn{flex:0 0 36px}
@@ -169,6 +169,7 @@ const I={
   edit:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>`,
   swap:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M17 7H7l4-4M7 17h10l-4 4"/></svg>`,
   trash:()=>`<svg class="icon icon-danger" viewBox="0 0 24 24" width="18" height="18"><path d="M3 6h18"/><path d="M8 6l1-2h6l1 2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,
+  link:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 1 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 1 0 7 7l1-1"/></svg>`,
   open:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v7h-7"/></svg>`
 };
 
@@ -190,12 +191,13 @@ $('#logoutBtnMobile')?.addEventListener('click', ()=> signOut(auth).then(()=>loc
 /* ===== legend content ===== */
 (function renderLegend(){
   const items=[
-    {icon:I.eye(),   title:'Preview TVs', desc:'Open a live preview inline (iframe).'},
+    {icon:I.eye(),   title:'Preview TVs', desc:'Open a live preview inline (safe).'},
     {icon:I.users(), title:'Users',       desc:'Show users under the card.'},
     {icon:I.edit(),  title:'Edit name',   desc:'Change public dealership name.'},
     {icon:I.swap(),  title:'Rename ID',   desc:'Migrate dealership ID and update references.'},
     {icon:I.trash(), title:'Delete',      desc:'Remove dealership (only if it has no TVs).'},
-    {icon:I.open(),  title:'Open tab',    desc:'Isolated tab (sandboxed) — admin login stays intact.'}
+    {icon:I.open(),  title:'Open (safe)', desc:'Open isolated tab (won’t affect your login).'},
+    {icon:I.link(),  title:'Open (direct)', desc:'Open the real URL (can replace your login).'}
   ];
   const g = document.getElementById('legendGrid');
   g.innerHTML = items.map(i=>`
@@ -205,46 +207,46 @@ $('#logoutBtnMobile')?.addEventListener('click', ()=> signOut(auth).then(()=>loc
     </div>`).join('');
 })();
 
-/* ===== utilities ===== */
+/* ===== URL resolver + SAFE proxy loader ===== */
 
-/* Prefer /Displays/{ID}.html, but fall back to /{ID}.html if needed. */
-async function resolvePreviewUrl(id){
+/* Prefer /Displays/{ID}.html, else /{ID}.html */
+async function resolveRealUrl(id){
   const paths = [
     `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(id)}.html`,
-    `https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html`,
-    // tolerate missing ".html" just in case
-    `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(id)}`,
-    `https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}`
+    `https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html`
   ];
   for(const url of paths){
-    try{
-      const r = await fetch(url, {method:'HEAD', cache:'no-store'});
-      if(r.ok) return url;
-    }catch(e){}
+    try{ const r = await fetch(url, {method:'HEAD', cache:'no-store'}); if(r.ok) return url; }catch(e){}
   }
   return null;
 }
 
-/* truly isolated new-tab wrapper (sandboxed iframe inside a Blob page) */
-async function openIsolatedTab(id){
-  const url = await resolvePreviewUrl(id);
-  if(!url){ toast('Preview file not found', true); return; }
-  const html = `<!doctype html><html><head><meta charset="utf-8">
-    <title>Preview — ${id}</title>
-    <meta name="referrer" content="no-referrer">
-    <style>html,body{height:100%;margin:0;background:#000}</style></head>
-    <body>
-      <iframe src="${url}"
-        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-        sandbox="allow-scripts allow-forms allow-modals allow-pointer-lock allow-presentation allow-popups allow-popups-to-escape-sandbox"
-        referrerpolicy="no-referrer"
-        style="border:0;width:100%;height:100%"></iframe>
-    </body></html>`;
+/* Fetch the real HTML and serve it from a blob with a <base> tag.
+   This gives the page a separate (blob) origin, so its Firebase anon
+   auth won’t touch your admin session, but all relative URLs still work. */
+async function buildSafeBlobUrl(realUrl){
+  const res = await fetch(realUrl, {cache:'no-store'});
+  if(!res.ok) return null;
+  let html = await res.text();
+  const baseHref = realUrl.replace(/[^/]*$/, '');
+  if(!/<!--\s*BFA_BASE\s*-->/.test(html)){
+    html = html.replace(/<head([^>]*)>/i, (m,a)=>`<head${a}><base href="${baseHref}"><!-- BFA_BASE -->`);
+  }
   const blob = new Blob([html], {type:'text/html'});
-  const win = window.open(URL.createObjectURL(blob), '_blank', 'noopener');
+  return URL.createObjectURL(blob);
+}
+
+/* Open a SAFE tab (blob wrapper shows in the address bar, by design) */
+async function openSafeTab(id){
+  const real = await resolveRealUrl(id);
+  if(!real){ toast('Preview file not found', true); return; }
+  const blobUrl = await buildSafeBlobUrl(real);
+  if(!blobUrl){ toast('Could not build safe preview', true); return; }
+  const win = window.open(blobUrl, '_blank', 'noopener');
   if(!win) toast('Popup blocked — enable popups', true);
 }
 
+/* ===== data ops ===== */
 $("#reloadList").addEventListener('click', loadList);
 
 async function countDisplaysForDealer(id){
@@ -274,20 +276,21 @@ async function loadList(){
         <button class="iconbtn" title="Show users" data-act="users">${I.users()}</button>
         <button class="iconbtn" title="Edit public name" data-act="edit">${I.edit()}</button>
         <button class="iconbtn" title="Rename ID (migrate)" data-act="rename">${I.swap()}</button>
+        <button class="iconbtn" title="Open (safe tab)" data-act="safe">${I.open()}</button>
         <button class="iconbtn danger" title="Delete" data-act="delete">${I.trash()}</button>
       </div>`;
     $("#list").appendChild(li);
   }
 
   $("#list").onclick = async (e)=>{
-    const btn=e.target.closest('.iconbtn, .btn'); if(!btn) return;
+    const btn=e.target.closest('.iconbtn, .btn, a'); if(!btn) return;
     const li=btn.closest('.item'); const id=li.dataset.id; const act=btn.dataset.act || btn.dataset.role;
     if(act==='edit') await editName(id);
     else if(act==='rename') await renameId(id);
     else if(act==='delete') await delDealer(id);
     else if(act==='preview') await toggleDisplaysUnder(li,id);
     else if(act==='users') await toggleUsersUnder(li,id);
-    else if(act==='open-tab'){ openIsolatedTab(btn.getAttribute('data-id')); }
+    else if(act==='safe') await openSafeTab(id);
   };
 
   $("#addBtn").onclick = async ()=>{
@@ -375,33 +378,44 @@ async function toggleDisplaysUnder(li, id){
         <span><b>${esc(did)}</b></span>
         <span style="display:flex;gap:6px">
           <button class="btn" style="height:32px;padding:0 10px" data-preview="${esc(did)}" title="Preview">${I.eye()}</button>
-          <button class="btn" style="height:32px;padding:0 10px" data-role="open-tab" data-id="${esc(did)}" title="Open in new tab">${I.open()}</button>
+          <button class="btn" style="height:32px;padding:0 10px" data-safe="${esc(did)}" title="Open (safe tab)">${I.open()}</button>
+          <a class="btn" style="height:32px;padding:0 10px" data-direct="${esc(did)}" title="Open (direct, may replace your login)">${I.link()}</a>
         </span></li>`).join('')
     }</ul>` : `<div class="muted">No TVs yet.</div>`}
     <div class="iframeWrap" style="display:none"></div>`;
   li.appendChild(sub);
 
-  /* inline preview (sandboxed & isolated — won’t affect admin auth) */
+  /* inline preview — SAFE proxy (plays, and keeps admin auth intact) */
   sub.querySelectorAll('[data-preview]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       const did=btn.getAttribute('data-preview');
       const wrap=sub.querySelector('.iframeWrap'); wrap.style.display='block';
       wrap.innerHTML=`<div class="muted" style="padding:14px">Loading preview…</div>`;
-      const url = await resolvePreviewUrl(did);
-      if(url){
-        wrap.innerHTML=`<iframe
-            title="Preview ${did}"
-            src="${url}"
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-            sandbox="allow-scripts allow-forms allow-modals allow-pointer-lock allow-presentation allow-popups allow-popups-to-escape-sandbox"
-            referrerpolicy="no-referrer"
-            allowfullscreen
-          ></iframe>`;
-      }else{
-        wrap.innerHTML=`<div class="muted" style="padding:14px">
-          File not found for <b>${esc(did)}</b>.<br/>
-          Expected <code>/Displays/${esc(did)}.html</code> or <code>/${esc(did)}.html</code>.
-        </div>`;
+      const real = await resolveRealUrl(did);
+      if(!real){ wrap.innerHTML=`<div class="muted" style="padding:14px">File not found for <b>${esc(did)}</b>.</div>`; return; }
+      const blobUrl = await buildSafeBlobUrl(real);
+      if(!blobUrl){ wrap.innerHTML=`<div class="muted" style="padding:14px">Could not build safe preview.</div>`; return; }
+      wrap.innerHTML=`<iframe title="Preview ${did}" src="${blobUrl}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+    });
+  });
+
+  /* safe tab */
+  sub.querySelectorAll('[data-safe]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const did=btn.getAttribute('data-safe');
+      openSafeTab(did);
+    });
+  });
+
+  /* direct URL (warn first) */
+  sub.querySelectorAll('[data-direct]').forEach(a=>{
+    a.addEventListener('click', async (ev)=>{
+      ev.preventDefault();
+      const did=a.getAttribute('data-direct');
+      const real = await resolveRealUrl(did);
+      if(!real){ toast('File not found', true); return; }
+      if(confirm('Open the real page? This may replace your admin login with the device login in ALL tabs.')){
+        window.open(real, '_blank', 'noopener'); // direct
       }
     });
   });
