@@ -70,32 +70,25 @@
   /* Sub-panels */
   .sub{grid-column:1/-1;margin-top:8px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px}
   .sub h4{margin:0 0 8px}
-  .sublist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:8px}
+  .sublist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px} /* <= narrower to avoid mobile overflow */
   .subitem{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;background:var(--tile);border:1px solid var(--border);border-radius:10px;padding:10px}
   .subleft{flex:1 1 auto;min-width:0}
   .subright{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
   .chipbtn{height:32px;padding:0 12px;border-radius:9999px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:800;cursor:pointer}
   .chipbtn:hover{border-color:var(--accent)}
 
-  /* Preview frame + HUD */
-  .iframeWrap{position:relative;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9;margin-top:8px}
-  .iframeWrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+  /* Remote controls OUTSIDE the video */
+  .controlWrap{display:none;margin-top:8px}
+  .remote{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px;background:var(--tile);border:1px solid var(--border);border-radius:12px}
+  .remote .pill{height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:9999px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:800}
+  .iconbtn.sm{height:28px;width:28px;border-radius:999px;background:#fff}
+  .meter{display:flex;align-items:center;gap:6px}
+  .meter input[type="range"]{width:140px;height:6px;border-radius:999px;-webkit-appearance:none;background:#eee;border:1px solid var(--border)}
+  .meter input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);border:1px solid #d7d7d7}
 
-  .hud{position:absolute;left:10px;top:10px;display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,.92);border:1px solid var(--border);border-radius:9999px;backdrop-filter:saturate(120%) blur(2px)}
-  .hud .mini{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:800}
-  .hud .iconbtn{height:28px;width:28px;border-radius:999px;background:#fff}
-  .hud .meter{display:flex;align-items:center;gap:8px;margin-left:6px}
-  .hud input[type="range"]{width:140px;height:6px;border-radius:999px;-webkit-appearance:none;background:#eee;border:1px solid var(--border)}
-  .hud input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);border:1px solid #d7d7d7}
-  .hud .pill{height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:999px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:800}
-
-  /* Mobile: move HUD to bottom-left and wrap */
-  @media (max-width:600px){
-    .hud{top:auto;bottom:10px;left:10px;right:10px;flex-wrap:wrap;gap:6px;padding:6px 8px}
-    .hud .iconbtn{height:26px;width:26px}
-    .hud .pill{font-size:11px}
-    .hud input[type="range"]{width:120px}
-  }
+  /* Preview frame */
+  .iframeWrap{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9;margin-top:8px}
+  .iframeWrap iframe{width:100%;height:100%;border:0;background:#000}
 
   @media (max-width:680px){.inline-actions{display:none}#hamburger{display:inline-flex}}
   @media (min-width:901px){ #navMenu{display:none!important} }
@@ -184,7 +177,6 @@ function toast(msg,err=false){const t=$("#toast");t.textContent=msg;t.className=
 function sanitizeId(raw){ let id=(raw||'').replace(/[^A-Za-z0-9\-_]/g,'').slice(0,40); if(!id){ id=(raw||'').normalize('NFKD').replace(/[^\w\-]+/g,'').slice(0,40);} return id; }
 document.getElementById('brandLogo').style.backgroundImage=`url("${LOGO_URL}")`;
 
-/* ===== icons ===== */
 const I={
   eye:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7"/><circle cx="12" cy="12" r="3"/></svg>`,
   users:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><circle cx="9" cy="8" r="4"/><path d="M17 11a4 4 0 1 0-4-4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/><path d="M17 22c0-2 .8-3.8 2-5"/></svg>`,
@@ -250,6 +242,15 @@ async function countDisplaysForDealer(id){
   catch(e){ return 0; }
 }
 
+async function listDisplays(dealershipId){
+  const snap=await get(query(ref(db,'displays'),orderByChild('dealership'),equalTo(dealershipId)));
+  return Object.keys(snap.val()||{}).sort();
+}
+async function getPreviewUrl(displayId){
+  const s=await get(ref(db,'displays/'+displayId)); const v=s.val()||{};
+  return v.previewUrl || defaultUrlForId(displayId);
+}
+
 async function loadList(){
   $("#list").innerHTML='';
   let map={}; try{ const snap=await get(ref(db,'dealershipPublic')); map=snap.val()||{}; }catch(e){ map={}; }
@@ -302,15 +303,6 @@ async function loadList(){
       $("#dealerName").value=''; toast('Dealership added'); loadList();
     }catch(e){ toast('Create failed',true); }
   };
-}
-
-async function listDisplays(dealershipId){
-  const snap=await get(query(ref(db,'displays'),orderByChild('dealership'),equalTo(dealershipId)));
-  return Object.keys(snap.val()||{}).sort();
-}
-async function getPreviewUrl(displayId){
-  const s=await get(ref(db,'displays/'+displayId)); const v=s.val()||{};
-  return v.previewUrl || defaultUrlForId(displayId);
 }
 
 async function editName(id){
@@ -383,9 +375,7 @@ async function toggleDisplaysUnder(li, id){
       ids.map(did=>{
         const safeId = esc(did);
         return `<li class="subitem" data-did="${safeId}">
-          <div class="subleft">
-            <div style="font-weight:700;margin-bottom:6px">${safeId}</div>
-          </div>
+          <div class="subleft"><div style="font-weight:700;margin-bottom:6px">${safeId}</div></div>
           <div class="subright">
             <button class="chipbtn" data-url="${safeId}">URL</button>
             <button class="chipbtn" data-preview="${safeId}">Preview</button>
@@ -394,69 +384,66 @@ async function toggleDisplaysUnder(li, id){
         </li>`;
       }).join('')
     }</ul>` : `<div class="muted">No TVs yet.</div>`}
+    <div class="controlWrap">
+      <div class="remote">
+        <span class="pill">Display <b data-role="did">—</b></span>
+        <span class="pill">On channel <b data-role="ch">—</b></span>
+        <button class="iconbtn sm" data-prev aria-label="Previous channel">${I.left()}</button>
+        <button class="iconbtn sm" data-next aria-label="Next channel">${I.right()}</button>
+        <button class="iconbtn sm" data-mute aria-label="Mute toggle">${I.vol()}</button>
+        <span class="meter">
+          <input type="range" min="0" max="100" value="50" data-vol>
+          <span class="pill" data-role="voltxt">50%</span>
+        </span>
+        <button class="iconbtn sm" data-open aria-label="Open in new tab">${I.open()}</button>
+      </div>
+    </div>
     <div class="iframeWrap" style="display:none"></div>`;
   li.appendChild(sub);
 
-  // URL edit button -> prompt, save to DB
+  // URL edit button
   sub.querySelectorAll('[data-url]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       const did = btn.getAttribute('data-url');
       const cur = await getPreviewUrl(did);
       const next = prompt('Preview URL for '+did, cur);
       if(!next || next===cur) return;
-      try{
-        await update(ref(db, 'displays/'+did), { previewUrl:next, timestamp:Date.now() });
-        toast('URL saved');
-      }catch(e){ toast('Save failed', true); }
+      try{ await update(ref(db, 'displays/'+did), { previewUrl:next, timestamp:Date.now() }); toast('URL saved'); }
+      catch(e){ toast('Save failed', true); }
     });
   });
 
-  // Preview inline with HUD
+  // Shared control references (inside this sub only)
+  const ctrlWrap = sub.querySelector('.controlWrap');
+  const didEl    = sub.querySelector('[data-role="did"]');
+  const chEl     = sub.querySelector('[data-role="ch"]');
+  const volRange = sub.querySelector('[data-vol]');
+  const volTxt   = sub.querySelector('[data-role="voltxt"]');
+  const muteBtn  = sub.querySelector('[data-mute]');
+
+  let currentDid = null, currentUrl = null, ch=1, vol=50, muted=true;
+
+  async function loadState(did){
+    try{ const s=await get(ref(db,'displays/'+did)); const v=s.val()||{};
+      ch=v.channel??1; vol=v.volume??50; muted = (v.muted!==undefined)?v.muted:true;
+      chEl.textContent=ch; volRange.value=vol; volTxt.textContent=(muted||vol===0)?'0%':(vol+'%');
+      muteBtn.innerHTML = muted?`${I.mute()}`:`${I.vol()}`;
+    }catch(e){}
+  }
+  const send = async (patch)=>{ try{ await update(ref(db,'displays/'+currentDid), {...patch, timestamp:Date.now()}); }catch(e){} };
+
+  // Preview (shows controls and video)
   sub.querySelectorAll('[data-preview]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
-      const did = btn.getAttribute('data-preview');
-      const wrap=sub.querySelector('.iframeWrap'); wrap.style.display='block';
-      const url = await getPreviewUrl(did);
-      const src = withEmbed(isAbsoluteUrl(url)?url:defaultUrlForId(url));
-      wrap.innerHTML=`<iframe title="Preview ${esc(did)}" src="${src}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+      currentDid = btn.getAttribute('data-preview');
+      didEl.textContent = currentDid;
+      currentUrl = await getPreviewUrl(currentDid);
+      await loadState(currentDid);
 
-      // load current state once
-      let ch=1, vol=50, muted=true;
-      try{ const s=await get(ref(db,'displays/'+did)); const v=s.val()||{}; ch=v.channel??ch; vol=v.volume??vol; muted = (v.muted!==undefined)?v.muted:muted; }catch(e){}
-
-      // HUD
-      const hud = document.createElement('div'); hud.className='hud';
-      hud.innerHTML=`
-        <span class="pill">On channel <b id="hudCh">${ch}</b></span>
-        <button class="iconbtn" aria-label="Prev channel" data-prev>${I.left()}</button>
-        <button class="iconbtn" aria-label="Next channel" data-next>${I.right()}</button>
-        <button class="iconbtn" aria-label="Mute toggle" data-mute>${muted?I.mute():I.vol()}</button>
-        <span class="meter">
-          <input type="range" min="0" max="100" value="${vol}" data-vol>
-          <span class="pill" id="hudVol">${muted||vol===0?0:vol}%</span>
-        </span>
-        <button class="iconbtn" aria-label="Open in new tab" data-open>${I.open()}</button>
-      `;
-      wrap.appendChild(hud);
-
-      // handlers
-      const chEl=hud.querySelector('#hudCh');
-      const volEl=hud.querySelector('[data-vol]');
-      const volTxt=hud.querySelector('#hudVol');
-      const muteBtn=hud.querySelector('[data-mute]');
-      const send = async (patch)=>{ try{ await update(ref(db,'displays/'+did), {...patch, timestamp:Date.now()}); }catch(e){ console.warn('update failed',e); } };
-
-      hud.querySelector('[data-prev]').onclick = ()=>{ ch=Math.max(1, (ch|0)-1); chEl.textContent=ch; send({channel:ch}); };
-      hud.querySelector('[data-next]').onclick = ()=>{ ch=(ch|0)+1; chEl.textContent=ch; send({channel:ch}); };
-      volEl.oninput = ()=>{ const v=+volEl.value|0; vol=v; volTxt.textContent = (muted||v===0)?'0%':(v+'%'); };
-      volEl.onchange = ()=>{ const v=+volEl.value|0; vol=v; send({volume:v}); };
-      muteBtn.onclick = ()=>{
-        muted=!muted;
-        muteBtn.innerHTML= muted?I.mute():I.vol();
-        volTxt.textContent = (muted||(+volEl.value===0))?'0%':(volEl.value+'%');
-        send({muted});
-      };
-      hud.querySelector('[data-open]').onclick = ()=> window.open(withEmbed(src),'_blank','noopener');
+      const wrap=sub.querySelector('.iframeWrap');
+      wrap.style.display='block';
+      wrap.innerHTML=`<iframe title="Preview ${esc(currentDid)}" src="${withEmbed(isAbsoluteUrl(currentUrl)?currentUrl:defaultUrlForId(currentUrl))}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+      ctrlWrap.style.display='block';
     });
   });
 
@@ -468,6 +455,13 @@ async function toggleDisplaysUnder(li, id){
       window.open(withEmbed(isAbsoluteUrl(url)?url:defaultUrlForId(url)),'_blank','noopener');
     });
   });
+
+  // Remote control handlers (operate on selected preview target)
+  sub.querySelector('[data-prev]').onclick = ()=>{ if(!currentDid) return; ch=Math.max(1,(ch|0)-1); chEl.textContent=ch; send({channel:ch}); };
+  sub.querySelector('[data-next]').onclick = ()=>{ if(!currentDid) return; ch=(ch|0)+1; chEl.textContent=ch; send({channel:ch}); };
+  volRange.oninput = ()=>{ if(!currentDid) return; const v=+volRange.value|0; vol=v; volTxt.textContent=(muted||v===0)?'0%':(v+'%'); };
+  volRange.onchange= ()=>{ if(!currentDid) return; const v=+volRange.value|0; vol=v; send({volume:v}); };
+  muteBtn.onclick   = ()=>{ if(!currentDid) return; muted=!muted; muteBtn.innerHTML = muted?`${I.mute()}`:`${I.vol()}`; volTxt.textContent=(muted||(+volRange.value===0))?'0%':(volRange.value+'%'); send({muted}); };
 }
 
 /* minimal mobile menu */
