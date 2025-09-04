@@ -200,9 +200,6 @@ import { getDatabase, ref, get, set, update, remove, query, orderByChild, equalT
 
 const firebaseConfig = { apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e" };
 const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app); await setPersistence(auth, browserLocalPersistence);
-const db = getDatabase(app);
 
 /* ===== helpers ===== */
 const $=s=>document.querySelector(s);
@@ -238,7 +235,7 @@ const I={
   mute:()=>`<svg class="icon" viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6l-5 4H3Z"/><path d="M22 9 16 15M16 9l6 6"/></svg>`
 };
 
-/* Legend (simplified, no gray tiles) */
+/* Legend */
 (function renderLegend(){
   const items=[
     {icon:I.eye(),   title:'Preview TVs', desc:'Inline preview (safe).'},
@@ -284,21 +281,6 @@ async function openSafeTabFromUrl(url){
   if(!win) toast('Popup blocked — enable popups', true);
 }
 
-/* ===== auth gate + logout ===== */
-onAuthStateChanged(auth, async (user)=>{
-  if(!user){ location.href='home.html'; return; }
-  const u = (await get(ref(db, 'user/'+user.uid))).val()||{};
-  if(u.role!=='admin'){ document.body.innerHTML = `
-      <div style="padding:40px">
-        <div class="card"><h3>Not authorized</h3>
-        <div class="muted">Ask an admin to set your role to <b>admin</b> in the database.</div></div>
-      </div>`; return;
-  }
-  loadList();
-});
-$('#logoutBtn')?.addEventListener('click', ()=> signOut(auth).then(()=>location.href='home.html'));
-$('#logoutBtnMobile')?.addEventListener('click', ()=> signOut(auth).then(()=>location.href='home.html'));
-
 /* ===== mobile menu ===== */
 (() => {
   const ham=$("#hamburger"), menu=$("#navMenu");
@@ -309,6 +291,31 @@ $('#logoutBtnMobile')?.addEventListener('click', ()=> signOut(auth).then(()=>loc
   window.addEventListener('resize',()=>{ if(window.innerWidth>820) close(); });
 })();
 
+/* ===== App init (NO top-level await) ===== */
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getDatabase(app);
+
+async function initAuth(){
+  try{ await setPersistence(auth, browserLocalPersistence); }catch(e){}
+  onAuthStateChanged(auth, async (user)=>{
+    if(!user){ location.href='home.html'; return; }
+    try{
+      const snap=await get(ref(db, 'user/'+user.uid));
+      const u = snap.val()||{};
+      if(u.role!=='admin'){ alert('Admin only'); await signOut(auth); location.href='home.html'; return; }
+      await loadList();
+    }catch(e){
+      // If we can’t read role, keep page visible but block actions
+      toast('Could not verify admin role', true);
+      await loadList(); // still render list UI
+    }
+  });
+  $('#logoutBtn')?.addEventListener('click', ()=> signOut(auth).then(()=>location.href='home.html'));
+  $('#logoutBtnMobile')?.addEventListener('click', ()=> signOut(auth).then(()=>location.href='home.html'));
+}
+initAuth();
+
 /* ===== data ops ===== */
 $("#reloadList").addEventListener('click', loadList);
 
@@ -316,6 +323,7 @@ async function countDisplaysForDealer(id){
   try{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; }
   catch(e){ return 0; }
 }
+
 async function loadList(){
   $("#list").innerHTML='';
   let map={}; try{ const snap=await get(ref(db,'dealershipPublic')); map=snap.val()||{}; }catch(e){ map={}; }
@@ -433,9 +441,9 @@ const liveListeners = new Map(); // did -> {ref, cb}
 function unsubscribeDisplay(did){ const e = liveListeners.get(did); if(e){ off(e.ref, 'value', e.cb); liveListeners.delete(did); } }
 
 async function toggleDisplaysUnder(li, id){
-  // close any existing for this dealership
+  // close existing for this dealership
   const opened = li.querySelector('.disp-card'); 
-  if(opened){ // remove all and unsubscribe
+  if(opened){
     li.querySelectorAll('.disp-card').forEach(card=>{
       const did = card.getAttribute('data-did');
       if(did) unsubscribeDisplay(did);
@@ -573,23 +581,6 @@ async function toggleDisplaysUnder(li, id){
     };
     onValue(r, cb); liveListeners.set(did,{ref:r,cb});
   }
-}
-
-/* ===== Users panel binder ===== */
-async function toggleUsersUnder(li, id){
-  const opened=li.querySelector('.sub.users'); if(opened){ opened.remove(); return; }
-  closeSubs(li);
-  const all=(await get(ref(db,'user'))).val()||{};
-  const list=Object.entries(all).map(([uid,v])=>({uid,...v})).filter(u=>u.dealershipId===id)
-    .sort((a,b)=> (a.role||'').localeCompare(b.role||'') || (a.name||'').localeCompare(b.name||''));
-  const sub=document.createElement('div'); sub.className='sub users';
-  sub.innerHTML=`<h4>Users</h4>
-    <ul style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">
-      ${list.length? list.map(u=>`<li style="display:flex;justify-content:space-between;gap:8px;border:1px solid var(--border);background:var(--tile);border-radius:10px;padding:8px">
-        <span><b>${esc(u.name||'No name')}</b><br><span class="muted">${esc(u.email||'')}</span></span><span class="tag">${esc(u.role||'user')}</span>
-      </li>`).join(''): `<li class="muted" style="padding:8px;border:1px solid var(--border);border-radius:10px">No users in this dealership.</li>`}
-    </ul>`;
-  li.appendChild(sub);
 }
 </script>
 </body>
