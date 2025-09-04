@@ -195,7 +195,7 @@ $('#logoutBtnMobile')?.addEventListener('click', ()=> signOut(auth).then(()=>loc
     {icon:I.edit(),  title:'Edit name',   desc:'Change public dealership name.'},
     {icon:I.swap(),  title:'Rename ID',   desc:'Migrate dealership ID and update references.'},
     {icon:I.trash(), title:'Delete',      desc:'Remove dealership (only if it has no TVs).'},
-    {icon:I.open(),  title:'Open tab',    desc:'Open a TV preview in a new tab.'}
+    {icon:I.open(),  title:'Open tab',    desc:'Opens an isolated tab (sandboxed) so your admin login stays intact.'}
   ];
   const g = document.getElementById('legendGrid');
   g.innerHTML = items.map(i=>`
@@ -213,8 +213,27 @@ async function countDisplaysForDealer(id){
   catch(e){ return 0; }
 }
 function previewUrlFor(displayId){
-  /* Use ONE player for all displays via ?display= */
-  return `https://flaviothebfagroup.github.io/IPTV-/player.html?display=${encodeURIComponent(displayId)}`;
+  /* Use your per-display files */
+  return `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(displayId)}.html`;
+}
+
+/* open in a truly isolated new tab using a sandboxed iframe wrapper (Blob) */
+function openIsolatedTab(id){
+  const url = previewUrlFor(id);
+  const html = `<!doctype html><html><head><meta charset="utf-8">
+    <title>Preview — ${id}</title>
+    <meta name="referrer" content="no-referrer">
+    <style>html,body{height:100%;margin:0;background:#000}</style></head>
+    <body>
+      <iframe src="${url}"
+        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+        sandbox="allow-scripts allow-forms allow-modals allow-pointer-lock allow-presentation allow-popups allow-popups-to-escape-sandbox"
+        referrerpolicy="no-referrer"
+        style="border:0;width:100%;height:100%"></iframe>
+    </body></html>`;
+  const blob = new Blob([html], {type:'text/html'});
+  const win = window.open(URL.createObjectURL(blob), '_blank', 'noopener');
+  if(!win) toast('Popup blocked — enable popups', true);
 }
 
 async function loadList(){
@@ -245,13 +264,14 @@ async function loadList(){
   }
 
   $("#list").onclick = async (e)=>{
-    const btn=e.target.closest('.iconbtn'); if(!btn) return;
-    const li=btn.closest('.item'); const id=li.dataset.id; const act=btn.dataset.act;
+    const btn=e.target.closest('.iconbtn, .btn'); if(!btn) return;
+    const li=btn.closest('.item'); const id=li.dataset.id; const act=btn.dataset.act || btn.dataset.role;
     if(act==='edit') await editName(id);
     else if(act==='rename') await renameId(id);
     else if(act==='delete') await delDealer(id);
     else if(act==='preview') await toggleDisplaysUnder(li,id);
     else if(act==='users') await toggleUsersUnder(li,id);
+    else if(act==='open-tab'){ openIsolatedTab(btn.getAttribute('data-id')); }
   };
 
   $("#addBtn").onclick = async ()=>{
@@ -338,14 +358,14 @@ async function toggleDisplaysUnder(li, id){
       ids.map(did=>`<li class="subitem" data-did="${esc(did)}">
         <span><b>${esc(did)}</b></span>
         <span style="display:flex;gap:6px">
-          <button class="btn" style="height:32px;padding:0 10px" data-preview="${esc(did)}" title="Preview">${`<svg class="icon" viewBox='0 0 24 24' width='16' height='16'><path d='M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7'/><circle cx='12' cy='12' r='3'/></svg>`}</button>
-          <a class="btn" style="height:32px;padding:0 10px" href="${previewUrlFor(did)}" target="_blank" rel="noopener" title="Open in new tab">${`<svg class="icon" viewBox='0 0 24 24' width='16' height='16'><path d='M14 3h7v7'/><path d='M10 14 21 3'/><path d='M21 14v7h-7'/></svg>`}</a>
+          <button class="btn" style="height:32px;padding:0 10px" data-preview="${esc(did)}" title="Preview">${I.eye()}</button>
+          <button class="btn" style="height:32px;padding:0 10px" data-role="open-tab" data-id="${esc(did)}" title="Open in new tab">${I.open()}</button>
         </span></li>`).join('')
     }</ul>` : `<div class="muted">No TVs yet.</div>`}
     <div class="iframeWrap" style="display:none"></div>`;
   li.appendChild(sub);
 
-  /* hook preview buttons */
+  /* inline preview (sandboxed, isolated — won’t affect admin auth) */
   sub.querySelectorAll('[data-preview]').forEach(btn=>{
     btn.addEventListener('click',()=>{
       const did=btn.getAttribute('data-preview');
@@ -354,6 +374,8 @@ async function toggleDisplaysUnder(li, id){
           title="Preview ${did}"
           src="${previewUrlFor(did)}"
           allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+          sandbox="allow-scripts allow-forms allow-modals allow-pointer-lock allow-presentation allow-popups allow-popups-to-escape-sandbox"
+          referrerpolicy="no-referrer"
           allowfullscreen
         ></iframe>`;
     });
