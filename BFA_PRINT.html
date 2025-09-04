@@ -228,8 +228,13 @@
   <!-- Firebase (module) -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    import {
+      getAuth, signInAnonymously, onAuthStateChanged,
+      setPersistence, inMemoryPersistence
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import {
+      getDatabase, ref, onValue, update, get, query, orderByChild, equalTo, remove
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
@@ -241,11 +246,19 @@
       appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
     };
 
-    const app = initializeApp(firebaseConfig);
+    // Detect admin preview: ?embed=1 or any iframe
+    const EMBED = /\bembed=1\b/i.test(location.search) || (window.top !== window.self);
+
+    // Use a separate app + in-memory auth for previews (so it never touches your admin session)
+    const app = initializeApp(firebaseConfig, EMBED ? 'embed' : undefined);
     const auth = getAuth(app);
-    await setPersistence(auth, inMemoryPersistence);   // <<<<< prevents the iframe from clobbering your admin session
+    if (EMBED) {
+      await setPersistence(auth, inMemoryPersistence);
+    }
+
     const db   = getDatabase(app);
 
+    // Anonymous sign-in
     signInAnonymously(auth).catch(e => {
       console.error('[auth]', e);
       window.setStatus(false, 'anon auth failed');
@@ -257,12 +270,31 @@
       const displayId      = CONFIG.displayId;
       const dealershipName = CONFIG.dealershipName;
 
+      // In EMBED mode: subscribe only; skip writes & heartbeat entirely.
+      if (EMBED) {
+        const dref = ref(db, `displays/${displayId}`);
+        onValue(dref, (snap) => {
+          const data = snap.val();
+          if (!data) return;
+          if (typeof data.channel === 'number' && data.channel !== window.currentChannel) window.loadChannel(data.channel);
+          if (data.volume !== undefined || data.muted !== undefined) window.applyVolumeSettings(data.volume, data.muted);
+          window.setStatus(true, '');
+        }, (err) => {
+          console.error('[listener]', err);
+          window.setStatus(false, 'listener error');
+        });
+        return;
+      }
+
+      // ===== REAL DEVICE (non-embed) =====
+      // (a) write/update user profile
       try {
         await update(ref(db, `user/${user.uid}`), {
           role: 'device',
-          name: displayId,
+          name: displayId,               // used for duplicate cleanup
           dealershipId: dealershipName,
-          updatedAt: Date.now()
+          updatedAt: Date.now(),
+          createdAt: Date.now()
         });
       } catch (e) {
         console.warn('[user write denied]', e);
@@ -270,6 +302,26 @@
         return;
       }
 
+      // (a.1) duplicate cleanup: keep only MOST RECENT user with this display name
+      try {
+        const uq = query(ref(db, 'user'), orderByChild('name'), equalTo(displayId));
+        const us = await get(uq);
+        const all = us.val() || {};
+        const entries = Object.entries(all);
+        if (entries.length > 1) {
+          // Sort by updatedAt; delete all except the newest (or except current uid)
+          const byTime = entries.sort(([,a],[,b]) => (b.updatedAt||0) - (a.updatedAt||0));
+          for (const [uid,data] of byTime) {
+            if (uid !== user.uid && data?.role === 'device') {
+              try { await remove(ref(db, 'user/'+uid)); } catch(_) {}
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[dupe-clean] failed', e);
+      }
+
+      // (b) ensure displays/{id}.dealership
       try {
         const dRef = ref(db, `displays/${displayId}`);
         const snap = await get(dRef);
@@ -287,6 +339,7 @@
         return;
       }
 
+      // (c) live subscribe (so the TV follows admin controls)
       const dref = ref(db, `displays/${displayId}`);
       onValue(dref, (snap) => {
         const data = snap.val();
@@ -296,9 +349,10 @@
         window.setStatus(true, '');
       }, (err) => {
         console.error('[listener]', err);
-        window.setStatus(false, err?.code === 'PERMISSION_DENIED' ? 'permission denied' : 'listener error');
+        window.setStatus(false, 'listener error');
       });
 
+      // (d) heartbeat — only for real device
       try{
         const hbRef = ref(db, `displays/${displayId}`);
         const beat  = async ()=>{ try{ await update(hbRef, { lastSeenAt: Date.now(), updatedAt: Date.now() }); }catch(e){} };
