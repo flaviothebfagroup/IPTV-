@@ -43,16 +43,15 @@
 
   @media (max-width:920px){
     .nav{display:none}
-    /* put burger top-left */
-    #hamburger{display:inline-flex;position:absolute;left:0;top:50%;transform:translateY(-50%);z-index:2}
-    .toprow{padding-left:46px} /* room for burger */
-    .actions{margin-left:0}
+    /* burger top-right */
+    #hamburger{display:inline-flex;position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:2}
+    .actions{margin-left:0;padding-right:36px} /* room so Logout doesn't collide */
   }
 
-  /* Tap highlights / focus */
+  /* Tap/focus – no blue */
   a,button{ -webkit-tap-highlight-color: transparent; }
   button:focus{ outline: none; }
-  button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  button:focus-visible, a:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
 </style>
 
 <!-- ======= PAGE STYLES ======= -->
@@ -92,7 +91,7 @@
   .iconbtn.danger{color:var(--danger);border-color:rgba(225,29,72,.35)}
   .icon{stroke:#111;stroke-width:1.9;fill:none} /* thin */
 
-  /* Toggleable selected (orange fill) */
+  /* universal filled selected */
   .selected{
     background:var(--accent)!important;
     color:#000!important;
@@ -100,6 +99,10 @@
     box-shadow:0 2px 0 rgba(0,0,0,.05), 0 0 0 3px rgba(255,149,0,.12);
   }
   .selected .icon, .selected .ic{ stroke:#000 !important; }
+
+  /* brief flash for one-shot actions */
+  .flash{ background:var(--accent)!important; color:#000!important; border-color:var(--accent)!important; }
+  .flash .icon{ stroke:#000!important; }
 
   /* sub area */
   .sub{grid-column:1/-1;margin-top:8px;background:#fff;border:1px solid var(--border2);border-radius:12px;padding:10px}
@@ -123,7 +126,7 @@
   .remoteBox.is-previewing .iframeWrap{border-color:var(--accent);box-shadow:inset 0 0 0 2px rgba(255,149,0,.15)}
   .remoteBox.is-previewing .badge{display:inline-flex}
 
-  /* Overlay controls INSIDE the preview */
+  /* Overlay controls in preview */
   .overlayControls{
     position:absolute; left:0; right:0; bottom:0;
     display:flex; flex-direction:column; gap:10px;
@@ -136,11 +139,13 @@
   .cluster{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .circle{height:36px;width:36px;border-radius:9999px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
   .circle .icon{stroke:#fff;stroke-width:2}
-  .circle:hover{border-color:var(--accent)}
-  .range{width:200px;height:6px;border-radius:999px;-webkit-appearance:none;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.35)}
+  .circle.selected{background:var(--accent);border-color:var(--accent)}
+  .circle.selected .icon{stroke:#000}
+
+  .range{width:220px;height:6px;border-radius:999px;-webkit-appearance:none;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.35)}
   .range::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);border:1px solid rgba(0,0,0,.35)}
   .pct{height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:9999px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);font-size:12px;font-weight:800;color:#fff}
-  @media (max-width:760px){ .range{width:150px} }
+  @media (max-width:760px){ .range{width:160px} }
 
   /* action chips */
   .chip{height:34px;padding:0 14px;border-radius:14px;border:1px solid var(--border2);background:#fff;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
@@ -208,8 +213,8 @@
 
     <div class="inputbar">
       <input id="dealerName" class="input" placeholder="New dealership name (e.g., Genesis Winnipeg)"/>
-      <button id="addBtn" class="btnText">Add</button>
-      <button id="reloadList" class="btnText">Reload</button>
+      <button id="addBtn" class="btnText" data-flash>Add</button>
+      <button id="reloadList" class="btnText" data-flash>Reload</button>
     </div>
 
     <div class="muted" style="margin-top:6px">Creates <code>/dealership/{ID}</code> and <code>/dealershipPublic/{ID}</code>. ID allows letters, numbers, CAPS, <b>-</b>, <b>_</b>.</div>
@@ -253,7 +258,7 @@ const I={
   ctrl:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M4 8h10"/><circle cx="16" cy="8" r="2"/><path d="M20 16H10"/><circle cx="8" cy="16" r="2"/></svg>`
 };
 
-/* ===== Current page highlight — robust detection ===== */
+/* ===== Current page highlight ===== */
 (function(){
   const fname=(location.pathname.split("/").pop()||"").toLowerCase();
   const map={ "":"home","/":"home","index.html":"home","home.html":"home",
@@ -340,6 +345,20 @@ async function getPreviewUrl(displayId){
   return v.previewUrl || defaultUrlForId(displayId);
 }
 
+/* ===== global fill behavior ===== */
+function flash(el){
+  if(!el) return;
+  el.classList.add('flash');
+  setTimeout(()=>el.classList.remove('flash'), 250);
+}
+
+document.addEventListener('click', (e)=>{
+  // brief flash for non-persistent buttons
+  const t=e.target.closest('[data-flash], .iconbtn[data-act], .btnText');
+  if(t) flash(t);
+});
+
+/* ===== main list ===== */
 async function loadList(){
   $("#list").innerHTML='';
   let map={}; try{ const snap=await get(ref(dbFB,'dealershipPublic')); map=snap.val()||{}; }catch(e){ map={}; }
@@ -462,7 +481,7 @@ async function toggleDisplaysUnder(li, id){
     ${ids.length? `<ul class="sublist">${
       ids.map(did=>`<li class="subitem" data-did="${esc(did)}">
           <div class="subleft">${esc(did)}</div>
-          <div class="subright"><button class="chip" data-ctrl="${esc(did)}">Open controls</button></div>
+          <div class="subright"><button class="chip" data-ctrl="${esc(did)}" data-persist>Open controls</button></div>
         </li>`).join('')
     }</ul>` : `<div class="muted">No TVs yet.</div>`}
     <div class="remoteBox" role="region" aria-label="Controls">
@@ -472,10 +491,10 @@ async function toggleDisplaysUnder(li, id){
           <span class="pillMini">On channel <b data-role="ch">—</b></span>
         </div>
         <div class="right">
-          <button class="chip" data-url>${I.link()} URL</button>
-          <button class="chip" data-preview>${I.eye()} Preview</button>
-          <button class="chip" data-ovctrl>${I.ctrl()} Controls</button>
-          <button class="chip" data-open>${I.open()} Open</button>
+          <button class="chip" data-url data-persist>${I.link()} URL</button>
+          <button class="chip" data-preview data-persist>${I.eye()} Preview</button>
+          <button class="chip" data-ovctrl data-persist>${I.ctrl()} Controls</button>
+          <button class="chip" data-open data-persist>${I.open()} Open</button>
         </div>
       </div>
       <div class="remoteBody">
@@ -483,9 +502,9 @@ async function toggleDisplaysUnder(li, id){
           <span class="badge">● Previewing</span>
           <div class="overlayControls">
             <div class="cluster">
-              <button class="circle" data-prev aria-label="Previous channel">${I.left()}</button>
-              <button class="circle" data-next aria-label="Next channel">${I.right()}</button>
-              <button class="circle" data-mute aria-label="Mute toggle">${I.vol()}</button>
+              <button class="circle" data-prev data-flash aria-label="Previous channel">${I.left()}</button>
+              <button class="circle" data-next data-flash aria-label="Next channel">${I.right()}</button>
+              <button class="circle" data-mute data-persist aria-label="Mute toggle">${I.vol()}</button>
             </div>
             <div class="cluster">
               <input class="range" type="range" min="0" max="100" value="50" data-vol>
@@ -516,19 +535,18 @@ async function toggleDisplaysUnder(li, id){
     try{ const s=await get(ref(dbFB,'displays/'+did)); const v=s.val()||{};
       ch=v.channel??1; vol=v.volume??50; muted=(v.muted!==undefined)?v.muted:true;
       chEl.textContent=ch; volRng.value=vol; volTxt.textContent=(muted||vol===0)?'0%':(vol+'%');
-      muteBtn.innerHTML = muted?`${I.mute()}`:`${I.vol()}`;
+      muteBtn.classList.toggle('selected', !!muted);
     }catch(e){}
   }
   const send = async (patch)=>{ try{ await update(ref(dbFB,'displays/'+currentDid), {...patch, timestamp:Date.now()}); }catch(e){} };
 
-  function deselect(el){ el && el.classList.remove('selected'); }
-  function select(el){ el && el.classList.add('selected'); }
-  function toggleSelect(el){ if(!el) return; el.classList.toggle('selected'); }
+  const deselect=(el)=>el&&el.classList.remove('selected');
+  const select  =(el)=>el&&el.classList.add('selected');
 
   // open controls for a DID
   sub.querySelectorAll('[data-ctrl]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
-      // close any external tab state
+      // close external tab if open
       if(winRef && !winRef.closed){ try{ winRef.close(); }catch(e){} }
       winRef=null;
       deselect(prevBtn); deselect(ctrlBtn); deselect(openBtn);
@@ -536,6 +554,8 @@ async function toggleDisplaysUnder(li, id){
       frame.style.display='none'; frame.innerHTML='';
       box.classList.remove('is-previewing');
 
+      // show this controls box
+      select(btn);
       currentDid = btn.getAttribute('data-ctrl');
       didEl.textContent = currentDid;
       currentUrl = await getPreviewUrl(currentDid);
@@ -545,7 +565,7 @@ async function toggleDisplaysUnder(li, id){
     });
   });
 
-  // URL change (prompt) — give visual confirmation fill while editing/saving
+  // URL change (prompt) — keeps fill while chip is active; clears after save/cancel
   urlBtn.onclick = async ()=>{
     if(!currentDid) return;
     select(urlBtn);
@@ -555,7 +575,7 @@ async function toggleDisplaysUnder(li, id){
     try{
       await update(ref(dbFB, 'displays/'+currentDid), { previewUrl:next, timestamp:Date.now() });
       toast('URL saved'); currentUrl=next;
-      setTimeout(()=>deselect(urlBtn), 1200);
+      deselect(urlBtn);
     }catch(e){
       toast('Save failed', true);
       deselect(urlBtn);
@@ -581,19 +601,16 @@ async function toggleDisplaysUnder(li, id){
     box.classList.add('is-previewing');
   };
 
-  // Controls overlay toggle (also shows on hover)
+  // Controls overlay toggle
   ctrlBtn.onclick = async ()=>{
     if(!currentDid) return;
-    // If preview isn't on, turn it on first
-    if(!prevBtn.classList.contains('selected')){
-      await prevBtn.click();
-    }
+    if(!prevBtn.classList.contains('selected')) await prevBtn.click(); // ensure preview on
     const on = !ctrlBtn.classList.contains('selected');
     if(on){ select(ctrlBtn); frame.classList.add('forceShow'); }
     else  { deselect(ctrlBtn); frame.classList.remove('forceShow'); }
   };
 
-  // Open tab toggle (open/close)
+  // Open tab toggle
   openBtn.onclick = async ()=>{
     if(!currentDid) return;
     const isOpen = !!(winRef && !winRef.closed);
@@ -609,12 +626,12 @@ async function toggleDisplaysUnder(li, id){
     select(openBtn);
   };
 
-  // Remote handlers (overlay)
-  sub.querySelector('[data-prev]').onclick = ()=>{ if(!currentDid) return; ch=Math.max(1,(ch|0)-1); chEl.textContent=ch; send({channel:ch}); };
-  sub.querySelector('[data-next]').onclick = ()=>{ if(!currentDid) return; ch=(ch|0)+1; chEl.textContent=ch; send({channel:ch}); };
+  // Overlay remote handlers
+  sub.querySelector('[data-prev]').onclick = (ev)=>{ flash(ev.currentTarget); if(!currentDid) return; ch=Math.max(1,(ch|0)-1); chEl.textContent=ch; send({channel:ch}); };
+  sub.querySelector('[data-next]').onclick = (ev)=>{ flash(ev.currentTarget); if(!currentDid) return; ch=(ch|0)+1; chEl.textContent=ch; send({channel:ch}); };
   volRng.oninput = ()=>{ if(!currentDid) return; const v=+volRng.value|0; vol=v; volTxt.textContent=(muted||v===0)?'0%':(v+'%'); };
   volRng.onchange= ()=>{ if(!currentDid) return; const v=+volRng.value|0; vol=v; send({volume:v}); };
-  muteBtn.onclick   = ()=>{ if(!currentDid) return; muted=!muted; muteBtn.innerHTML = muted?`${I.mute()}`:`${I.vol()}`; volTxt.textContent=(muted||(+volRng.value===0))?'0%':(volRng.value+'%'); send({muted}); };
+  muteBtn.onclick   = ()=>{ if(!currentDid) return; muted=!muted; muteBtn.classList.toggle('selected', !!muted); volTxt.textContent=(muted||(+volRng.value===0))?'0%':(volRng.value+'%'); send({muted}); };
 }
 </script>
 </body>
