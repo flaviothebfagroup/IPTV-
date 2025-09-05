@@ -24,7 +24,7 @@
   .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto}
   .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;color:inherit;text-decoration:none;font-weight:800;font-size:14px;line-height:1;white-space:nowrap}
   .pill:hover{border-color:var(--accent)}
-  .pill.is-active{outline:2px solid var(--accent)} /* outlined current page */
+  .pill.is-active{outline:2px solid var(--accent)}
   .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.6;fill:none}
 
   .actions{display:flex;gap:8px;margin-left:auto}
@@ -45,7 +45,7 @@
     .nav{display:none}
     /* burger top-right */
     #hamburger{display:inline-flex;position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:2}
-    .actions{margin-left:0;padding-right:36px} /* room so Logout doesn't collide */
+    .actions{margin-left:0;padding-right:36px}
   }
 
   /* Tap/focus – no blue */
@@ -89,7 +89,7 @@
   .iconbtn{height:36px;width:36px;padding:0;border-radius:10px;border:1px solid var(--border2);background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
   .iconbtn:hover{border-color:var(--accent)}
   .iconbtn.danger{color:var(--danger);border-color:rgba(225,29,72,.35)}
-  .icon{stroke:#111;stroke-width:1.9;fill:none} /* thin */
+  .icon{stroke:#111;stroke-width:1.9;fill:none}
 
   /* universal filled selected */
   .selected{
@@ -126,7 +126,7 @@
   .remoteBox.is-previewing .iframeWrap{border-color:var(--accent);box-shadow:inset 0 0 0 2px rgba(255,149,0,.15)}
   .remoteBox.is-previewing .badge{display:inline-flex}
 
-  /* Overlay controls in preview */
+  /* overlay controls that sit over the video (desktop hover) */
   .overlayControls{
     position:absolute; left:0; right:0; bottom:0;
     display:flex; flex-direction:column; gap:10px;
@@ -151,6 +151,14 @@
   .chip{height:34px;padding:0 14px;border-radius:14px;border:1px solid var(--border2);background:#fff;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
   .chip:hover{border-color:var(--accent)}
   .chip svg{width:16px;height:16px;stroke:currentColor;stroke-width:1.9;fill:none}
+
+  /* under-preview controls (mobile / when Controls is on) */
+  .underControls{display:none;margin-top:10px;border:1px solid var(--border2);border-radius:12px;padding:10px;background:#fff;display:flex;flex-direction:column;gap:10px}
+  .underControls .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .underControls .iconbtn{height:34px;width:34px;border-radius:9999px}
+  .underControls .range{width:180px;background:#eee;border:1px solid var(--border2)}
+  .underControls .pct{color:#111;background:#fff;border-color:var(--border2)}
+  @media (min-width:761px){ .underControls{display:none!important} } /* desktop: overlay is primary */
 
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;z-index:99}
   .toast.show{opacity:1} .toast.err{background:#ff453a;color:#fff}
@@ -286,10 +294,9 @@ const I={
 })();
 
 /* ===== auth gate + logout ===== */
-const appFB = app; const authFB=auth; const dbFB=db;
-onAuthStateChanged(authFB, async (user)=>{
+onAuthStateChanged(getAuth(), async (user)=>{
   if(!user){ location.href='home.html'; return; }
-  const u = (await get(ref(dbFB, 'user/'+user.uid))).val()||{};
+  const u = (await get(ref(db, 'user/'+user.uid))).val()||{};
   if(u.role!=='admin'){ document.body.innerHTML = `
       <div style="padding:40px">
         <div class="card"><h3>Not authorized</h3>
@@ -298,7 +305,7 @@ onAuthStateChanged(authFB, async (user)=>{
   }
   loadList();
 });
-$('#logoutBtn')?.addEventListener('click', ()=> signOut(authFB).then(()=>location.href='home.html'));
+$('#logoutBtn')?.addEventListener('click', ()=> signOut(getAuth()).then(()=>location.href='home.html'));
 
 /* ===== legend ===== */
 (function renderLegend(){
@@ -329,40 +336,32 @@ function withEmbed(u){
   catch { return u + (u.includes('?')?'&':'?') + 'embed=1'; }
 }
 
+/* ===== tiny helpers ===== */
+function flash(el){ if(!el) return; el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'), 220); }
+function select(el){ el && el.classList.add('selected'); }
+function deselect(el){ el && el.classList.remove('selected'); }
+
 /* ===== data ops ===== */
 $("#reloadList").addEventListener('click', loadList);
 
 async function countDisplaysForDealer(id){
-  try{ const qRef=query(ref(dbFB,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; }
+  try{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; }
   catch(e){ return 0; }
 }
 async function listDisplays(dealershipId){
-  const snap=await get(query(ref(dbFB,'displays'),orderByChild('dealership'),equalTo(dealershipId)));
+  const snap=await get(query(ref(db,'displays'),orderByChild('dealership'),equalTo(dealershipId)));
   return Object.keys(snap.val()||{}).sort();
 }
 async function getPreviewUrl(displayId){
-  const s=await get(ref(dbFB,'displays/'+displayId)); const v=s.val()||{};
+  const s=await get(ref(db,'displays/'+displayId)); const v=s.val()||{};
   return v.previewUrl || defaultUrlForId(displayId);
 }
-
-/* ===== global fill behavior ===== */
-function flash(el){
-  if(!el) return;
-  el.classList.add('flash');
-  setTimeout(()=>el.classList.remove('flash'), 250);
-}
-
-document.addEventListener('click', (e)=>{
-  // brief flash for non-persistent buttons
-  const t=e.target.closest('[data-flash], .iconbtn[data-act], .btnText');
-  if(t) flash(t);
-});
 
 /* ===== main list ===== */
 async function loadList(){
   $("#list").innerHTML='';
-  let map={}; try{ const snap=await get(ref(dbFB,'dealershipPublic')); map=snap.val()||{}; }catch(e){ map={}; }
-  if(!Object.keys(map).length){ try{ const s2=await get(ref(dbFB,'dealership')); const raw=s2.val()||{}; for(const id of Object.keys(raw)) map[id]={name: raw[id]?.name||id}; }catch(e){} }
+  let map={}; try{ const snap=await get(ref(db,'dealershipPublic')); map=snap.val()||{}; }catch(e){ map={}; }
+  if(!Object.keys(map).length){ try{ const s2=await get(ref(db,'dealership')); const raw=s2.val()||{}; for(const id of Object.keys(raw)) map[id]={name: raw[id]?.name||id}; }catch(e){} }
   const ids=Object.keys(map).sort();
   $("#empty").style.display = ids.length? 'none':'block';
 
@@ -390,33 +389,46 @@ async function loadList(){
   $("#list").onclick = async (e)=>{
     const btn=e.target.closest('.iconbtn'); if(!btn) return;
     const li=btn.closest('.item'); const id=li.dataset.id; const act=btn.dataset.act;
-    if(act==='edit') await editName(id);
-    else if(act==='rename') await renameId(id);
-    else if(act==='delete') await delDealer(id);
-    else if(act==='preview') await toggleDisplaysUnder(li,id);
-    else if(act==='users') await toggleUsersUnder(li,id);
-    else if(act==='safe') { const dids=await listDisplays(id); if(dids.length){ const u = await getPreviewUrl(dids[0]); window.open(withEmbed(u),'_blank','noopener'); } else toast('No TVs yet',true); }
+
+    // visual fill behavior for row action toggles
+    function clearRowSelections(){ li.querySelectorAll('.actions .iconbtn.selected').forEach(b=>deselect(b)); }
+
+    if(act==='edit'){ flash(btn); await editName(id); }
+    else if(act==='rename'){ flash(btn); await renameId(id); }
+    else if(act==='delete'){ flash(btn); await delDealer(id); }
+    else if(act==='safe'){ flash(btn); const dids=await listDisplays(id); if(dids.length){ const u = await getPreviewUrl(dids[0]); window.open(withEmbed(u),'_blank','noopener'); } else toast('No TVs yet',true); }
+    else if(act==='users'){ // toggle users sub
+      const opened=li.querySelector('.sub.users');
+      if(opened){ opened.remove(); deselect(btn); return; }
+      clearRowSelections(); select(btn); await toggleUsersUnder(li,id,btn);
+    }
+    else if(act==='preview'){ // toggle displays sub
+      const opened=li.querySelector('.sub.displays');
+      if(opened){ opened.remove(); deselect(btn); return; }
+      clearRowSelections(); select(btn); await toggleDisplaysUnder(li,id,btn);
+    }
   };
 
   $("#addBtn").onclick = async ()=>{
+    flash($("#addBtn"));
     const name=$("#dealerName").value.trim(); if(!name) return toast('Enter a name',true);
     const suggested = name.replace(/\s+/g,'').replace(/[^A-Za-z0-9\-_]/g,'').slice(0,40);
     const id = sanitizeId(suggested||name);
     try{
-      const exists = (await get(ref(dbFB,'dealershipPublic/'+id))).exists() || (await get(ref(dbFB,'dealership/'+id))).exists();
+      const exists = (await get(ref(db,'dealershipPublic/'+id))).exists() || (await get(ref(db,'dealership/'+id))).exists();
       if(exists){ toast('ID exists — choose another',true); return; }
-      const meta={ name, createdAt:Date.now(), createdBy: authFB.currentUser?.email||'admin', displays:{} };
-      await set(ref(dbFB,'dealership/'+id), meta);
-      await set(ref(dbFB,'dealershipPublic/'+id), { name });
+      const meta={ name, createdAt:Date.now(), createdBy: getAuth().currentUser?.email||'admin', displays:{} };
+      await set(ref(db,'dealership/'+id), meta);
+      await set(ref(db,'dealershipPublic/'+id), { name });
       $("#dealerName").value=''; toast('Dealership added'); loadList();
     }catch(e){ toast('Create failed',true); }
   };
 }
 
 async function editName(id){
-  const cur=(await get(ref(dbFB,'dealershipPublic/'+id))).val()?.name||id;
+  const cur=(await get(ref(db,'dealershipPublic/'+id))).val()?.name||id;
   const next=prompt('Public name',cur); if(!next || next===cur) return;
-  try{ await set(ref(dbFB,'dealershipPublic/'+id),{name:next}); try{await update(ref(dbFB,'dealership/'+id),{name:next});}catch(_){}
+  try{ await set(ref(db,'dealershipPublic/'+id),{name:next}); try{await update(ref(db,'dealership/'+id),{name:next});}catch(_){}
        toast('Name updated'); loadList(); }catch(e){ toast('Update failed',true); }
 }
 async function renameId(oldId){
@@ -424,32 +436,32 @@ async function renameId(oldId){
   const newId = sanitizeId(asked||''); if(!newId || newId===oldId) return;
   if(!confirm(`Migrate ${oldId} → ${newId}? Displays & users will be updated.`)) return;
   try{
-    const existsPub=(await get(ref(dbFB,'dealershipPublic/'+newId))).exists();
-    const existsMeta=(await get(ref(dbFB,'dealership/'+newId))).exists();
+    const existsPub=(await get(ref(db,'dealershipPublic/'+newId))).exists();
+    const existsMeta=(await get(ref(db,'dealership/'+newId))).exists();
     if(existsPub||existsMeta){ alert('Target ID exists.'); return; }
-    const pubName=(await get(ref(dbFB,'dealershipPublic/'+oldId))).val()?.name||oldId;
-    await set(ref(dbFB,'dealershipPublic/'+newId),{name:pubName});
-    const meta=(await get(ref(dbFB,'dealership/'+oldId))).val()||{}; if(Object.keys(meta).length) await set(ref(dbFB,'dealership/'+newId),meta);
+    const pubName=(await get(ref(db,'dealershipPublic/'+oldId))).val()?.name||oldId;
+    await set(ref(db,'dealershipPublic/'+newId),{name:pubName});
+    const meta=(await get(ref(db,'dealership/'+oldId))).val()||{}; if(Object.keys(meta).length) await set(ref(db,'dealership/'+newId),meta);
 
-    const qRef=query(ref(dbFB,'displays'),orderByChild('dealership'),equalTo(oldId));
+    const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(oldId));
     const dMap=(await get(qRef)).val()||{}; for(const did of Object.keys(dMap)){
-      await update(ref(dbFB,'displays/'+did),{dealership:newId, timestamp:Date.now()});
-      try{ await remove(ref(dbFB,'dealership/'+oldId+'/displays/'+did)); }catch(_){}
-      try{ await set(ref(dbFB,'dealership/'+newId+'/displays/'+did),true); }catch(_){}
+      await update(ref(db,'displays/'+did),{dealership:newId, timestamp:Date.now()});
+      try{ await remove(ref(db,'dealership/'+oldId+'/displays/'+did)); }catch(_){}
+      try{ await set(ref(db,'dealership/'+newId+'/displays/'+did),true); }catch(_){}
     }
-    const users=(await get(ref(dbFB,'user'))).val()||{}; for(const uid of Object.keys(users)){
-      if(users[uid]?.dealershipId===oldId) await update(ref(dbFB,'user/'+uid),{dealershipId:newId,dealershipName:pubName});
+    const users=(await get(ref(db,'user'))).val()||{}; for(const uid of Object.keys(users)){
+      if(users[uid]?.dealershipId===oldId) await update(ref(db,'user/'+uid),{dealershipId:newId,dealershipName:pubName});
     }
-    await remove(ref(dbFB,'dealershipPublic/'+oldId)).catch(()=>{});
-    await remove(ref(dbFB,'dealership/'+oldId)).catch(()=>{});
+    await remove(ref(db,'dealershipPublic/'+oldId)).catch(()=>{});
+    await remove(ref(db,'dealership/'+oldId)).catch(()=>{});
     toast('ID migrated'); loadList();
   }catch(e){ toast('Rename failed',true); }
 }
 async function delDealer(id){
-  const cnt = await (async()=>{ const qRef=query(ref(dbFB,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; })();
+  const cnt = await (async()=>{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; })();
   if(cnt>0){ alert(`This dealership still has ${cnt} TV(s). Remove/migrate first.`); return; }
   if(!confirm(`Delete ${id}?`)) return;
-  try{ await remove(ref(dbFB,'dealershipPublic/'+id)).catch(()=>{}); await remove(ref(dbFB,'dealership/'+id)).catch(()=>{});
+  try{ await remove(ref(db,'dealershipPublic/'+id)).catch(()=>{}); await remove(ref(db,'dealership/'+id)).catch(()=>{});
        toast('Deleted'); loadList(); }catch(e){ toast('Delete failed',true); }
 }
 
@@ -458,7 +470,7 @@ function closeSubs(li){ li.querySelectorAll('.sub').forEach(n=>n.remove()); }
 async function toggleUsersUnder(li, id){
   const opened=li.querySelector('.sub.users'); if(opened){ opened.remove(); return; }
   closeSubs(li);
-  const all=(await get(ref(dbFB,'user'))).val()||{};
+  const all=(await get(ref(db,'user'))).val()||{};
   const list=Object.entries(all).map(([uid,v])=>({uid,...v})).filter(u=>u.dealershipId===id)
     .sort((a,b)=> (a.role||'').localeCompare(b.role||'') || (a.name||'').localeCompare(b.name||''));
   const sub=document.createElement('div'); sub.className='sub users';
@@ -469,11 +481,11 @@ async function toggleUsersUnder(li, id){
   li.appendChild(sub);
 }
 
-/* ===== Displays (merged actions + overlay controls) ===== */
+/* ===== Displays (merged actions + overlay + under controls) ===== */
 async function toggleDisplaysUnder(li, id){
   const opened=li.querySelector('.sub.displays'); if(opened){ opened.remove(); return; }
   closeSubs(li);
-  const snap=await get(query(ref(dbFB,'displays'),orderByChild('dealership'),equalTo(id)));
+  const snap=await get(query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)));
   const map=snap.val()||{}; const ids=Object.keys(map).sort();
 
   const sub=document.createElement('div'); sub.className='sub displays';
@@ -481,7 +493,7 @@ async function toggleDisplaysUnder(li, id){
     ${ids.length? `<ul class="sublist">${
       ids.map(did=>`<li class="subitem" data-did="${esc(did)}">
           <div class="subleft">${esc(did)}</div>
-          <div class="subright"><button class="chip" data-ctrl="${esc(did)}" data-persist>Open controls</button></div>
+          <div class="subright"><button class="chip" data-ctrl="${esc(did)}">Open controls</button></div>
         </li>`).join('')
     }</ul>` : `<div class="muted">No TVs yet.</div>`}
     <div class="remoteBox" role="region" aria-label="Controls">
@@ -491,20 +503,21 @@ async function toggleDisplaysUnder(li, id){
           <span class="pillMini">On channel <b data-role="ch">—</b></span>
         </div>
         <div class="right">
-          <button class="chip" data-url data-persist>${I.link()} URL</button>
-          <button class="chip" data-preview data-persist>${I.eye()} Preview</button>
-          <button class="chip" data-ovctrl data-persist>${I.ctrl()} Controls</button>
-          <button class="chip" data-open data-persist>${I.open()} Open</button>
+          <button class="chip" data-url>${I.link()} URL</button>
+          <button class="chip" data-preview>${I.eye()} Preview</button>
+          <button class="chip" data-ovctrl>${I.ctrl()} Controls</button>
+          <button class="chip" data-open>${I.open()} Open</button>
         </div>
       </div>
       <div class="remoteBody">
         <div class="iframeWrap" style="display:none">
           <span class="badge">● Previewing</span>
+          <div class="iframeSlot"></div>
           <div class="overlayControls">
             <div class="cluster">
-              <button class="circle" data-prev data-flash aria-label="Previous channel">${I.left()}</button>
-              <button class="circle" data-next data-flash aria-label="Next channel">${I.right()}</button>
-              <button class="circle" data-mute data-persist aria-label="Mute toggle">${I.vol()}</button>
+              <button class="circle" data-prev aria-label="Previous channel">${I.left()}</button>
+              <button class="circle" data-next aria-label="Next channel">${I.right()}</button>
+              <button class="circle" data-mute aria-label="Mute toggle">${I.vol()}</button>
             </div>
             <div class="cluster">
               <input class="range" type="range" min="0" max="100" value="50" data-vol>
@@ -512,60 +525,82 @@ async function toggleDisplaysUnder(li, id){
             </div>
           </div>
         </div>
+
+        <!-- Under-preview controls (mobile or when Controls ON) -->
+        <div class="underControls" style="display:none">
+          <div class="row">
+            <button class="iconbtn" data-prev title="Previous channel">${I.left()}</button>
+            <button class="iconbtn" data-next title="Next channel">${I.right()}</button>
+            <button class="iconbtn" data-mute title="Mute toggle">${I.vol()}</button>
+            <span class="pillMini" data-role="voltxt">50%</span>
+          </div>
+          <div class="row">
+            <input class="range" type="range" min="0" max="100" value="50" data-vol>
+          </div>
+        </div>
       </div>
     </div>`;
   li.appendChild(sub);
 
-  // refs inside this sub
+  // refs
   const box     = sub.querySelector('.remoteBox');
   const didEl   = sub.querySelector('[data-role="did"]');
   const chEl    = sub.querySelector('[data-role="ch"]');
-  const volTxt  = sub.querySelector('[data-role="voltxt"]');
-  const volRng  = sub.querySelector('[data-vol]');
-  const muteBtn = sub.querySelector('[data-mute]');
   const frame   = sub.querySelector('.iframeWrap');
+  const slot    = sub.querySelector('.iframeSlot');
   const urlBtn  = sub.querySelector('[data-url]');
   const prevBtn = sub.querySelector('[data-preview]');
   const ctrlBtn = sub.querySelector('[data-ovctrl]');
   const openBtn = sub.querySelector('[data-open]');
+  const under   = sub.querySelector('.underControls');
 
   let currentDid=null, currentUrl=null, ch=1, vol=50, muted=true, winRef=null;
 
+  function syncVolUI(){
+    sub.querySelectorAll('[data-role="voltxt"]').forEach(el=>{
+      el.textContent = (muted || vol===0) ? '0%' : (vol+'%');
+    });
+    sub.querySelectorAll('[data-vol]').forEach(r=>{ if(+r.value!==vol) r.value=vol; });
+    sub.querySelectorAll('[data-mute]').forEach(b=> b.classList.toggle('selected', !!muted));
+  }
   async function loadState(did){
-    try{ const s=await get(ref(dbFB,'displays/'+did)); const v=s.val()||{};
+    try{
+      const s=await get(ref(db,'displays/'+did)); const v=s.val()||{};
       ch=v.channel??1; vol=v.volume??50; muted=(v.muted!==undefined)?v.muted:true;
-      chEl.textContent=ch; volRng.value=vol; volTxt.textContent=(muted||vol===0)?'0%':(vol+'%');
-      muteBtn.classList.toggle('selected', !!muted);
+      chEl.textContent=ch; syncVolUI();
     }catch(e){}
   }
-  const send = async (patch)=>{ try{ await update(ref(dbFB,'displays/'+currentDid), {...patch, timestamp:Date.now()}); }catch(e){} };
+  const send = async (patch)=>{ try{ await update(ref(db,'displays/'+currentDid), {...patch, timestamp:Date.now()}); }catch(e){} };
 
-  const deselect=(el)=>el&&el.classList.remove('selected');
-  const select  =(el)=>el&&el.classList.add('selected');
-
-  // open controls for a DID
+  // open controls for a DID (toggle fill)
   sub.querySelectorAll('[data-ctrl]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
-      // close external tab if open
-      if(winRef && !winRef.closed){ try{ winRef.close(); }catch(e){} }
-      winRef=null;
-      deselect(prevBtn); deselect(ctrlBtn); deselect(openBtn);
-      frame.classList.remove('forceShow');
-      frame.style.display='none'; frame.innerHTML='';
-      box.classList.remove('is-previewing');
-
-      // show this controls box
+      // clear any previous selected chip in the list
+      sub.querySelectorAll('[data-ctrl].selected').forEach(b=>deselect(b));
       select(btn);
+
+      // close external preview tab if open
+      if(winRef && !winRef.closed){ try{ winRef.close(); }catch(e){} }
+      winRef=null; deselect(openBtn);
+
+      // reset preview UI
+      deselect(prevBtn); deselect(ctrlBtn);
+      frame.classList.remove('forceShow');
+      frame.style.display='none'; slot.innerHTML=''; box.classList.remove('is-previewing');
+      under.style.display='none';
+
+      // set current did + state
       currentDid = btn.getAttribute('data-ctrl');
       didEl.textContent = currentDid;
       currentUrl = await getPreviewUrl(currentDid);
       await loadState(currentDid);
+
       box.style.display='block';
       box.scrollIntoView({behavior:'smooth',block:'center'});
     });
   });
 
-  // URL change (prompt) — keeps fill while chip is active; clears after save/cancel
+  // URL change (prompt)
   urlBtn.onclick = async ()=>{
     if(!currentDid) return;
     select(urlBtn);
@@ -573,51 +608,52 @@ async function toggleDisplaysUnder(li, id){
     const next = prompt('Preview URL for '+currentDid, cur);
     if(!next || next===cur){ deselect(urlBtn); return; }
     try{
-      await update(ref(dbFB, 'displays/'+currentDid), { previewUrl:next, timestamp:Date.now() });
+      await update(ref(db, 'displays/'+currentDid), { previewUrl:next, timestamp:Date.now() });
       toast('URL saved'); currentUrl=next;
-      deselect(urlBtn);
-    }catch(e){
-      toast('Save failed', true);
-      deselect(urlBtn);
-    }
+    }catch(e){ toast('Save failed', true); }
+    deselect(urlBtn);
   };
 
-  // Preview toggle (inline)
+  // Preview toggle (inline, keeps overlays intact)
   prevBtn.onclick = async ()=>{
     if(!currentDid) return;
     const active = prevBtn.classList.contains('selected');
     if(active){
-      deselect(prevBtn);
-      box.classList.remove('is-previewing');
-      frame.classList.remove('forceShow');
-      frame.style.display='none';
-      frame.innerHTML='';
+      deselect(prevBtn); box.classList.remove('is-previewing');
+      frame.classList.remove('forceShow'); frame.style.display='none'; slot.innerHTML='';
+      under.style.display='none';
       return;
     }
     select(prevBtn);
     const u = isAbsoluteUrl(currentUrl)?currentUrl:defaultUrlForId(currentUrl);
     frame.style.display='block';
-    frame.innerHTML=`<iframe title="Preview ${esc(currentDid)}" src="${withEmbed(u)}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+    slot.innerHTML = `<iframe title="Preview ${esc(currentDid)}" src="${withEmbed(u)}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
     box.classList.add('is-previewing');
   };
 
-  // Controls overlay toggle
+  // Controls overlay toggle (also shows under-controls on mobile)
   ctrlBtn.onclick = async ()=>{
     if(!currentDid) return;
-    if(!prevBtn.classList.contains('selected')) await prevBtn.click(); // ensure preview on
+    if(!prevBtn.classList.contains('selected')) await prevBtn.click(); // ensure preview is visible
     const on = !ctrlBtn.classList.contains('selected');
-    if(on){ select(ctrlBtn); frame.classList.add('forceShow'); }
-    else  { deselect(ctrlBtn); frame.classList.remove('forceShow'); }
+    if(on){
+      select(ctrlBtn);
+      frame.classList.add('forceShow');
+      under.style.display = 'flex'; // visible on mobile; hidden by CSS on desktop
+    }else{
+      deselect(ctrlBtn);
+      frame.classList.remove('forceShow');
+      under.style.display = 'none';
+    }
   };
 
-  // Open tab toggle
+  // Open tab toggle (stays filled while tab is open)
   openBtn.onclick = async ()=>{
     if(!currentDid) return;
     const isOpen = !!(winRef && !winRef.closed);
     if(isOpen){
       try{ winRef.close(); }catch(e){}
-      winRef=null;
-      deselect(openBtn);
+      winRef=null; deselect(openBtn);
       return;
     }
     const u = isAbsoluteUrl(currentUrl)?currentUrl:defaultUrlForId(currentUrl);
@@ -626,12 +662,35 @@ async function toggleDisplaysUnder(li, id){
     select(openBtn);
   };
 
-  // Overlay remote handlers
-  sub.querySelector('[data-prev]').onclick = (ev)=>{ flash(ev.currentTarget); if(!currentDid) return; ch=Math.max(1,(ch|0)-1); chEl.textContent=ch; send({channel:ch}); };
-  sub.querySelector('[data-next]').onclick = (ev)=>{ flash(ev.currentTarget); if(!currentDid) return; ch=(ch|0)+1; chEl.textContent=ch; send({channel:ch}); };
-  volRng.oninput = ()=>{ if(!currentDid) return; const v=+volRng.value|0; vol=v; volTxt.textContent=(muted||v===0)?'0%':(v+'%'); };
-  volRng.onchange= ()=>{ if(!currentDid) return; const v=+volRng.value|0; vol=v; send({volume:v}); };
-  muteBtn.onclick   = ()=>{ if(!currentDid) return; muted=!muted; muteBtn.classList.toggle('selected', !!muted); volTxt.textContent=(muted||(+volRng.value===0))?'0%':(volRng.value+'%'); send({muted}); };
+  /* ===== Controller events (work for overlay AND under-controls) ===== */
+  sub.addEventListener('click',(ev)=>{
+    const t = ev.target.closest('[data-prev],[data-next],[data-mute]');
+    if(!t || !currentDid) return;
+
+    if(t.hasAttribute('data-prev')){
+      ch=Math.max(1,(ch|0)-1); chEl.textContent=ch; select(t); send({channel:ch});
+      setTimeout(()=>deselect(t),120);
+    }else if(t.hasAttribute('data-next')){
+      ch=(ch|0)+1; chEl.textContent=ch; select(t); send({channel:ch});
+      setTimeout(()=>deselect(t),120);
+    }else if(t.hasAttribute('data-mute')){
+      muted=!muted; syncVolUI(); // UI for all mute buttons + vol pct
+      send({muted});
+    }
+  });
+
+  sub.querySelectorAll('[data-vol]').forEach(r=>{
+    r.addEventListener('input',()=>{
+      if(!currentDid) return;
+      vol = +r.value|0;
+      syncVolUI();
+    });
+    r.addEventListener('change',()=>{
+      if(!currentDid) return;
+      vol = +r.value|0;
+      send({volume:vol});
+    });
+  });
 }
 </script>
 </body>
