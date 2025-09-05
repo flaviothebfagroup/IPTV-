@@ -16,7 +16,7 @@
     --shadow:0 8px 28px rgba(0,0,0,.08);
   }
   .topbar{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
-  .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px}
+  .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;position:relative}
   .brand{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
   .logo{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:#fff center/cover no-repeat}
   .logotxt{font-weight:900;letter-spacing:.2px}
@@ -24,8 +24,7 @@
   .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto}
   .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;color:inherit;text-decoration:none;font-weight:800;font-size:14px;line-height:1;white-space:nowrap}
   .pill:hover{border-color:var(--accent)}
-  /* OUTLINED current page (as you liked) */
-  .pill.is-active{outline:2px solid var(--accent)}
+  .pill.is-active{outline:2px solid var(--accent)} /* outlined current page */
   .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.6;fill:none}
 
   .actions{display:flex;gap:8px;margin-left:auto}
@@ -44,7 +43,9 @@
 
   @media (max-width:920px){
     .nav{display:none}
-    #hamburger{display:inline-flex}
+    /* put burger top-left */
+    #hamburger{display:inline-flex;position:absolute;left:0;top:50%;transform:translateY(-50%);z-index:2}
+    .toprow{padding-left:46px} /* room for burger */
     .actions{margin-left:0}
   }
 
@@ -115,7 +116,6 @@
   .remoteHead .right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .pillMini{height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:9999px;border:1px solid var(--border2);background:#fff;font-size:12px;font-weight:800}
 
-  /* Bigger, single-column body */
   .remoteBody{padding:10px;background:#fff}
   .iframeWrap{position:relative;border:1px solid var(--border2);border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9}
   .iframeWrap iframe{width:100%;height:100%;border:0;background:#000}
@@ -137,10 +137,9 @@
   .circle{height:36px;width:36px;border-radius:9999px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
   .circle .icon{stroke:#fff;stroke-width:2}
   .circle:hover{border-color:var(--accent)}
-  .meter{display:flex;align-items:center;gap:10px}
-  .pct{height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:9999px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);font-size:12px;font-weight:800;color:#fff}
   .range{width:200px;height:6px;border-radius:999px;-webkit-appearance:none;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.35)}
   .range::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);border:1px solid rgba(0,0,0,.35)}
+  .pct{height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:9999px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);font-size:12px;font-weight:800;color:#fff}
   @media (max-width:760px){ .range{width:150px} }
 
   /* action chips */
@@ -241,7 +240,7 @@ function toast(msg,err=false){const t=$("#toast");t.textContent=msg;t.className=
 function sanitizeId(raw){ let id=(raw||'').replace(/[^A-Za-z0-9\-_]/g,'').slice(0,40); if(!id){ id=(raw||'').normalize('NFKD').replace(/[^\w\-]+/g,'').slice(0,40);} return id; }
 const I={
   eye:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7"/><circle cx="12" cy="12" r="3"/></svg>`,
-  users:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg>`,
+  users:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><circle cx="9" cy="8" r="4"/><path d="M17 11a4 4 0 1 0-4-4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/><path d="M17 22c0-2 .8-3.8 2-5"/></svg>`,
   edit:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>`,
   swap:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M17 7H7l4-4M7 17h10l-4 4"/></svg>`,
   trash:()=>`<svg class="icon icon-danger" viewBox="0 0 24 24" width="18" height="18"><path d="M3 6h18"/><path d="M8 6l1-2h6l1 2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,
@@ -523,18 +522,18 @@ async function toggleDisplaysUnder(li, id){
   const send = async (patch)=>{ try{ await update(ref(dbFB,'displays/'+currentDid), {...patch, timestamp:Date.now()}); }catch(e){} };
 
   function deselect(el){ el && el.classList.remove('selected'); }
+  function select(el){ el && el.classList.add('selected'); }
   function toggleSelect(el){ if(!el) return; el.classList.toggle('selected'); }
 
   // open controls for a DID
   sub.querySelectorAll('[data-ctrl]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
-      // Reset previous open tab if any
+      // close any external tab state
       if(winRef && !winRef.closed){ try{ winRef.close(); }catch(e){} }
       winRef=null;
-      prevBtn.classList.remove('selected'); ctrlBtn.classList.remove('selected'); openBtn.classList.remove('selected');
+      deselect(prevBtn); deselect(ctrlBtn); deselect(openBtn);
       frame.classList.remove('forceShow');
-      frame.style.display='none';
-      frame.innerHTML='';
+      frame.style.display='none'; frame.innerHTML='';
       box.classList.remove('is-previewing');
 
       currentDid = btn.getAttribute('data-ctrl');
@@ -546,14 +545,21 @@ async function toggleDisplaysUnder(li, id){
     });
   });
 
-  // URL change (prompt)
+  // URL change (prompt) — give visual confirmation fill while editing/saving
   urlBtn.onclick = async ()=>{
     if(!currentDid) return;
+    select(urlBtn);
     const cur = await getPreviewUrl(currentDid);
     const next = prompt('Preview URL for '+currentDid, cur);
-    if(!next || next===cur) return;
-    try{ await update(ref(dbFB, 'displays/'+currentDid), { previewUrl:next, timestamp:Date.now() }); toast('URL saved'); currentUrl=next; }
-    catch(e){ toast('Save failed', true); }
+    if(!next || next===cur){ deselect(urlBtn); return; }
+    try{
+      await update(ref(dbFB, 'displays/'+currentDid), { previewUrl:next, timestamp:Date.now() });
+      toast('URL saved'); currentUrl=next;
+      setTimeout(()=>deselect(urlBtn), 1200);
+    }catch(e){
+      toast('Save failed', true);
+      deselect(urlBtn);
+    }
   };
 
   // Preview toggle (inline)
@@ -561,7 +567,6 @@ async function toggleDisplaysUnder(li, id){
     if(!currentDid) return;
     const active = prevBtn.classList.contains('selected');
     if(active){
-      // turn OFF
       deselect(prevBtn);
       box.classList.remove('is-previewing');
       frame.classList.remove('forceShow');
@@ -569,8 +574,7 @@ async function toggleDisplaysUnder(li, id){
       frame.innerHTML='';
       return;
     }
-    // turn ON
-    toggleSelect(prevBtn);
+    select(prevBtn);
     const u = isAbsoluteUrl(currentUrl)?currentUrl:defaultUrlForId(currentUrl);
     frame.style.display='block';
     frame.innerHTML=`<iframe title="Preview ${esc(currentDid)}" src="${withEmbed(u)}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
@@ -578,10 +582,15 @@ async function toggleDisplaysUnder(li, id){
   };
 
   // Controls overlay toggle (also shows on hover)
-  ctrlBtn.onclick = ()=>{
+  ctrlBtn.onclick = async ()=>{
     if(!currentDid) return;
-    const on = ctrlBtn.classList.toggle('selected');
-    frame.classList.toggle('forceShow', on);
+    // If preview isn't on, turn it on first
+    if(!prevBtn.classList.contains('selected')){
+      await prevBtn.click();
+    }
+    const on = !ctrlBtn.classList.contains('selected');
+    if(on){ select(ctrlBtn); frame.classList.add('forceShow'); }
+    else  { deselect(ctrlBtn); frame.classList.remove('forceShow'); }
   };
 
   // Open tab toggle (open/close)
@@ -597,7 +606,7 @@ async function toggleDisplaysUnder(li, id){
     const u = isAbsoluteUrl(currentUrl)?currentUrl:defaultUrlForId(currentUrl);
     winRef = window.open(withEmbed(u),'_blank','noopener');
     if(!winRef){ toast('Popup blocked — enable popups', true); return; }
-    toggleSelect(openBtn);
+    select(openBtn);
   };
 
   // Remote handlers (overlay)
