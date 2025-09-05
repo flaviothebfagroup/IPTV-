@@ -15,21 +15,27 @@
     --border:rgba(0,0,0,.16);
     --shadow:0 8px 28px rgba(0,0,0,.08);
   }
-  .topbar{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:10px 14px}
+  .topbar{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
   .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px}
   .brand{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
   .logo{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:#fff center/cover no-repeat}
   .logotxt{font-weight:900;letter-spacing:.2px}
+
   .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto}
-  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;color:inherit;text-decoration:none;font-weight:800;font-size:14px;line-height:1}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;color:inherit;text-decoration:none;font-weight:800;font-size:14px;line-height:1;white-space:nowrap}
   .pill:hover{border-color:var(--accent)}
-  .pill.is-active{outline:2px solid var(--accent);outline-offset:0}
+  /* FILLED current page */
+  .pill.is-active{background:var(--accent);border-color:var(--accent);color:#000}
+  .pill.is-active .ic{stroke:#000}
+
   .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.9;fill:none}
-  .actions{display:flex;gap:8px}
+
+  .actions{display:flex;gap:8px;margin-left:auto}
   .round{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1px solid var(--border);background:transparent;font-weight:800;cursor:pointer}
   .round:hover{border-color:var(--accent)}
   #hamburger{display:none}
-  /* mobile sheet */
+
+  /* Mobile sheet (anchored, no floating) */
   .sheet{position:fixed;inset:0;z-index:120;display:none}
   .sheet.open{display:block}
   .sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
@@ -37,7 +43,12 @@
   .panel .row{display:flex;align-items:center;justify-content:space-between}
   .panel nav{display:grid;gap:8px}
   .panel nav a{justify-content:flex-start}
-  @media (max-width:920px){ .nav{display:none} #hamburger{display:inline-flex} }
+
+  @media (max-width:920px){
+    .nav{display:none}
+    #hamburger{display:inline-flex}
+    .actions{margin-left:0}  /* keep to the right, not floating */
+  }
 
   /* Tap highlights / focus */
   a,button{ -webkit-tap-highlight-color: transparent; }
@@ -82,8 +93,14 @@
   .iconbtn.danger{color:var(--danger);border-color:rgba(225,29,72,.35)}
   .icon{stroke:#111;stroke-width:2;fill:none}
 
-  /* universal "selected" look (persists) */
-  .selected{outline:2px solid var(--accent)!important; outline-offset:0; box-shadow:0 0 0 3px rgba(255,149,0,.10);}
+  /* FILLED persistent “selected” state */
+  .selected{
+    background:var(--accent)!important;
+    color:#000!important;
+    border-color:var(--accent)!important;
+    box-shadow:0 2px 0 rgba(0,0,0,.05), 0 0 0 3px rgba(255,149,0,.12);
+  }
+  .selected .icon, .selected .ic{ stroke:#000 !important; }
 
   /* sub area */
   .sub{grid-column:1/-1;margin-top:8px;background:#fff;border:1px solid var(--border2);border-radius:12px;padding:10px}
@@ -96,7 +113,8 @@
   /* merged control + actions */
   .remoteBox{display:none;margin-top:10px;border:1px solid var(--border2);border-radius:12px;overflow:hidden}
   .remoteHead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 12px;background:#fff}
-  .remoteHead .left{display:flex;gap:8px;align-items:center}
+  .remoteHead .left{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .remoteHead .right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .pillMini{height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:9999px;border:1px solid var(--border2);background:#fff;font-size:12px;font-weight:800}
   .remoteBody{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;padding:10px;background:#fff}
   @media (max-width:760px){ .remoteBody{grid-template-columns:1fr} }
@@ -106,7 +124,7 @@
   .badge{position:absolute;left:10px;top:10px;background:#fff;color:#111;border:1px solid var(--accent);border-radius:999px;padding:4px 8px;font-size:12px;font-weight:800;display:none}
 
   .controls{display:flex;flex-direction:column;gap:12px}
-  /* control cluster like your reference */
+  /* tidy cluster */
   .cluster{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--border2);border-radius:9999px;background:#fff;box-shadow:inset 0 0 0 2px rgba(0,0,0,.02)}
   .circle{height:36px;width:36px;border-radius:9999px;border:1px solid rgba(0,0,0,.14);background:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
   .circle:hover{border-color:var(--accent)}
@@ -231,26 +249,37 @@ const I={
   link:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M10.5 13.5 8 16a4.5 4.5 0 1 1-6.4-6.3L5 6.2"/><path d="M13.5 10.5 16 8a4.5 4.5 0 1 1 6.4 6.3L19 17.8"/></svg>`
 };
 
-/* active nav */
+/* ===== Current page highlight — robust detection (works on GH Pages) ===== */
 (function(){
-  const file=(location.pathname.split("/").pop()||"home.html").toLowerCase();
-  const map={ "index.html":"home","home.html":"home","dealerships.html":"dealerships","displays.html":"displays","users.html":"users","links.html":"links","analytics.html":"analytics","schedule.html":"schedule" };
-  const key=map[file]||"";
+  const fname=(location.pathname.split("/").pop()||"").toLowerCase();
+  const map={ "":"home","/":"home","index.html":"home","home.html":"home",
+              "dealerships.html":"dealerships","displays.html":"displays",
+              "users.html":"users","links.html":"links","analytics.html":"analytics","schedule.html":"schedule" };
+  let key=map[fname];
+  if(!key){
+    const t=document.title.toLowerCase();
+    if(t.includes("dealer")) key="dealerships";
+    else if(t.includes("display")) key="displays";
+    else if(t.includes("user")) key="users";
+    else if(t.includes("link")) key="links";
+    else if(t.includes("analytic")) key="analytics";
+    else if(t.includes("schedule")) key="schedule";
+    else key="home";
+  }
   document.querySelectorAll(`[data-page="${key}"]`).forEach(a=>a.classList.add("is-active"));
 })();
 
-/* mobile menu */
+/* ===== mobile menu ===== */
 (function(){
   const sh=$("#sheet"), open=()=>{sh.classList.add("open");document.body.style.overflow="hidden"}, close=()=>{sh.classList.remove("open");document.body.style.overflow=""};
   $("#hamburger").onclick=open; $("#closeSheet").onclick=close; sh.querySelector(".back").onclick=close;
   const main=$("#logoutBtn"), mob=$("#logoutBtnM"); if(main&&mob){ mob.addEventListener("click",()=>main.click()); }
 })();
 
-/* ===== Make every button stay 'selected' after click (your request) ===== */
+/* ===== Make every button stay ‘selected’ (FILLED orange) after click ===== */
 document.addEventListener('click', (e) => {
-  const el = e.target.closest('button, .iconbtn, .chip, .btnText');
+  const el = e.target.closest('button, .iconbtn, .chip, .btnText, .circle');
   if(!el) return;
-  // add persistent selected style; don't remove on re-click
   if(!el.classList.contains('selected')) el.classList.add('selected');
 });
 
@@ -332,12 +361,12 @@ async function loadList(){
         <span class="muted">${count} TV${count===1?'':'s'}</span>
       </div>
       <div class="actions">
-        <button class="iconbtn selectable" title="Preview TVs" data-act="preview">${I.eye()}</button>
-        <button class="iconbtn selectable" title="Show users" data-act="users">${I.users()}</button>
-        <button class="iconbtn selectable" title="Edit public name" data-act="edit">${I.edit()}</button>
-        <button class="iconbtn selectable" title="Rename ID (migrate)" data-act="rename">${I.swap()}</button>
-        <button class="iconbtn selectable" title="Open tab" data-act="safe">${I.open()}</button>
-        <button class="iconbtn danger selectable" title="Delete" data-act="delete">${I.trash()}</button>
+        <button class="iconbtn selectable" title="Preview TVs" data-act="preview"><svg class="icon" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7"/><circle cx="12" cy="12" r="3"/></svg></button>
+        <button class="iconbtn selectable" title="Show users" data-act="users"><svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg></button>
+        <button class="iconbtn selectable" title="Edit public name" data-act="edit"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
+        <button class="iconbtn selectable" title="Rename ID (migrate)" data-act="rename"><svg class="icon" viewBox="0 0 24 24"><path d="M17 7H7l4-4M7 17h10l-4 4"/></svg></button>
+        <button class="iconbtn selectable" title="Open tab" data-act="safe"><svg class="icon" viewBox="0 0 24 24"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v7h-7"/></svg></button>
+        <button class="iconbtn danger selectable" title="Delete" data-act="delete"><svg class="icon icon-danger" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6l1-2h6l1 2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
       </div>`;
     $("#list").appendChild(li);
   }
@@ -446,19 +475,18 @@ async function toggleDisplaysUnder(li, id){
           <span class="pillMini chLabel">On channel <b data-role="ch">—</b></span>
         </div>
         <div class="right">
-          <button class="chip selectable" data-url>${I.link()} URL</button>
-          <button class="chip selectable" data-preview>${I.eye()} Preview</button>
-          <button class="chip selectable" data-open>${I.open()} Open</button>
+          <button class="chip selectable" data-url><svg class="icon" viewBox="0 0 24 24"><path d="M10.5 13.5 8 16a4.5 4.5 0 1 1-6.4-6.3L5 6.2"/><path d="M13.5 10.5 16 8a4.5 4.5 0 1 1 6.4 6.3L19 17.8"/></svg> URL</button>
+          <button class="chip selectable" data-preview><svg class="icon" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7"/><circle cx="12" cy="12" r="3"/></svg> Preview</button>
+          <button class="chip selectable" data-open><svg class="icon" viewBox="0 0 24 24"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v7h-7"/></svg> Open</button>
         </div>
       </div>
       <div class="remoteBody">
         <div class="iframeWrap" style="display:none"><span class="badge">● Previewing</span></div>
         <div class="controls">
-          <!-- cluster like reference -->
           <div class="cluster">
-            <button class="circle selectable" data-prev aria-label="Previous channel">${I.left()}</button>
-            <button class="circle selectable" data-next aria-label="Next channel">${I.right()}</button>
-            <button class="circle selectable" data-mute aria-label="Mute toggle">${I.vol()}</button>
+            <button class="circle selectable" data-prev aria-label="Previous channel"><svg class="icon" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <button class="circle selectable" data-next aria-label="Next channel"><svg class="icon" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+            <button class="circle selectable" data-mute aria-label="Mute toggle"><svg class="icon" viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6l-5 4Z"/><path d="M16 9a3 3 0 0 1 0 6"/></svg></button>
           </div>
           <div class="meter">
             <input type="range" min="0" max="100" value="50" data-vol>
@@ -487,7 +515,7 @@ async function toggleDisplaysUnder(li, id){
     try{ const s=await get(ref(dbFB,'displays/'+did)); const v=s.val()||{};
       ch=v.channel??1; vol=v.volume??50; muted=(v.muted!==undefined)?v.muted:true;
       chEl.textContent=ch; volRng.value=vol; volTxt.textContent=(muted||vol===0)?'0%':(vol+'%');
-      muteBtn.innerHTML = muted?`${I.mute()}`:`${I.vol()}`;
+      muteBtn.innerHTML = muted?`<svg class="icon" viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6l-5 4Z"/><path d="M2 2l20 20"/></svg>`:`<svg class="icon" viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6l-5 4Z"/><path d="M16 9a3 3 0 0 1 0 6"/></svg>`;
     }catch(e){}
   }
   const send = async (patch)=>{ try{ await update(ref(dbFB,'displays/'+currentDid), {...patch, timestamp:Date.now()}); }catch(e){} };
@@ -539,7 +567,7 @@ async function toggleDisplaysUnder(li, id){
   sub.querySelector('[data-next]').onclick = ()=>{ if(!currentDid) return; ch=(ch|0)+1; chEl.textContent=ch; send({channel:ch}); };
   volRng.oninput = ()=>{ if(!currentDid) return; const v=+volRng.value|0; vol=v; volTxt.textContent=(muted||v===0)?'0%':(v+'%'); };
   volRng.onchange= ()=>{ if(!currentDid) return; const v=+volRng.value|0; vol=v; send({volume:v}); };
-  muteBtn.onclick   = ()=>{ if(!currentDid) return; muted=!muted; muteBtn.innerHTML = muted?`${I.mute()}`:`${I.vol()}`; volTxt.textContent=(muted||(+volRng.value===0))?'0%':(volRng.value+'%'); send({muted}); };
+  muteBtn.onclick   = ()=>{ if(!currentDid) return; muted=!muted; muteBtn.innerHTML = muted?`<svg class="icon" viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6l-5 4Z"/><path d="M2 2l20 20"/></svg>`:`<svg class="icon" viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6l-5 4Z"/><path d="M16 9a3 3 0 0 1 0 6"/></svg>`; volTxt.textContent=(muted||(+volRng.value===0))?'0%':(volRng.value+'%'); send({muted}); };
 }
 </script>
 </body>
