@@ -3,40 +3,38 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<!-- FIX: iOS blue (phone/email/date/url auto-link) -->
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
 <title>BFA IPTV — Dealerships</title>
 
-<!-- ===== NAVBAR (black / white / orange) ===== -->
+<!-- ======= NAVBAR (black/white/orange) ======= -->
 <style>
   :root{
     --accent:#ff9500;
     --fg:#111;
     --muted:#6e6e73;
-    --bg:#fff;
+    --bg:#ffffff;
     --border:rgba(0,0,0,.16);
     --shadow:0 8px 28px rgba(0,0,0,.08);
   }
-  *{box-sizing:border-box}
-  html,body{background:#fff;color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;-webkit-tap-highlight-color:rgba(255,149,0,.25)}
-  a,a:visited{color:inherit;text-decoration:none}
-  button{font:inherit;color:inherit}
-
-  .topbar{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:10px 14px}
-  .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;min-height:48px}
-  .brand{display:flex;align-items:center;gap:10px}
+  .topbar{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
+  .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;position:relative;min-height:48px}
+  .brand{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
   .logo{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:#fff center/cover no-repeat}
   .logotxt{font-weight:900;letter-spacing:.2px}
 
   .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto}
-  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;font-weight:800;font-size:14px;line-height:1;white-space:nowrap}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;color:inherit;text-decoration:none;font-weight:800;font-size:14px;line-height:1;white-space:nowrap}
   .pill:hover{border-color:var(--accent)}
-  .pill.is-active{outline:2px solid var(--accent);outline-offset:2px}
-  .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
+  .pill.is-active{outline:2px solid var(--accent)}
+  .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.6;fill:none}
 
-  .actions{position:relative;display:flex;gap:8px}
-  .round{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1px solid var(--border);background:#fff;font-weight:800;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+  .actions{display:flex;gap:8px;margin-left:auto}
+  .round{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1px solid var(--border);background:transparent;font-weight:800;cursor:pointer}
   .round:hover{border-color:var(--accent)}
   #hamburger{display:none}
 
+  /* Mobile sheet (anchored) */
   .sheet{position:fixed;inset:0;z-index:120;display:none}
   .sheet.open{display:block}
   .sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
@@ -47,18 +45,41 @@
 
   @media (max-width:920px){
     .nav{display:none}
-    #hamburger{display:inline-flex;position:absolute;right:max(10px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);margin:0}
-    .actions{padding-right:calc(36px + max(10px, env(safe-area-inset-right,0px)));}
+    /* burger top-right */
+    #hamburger{
+      display:inline-flex;
+      position:absolute;
+      right:calc(max(8px, env(safe-area-inset-right, 0px))); /* MOBILE TWEAK */
+      top:50%;
+      transform:translateY(-50%);
+      z-index:2
+    }
+    .actions{
+      margin-left:0;
+      padding-right:calc(36px + max(8px, env(safe-area-inset-right,0px))); /* MOBILE TWEAK */
+    }
   }
 
-  :focus-visible{outline:2px solid var(--accent)!important;outline-offset:2px!important}
+  /* FIX: iOS blue / force orange */
+  a,button,input,textarea,select{ -webkit-tap-highlight-color: transparent; accent-color: var(--accent); color:inherit; }
+  a:visited{ color:inherit; }
+  button:focus{ outline:none; }
+  button:focus-visible, a:focus-visible, input:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
 </style>
 
-<!-- ===== PAGE STYLES ===== -->
+<!-- ======= PAGE STYLES ======= -->
 <style>
-  :root{ --danger:#e11d48; --border2:rgba(0,0,0,.12); }
+  :root{
+    --panel:#fff; --tile:#fff;
+    --danger:#e11d48;
+    --border2:rgba(0,0,0,.12);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#fff;color:#111;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
+  a{color:inherit;text-decoration:none}
+
   .wrap{max-width:1100px;margin:0 auto;padding:18px}
-  .card{background:#fff;border:1px solid var(--border2);border-radius:18px;padding:16px;box-shadow:0 14px 36px rgba(0,0,0,.06)}
+  .card{background:var(--panel);border:1px solid var(--border2);border-radius:18px;padding:16px;box-shadow:0 14px 36px rgba(0,0,0,.06)}
   .muted{color:var(--muted);font-size:12px}
   details.legend{margin:8px 0} details.legend summary{cursor:pointer;font-weight:800}
 
@@ -67,21 +88,34 @@
   .legend-item .iconbtn{flex:0 0 36px}
 
   .inputbar{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap}
-  .input{flex:1;min-width:220px;height:40px;padding:0 14px;background:#fff;border:1px solid var(--border2);border-radius:9999px;font-size:14px}
+  .input{flex:1;min-width:220px;height:40px;padding:0 14px;background:transparent;border:1px solid var(--border2);border-radius:9999px;color:#111;font-size:14px}
+  .input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
   .btnText{height:36px;padding:0 14px;border:1px solid var(--border2);border-radius:9999px;background:#fff;font-weight:800;cursor:pointer}
   .btnText:hover{border-color:var(--accent)}
 
   .list{list-style:none;margin:14px 0 0;padding:0}
-  .item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;background:#fff;border:1px solid var(--border2);border-radius:16px;padding:12px;margin:10px 0}
+  .item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;background:var(--tile);border:1px solid var(--border2);border-radius:16px;padding:12px;margin:10px 0}
   .title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .tag{padding:2px 8px;border:1px solid var(--border2);border-radius:9999px;background:transparent;font-size:12px}
   .actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-  .iconbtn{height:36px;width:36px;padding:0;border-radius:10px;border:1px solid var(--border2);background:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+  .iconbtn{height:36px;width:36px;padding:0;border-radius:10px;border:1px solid var(--border2);background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
   .iconbtn:hover{border-color:var(--accent)}
   .iconbtn.danger{color:var(--danger);border-color:rgba(225,29,72,.35)}
-  .icon{stroke:#111;stroke-width:2;fill:none}
+  .icon{stroke:#111;stroke-width:1.9;fill:none}
 
-  /* sub + remote */
+  /* universal filled selected */
+  .selected{
+    background:var(--accent)!important;
+    color:#000!important;
+    border-color:var(--accent)!important;
+    box-shadow:0 2px 0 rgba(0,0,0,.05), 0 0 0 3px rgba(255,149,0,.12);
+  }
+  .selected .icon, .selected .ic{ stroke:#000 !important; }
+
+  .flash{ background:var(--accent)!important; color:#000!important; border-color:var(--accent)!important; }
+  .flash .icon{ stroke:#000!important; }
+
   .sub{grid-column:1/-1;margin-top:8px;background:#fff;border:1px solid var(--border2);border-radius:12px;padding:10px}
   .sub h4{margin:0 0 8px}
   .sublist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
@@ -90,37 +124,64 @@
   .subright{display:flex;gap:6px;align-items:center}
 
   .remoteBox{display:none;margin-top:10px;border:1px solid var(--border2);border-radius:12px;overflow:hidden}
-  .remoteHead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 12px}
-  .remoteHead .left{display:flex;gap:8px;align-items:center}
+  .remoteHead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 12px;background:#fff}
+  .remoteHead .left{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .remoteHead .right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto}
   .pillMini{height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:9999px;border:1px solid var(--border2);background:#fff;font-size:12px;font-weight:800}
-  .chips{display:flex;gap:6px;align-items:center;margin-left:auto}
-  .chip{height:30px;padding:0 12px;border-radius:9999px;border:1px solid var(--border2);background:#fff;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
-  .chip:hover{border-color:var(--accent)}
-  .chip.active{background:var(--accent);border-color:var(--accent);color:#000}
-  .chip svg{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
 
-  .remoteBody{display:grid;grid-template-columns:1.2fr .8fr;gap:10px;padding:10px}
-  .iframeWrap{border:1px solid var(--border2);border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9}
-  .iframeWrap iframe{width:100%;height:100%;border:0;background:#000}
+  .remoteBody{padding:10px;background:#fff}
+
+  /* Preview box */
+  .iframeWrap{position:relative;border:1px solid var(--border2);border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9}
+  .iframeSlot{position:absolute; inset:0; width:100%; height:100%;}
+  .iframeWrap iframe{position:absolute; inset:0; width:100%; height:100%; display:block; background:#000}
+
   .badge{position:absolute;left:10px;top:10px;background:#fff;color:#111;border:1px solid var(--accent);border-radius:999px;padding:4px 8px;font-size:12px;font-weight:800;display:none}
   .remoteBox.is-previewing .iframeWrap{border-color:var(--accent);box-shadow:inset 0 0 0 2px rgba(255,149,0,.15)}
   .remoteBox.is-previewing .badge{display:inline-flex}
 
-  .controls{border:1px solid var(--border2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:12px;background:#fff}
-  .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .iconbtn.sm{height:28px;width:28px;border-radius:999px;background:#fff}
-  .iconbtn.sm.flash{background:var(--accent);border-color:var(--accent);color:#000}
-  .iconbtn.sm.toggle-on{background:var(--accent);border-color:var(--accent);color:#000}
-  .label{margin-left:auto;font-weight:800}
+  /* Overlay controls — desktop only */
+  .overlayControls{
+    position:absolute; left:0; right:0; bottom:0;
+    display:none;
+    flex-direction:column; gap:10px;
+    padding:10px; pointer-events:none; opacity:0; transition:opacity .18s ease;
+    background:linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0));
+  }
+  @media (hover:hover) and (pointer:fine){
+    .overlayControls{ display:flex; }
+    .iframeWrap:hover .overlayControls{ opacity:1; pointer-events:auto; }
+    .iframeWrap.forceShow .overlayControls{ opacity:1; pointer-events:auto; }
+  }
+  @media (max-width:760px){ .overlayControls{ display:none !important; } } /* mobile never shows overlay */
 
-  .slider{display:flex;align-items:center;gap:8px}
-  .slider input[type="range"]{width:100%;height:6px;border-radius:999px;-webkit-appearance:none;background:#eee;border:1px solid var(--border2)}
-  .slider input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#ff9500;border:1px solid #d7d7d7}
-  .pillMini.val{min-width:46px;text-align:center}
+  .cluster{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .circle{height:36px;width:36px;border-radius:9999px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+  .circle .icon{stroke:#fff;stroke-width:2}
+  .circle.selected{background:var(--accent);border-color:var(--accent)}
+  .circle.selected .icon{stroke:#000}
 
-  @media (max-width:760px){
-    .remoteBody{grid-template-columns:1fr}
-    .chips{margin-left:auto;justify-content:flex-end}
+  .range{width:220px;height:6px;border-radius:999px;-webkit-appearance:none;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.35)}
+  .range::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);border:1px solid rgba(0,0,0,.35)}
+  .pct{height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:9999px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);font-size:12px;font-weight:800;color:#fff}
+  @media (max-width:760px){ .range{width:160px} }
+
+  .chip{height:34px;padding:0 14px;border-radius:14px;border:1px solid var(--border2);background:#fff;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .chip:hover{border-color:var(--accent)}
+  .chip svg{width:16px;height:16px;stroke:currentColor;stroke-width:1.9;fill:none}
+
+  .underControls{display:none;margin-top:10px;border:1px solid var(--border2);border-radius:12px;padding:10px;background:#fff;display:flex;flex-direction:column;gap:10px}
+  .underControls .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .underControls .iconbtn{height:34px;width:34px;border-radius:9999px}
+  .underControls .range{width:180px;background:#eee;border:1px solid var(--border2)}
+  .underControls .pct{color:#111;background:#fff;border-color:var(--border2)}
+  @media (min-width:761px){ .underControls{display:none!important} }
+
+  /* ===== MOBILE LAYOUT TWEAKS ===== */
+  @media (max-width:600px){
+    .item{grid-template-columns:1fr;gap:8px;align-items:start}                /* MOBILE TWEAK */
+    .item .actions{justify-content:flex-end;margin-top:4px}                  /* MOBILE TWEAK */
+    .remoteHead .right{margin-left:auto;justify-content:flex-end;width:100%} /* MOBILE TWEAK */
   }
 
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;z-index:99}
@@ -129,7 +190,7 @@
 </head>
 <body>
 
-<!-- ===== NAVBAR ===== -->
+<!-- ======= NAVBAR ======= -->
 <header class="topbar">
   <div class="toprow">
     <a class="brand" href="home.html"><span class="logo" id="brandLogo"></span><span class="logotxt">BFA IPTV</span></a>
@@ -184,8 +245,8 @@
 
     <div class="inputbar">
       <input id="dealerName" class="input" placeholder="New dealership name (e.g., Genesis Winnipeg)"/>
-      <button id="addBtn" class="btnText">Add</button>
-      <button id="reloadList" class="btnText">Reload</button>
+      <button id="addBtn" class="btnText" data-flash>Add</button>
+      <button id="reloadList" class="btnText" data-flash>Reload</button>
     </div>
 
     <div class="muted" style="margin-top:6px">Creates <code>/dealership/{ID}</code> and <code>/dealershipPublic/{ID}</code>. ID allows letters, numbers, CAPS, <b>-</b>, <b>_</b>.</div>
@@ -202,15 +263,15 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getDatabase, ref, get, set, update, remove, query, orderByChild, equalTo } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-/* ===== Firebase ===== */
 const firebaseConfig = { apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e" };
 const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
 document.getElementById('brandLogo').style.backgroundImage=`url("${LOGO_URL}")`;
 document.getElementById('brandLogoM').style.backgroundImage=`url("${LOGO_URL}")`;
 
-const app = initializeApp(firebaseConfig); const auth=getAuth(app); const db=getDatabase(app);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getDatabase(app);
 
-/* ===== helpers ===== */
 const $=s=>document.querySelector(s);
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));}
 function toast(msg,err=false){const t=$("#toast");t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2200);}
@@ -228,26 +289,38 @@ const I={
   vol:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M3 10v4h4l5 4V6l-5 4Z"/><path d="M16 9a3 3 0 0 1 0 6"/></svg>`,
   mute:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M3 10v4h4l5 4V6l-5 4Z"/><path d="M2 2l20 20"/></svg>`,
   link:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M10.5 13.5 8 16a4.5 4.5 0 1 1-6.4-6.3L5 6.2"/><path d="M13.5 10.5 16 8a4.5 4.5 0 1 1 6.4 6.3L19 17.8"/></svg>`,
-  sliders:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><circle cx="4" cy="14" r="2"/><circle cx="12" cy="11" r="2"/><circle cx="20" cy="16" r="2"/></svg>`
+  ctrl:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M4 8h10"/><circle cx="16" cy="8" r="2"/><path d="M20 16H10"/><circle cx="8" cy="16" r="2"/></svg>`
 };
 
-/* active nav */
+/* nav current page */
 (function(){
-  const file=(location.pathname.split("/").pop()||"home.html").toLowerCase();
-  const map={ "index.html":"home","home.html":"home","dealerships.html":"dealerships","displays.html":"displays","users.html":"users","links.html":"links","analytics.html":"analytics","schedule.html":"schedule" };
-  const key=map[file]||"";
+  const fname=(location.pathname.split("/").pop()||"").toLowerCase();
+  const map={ "":"home","/":"home","index.html":"home","home.html":"home",
+              "dealerships.html":"dealerships","displays.html":"displays",
+              "users.html":"users","links.html":"links","analytics.html":"analytics","schedule.html":"schedule" };
+  let key=map[fname];
+  if(!key){
+    const t=document.title.toLowerCase();
+    if(t.includes("dealer")) key="dealerships";
+    else if(t.includes("display")) key="displays";
+    else if(t.includes("user")) key="users";
+    else if(t.includes("link")) key="links";
+    else if(t.includes("analytic")) key="analytics";
+    else if(t.includes("schedule")) key="schedule";
+    else key="home";
+  }
   document.querySelectorAll(`[data-page="${key}"]`).forEach(a=>a.classList.add("is-active"));
 })();
 
-/* mobile menu */
+/* mobile sheet */
 (function(){
   const sh=$("#sheet"), open=()=>{sh.classList.add("open");document.body.style.overflow="hidden"}, close=()=>{sh.classList.remove("open");document.body.style.overflow=""};
   $("#hamburger").onclick=open; $("#closeSheet").onclick=close; sh.querySelector(".back").onclick=close;
   const main=$("#logoutBtn"), mob=$("#logoutBtnM"); if(main&&mob){ mob.addEventListener("click",()=>main.click()); }
 })();
 
-/* ===== auth gate + logout ===== */
-onAuthStateChanged(getAuth(), async (user)=>{
+/* auth gate + logout */
+onAuthStateChanged(auth, async (user)=>{
   if(!user){ location.href='home.html'; return; }
   const u = (await get(ref(db, 'user/'+user.uid))).val()||{};
   if(u.role!=='admin'){ document.body.innerHTML = `
@@ -258,58 +331,56 @@ onAuthStateChanged(getAuth(), async (user)=>{
   }
   loadList();
 });
-$('#logoutBtn')?.addEventListener('click', ()=> signOut(getAuth()).then(()=>location.href='home.html'));
+$('#logoutBtn')?.addEventListener('click', ()=> signOut(auth).then(()=>location.href='home.html'));
 
-/* ===== legend ===== */
+/* legend */
 (function renderLegend(){
   const items=[
     {icon:I.eye(),   title:'Preview TVs', desc:'Inline preview (keeps your admin login).'},
     {icon:I.users(), title:'Users',       desc:'Show users under the card.'},
     {icon:I.edit(),  title:'Edit name',   desc:'Change public dealership name.'},
     {icon:I.swap(),  title:'Rename ID',   desc:'Migrate dealership ID & refs.'},
-    {icon:I.link(),  title:'Edit URL',    desc:'Store a custom preview URL for each TV.'},
+    {icon:'URL',     title:'Edit URL',    desc:'Store a custom preview URL for each TV.'},
     {icon:I.open(),  title:'Open tab',    desc:'Open preview in a new tab.'},
     {icon:`<svg class="icon icon-danger" viewBox="0 0 24 24" width="18" height="18"><path d="M3 6h18"/><path d="M8 6l1-2h6l1 2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,  title:'Delete', desc:'Only if it has no TVs.'}
   ];
-  const g = document.getElementById('legendGrid');
-  g.innerHTML = items.map(i=>`
+  document.getElementById('legendGrid').innerHTML = items.map(i=>`
     <div class="legend-item">
       <button class="iconbtn" disabled>${i.icon}</button>
       <div><b>${i.title}</b><div class="muted">${i.desc}</div></div>
     </div>`).join('');
 })();
 
-/* ===== URL helpers ===== */
-function defaultUrlForId(id){
-  return `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(id)}.html`;
-}
+/* helpers */
+const dbi=getDatabase();
+function defaultUrlForId(id){ return `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(id)}.html`; }
 function isAbsoluteUrl(u){ try{ new URL(u); return true; }catch{ return false; } }
-function withEmbed(u){
-  try { const x=new URL(u); x.searchParams.set('embed','1'); return x.href; }
-  catch { return u + (u.includes('?')?'&':'?') + 'embed=1'; }
-}
+function withEmbed(u){ try { const x=new URL(u); x.searchParams.set('embed','1'); return x.href; }
+  catch { return u + (u.includes('?')?'&':'?') + 'embed=1'; } }
+function flash(el){ if(!el) return; el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'), 220); }
+function select(el){ el && el.classList.add('selected'); }
+function deselect(el){ el && el.classList.remove('selected'); }
 
-/* ===== data ops ===== */
+/* data ops */
 $("#reloadList").addEventListener('click', loadList);
-
 async function countDisplaysForDealer(id){
-  try{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; }
+  try{ const qRef=query(ref(dbi,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; }
   catch(e){ return 0; }
 }
 async function listDisplays(dealershipId){
-  /* FIXED: correct query signature */
-  const snap=await get(query(ref(db,'displays'),orderByChild('dealership'),equalTo(dealershipId)));
+  const snap=await get(query(ref(dbi,'displays'),orderByChild('dealership'),equalTo(dealershipId)));
   return Object.keys(snap.val()||{}).sort();
 }
 async function getPreviewUrl(displayId){
-  const s=await get(ref(db,'displays/'+displayId)); const v=s.val()||{};
+  const s=await get(ref(dbi,'displays/'+displayId)); const v=s.val()||{};
   return v.previewUrl || defaultUrlForId(displayId);
 }
 
+/* main list */
 async function loadList(){
   $("#list").innerHTML='';
-  let map={}; try{ const snap=await get(ref(db,'dealershipPublic')); map=snap.val()||{}; }catch(e){ map={}; }
-  if(!Object.keys(map).length){ try{ const s2=await get(ref(db,'dealership')); const raw=s2.val()||{}; for(const id of Object.keys(raw)) map[id]={name: raw[id]?.name||id}; }catch(e){} }
+  let map={}; try{ const snap=await get(ref(dbi,'dealershipPublic')); map=snap.val()||{}; }catch(e){ map={}; }
+  if(!Object.keys(map).length){ try{ const s2=await get(ref(dbi,'dealership')); const raw=s2.val()||{}; for(const id of Object.keys(raw)) map[id]={name: raw[id]?.name||id}; }catch(e){} }
   const ids=Object.keys(map).sort();
   $("#empty").style.display = ids.length? 'none':'block';
 
@@ -337,33 +408,44 @@ async function loadList(){
   $("#list").onclick = async (e)=>{
     const btn=e.target.closest('.iconbtn'); if(!btn) return;
     const li=btn.closest('.item'); const id=li.dataset.id; const act=btn.dataset.act;
-    if(act==='edit') await editName(id);
-    else if(act==='rename') await renameId(id);
-    else if(act==='delete') await delDealer(id);
-    else if(act==='preview') await toggleDisplaysUnder(li,id);
-    else if(act==='users') await toggleUsersUnder(li,id);
-    else if(act==='safe') { const dids=await listDisplays(id); if(dids.length){ const u = await getPreviewUrl(dids[0]); window.open(withEmbed(u),'_blank','noopener'); } else toast('No TVs yet',true); }
+    function clearRowSelections(){ li.querySelectorAll('.actions .iconbtn.selected').forEach(b=>deselect(b)); }
+
+    if(act==='edit'){ flash(btn); await editName(id); }
+    else if(act==='rename'){ flash(btn); await renameId(id); }
+    else if(act==='delete'){ flash(btn); await delDealer(id); }
+    else if(act==='safe'){ flash(btn); const dids=await listDisplays(id); if(dids.length){ const u = await getPreviewUrl(dids[0]); window.open(withEmbed(u),'_blank','noopener'); } else toast('No TVs yet',true); }
+    else if(act==='users'){
+      const opened=li.querySelector('.sub.users');
+      if(opened){ opened.remove(); deselect(btn); return; }
+      clearRowSelections(); select(btn); await toggleUsersUnder(li,id,btn);
+    }
+    else if(act==='preview'){
+      const opened=li.querySelector('.sub.displays');
+      if(opened){ opened.remove(); deselect(btn); return; }
+      clearRowSelections(); select(btn); await toggleDisplaysUnder(li,id,btn);
+    }
   };
 
   $("#addBtn").onclick = async ()=>{
+    flash($("#addBtn"));
     const name=$("#dealerName").value.trim(); if(!name) return toast('Enter a name',true);
     const suggested = name.replace(/\s+/g,'').replace(/[^A-Za-z0-9\-_]/g,'').slice(0,40);
     const id = sanitizeId(suggested||name);
     try{
-      const exists = (await get(ref(db,'dealershipPublic/'+id))).exists() || (await get(ref(db,'dealership/'+id))).exists();
+      const exists = (await get(ref(dbi,'dealershipPublic/'+id))).exists() || (await get(ref(dbi,'dealership/'+id))).exists();
       if(exists){ toast('ID exists — choose another',true); return; }
       const meta={ name, createdAt:Date.now(), createdBy: auth.currentUser?.email||'admin', displays:{} };
-      await set(ref(db,'dealership/'+id), meta);
-      await set(ref(db,'dealershipPublic/'+id), { name });
+      await set(ref(dbi,'dealership/'+id), meta);
+      await set(ref(dbi,'dealershipPublic/'+id), { name });
       $("#dealerName").value=''; toast('Dealership added'); loadList();
     }catch(e){ toast('Create failed',true); }
   };
 }
 
 async function editName(id){
-  const cur=(await get(ref(db,'dealershipPublic/'+id))).val()?.name||id;
+  const cur=(await get(ref(dbi,'dealershipPublic/'+id))).val()?.name||id;
   const next=prompt('Public name',cur); if(!next || next===cur) return;
-  try{ await set(ref(db,'dealershipPublic/'+id),{name:next}); try{await update(ref(db,'dealership/'+id),{name:next});}catch(_){}
+  try{ await set(ref(dbi,'dealershipPublic/'+id),{name:next}); try{await update(ref(dbi,'dealership/'+id),{name:next});}catch(_){}
        toast('Name updated'); loadList(); }catch(e){ toast('Update failed',true); }
 }
 async function renameId(oldId){
@@ -371,32 +453,32 @@ async function renameId(oldId){
   const newId = sanitizeId(asked||''); if(!newId || newId===oldId) return;
   if(!confirm(`Migrate ${oldId} → ${newId}? Displays & users will be updated.`)) return;
   try{
-    const existsPub=(await get(ref(db,'dealershipPublic/'+newId))).exists();
-    const existsMeta=(await get(ref(db,'dealership/'+newId))).exists();
+    const existsPub=(await get(ref(dbi,'dealershipPublic/'+newId))).exists();
+    const existsMeta=(await get(ref(dbi,'dealership/'+newId))).exists();
     if(existsPub||existsMeta){ alert('Target ID exists.'); return; }
-    const pubName=(await get(ref(db,'dealershipPublic/'+oldId))).val()?.name||oldId;
-    await set(ref(db,'dealershipPublic/'+newId),{name:pubName});
-    const meta=(await get(ref(db,'dealership/'+oldId))).val()||{}; if(Object.keys(meta).length) await set(ref(db,'dealership/'+newId),meta);
+    const pubName=(await get(ref(dbi,'dealershipPublic/'+oldId))).val()?.name||oldId;
+    await set(ref(dbi,'dealershipPublic/'+newId),{name:pubName});
+    const meta=(await get(ref(dbi,'dealership/'+oldId))).val()||{}; if(Object.keys(meta).length) await set(ref(dbi,'dealership/'+newId),meta);
 
-    const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(oldId));
+    const qRef=query(ref(dbi,'displays'),orderByChild('dealership'),equalTo(oldId));
     const dMap=(await get(qRef)).val()||{}; for(const did of Object.keys(dMap)){
-      await update(ref(db,'displays/'+did),{dealership:newId, timestamp:Date.now()});
-      try{ await remove(ref(db,'dealership/'+oldId+'/displays/'+did)); }catch(_){}
-      try{ await set(ref(db,'dealership/'+newId+'/displays/'+did),true); }catch(_){}
+      await update(ref(dbi,'displays/'+did),{dealership:newId, timestamp:Date.now()});
+      try{ await remove(ref(dbi,'dealership/'+oldId+'/displays/'+did)); }catch(_){}
+      try{ await set(ref(dbi,'dealership/'+newId+'/displays/'+did),true); }catch(_){}
     }
-    const users=(await get(ref(db,'user'))).val()||{}; for(const uid of Object.keys(users)){
-      if(users[uid]?.dealershipId===oldId) await update(ref(db,'user/'+uid),{dealershipId:newId,dealershipName:pubName});
+    const users=(await get(ref(dbi,'user'))).val()||{}; for(const uid of Object.keys(users)){
+      if(users[uid]?.dealershipId===oldId) await update(ref(dbi,'user/'+uid),{dealershipId:newId,dealershipName:pubName});
     }
-    await remove(ref(db,'dealershipPublic/'+oldId)).catch(()=>{});
-    await remove(ref(db,'dealership/'+oldId)).catch(()=>{});
+    await remove(ref(dbi,'dealershipPublic/'+oldId)).catch(()=>{});
+    await remove(ref(dbi,'dealership/'+oldId)).catch(()=>{});
     toast('ID migrated'); loadList();
   }catch(e){ toast('Rename failed',true); }
 }
 async function delDealer(id){
-  const cnt = await (async()=>{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; })();
+  const cnt = await (async()=>{ const qRef=query(ref(dbi,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; })();
   if(cnt>0){ alert(`This dealership still has ${cnt} TV(s). Remove/migrate first.`); return; }
   if(!confirm(`Delete ${id}?`)) return;
-  try{ await remove(ref(db,'dealershipPublic/'+id)).catch(()=>{}); await remove(ref(db,'dealership/'+id)).catch(()=>{});
+  try{ await remove(ref(dbi,'dealershipPublic/'+id)).catch(()=>{}); await remove(ref(dbi,'dealership/'+id)).catch(()=>{});
        toast('Deleted'); loadList(); }catch(e){ toast('Delete failed',true); }
 }
 
@@ -405,7 +487,7 @@ function closeSubs(li){ li.querySelectorAll('.sub').forEach(n=>n.remove()); }
 async function toggleUsersUnder(li, id){
   const opened=li.querySelector('.sub.users'); if(opened){ opened.remove(); return; }
   closeSubs(li);
-  const all=(await get(ref(db,'user'))).val()||{};
+  const all=(await get(ref(dbi,'user'))).val()||{};
   const list=Object.entries(all).map(([uid,v])=>({uid,...v})).filter(u=>u.dealershipId===id)
     .sort((a,b)=> (a.role||'').localeCompare(b.role||'') || (a.name||'').localeCompare(b.name||''));
   const sub=document.createElement('div'); sub.className='sub users';
@@ -416,13 +498,11 @@ async function toggleUsersUnder(li, id){
   li.appendChild(sub);
 }
 
-/* ===== Displays + Remote (preview left, controls right) ===== */
+/* Displays / preview + controls */
 async function toggleDisplaysUnder(li, id){
   const opened=li.querySelector('.sub.displays'); if(opened){ opened.remove(); return; }
   closeSubs(li);
-
-  /* FIXED: correct query signature */
-  const snap=await get(query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)));
+  const snap=await get(query(ref(dbi,'displays'),orderByChild('dealership'),equalTo(id)));
   const map=snap.val()||{}; const ids=Object.keys(map).sort();
 
   const sub=document.createElement('div'); sub.className='sub displays';
@@ -439,28 +519,39 @@ async function toggleDisplaysUnder(li, id){
           <span class="pillMini">Display <b data-role="did">—</b></span>
           <span class="pillMini">On channel <b data-role="ch">—</b></span>
         </div>
-        <div class="chips">
+        <div class="right">
           <button class="chip" data-url>${I.link()} URL</button>
           <button class="chip" data-preview>${I.eye()} Preview</button>
-          <button class="chip" data-controls>${I.sliders()} Controls</button>
+          <button class="chip" data-ovctrl>${I.ctrl()} Controls</button>
           <button class="chip" data-open>${I.open()} Open</button>
         </div>
       </div>
       <div class="remoteBody">
-        <div class="iframeWrap" style="position:relative;display:none">
+        <div class="iframeWrap" style="display:none">
           <span class="badge">● Previewing</span>
-          <iframe title="Preview" loading="lazy"></iframe>
-        </div>
-        <div class="controls" data-controls-panel style="display:none">
-          <div class="row">
-            <button class="iconbtn sm" data-prev aria-label="Previous channel">${I.left()}</button>
-            <button class="iconbtn sm" data-next aria-label="Next channel">${I.right()}</button>
-            <button class="iconbtn sm" data-mute aria-label="Mute toggle">${I.vol()}</button>
-            <span class="label">On channel <b data-role="ch2">—</b></span>
+          <div class="iframeSlot"><!-- iframe injected here --></div>
+          <div class="overlayControls">
+            <div class="cluster">
+              <button class="circle" data-prev aria-label="Previous channel">${I.left()}</button>
+              <button class="circle" data-next aria-label="Next channel">${I.right()}</button>
+              <button class="circle" data-mute aria-label="Mute toggle">${I.vol()}</button>
+            </div>
+            <div class="cluster">
+              <input class="range" type="range" min="0" max="100" value="50" data-vol>
+              <span class="pct" data-role="voltxt">50%</span>
+            </div>
           </div>
-          <div class="row slider">
-            <input type="range" min="0" max="100" value="50" data-vol>
-            <span class="pillMini val" data-role="voltxt">50%</span>
+        </div>
+
+        <div class="underControls" style="display:none">
+          <div class="row">
+            <button class="iconbtn" data-prev title="Previous channel">${I.left()}</button>
+            <button class="iconbtn" data-next title="Next channel">${I.right()}</button>
+            <button class="iconbtn" data-mute title="Mute toggle">${I.vol()}</button>
+            <span class="pillMini" data-role="voltxt">50%</span>
+          </div>
+          <div class="row">
+            <input class="range" type="range" min="0" max="100" value="50" data-vol>
           </div>
         </div>
       </div>
@@ -470,95 +561,123 @@ async function toggleDisplaysUnder(li, id){
   const box     = sub.querySelector('.remoteBox');
   const didEl   = sub.querySelector('[data-role="did"]');
   const chEl    = sub.querySelector('[data-role="ch"]');
-  const chEl2   = sub.querySelector('[data-role="ch2"]');
-  const volTxt  = sub.querySelector('[data-role="voltxt"]');
-  const volRng  = sub.querySelector('[data-vol]');
-  const muteBtn = sub.querySelector('[data-mute]');
-  const frameBox= sub.querySelector('.iframeWrap');
-  const iframe  = frameBox.querySelector('iframe');
+  const frame   = sub.querySelector('.iframeWrap');
+  const slot    = sub.querySelector('.iframeSlot');
   const urlBtn  = sub.querySelector('[data-url]');
   const prevBtn = sub.querySelector('[data-preview]');
+  const ctrlBtn = sub.querySelector('[data-ovctrl]');
   const openBtn = sub.querySelector('[data-open]');
-  const ctrBtn  = sub.querySelector('[data-controls]');
-  const ctrPane = sub.querySelector('[data-controls-panel]');
+  const under   = sub.querySelector('.underControls');
 
-  const prev1   = sub.querySelector('[data-prev]');
-  const next1   = sub.querySelector('[data-next]');
+  let currentDid=null, currentUrl=null, ch=1, vol=50, muted=true, winRef=null;
 
-  let currentDid=null, currentUrl=null, ch=1, vol=50, muted=true, previewOn=false, controlsOn=false;
-
+  function syncVolUI(){
+    sub.querySelectorAll('[data-role="voltxt"]').forEach(el=>{
+      el.textContent = (muted || vol===0) ? '0%' : (vol+'%');
+    });
+    sub.querySelectorAll('[data-vol]').forEach(r=>{ if(+r.value!==vol) r.value=vol; });
+    sub.querySelectorAll('[data-mute]').forEach(b=> b.classList.toggle('selected', !!muted));
+  }
   async function loadState(did){
-    try{ const s=await get(ref(db,'displays/'+did)); const v=s.val()||{};
+    try{
+      const s=await get(ref(dbi,'displays/'+did)); const v=s.val()||{};
       ch=v.channel??1; vol=v.volume??50; muted=(v.muted!==undefined)?v.muted:true;
-      chEl.textContent=ch; chEl2.textContent=ch;
-      volRng.value=vol; volTxt.textContent=(muted||vol===0)?'0%':(vol+'%');
-      muteBtn.classList.toggle('toggle-on', muted);
-      muteBtn.innerHTML = muted?`${I.mute()}`:`${I.vol()}`;
+      chEl.textContent=ch; syncVolUI();
     }catch(e){}
   }
-  const send = async (patch)=>{ try{ await update(ref(db,'displays/'+currentDid), {...patch, timestamp:Date.now()}); }catch(e){} };
-
-  function setPreview(on){
-    previewOn=on;
-    if(on){ frameBox.style.display='block'; box.classList.add('is-previewing'); prevBtn.classList.add('active'); }
-    else   { frameBox.style.display='none'; box.classList.remove('is-previewing'); prevBtn.classList.remove('active'); }
-  }
-  function setControls(on){
-    controlsOn=on;
-    ctrPane.style.display = on? 'flex':'none';
-    ctrBtn.classList.toggle('active', on);
-  }
-  function flash(el){ el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),250); }
+  const send = async (patch)=>{ try{ await update(ref(dbi,'displays/'+currentDid), {...patch, timestamp:Date.now()}); }catch(e){} };
 
   sub.querySelectorAll('[data-ctrl]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
+      sub.querySelectorAll('[data-ctrl].selected').forEach(b=>deselect(b));
+      select(btn);
+
+      if(winRef && !winRef.closed){ try{ winRef.close(); }catch(e){} }
+      winRef=null; deselect(openBtn);
+
+      deselect(prevBtn); deselect(ctrlBtn);
+      frame.classList.remove('forceShow');
+      frame.style.display='none'; slot.innerHTML=''; box.classList.remove('is-previewing');
+      under.style.display='none';
+
       currentDid = btn.getAttribute('data-ctrl');
       didEl.textContent = currentDid;
       currentUrl = await getPreviewUrl(currentDid);
       await loadState(currentDid);
+
       box.style.display='block';
-      setPreview(false); setControls(false);
-      iframe.src='about:blank';
       box.scrollIntoView({behavior:'smooth',block:'center'});
     });
   });
 
   urlBtn.onclick = async ()=>{
     if(!currentDid) return;
+    select(urlBtn);
     const cur = await getPreviewUrl(currentDid);
     const next = prompt('Preview URL for '+currentDid, cur);
-    if(!next || next===cur) return;
-    try{ await update(ref(db, 'displays/'+currentDid), { previewUrl:next, timestamp:Date.now() }); toast('URL saved'); currentUrl=next; urlBtn.classList.add('active'); setTimeout(()=>urlBtn.classList.remove('active'),500); }
+    if(!next || next===cur){ deselect(urlBtn); return; }
+    try{ await update(ref(dbi, 'displays/'+currentDid), { previewUrl:next, timestamp:Date.now() }); toast('URL saved'); currentUrl=next; }
     catch(e){ toast('Save failed', true); }
+    deselect(urlBtn);
   };
 
-  prevBtn.onclick = ()=>{
+  prevBtn.onclick = async ()=>{
     if(!currentDid) return;
-    if(previewOn){ setPreview(false); iframe.src='about:blank'; return; }
+    const active = prevBtn.classList.contains('selected');
+    if(active){
+      deselect(prevBtn); box.classList.remove('is-previewing');
+      frame.classList.remove('forceShow'); frame.style.display='none'; slot.innerHTML='';
+      under.style.display='none';
+      return;
+    }
+    select(prevBtn);
     const u = isAbsoluteUrl(currentUrl)?currentUrl:defaultUrlForId(currentUrl);
-    iframe.src = withEmbed(u);
-    setPreview(true);
+    frame.style.display='block';
+    slot.innerHTML = `<iframe title="Preview ${esc(currentDid)}" src="${withEmbed(u)}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+    box.classList.add('is-previewing');
   };
 
-  ctrBtn.onclick = ()=>{ if(!currentDid) return; setControls(!controlsOn); };
-
-  openBtn.onclick = ()=>{
+  ctrlBtn.onclick = async ()=>{
     if(!currentDid) return;
-    const u = isAbsoluteUrl(currentUrl)?currentUrl:defaultUrlForId(currentUrl);
-    window.open(withEmbed(u),'_blank','noopener'); openBtn.classList.add('active'); setTimeout(()=>openBtn.classList.remove('active'),500);
+    if(!prevBtn.classList.contains('selected')) await prevBtn.click();
+    const on = !ctrlBtn.classList.contains('selected');
+    if(on){
+      select(ctrlBtn);
+      frame.classList.add('forceShow');
+      under.style.display = 'flex';   // visible on mobile; desktop overlay appears on hover/click
+    }else{
+      deselect(ctrlBtn);
+      frame.classList.remove('forceShow');
+      under.style.display = 'none';
+    }
   };
 
-  const decCh = ()=>{ if(!currentDid) return; ch=Math.max(1,(ch|0)-1); chEl.textContent=ch; chEl2.textContent=ch; send({channel:ch}); };
-  const incCh = ()=>{ if(!currentDid) return; ch=(ch|0)+1; chEl.textContent=ch; chEl2.textContent=ch; send({channel:ch}); };
-  const setVol = (v)=>{ if(!currentDid) return; v = Math.max(0,Math.min(100, v|0)); vol=v; volRng.value=v; volTxt.textContent=(muted||v===0)?'0%':(v+'%'); send({volume:v}); };
-  const toggleMute = ()=>{ if(!currentDid) return; muted=!muted; muteBtn.classList.toggle('toggle-on', muted); muteBtn.innerHTML = muted?`${I.mute()}`:`${I.vol()}`; volTxt.textContent=(muted||(+volRng.value===0))?'0%':(volRng.value+'%'); send({muted}); };
+  openBtn.onclick = async ()=>{
+    if(!currentDid) return;
+    const isOpen = !!(winRef && !winRef.closed);
+    if(isOpen){ try{ winRef.close(); }catch(e){} winRef=null; deselect(openBtn); return; }
+    const u = isAbsoluteUrl(currentUrl)?currentUrl:defaultUrlForId(currentUrl);
+    winRef = window.open(withEmbed(u),'_blank','noopener');
+    if(!winRef){ toast('Popup blocked — enable popups', true); return; }
+    select(openBtn);
+  };
 
-  prev1.onclick=()=>{ flash(prev1); decCh(); };
-  next1.onclick=()=>{ flash(next1); incCh(); };
-  muteBtn.onclick=()=>{ toggleMute(); };
+  sub.addEventListener('click',(ev)=>{
+    const t = ev.target.closest('[data-prev],[data-next],[data-mute]');
+    if(!t || !currentDid) return;
+    if(t.hasAttribute('data-prev')){
+      ch=Math.max(1,(ch|0)-1); chEl.textContent=ch; select(t); send({channel:ch}); setTimeout(()=>deselect(t),120);
+    }else if(t.hasAttribute('data-next')){
+      ch=(ch|0)+1; chEl.textContent=ch; select(t); send({channel:ch}); setTimeout(()=>deselect(t),120);
+    }else if(t.hasAttribute('data-mute')){
+      muted=!muted; syncVolUI(); send({muted});
+    }
+  });
 
-  volRng.oninput = ()=>{ const v=+volRng.value|0; volTxt.textContent=(muted||v===0)?'0%':(v+'%'); };
-  volRng.onchange= ()=> setVol(+volRng.value|0);
+  sub.querySelectorAll('[data-vol]').forEach(r=>{
+    r.addEventListener('input',()=>{ if(!currentDid) return; vol = +r.value|0; syncVolUI(); });
+    r.addEventListener('change',()=>{ if(!currentDid) return; vol = +r.value|0; send({volume:vol}); });
+  });
 }
 </script>
 </body>
