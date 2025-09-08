@@ -4,7 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
   <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
-  <title>BFA IPTV — Remote</title>
+  <title>BFA IPTV — Analytics</title>
 
   <!-- PWA (optional) -->
   <link rel="manifest" href="/IPTV-/manifest.webmanifest"/>
@@ -13,12 +13,9 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png"/>
   <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png"/>
 
-  <!-- QR library -->
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
   <style>
     /* =========================================================
-       Tokens (light default) + dark override
+       Tokens (light default) + dark override (matches Remote)
     ========================================================= */
     :root{
       --accent:#ff9500;
@@ -26,6 +23,7 @@
       --panel:#fff; --tile:#f6f6f8; --tileHover:#fff7ea;
       --border:rgba(0,0,0,.14); --borderStrong:rgba(0,0,0,.28);
       --shadow:0 14px 36px rgba(0,0,0,.08);
+      --ok:#22c55e; --warn:#f59e0b; --err:#ef4444;
     }
     body.dark{
       --bg:#0b0b0c; --fg:#f7f7f8; --muted:#a1a1a8;
@@ -40,7 +38,7 @@
     a{color:inherit;text-decoration:none}
 
     /* =========================================================
-       Topbar (shared)
+       Topbar (shared shell)
     ========================================================= */
     .topbar{position:sticky;top:0;z-index:100;background:var(--panel);
       border-bottom:1px solid var(--border);
@@ -56,7 +54,7 @@
     .pill.is-active{outline:2px solid var(--accent)}
     .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
 
-    /* More (+) dropdown */
+    /* More dropdown */
     .more{position:relative}
     #moreBtn .plus{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
     #moreMenu{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
@@ -101,29 +99,36 @@
     ========================================================= */
     .wrap{max-width:1100px;margin:0 auto;padding:18px}
     .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+    h2{margin:0 0 8px}
     .muted{color:var(--muted);font-size:12px}
     .label{font-size:12px;color:var(--muted);margin-bottom:6px}
-    .input{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
+    .input,.select{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
     .btn{height:34px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center}
     .btn.solid{background:var(--accent);border-color:var(--accent);color:#000}
+
     .row3{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin:10px 0}
     @media (max-width:720px){.row3{grid-template-columns:1fr}}
 
-    .frameWrap{margin-top:8px;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--tile)}
-    .frameBar{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px;border-bottom:1px solid var(--border)}
-    .frameBar .url{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .frame{width:100%;height:62vh;border:0}
-    @media (max-height:700px){ .frame{height:58vh} }
+    /* Stats */
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:8px 0}
+    @media (max-width:980px){.stats{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:560px){.stats{grid-template-columns:1fr}}
+    .stat{background:var(--tile);border:1px solid var(--border);border-radius:12px;padding:14px}
+    .stat b{font-size:22px}
 
-    /* Dialogs */
-    dialog{border:0;padding:0;background:transparent}
-    .modal{background:var(--panel);border:1px solid var(--border);border-radius:18px;max-width:520px;width:96vw;padding:16px}
-    .qrBox{display:grid;place-items:center;padding:12px;border:1px dashed var(--border);border-radius:12px;background:var(--tile)}
+    /* Bars / lists */
+    .list{margin:8px 0 0;padding:0;list-style:none}
+    .item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px;margin:8px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap}
+    .col{display:flex;flex-direction:column;gap:6px;min-width:220px}
+    .bar{height:10px;background:var(--tileHover);border:1px solid var(--border);border-radius:999px;overflow:hidden}
+    .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#ffb866)}
+    .badge{border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:11px;color:var(--muted)}
 
-    /* Toast */
-    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
-    .toast.show{opacity:1}
-    .toast.err{background:#ff453a;color:#fff}
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .search{max-width:320px}
+
+    details summary{cursor:pointer;list-style:none}
+    details summary::-webkit-details-marker{display:none}
   </style>
 </head>
 <body>
@@ -151,13 +156,11 @@
           </a>
           <div id="moreMenu" role="menu" aria-label="More">
             <a href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
-            <a href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
+            <a class="is-active" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
             <a href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
             <a href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
-            <a class="is-active" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
-            <a href="settings.html"><!-- sliders icon -->
-              <svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings
-            </a>
+            <a href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
+            <a href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
           </div>
         </div>
       </nav>
@@ -190,10 +193,10 @@
           <a class="pill" href="users.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
           <div class="muted" style="padding:8px 2px 0">More</div>
           <a class="pill" href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
-          <a class="pill" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
+          <a class="pill is-active" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
           <a class="pill" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
           <a class="pill" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
-          <a class="pill is-active" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
+          <a class="pill" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
           <a class="pill" href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
           <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
         </nav>
@@ -203,8 +206,9 @@
 
   <!-- ===================================================== -->
   <div class="wrap">
-    <div id="loginBox" class="card" style="max-width:520px;margin:24px auto;display:none">
-      <h2 style="margin:0 0 12px">Admin Sign In</h2>
+    <!-- Auth gates -->
+    <div id="loginBox" class="card" style="max-width:520px;margin:32px auto;display:none">
+      <h2 style="margin:0 0 10px">Admin Sign In</h2>
       <div class="row3" style="grid-template-columns:1fr 1fr auto">
         <div><div class="label">Email</div><input id="email" class="input" type="email" placeholder="you@company.com" autocomplete="email"/></div>
         <div><div class="label">Password</div><input id="password" class="input" type="password" placeholder="••••••••" autocomplete="current-password"/></div>
@@ -213,63 +217,76 @@
           <button id="resetBtn" class="btn">Reset</button>
         </div>
       </div>
-      <div class="muted" style="font-size:12px">Requires <b>role: "admin"</b> in <code>/user/{uid}</code>.</div>
+      <div class="muted">Requires <b>role: "admin"</b> in <code>/user/{uid}</code>.</div>
     </div>
 
-    <div id="notAdmin" class="card" style="display:none;max-width:720px;margin:24px auto">
+    <div id="notAdmin" class="card" style="display:none;max-width:720px;margin:32px auto">
       <h2>Not authorized</h2>
-      <div class="muted" style="font-size:12px">Ask an admin to set your role to <b>admin</b> in the database.</div>
+      <div class="muted">Ask an admin to set your role to <b>admin</b> in the database.</div>
     </div>
 
-    <div id="remotePg" style="display:none">
+    <!-- Analytics -->
+    <div id="anaPg" style="display:none">
       <div class="card">
-        <h2 style="margin:0 0 8px">Share the Remote</h2>
-        <div class="row3" style="margin-top:4px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <h2 style="margin:0">Analytics — right now</h2>
+          <div class="chips">
+            <button id="btnCopySummary" class="btn">Copy summary</button>
+            <button id="btnExportCSV" class="btn">Export CSV</button>
+            <button id="btnShareView" class="btn">Share this view</button>
+          </div>
+        </div>
+
+        <div class="row3" style="margin-top:6px">
           <div>
-            <div class="label">Dealership (optional)</div>
-            <input id="dealerId" class="input" placeholder="e.g., genesiswinnipeg"/>
+            <div class="label">Active window</div>
+            <select id="activeWindow" class="select">
+              <option value="1">1 minute</option>
+              <option value="5">5 minutes</option>
+              <option value="10" selected>10 minutes</option>
+              <option value="30">30 minutes</option>
+              <option value="60">1 hour</option>
+            </select>
           </div>
           <div>
-            <div class="label">Display ID (optional)</div>
-            <input id="displayId" class="input" placeholder="e.g., GW-001"/>
+            <div class="label">Filter dealership</div>
+            <select id="filterDealer" class="select"><option value="">All dealerships</option></select>
           </div>
           <div style="display:flex;align-items:end;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-            <button id="btnOpen" class="btn">Open</button>
-            <button id="btnShare" class="btn solid">Share</button>
-            <button id="btnQR" class="btn">QR</button>
+            <a id="btnManageDisplays" class="btn" href="displays.html">Manage Displays</a>
+            <button id="refreshBtn" class="btn">Refresh</button>
           </div>
         </div>
 
-        <div class="frameWrap">
-          <div class="frameBar">
-            <div id="urlText" class="url">https://flaviothebfagroup.github.io/IPTV-/remote-control.html</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button id="btnCopy" class="btn">Copy</button>
-              <button id="btnReloadFrame" class="btn">Reload</button>
-            </div>
-          </div>
-          <iframe id="remoteFrame" class="frame" referrerpolicy="no-referrer-when-downgrade" loading="lazy"></iframe>
+        <!-- Stats row -->
+        <div class="stats">
+          <div class="stat"><div class="muted">Active TVs</div><b id="statActive">0</b></div>
+          <div class="stat"><div class="muted">Offline</div><b id="statOffline">0</b></div>
+          <div class="stat"><div class="muted">Top Channel</div><b id="statTopCh">—</b></div>
+          <div class="stat"><div class="muted">Avg Volume / Muted</div><b id="statVolMuted">0 • 0%</b></div>
         </div>
+        <div class="muted" id="lastUpdate" style="margin-top:-4px">—</div>
 
-        <div class="muted" style="margin-top:6px;font-size:12px">
-          Tip: Fill <b>Display ID</b> or <b>Dealership</b> to build a targeted link. People can scan the QR with their phone.
+        <h3 style="margin:10px 0 6px">Channel mix</h3>
+        <div id="anaChBars"></div>
+
+        <h3 style="margin:16px 0 6px">Most active dealerships</h3>
+        <div id="anaDealerBars"></div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap">
+          <h3 style="margin:8px 0 6px">Online TVs now</h3>
+          <input id="searchOnline" class="input search" placeholder="Search by display or dealership…"/>
         </div>
+        <div id="onlineList" class="list"></div>
+        <div id="noneOnline" class="muted" style="display:none">No TVs online in this window.</div>
+
+        <details style="margin-top:10px">
+          <summary class="muted">Show offline list</summary>
+          <div id="offlineList" class="list" style="margin-top:8px"></div>
+        </details>
       </div>
     </div>
   </div>
-
-  <!-- QR modal -->
-  <dialog id="qrDlg">
-    <div class="modal">
-      <h3 style="margin:0 0 8px">Scan to open remote</h3>
-      <div id="qrBox" class="qrBox" style="min-height:220px"></div>
-      <div id="qrUrl" class="muted" style="margin-top:10px;font-size:12px;word-break:break-all"></div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-        <button id="btnDownloadQR" class="btn">Download PNG</button>
-        <button id="btnCloseQR" class="btn solid">Close</button>
-      </div>
-    </div>
-  </dialog>
 
   <div id="toast" class="toast"></div>
 
@@ -279,9 +296,11 @@
       getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword,
       onAuthStateChanged, sendPasswordResetEmail, signOut
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    import {
+      getDatabase, ref, get, onValue
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    /* Firebase */
+    /* ===== Firebase ===== */
     const firebaseConfig = {
       apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
       authDomain: "iptv-bfa.firebaseapp.com",
@@ -292,24 +311,24 @@
       appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
     };
     const LOGO_URL = "/IPTV-/icons/icon-512.png";
-    const REMOTE_BASE = "https://flaviothebfagroup.github.io/IPTV-/remote-control.html";
 
     const app  = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
+    /* ===== Helpers ===== */
     const $ = s => document.querySelector(s);
     function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
+    const b64 = s => btoa(unescape(encodeURIComponent(s)));
 
-    /* Logos */
+    /* ===== Logos & Theme ===== */
     $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
     const brandLogoM = document.getElementById('brandLogoM');
     if(brandLogoM){ brandLogoM.style.backgroundImage = `url("${LOGO_URL}")`; }
 
-    /* Theme (dark class + icon like Home) */
     const THEME_KEY='iptv_theme';
-    const themeBtn = document.getElementById('themeBtn');
-    const themeIcon = document.getElementById('themeIcon');
+    const themeBtn = $('#themeBtn');
+    const themeIcon = $('#themeIcon');
     const setThemeIcon = ()=>{
       const dark = document.body.classList.contains('dark');
       themeIcon.innerHTML = dark
@@ -326,51 +345,39 @@
       setThemeIcon();
     });
 
-    /* “More” dropdown */
-    const moreBtn = document.getElementById('moreBtn');
-    const moreMenu = document.getElementById('moreMenu');
+    /* ===== More dropdown ===== */
+    const moreBtn = $('#moreBtn');
+    const moreMenu = $('#moreMenu');
     if(moreBtn){
-      moreBtn.addEventListener('click', (e)=>{
-        e.preventDefault();
-        moreMenu.classList.toggle('open');
-      });
-      document.addEventListener('click', (e)=>{
-        if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)){
-          moreMenu.classList.remove('open');
-        }
-      }, {capture:true});
+      moreBtn.addEventListener('click', (e)=>{ e.preventDefault(); moreMenu.classList.toggle('open'); });
+      document.addEventListener('click', (e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)) moreMenu.classList.remove('open'); }, {capture:true});
       document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') moreMenu.classList.remove('open'); });
-      // Highlight current in dropdown too
-      const file=(location.pathname.split("/").pop()||"remote-control.html").toLowerCase();
-      moreMenu.querySelectorAll('a').forEach(a=>{
-        const h=(a.getAttribute('href')||'').toLowerCase();
-        if(h===file){ a.classList.add('is-active'); }
-      });
+      const file=(location.pathname.split("/").pop()||"analytics.html").toLowerCase();
+      moreMenu.querySelectorAll('a').forEach(a=>{ const h=(a.getAttribute('href')||'').toLowerCase(); if(h===file){ a.classList.add('is-active'); }});
     }
 
-    /* Mobile sheet */
+    /* ===== Mobile sheet ===== */
     (()=>{
-      const sheet = document.getElementById('sheet');
+      const sheet = $('#sheet');
       const open = ()=>{ sheet.classList.add('open'); document.body.style.overflow='hidden'; };
       const close= ()=>{ sheet.classList.remove('open'); document.body.style.overflow=''; };
-      document.getElementById('hamburger').addEventListener('click', open);
-      document.getElementById('closeSheet').addEventListener('click', close);
+      $('#hamburger').addEventListener('click', open);
+      $('#closeSheet').addEventListener('click', close);
       sheet.querySelector('.back').addEventListener('click', close);
-      // Mobile signout uses desktop button
-      const mainOut = document.getElementById('signOutBtn');
-      const mobOut  = document.getElementById('signOutBtnM');
+      // Mobile sign out mirrors header button
+      const mainOut = $('#signOutBtn');
+      const mobOut  = $('#signOutBtnM');
       if(mainOut && mobOut){ mobOut.addEventListener('click', ()=> mainOut.click()); }
     })();
 
-    /* Auth gate */
-    document.getElementById('signOutBtn').addEventListener('click', ()=>signOut(auth));
-    document.getElementById('loginBtn').addEventListener('click', doLogin);
-    document.getElementById('resetBtn').addEventListener('click', async ()=>{
-      const email = document.getElementById('email').value.trim();
+    /* ===== Auth ===== */
+    $('#signOutBtn').addEventListener('click', ()=>signOut(auth));
+    $('#loginBtn').addEventListener('click', doLogin);
+    $('#resetBtn').addEventListener('click', async ()=>{
+      const email = $('#email').value.trim();
       if(!email) return toast('Enter email', true);
       try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }catch(e){ toast('Reset failed', true); }
     });
-
     async function doLogin(){
       const email=$('#email').value.trim(), pass=$('#password').value;
       if(!email||!pass) return toast('Fill email & password', true);
@@ -385,77 +392,293 @@
         if(u.role!=='admin'){ showGate('notAdmin'); return; }
       }catch(_){}
       showGate('ok');
-      document.getElementById('adminEmail').textContent = user.email || user.uid;
-      updateUrlAndFrame();
+      $('#adminEmail').textContent = user.email || user.uid;
+      await loadDealers();
+      initFromURL();
+      startLive();
     });
 
     function showGate(which){
       $('#loginBox').style.display = which==='login' ? 'block':'none';
       $('#notAdmin').style.display = which==='notAdmin' ? 'block':'none';
-      $('#remotePg').style.display = which==='ok' ? 'block':'none';
+      $('#anaPg').style.display   = which==='ok' ? 'block':'none';
     }
 
-    /* ===== URL builder + actions ===== */
-    const REMOTE_QS = ()=> {
-      const d = $('#dealerId').value.trim();
-      const x = $('#displayId').value.trim();
-      const params = new URLSearchParams();
-      if(x) params.set('display', x);
-      else if(d) params.set('dealership', d);
-      return params.toString();
-    };
-    const buildRemoteUrl = ()=> {
-      const qs = REMOTE_QS();
-      return qs ? `${REMOTE_BASE}?${qs}` : REMOTE_BASE;
-    };
-
-    function updateUrlAndFrame(){
-      const url = buildRemoteUrl();
-      $('#urlText').textContent = url;
-      $('#remoteFrame').src = url;
-    }
-
-    ['dealerId','displayId'].forEach(id=> $('#'+id).addEventListener('input', updateUrlAndFrame));
-    $('#btnReloadFrame').addEventListener('click', updateUrlAndFrame);
-    $('#btnOpen').addEventListener('click', ()=> window.open(buildRemoteUrl(), '_blank','noopener'));
-
-    // Share & copy
-    $('#btnShare').addEventListener('click', async ()=>{
-      const url = buildRemoteUrl();
+    /* ===== Dealers map ===== */
+    let DEALERS = {};
+    async function loadDealers(){
+      DEALERS = {};
       try{
-        if(navigator.share){
-          await navigator.share({ title:'BFA IPTV — Remote', url });
-        }else{
-          await navigator.clipboard.writeText(url);
-          toast('Link copied');
+        const pub = await get(ref(db,'dealershipPublic'));
+        if(pub.exists()){
+          Object.entries(pub.val()).forEach(([id,v])=> DEALERS[id] = v?.name||id);
         }
-      }catch(e){
-        await navigator.clipboard.writeText(url);
-        toast('Link copied');
+      }catch(_){}
+      if(!Object.keys(DEALERS).length){
+        try{
+          const d = await get(ref(db,'dealership'));
+          if(d.exists()){
+            Object.entries(d.val()).forEach(([id,v])=> DEALERS[id] = v?.name||id);
+          }
+        }catch(_){}
       }
+      const sel=$('#filterDealer');
+      const prev=sel.value;
+      sel.innerHTML='<option value="">All dealerships</option>';
+      Object.entries(DEALERS).sort((a,b)=>a[1].localeCompare(b[1])).forEach(([id,name])=>{
+        const o=document.createElement('option'); o.value=id; o.textContent=name; sel.appendChild(o);
+      });
+      sel.value=prev||'';
+      sel.addEventListener('change', ()=>{ computeAnalytics(); updateManageLink(); });
+      $('#activeWindow').addEventListener('change', ()=>{ computeAnalytics(); syncURL(); });
+    }
+
+    function updateManageLink(){
+      const did=$('#filterDealer').value;
+      const el=$('#btnManageDisplays');
+      el.href = did ? `displays.html?dealer=${encodeURIComponent(did)}` : 'displays.html';
+    }
+
+    /* ===== Live displays listener ===== */
+    let displaysMap = {};
+    let unsub = null;
+    function startLive(){
+      if(unsub) unsub();
+      const off = onValue(ref(db,'displays'), snap=>{
+        displaysMap = snap.exists()? snap.val() : {};
+        computeAnalytics();
+      }, err=>console.warn(err));
+      unsub = ()=>off();
+    }
+
+    function activeThresholdMs(){
+      const mins = parseInt($('#activeWindow').value, 10) || 10;
+      return mins*60*1000;
+    }
+
+    /* ===== URL params in/out ===== */
+    function initFromURL(){
+      const p = new URLSearchParams(location.search);
+      const did = p.get('dealership') || p.get('dealer') || '';
+      const mins = p.get('mins');
+      if(did){ $('#filterDealer').value = did; updateManageLink(); }
+      if(mins){ $('#activeWindow').value = String(Math.max(1, Math.min(1440, +mins || 10))); }
+      computeAnalytics();
+    }
+    function syncURL(){
+      const p = new URLSearchParams();
+      const did = $('#filterDealer').value;
+      const mins = $('#activeWindow').value;
+      if(did) p.set('dealership', did);
+      if(mins && mins!=='10') p.set('mins', mins);
+      const qs = p.toString();
+      const newUrl = qs ? `?${qs}` : location.pathname;
+      history.replaceState(null, '', newUrl);
+    }
+
+    /* ===== Compute & render ===== */
+    let CACHE = {online:[], offline:[], chCounts:{}, dealerCounts:{}, avgVol:0, mutedPct:0};
+
+    function computeAnalytics(){
+      const dealerFilter = $('#filterDealer').value || '';
+      const now = Date.now(), win = activeThresholdMs();
+
+      const items = Object.entries(displaysMap)
+        .map(([id,v])=>({id, ...v}))
+        .filter(r=> dealerFilter ? (r.dealership===dealerFilter) : true);
+
+      let onlineList = [], offlineList = [];
+      const chCounts = {1:0,2:0,3:0,4:0,5:0};
+      const dealerCounts = {};
+      let volSum=0, volN=0, muted=0;
+
+      items.forEach(r=>{
+        const seen = r.lastSeenAt || r.timestamp || 0;
+        const isOnline = (now - seen) <= win;
+        if(isOnline){
+          onlineList.push(r);
+          const ch = Math.max(1, Math.min(5, parseInt(r.channel||1,10)||1));
+          chCounts[ch] = (chCounts[ch]||0)+1;
+          const dk = r.dealership||'—';
+          dealerCounts[dk] = (dealerCounts[dk]||0)+1;
+          if(typeof r.volume==='number'){ volSum+=r.volume; volN++; }
+          if(r.muted===true) muted++;
+        }else{
+          offlineList.push(r);
+        }
+      });
+
+      const active = onlineList.length;
+      const offline = offlineList.length;
+      const avgVol = volN ? Math.round(volSum/volN) : 0;
+      const totalSeen = active + offline;
+      const mutedPct = totalSeen ? Math.round((muted/totalSeen)*100) : 0;
+      const topCh = Object.entries(chCounts).sort((a,b)=>b[1]-a[1])[0];
+
+      $('#statActive').textContent = active;
+      $('#statOffline').textContent = offline;
+      $('#statTopCh').textContent = topCh && topCh[1]>0 ? 'CH '+topCh[0] : '—';
+      $('#statVolMuted').textContent = `${avgVol} • ${mutedPct}%`;
+      $('#lastUpdate').textContent = `Updated: ${new Date().toLocaleTimeString()} • Window: ${$('#activeWindow').value} min`;
+
+      renderBars('anaChBars', Object.entries(chCounts).map(([k,v])=>({label:'Channel '+k, value:v})));
+
+      const dArr = Object.entries(dealerCounts).map(([k,v])=>({label:(DEALERS[k]||k), value:v}))
+                    .sort((a,b)=>b.value-a.value).slice(0,10);
+      renderBars('anaDealerBars', dArr);
+
+      CACHE = {online:onlineList, offline:offlineList, chCounts, dealerCounts, avgVol, mutedPct};
+      renderOnline();
+      renderOffline();
+
+      syncURL();
+    }
+
+    function renderBars(containerId, rows){
+      const wrap = document.getElementById(containerId);
+      wrap.innerHTML='';
+      const total = rows.reduce((a,b)=>a+b.value,0);
+      rows.forEach(r=>{
+        const pct = total ? Math.round((r.value/total)*100) : 0;
+        const div = document.createElement('div'); div.className='item';
+        div.innerHTML = `
+          <div class="col">
+            <b>${r.label}</b>
+            <div class="bar"><i style="width:${pct}%"></i></div>
+          </div>
+          <div class="muted">${r.value} • ${pct}%</div>`;
+        wrap.appendChild(div);
+      });
+      if(!rows.length){
+        const empty=document.createElement('div'); empty.className='muted'; empty.textContent='No data.';
+        wrap.appendChild(empty);
+      }
+    }
+
+    function renderOnline(){
+      const list = $('#onlineList');
+      const q = ($('#searchOnline').value||'').toLowerCase().trim();
+      list.innerHTML='';
+      const rows = CACHE.online
+        .filter(r=>{
+          if(!q) return true;
+          const d = (DEALERS[r.dealership]||r.dealership||'').toLowerCase();
+          const id = (r.id||'').toLowerCase();
+          return d.includes(q)||id.includes(q);
+        })
+        .sort((a,b)=> (a.dealership||'').localeCompare(b.dealership||'') || (a.id||'').localeCompare(b.id||''));
+      $('#noneOnline').style.display = rows.length? 'none':'block';
+      rows.forEach(r=>{
+        const seen = r.lastSeenAt || r.timestamp || 0;
+        const row = document.createElement('div'); row.className='item';
+        row.innerHTML = `
+          <div class="col">
+            <div>
+              <span class="badge">${(DEALERS[r.dealership]||r.dealership||'—')}</span>
+              <b style="margin-left:6px">${r.id}</b>
+            </div>
+            <div class="muted">Seen: ${new Date(seen).toLocaleTimeString()}</div>
+          </div>
+          <div class="chips">
+            <span class="badge">CH ${r.channel ?? 1}</span>
+            <span class="badge">VOL ${r.volume ?? 0}</span>
+            <span class="badge">${r.muted ? 'Muted' : 'Unmuted'}</span>
+          </div>`;
+        list.appendChild(row);
+      });
+    }
+
+    function renderOffline(){
+      const list = $('#offlineList');
+      list.innerHTML='';
+      const rows = CACHE.offline
+        .sort((a,b)=> (a.dealership||'').localeCompare(b.dealership||'') || (a.id||'').localeCompare(b.id||''));
+      rows.forEach(r=>{
+        const seen = r.lastSeenAt || r.timestamp || 0;
+        const row = document.createElement('div'); row.className='item';
+        row.innerHTML = `
+          <div class="col">
+            <div>
+              <span class="badge">${(DEALERS[r.dealership]||r.dealership||'—')}</span>
+              <b style="margin-left:6px">${r.id}</b>
+            </div>
+            <div class="muted">Last seen: ${seen? new Date(seen).toLocaleString() : '—'}</div>
+          </div>
+          <div class="chips">
+            <span class="badge">CH ${r.channel ?? 1}</span>
+            <span class="badge">VOL ${r.volume ?? 0}</span>
+            <span class="badge">${r.muted ? 'Muted' : 'Unmuted'}</span>
+          </div>`;
+        list.appendChild(row);
+      });
+      if(!rows.length){
+        const empty=document.createElement('div'); empty.className='muted'; empty.textContent='No offline TVs.';
+        list.appendChild(empty);
+      }
+    }
+
+    /* ===== Actions ===== */
+    $('#refreshBtn').addEventListener('click', ()=> computeAnalytics());
+    $('#searchOnline').addEventListener('input', renderOnline);
+
+    $('#btnCopySummary').addEventListener('click', async ()=>{
+      const active = $('#statActive').textContent;
+      const off = $('#statOffline').textContent;
+      const top = $('#statTopCh').textContent;
+      const vm  = $('#statVolMuted').textContent;
+      const dealer = $('#filterDealer').value;
+      const mins = $('#activeWindow').value;
+      const lines = [
+        `BFA IPTV — Analytics`,
+        dealer? `Dealer: ${DEALERS[dealer]||dealer}` : `Dealer: All`,
+        `Window: ${mins} min`,
+        `Active: ${active}`,
+        `Offline: ${off}`,
+        `Top Channel: ${top}`,
+        `Avg Vol / Muted: ${vm}`
+      ];
+      try{ await navigator.clipboard.writeText(lines.join('\n')); toast('Summary copied'); }
+      catch{ toast('Copy failed', true); }
     });
 
-    $('#btnCopy').addEventListener('click', async ()=>{
-      const url = buildRemoteUrl();
-      try{ await navigator.clipboard.writeText(url); toast('Copied'); }catch(e){ toast('Copy failed', true); }
+    $('#btnExportCSV').addEventListener('click', ()=>{
+      // Online + Offline snapshot respecting current dealer filter
+      const header = ['state','id','dealershipId','dealershipName','channel','volume','muted','lastSeenAtISO'];
+      const rows = [];
+      const pushRow = (state, r)=>{
+        rows.push([
+          state,
+          r.id || '',
+          r.dealership || '',
+          DEALERS[r.dealership] || r.dealership || '',
+          r.channel ?? '',
+          r.volume ?? '',
+          r.muted === true ? 'true' : 'false',
+          (r.lastSeenAt||r.timestamp) ? new Date(r.lastSeenAt||r.timestamp).toISOString() : ''
+        ]);
+      };
+      CACHE.online.forEach(r=>pushRow('online', r));
+      CACHE.offline.forEach(r=>pushRow('offline', r));
+      const csv = [header, ...rows].map(cols => cols.map(c=>{
+        const s=String(c??''); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+      }).join(',')).join('\n');
+
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download='bfa-analytics.csv'; a.click();
+      setTimeout(()=>URL.revokeObjectURL(url), 1200);
     });
 
-    // QR Code
-    let qr=null;
-    $('#btnQR').addEventListener('click', ()=>{
-      const url = buildRemoteUrl();
-      $('#qrUrl').textContent = url;
-      const box = $('#qrBox'); box.innerHTML='';
-      qr = new QRCode(box, { text:url, width:220, height:220, colorDark:"#000000", colorLight:"#ffffff", correctLevel: QRCode.CorrectLevel.M });
-      document.getElementById('qrDlg').showModal();
+    $('#btnShareView').addEventListener('click', async ()=>{
+      const url = location.href;
+      try{
+        if(navigator.share){ await navigator.share({ title:'BFA IPTV — Analytics', url }); }
+        else { await navigator.clipboard.writeText(url); toast('Link copied'); }
+      }catch{ try{ await navigator.clipboard.writeText(url); toast('Link copied'); }catch{ toast('Share failed', true); } }
     });
-    $('#btnCloseQR').addEventListener('click', ()=> document.getElementById('qrDlg').close());
-    $('#btnDownloadQR').addEventListener('click', ()=>{
-      const img = document.querySelector('#qrBox canvas') || document.querySelector('#qrBox img');
-      if(!img) return;
-      let dataURL = img.tagName==='CANVAS' ? img.toDataURL('image/png') : img.src;
-      const a=document.createElement('a'); a.href=dataURL; a.download='bfa-remote-qr.png'; a.click();
-    });
+
+    /* ===== Manage displays link keeps filter ===== */
+    updateManageLink();
   </script>
 </body>
 </html>
