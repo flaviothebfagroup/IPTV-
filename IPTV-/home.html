@@ -13,7 +13,7 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png"/>
   <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png"/>
 
-  <!-- ===== NAVBAR (shared look) ===== -->
+  <!-- ===== NAVBAR (shared) ===== -->
   <style>
     :root{
       --accent:#ff9500;
@@ -23,7 +23,6 @@
       --border:rgba(0,0,0,.16);
       --shadow:0 8px 28px rgba(0,0,0,.08);
 
-      /* page components */
       --panel:#fff;
       --tile:#f7f7f9;
       --border2:rgba(0,0,0,.12);
@@ -76,9 +75,11 @@
     button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   </style>
 
-  <!-- ===== HOME PAGE STYLES (UI polish only) ===== -->
+  <!-- ===== HOME PAGE STYLES ===== -->
   <style>
     .wrap{max-width:1100px;margin:0 auto;padding:18px}
+
+    /* Cards / inputs used in auth boxes */
     .card{background:var(--panel);border:1px solid var(--border2);border-radius:18px;padding:16px;box-shadow:0 14px 36px rgba(0,0,0,.06)}
     .muted{color:var(--muted);font-size:12px}
     .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -88,19 +89,21 @@
     .btnSolid{padding:12px;border-radius:12px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
     .btnGhost{padding:12px;border-radius:12px;background:#fff;border:1px solid var(--border2);font-weight:800;cursor:pointer}
 
-    /* Bento tiles to match other page vibe */
+    /* Bento tiles with icons (match Dealerships vibe) */
     #grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
     @media (max-width:980px){#grid{grid-template-columns:repeat(2,1fr)}}
     @media (max-width:560px){#grid{grid-template-columns:1fr}}
-    .tile{display:flex;flex-direction:column;gap:8px;min-height:120px;padding:18px;border:1px solid var(--border2);border-radius:18px;background:var(--tile);
-          transition:transform .06s ease,border-color .2s,box-shadow .2s}
+    .tile{
+      display:flex;flex-direction:column;gap:10px;min-height:120px;padding:18px;
+      border:1px solid var(--border2);border-radius:18px;background:var(--tile);
+      transition:transform .06s ease,border-color .2s,box-shadow .2s;
+    }
     .tile:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 8px 22px rgba(255,149,0,.15)}
+    .t-head{display:flex;align-items:center;gap:10px}
+    .t-ico{flex:0 0 34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--border2);background:#fff}
+    .t-ico svg{width:18px;height:18px;stroke:#111;stroke-width:1.9;fill:none}
     .tile h3{margin:0;font-size:18px;font-weight:900;letter-spacing:.2px}
     .tile p{margin:0;color:var(--muted);font-size:12px}
-
-    .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;
-           font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
-    .toast.show{opacity:1}.toast.err{background:#ff453a;color:#fff}
   </style>
 </head>
 <body>
@@ -150,8 +153,9 @@
   </div>
 </header>
 
-<!-- ===== CONTENT (unchanged) ===== -->
+<!-- ===== CONTENT (logic unchanged) ===== -->
 <div class="wrap">
+  <!-- Login -->
   <div id="loginBox" class="card" style="max-width:520px;margin:40px auto;display:none">
     <h2 style="margin:0 0 12px">Admin Sign In</h2>
     <div class="row2">
@@ -171,25 +175,86 @@
     <div class="muted" style="font-size:12px;margin-top:8px">Requires <b>role: "admin"</b> in <code>/user/{uid}</code>.</div>
   </div>
 
+  <!-- Not admin -->
   <div id="notAdmin" class="card" style="display:none;max-width:720px;margin:40px auto">
     <h2>Not authorized</h2>
     <div class="muted" style="font-size:12px">Ask an admin to set your role to <b>admin</b> in the database.</div>
   </div>
 
+  <!-- Tiles -->
   <div id="home" style="display:none">
-    <div class="card" style="margin-bottom:12px">
-      <div class="muted" style="font-size:12px">Tap a tile to open a page.</div>
-    </div>
     <div id="grid">
-      <a class="tile" href="dealerships.html"><h3>Dealerships</h3><p>Add • rename • migrate • delete</p></a>
-      <a class="tile" href="displays.html"><h3>Displays</h3><p>Live list • channel • volume</p></a>
-      <a class="tile" href="users.html"><h3>Users</h3><p>Create • roles • duplicates</p></a>
-      <a class="tile" href="links.html"><h3>Links</h3><p>Quick access apps</p></a>
-      <a class="tile" href="analytics.html"><h3>Analytics</h3><p>Now • channels • dealers</p></a>
-      <a class="tile" href="schedule.html"><h3>Schedule</h3><p>Installs • reminders</p></a>
-      <a class="tile" href="backups.html"><h3>Backups</h3><p>Download • restore preview</p></a>
-      <a class="tile" href="remote-control.html"><h3>Remote</h3><p>Player remote control</p></a>
-      <a class="tile" href="settings.html"><h3>Settings</h3><p>GitHub sync • theme</p></a>
+      <a class="tile" href="dealerships.html">
+        <div class="t-head">
+          <span class="t-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg></span>
+          <h3>Dealerships</h3>
+        </div>
+        <p>Add • rename • migrate • delete</p>
+      </a>
+
+      <a class="tile" href="displays.html">
+        <div class="t-head">
+          <span class="t-ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg></span>
+          <h3>Displays</h3>
+        </div>
+        <p>Live list • channel • volume</p>
+      </a>
+
+      <a class="tile" href="users.html">
+        <div class="t-head">
+          <span class="t-ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg></span>
+          <h3>Users</h3>
+        </div>
+        <p>Create • roles • duplicates</p>
+      </a>
+
+      <a class="tile" href="links.html">
+        <div class="t-head">
+          <span class="t-ico"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg></span>
+          <h3>Links</h3>
+        </div>
+        <p>Quick access apps</p>
+      </a>
+
+      <a class="tile" href="analytics.html">
+        <div class="t-head">
+          <span class="t-ico"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg></span>
+          <h3>Analytics</h3>
+        </div>
+        <p>Now • channels • dealers</p>
+      </a>
+
+      <a class="tile" href="schedule.html">
+        <div class="t-head">
+          <span class="t-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+          <h3>Schedule</h3>
+        </div>
+        <p>Installs • reminders</p>
+      </a>
+
+      <a class="tile" href="backups.html">
+        <div class="t-head">
+          <span class="t-ico"><svg viewBox="0 0 24 24"><path d="M4 7h16v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></span>
+          <h3>Backups</h3>
+        </div>
+        <p>Download • restore preview</p>
+      </a>
+
+      <a class="tile" href="remote-control.html">
+        <div class="t-head">
+          <span class="t-ico"><svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="20" rx="2"/><circle cx="12" cy="7" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="17" r="1.2"/></svg></span>
+          <h3>Remote</h3>
+        </div>
+        <p>Player remote control</p>
+      </a>
+
+      <a class="tile" href="settings.html">
+        <div class="t-head">
+          <span class="t-ico"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.08a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.08a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7 2.29l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V1a2 2 0 1 1 4 0v.08a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c0 .65.39 1.24 1 1.51.21.1.44.15.68.15H21a2 2 0 1 1 0 4h-.08a1.65 1.65 0 0 0-1.51 1Z"/></svg></span>
+          <h3>Settings</h3>
+        </div>
+        <p>GitHub sync • theme</p>
+      </a>
     </div>
   </div>
 </div>
@@ -243,7 +308,7 @@
     const main=$("#logoutBtn"), mob=$("#logoutBtnM"); if(main&&mob){ mob.addEventListener("click",()=>main.click()); }
   })();
 
-  // Auth UI (content unchanged)
+  // Auth UI (unchanged logic)
   $("#loginBtn").addEventListener("click", doLogin);
   $("#resetBtn").addEventListener("click", async ()=>{
     const email=$("#email").value.trim();
