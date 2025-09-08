@@ -32,17 +32,26 @@
   .round{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1px solid var(--border);background:transparent;font-weight:800;cursor:pointer}
   .round:hover{border-color:var(--accent)}
 
-  /* === HAMBURGER: orange, thicker lines, no border, vertically centered === */
+  /* === HAMBURGER: orange, thicker lines, no border, perfectly centered === */
   #hamburger{
-    display:none;                 /* shown by media query or .compact */
+    display:none;
     position:absolute; right:0; inset-block:0; margin-block:auto;
     height:40px; width:44px; padding:0;
     border:none; background:transparent; box-shadow:none;
-    color:var(--accent);          /* icon inherits this color */
+    color:var(--accent);
     align-items:center; justify-content:center;
   }
   #hamburger .ic{width:22px;height:22px;stroke-width:2.6;stroke-linecap:round}
   #hamburger:hover{border:none}
+
+  /* ===== Mobile sheet (this was missing) ===== */
+  .sheet{position:fixed;inset:0;z-index:120;display:none}
+  .sheet.open{display:block}
+  .sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
+  .panel{position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:#fff;border-left:1px solid var(--border);box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px}
+  .panel .row{display:flex;align-items:center;justify-content:space-between}
+  .panel nav{display:grid;gap:8px}
+  .panel nav a{justify-content:flex-start}
 
   /* Mobile breakpoint */
   @media (max-width:920px){
@@ -55,14 +64,14 @@
   .toprow.compact #hamburger{display:inline-flex}
   .toprow.compact .actionsTop{margin-left:0;padding-right:44px}
 
-  /* Tap highlights / force orange accents */
+  /* Tap highlights / force orange */
   a,button,input,textarea,select{ -webkit-tap-highlight-color: transparent; accent-color: var(--accent); color:inherit; }
   a:visited{ color:inherit; }
   button:focus{ outline:none; }
   button:focus-visible, a:focus-visible, input:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
 </style>
 
-<!-- ======= PAGE STYLES (unchanged from your 99% version) ======= -->
+<!-- ======= PAGE STYLES (unchanged from your 99% build) ======= -->
 <style>
   :root{ --panel:#fff; --tile:#fff; --danger:#e11d48; --border2:rgba(0,0,0,.12); }
   *{box-sizing:border-box}
@@ -262,60 +271,19 @@ const I={
 };
 
 /* active nav pill */
-(function(){
-  const file=(location.pathname.split("/").pop()||"").toLowerCase();
-  const map={ "":"home","/":"home","index.html":"home","home.html":"home",
-              "dealerships.html":"dealerships","displays.html":"displays",
-              "users.html":"users","links.html":"links","analytics.html":"analytics","schedule.html":"schedule" };
-  let key=map[file];
-  if(!key){
-    const t=document.title.toLowerCase();
-    if(t.includes("dealer")) key="dealerships";
-    else if(t.includes("display")) key="displays";
-    else if(t.includes("user")) key="users";
-    else if(t.includes("link")) key="links";
-    else if(t.includes("analytic")) key="analytics";
-    else if(t.includes("schedule")) key="schedule";
-    else key="home";
-  }
-  document.querySelectorAll(`[data-page="${key}"]`).forEach(a=>a.classList.add("is-active"));
-})();
+(()=>{const f=(location.pathname.split("/").pop()||"").toLowerCase();const m={"":"home","/":"home","index.html":"home","home.html":"home","dealerships.html":"dealerships","displays.html":"displays","users.html":"users","links.html":"links","analytics.html":"analytics","schedule.html":"schedule"};let k=m[f]||(/dealer/i.test(document.title)?"dealerships":/display/i.test(document.title)?"displays":/user/i.test(document.title)?"users":/link/i.test(document.title)?"links":/analytic/i.test(document.title)?"analytics":/schedule/i.test(document.title)?"schedule":"home");document.querySelectorAll(`[data-page="${k}"]`).forEach(a=>a.classList.add("is-active"));})();
 
 /* mobile sheet */
-(() => {
-  const sh=$("#sheet"), open=()=>{sh.classList.add("open");document.body.style.overflow="hidden"}, close=()=>{sh.classList.remove("open");document.body.style.overflow=""};
-  $("#hamburger").onclick=open; $("#closeSheet").onclick=close; sh.querySelector(".back").onclick=close;
-  const main=$("#logoutBtn"), mob=$("#logoutBtnM"); if(main&&mob){ mob.addEventListener("click",()=>main.click()); }
-})();
+(()=>{const sh=$("#sheet"),open=()=>{sh.classList.add("open");document.body.style.overflow="hidden"},close=()=>{sh.classList.remove("open");document.body.style.overflow=""};$("#hamburger").onclick=open;$("#closeSheet").onclick=close;sh.querySelector(".back").onclick=close;const main=$("#logoutBtn"),mob=$("#logoutBtnM");if(main&&mob){mob.addEventListener("click",()=>main.click());}})();
 
-/* auto-compact if nav doesn’t fit (handles weird device widths) */
-(function(){
-  const row=document.getElementById('toprow');
-  const brand=row.querySelector('.brand');
-  const nav=row.querySelector('.nav');
-  const actions=row.querySelector('.actionsTop');
-  function fit(){
-    // available width between brand and actions
-    const total=row.clientWidth;
-    const avail=total - brand.offsetWidth - actions.offsetWidth - 24; // padding
-    const need=nav.scrollWidth;
-    if(need>avail) row.classList.add('compact'); else row.classList.remove('compact');
-  }
-  window.addEventListener('resize',fit,{passive:true});
-  new ResizeObserver(fit).observe(document.body);
-  fit();
-})();
+/* auto-compact when nav doesn’t fit */
+(()=>{const row=document.getElementById('toprow');const brand=row.querySelector('.brand');const nav=row.querySelector('.nav');const actions=row.querySelector('.actionsTop');function fit(){const total=row.clientWidth;const avail=total-brand.offsetWidth-actions.offsetWidth-24;const need=nav.scrollWidth;if(need>avail)row.classList.add('compact');else row.classList.remove('compact');}window.addEventListener('resize',fit,{passive:true});new ResizeObserver(fit).observe(document.body);fit();})();
 
-/* ===== auth gate + page logic (unchanged) ===== */
+/* ===== auth + page logic (unchanged) ===== */
 onAuthStateChanged(auth, async (user)=>{
   if(!user){ location.href='home.html'; return; }
   const u = (await get(ref(db, 'user/'+user.uid))).val()||{};
-  if(u.role!=='admin'){ document.body.innerHTML = `
-      <div style="padding:40px">
-        <div class="card"><h3>Not authorized</h3>
-        <div class="muted">Ask an admin to set your role to <b>admin</b> in the database.</div></div>
-      </div>`; return;
-  }
+  if(u.role!=='admin'){ document.body.innerHTML = `<div style="padding:40px"><div class="card"><h3>Not authorized</h3><div class="muted">Ask an admin to set your role to <b>admin</b> in the database.</div></div></div>`; return; }
   loadList();
 });
 $('#logoutBtn')?.addEventListener('click', ()=> signOut(auth).then(()=>location.href='home.html'));
@@ -555,9 +523,7 @@ async function toggleDisplaysUnder(li, id){
   let currentDid=null, currentUrl=null, ch=1, vol=50, muted=true, winRef=null;
 
   function syncVolUI(){
-    sub.querySelectorAll('[data-role="voltxt"]').forEach(el=>{
-      el.textContent=(muted||vol===0)?'0%':(vol+'%');
-    });
+    sub.querySelectorAll('[data-role="voltxt"]').forEach(el=>{el.textContent=(muted||vol===0)?'0%':(vol+'%');});
     sub.querySelectorAll('[data-vol]').forEach(r=>{ if(+r.value!==vol) r.value=vol; });
     sub.querySelectorAll('[data-mute]').forEach(b=> b.classList.toggle('selected', !!muted));
   }
