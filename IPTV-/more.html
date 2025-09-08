@@ -1,194 +1,176 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <!-- Stop iOS/Android auto-link blue -->
   <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
   <title>BFA IPTV — Home</title>
 
-  <!-- Optional PWA bits (safe to keep; remove if not used) -->
+  <!-- Optional PWA bits (keep if you use them) -->
   <link rel="manifest" href="/IPTV-/manifest.webmanifest" />
   <meta name="theme-color" content="#ffffff" />
   <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png" />
   <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png" />
   <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png" />
 
-  <!-- ===== NAVBAR (Dealerships, Displays, Users + More) ===== -->
   <style>
+    /* ===== Tokens (light / dark) ===== */
     :root{
-      --accent:#ff9500; --fg:#111; --muted:#6e6e73; --bg:#fff;
-      --border:rgba(0,0,0,.16); --shadow:0 8px 28px rgba(0,0,0,.08);
+      --accent:#ff9500; --fg:#111; --muted:#6e6e73; --bg:#ffffff;
+      --panel:#fff; --tile:#f6f6f8; --tileHover:#fff7ea;
+      --border:rgba(0,0,0,.14); --shadow:0 14px 36px rgba(0,0,0,.08);
+    }
+    body.dark{
+      --bg:#0b0b0c; --fg:#f7f7f8; --muted:#a1a1a8; --panel:#151517;
+      --tile:#1a1a1d; --tileHover:#221e18; --border:rgba(255,255,255,.16); --shadow:0 18px 48px rgba(0,0,0,.45);
     }
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
     a{color:inherit;text-decoration:none}
 
-    .topbar{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid var(--border);
-            padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
+    /* ===== Navbar (matches Dealerships) ===== */
+    .topbar{position:sticky;top:0;z-index:100;background:var(--panel);border-bottom:1px solid var(--border);padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
     .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;position:relative}
     .brand{display:flex;align-items:center;gap:10px}
     .logo{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:#fff center/cover no-repeat}
     .logotxt{font-weight:900;letter-spacing:.2px}
 
-    /* centered primary */
-    .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto;position:relative}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;
-          color:inherit;font-weight:800;font-size:14px;line-height:1;white-space:nowrap}
+    .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;color:inherit;font-weight:800;font-size:14px;line-height:1;white-space:nowrap}
     .pill:hover{border-color:var(--accent)}
     .pill.is-active{outline:2px solid var(--accent)}
     .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
 
-    /* More dropdown */
-    .moreWrap{position:relative}
-    #moreBtn{display:inline-flex;align-items:center;gap:8px}
-    #moreBtn .caret{width:14px;height:14px;stroke:currentColor;stroke-width:1.8;fill:none}
-    .menu{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:220px;
-          background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);
-          padding:6px;display:none}
-    .menu.open{display:block}
-    .menu a{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px}
-    .menu a:hover{background:#fff6e9;border:1px solid #ffd9a8}
-    .menu .ic{width:18px;height:18px;stroke-width:1.9}
-    .menu a.is-active{outline:2px solid var(--accent)}
+    /* “More” (+) */
+    .more{position:relative}
+    #moreBtn .plus{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
+    #moreMenu{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
+      border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none}
+    #moreMenu.open{display:block}
+    #moreMenu a{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px}
+    #moreMenu a:hover{background:var(--tileHover)}
+    #moreMenu a.is-active{outline:2px solid var(--accent)}
+    #moreMenu .ic{width:18px;height:18px;stroke-width:1.9}
 
-    .rhs{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .actions{display:flex;gap:8px}
+    .round{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1px solid var(--border);background:transparent;font-weight:800;cursor:pointer}
+    .round:hover{border-color:var(--accent)}
     .muted{color:var(--muted);font-size:12px}
-    .btn{height:34px;padding:0 14px;border-radius:9999px;border:1px solid var(--border);background:transparent;color:var(--fg);font-weight:800;cursor:pointer}
-    .btn:hover{border-color:var(--accent)}
-    .btn.primary{border-color:var(--accent);color:var(--accent)}
-    #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:44px;min-width:44px;padding:0}
-    #hamburger .ic{width:24px;height:24px;stroke:var(--accent);stroke-width:2.25}
+
+    /* Orange hamburger, no border, top-right */
+    #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:42px;min-width:42px;padding:0;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
+    #hamburger .ic{width:22px;height:22px;stroke:var(--accent);stroke-width:2.35}
 
     @media (max-width:920px){
       .nav{display:none}
-      #hamburger{display:inline-flex;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
-      .rhs{padding-right:48px}
+      #hamburger{display:inline-flex}
+      .actions{padding-right:44px}
     }
 
     /* Mobile sheet */
-    .sheet{position:fixed;inset:0;z-index:120;display:none}
-    .sheet.open{display:block}
-    .sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
-    .panel{position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:#fff;border-left:1px solid var(--border);
-           box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px}
+    #sheet{position:fixed;inset:0;z-index:120;display:none}
+    #sheet.open{display:block}
+    #sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
+    .panel{position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:var(--panel);border-left:1px solid var(--border);
+      box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px}
     .panel .row{display:flex;align-items:center;justify-content:space-between}
     .panel nav{display:grid;gap:8px}
     .panel nav a{justify-content:flex-start}
-    .menuSec{margin-top:8px;font-size:12px;color:var(--muted)}
 
-    /* Orange focus + disable iOS blue */
-    a,button,input,textarea,select{-webkit-tap-highlight-color:transparent;accent-color:var(--accent);color:inherit}
-    a:visited{color:inherit}
-    button:focus{outline:none}
-    button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-  </style>
+    /* ===== Page shell ===== */
+    .wrap{max-width:1100px;margin:0 auto;padding:18px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
 
-  <!-- ===== Page styles (unchanged logic/structure) ===== -->
-  <style>
-    :root{
-      --bg2:#f5f5f7; --panel2:#fff; --border2:rgba(0,0,0,.12);
-      --tile:#f2f2f7; --tileActive:#eaeaef; --shadow2:0 14px 36px rgba(0,0,0,.10);
-    }
-    .wrap{max-width:1200px;margin:0 auto;padding:18px}
-    .card{background:var(--panel2); border:1px solid var(--border2); border-radius:18px; padding:16px; box-shadow:var(--shadow2)}
-    #grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
-    @media (max-width:980px){ #grid{grid-template-columns:repeat(2,1fr)} }
-    @media (max-width:560px){ #grid{grid-template-columns:1fr} }
-    .tile{
-      display:flex; flex-direction:column; gap:8px; min-height:120px; padding:18px;
-      border:1px solid var(--border2); border-radius:20px; background:var(--tile);
-      cursor:pointer; transition:transform .06s ease, border-color .2s, box-shadow .2s;
-    }
-    .tile:hover{ transform:translateY(-1px); border-color:var(--accent); box-shadow:0 8px 22px rgba(255,149,0,.15) }
-    .tile h3{margin:0; font-size:18px; font-weight:900; letter-spacing:.2px}
-    .tile p{margin:0; color:var(--muted); font-size:12px}
+    /* ===== Tiles (with icons) ===== */
+    #grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    @media (max-width:980px){#grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:560px){#grid{grid-template-columns:1fr}}
+    .tile{display:flex;align-items:center;gap:12px;min-height:96px;padding:16px 18px;border:1px solid var(--border);border-radius:18px;background:var(--tile);transition:transform .06s ease,border-color .2s,box-shadow .2s}
+    .tile:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 8px 22px rgba(255,149,0,.12)}
+    .tile .ticon{width:28px;height:28px;border-radius:9px;border:1px solid var(--border);display:grid;place-items:center;background:#fff}
+    .tile .ticon .ic{width:16px;height:16px;stroke:#111;stroke-width:1.8}
+    body.dark .tile .ticon{background:#111;border-color:#333}
+    body.dark .tile .ticon .ic{stroke:#fff}
+    .tile .text{display:flex;flex-direction:column}
+    .tile h3{margin:0;font-size:18px;font-weight:900}
+    .tile p{margin:2px 0 0;color:var(--muted);font-size:12px}
+    /* orange focus */
+    a:focus-visible, button:focus-visible, input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+    /* Toast */
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
     .toast.show{opacity:1}
     .toast.err{background:#ff453a;color:#fff}
   </style>
 </head>
 <body>
-  <!-- Topbar -->
+  <!-- NAVBAR -->
   <header class="topbar">
     <div class="toprow">
-      <a class="brand" href="home.html" aria-label="BFA IPTV Home">
-        <span id="brandLogo" class="logo"></span><span class="logotxt">BFA IPTV</span>
-      </a>
+      <a class="brand" href="home.html"><span class="logo" id="brandLogo"></span><span class="logotxt">BFA IPTV</span></a>
 
-      <!-- Centered primary pills + More -->
       <nav class="nav" aria-label="Primary">
+        <a class="pill is-active" href="home.html" data-page="home">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home
+        </a>
         <a class="pill" href="dealerships.html" data-page="dealerships">
-          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg>
-          Dealerships
+          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships
         </a>
         <a class="pill" href="displays.html" data-page="displays">
-          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg>
-          Displays
+          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays
         </a>
         <a class="pill" href="users.html" data-page="users">
-          <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg>
-          Users
+          <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users
         </a>
 
-        <!-- More dropdown -->
-        <div class="moreWrap">
-          <button id="moreBtn" class="pill" type="button" aria-haspopup="true" aria-expanded="false">
-            <svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18"/></svg> More
-            <svg class="caret" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-          </button>
-          <div id="moreMenu" class="menu" role="menu" aria-label="More">
-            <a href="links.html"        data-page="links"      role="menuitem"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
-            <a href="analytics.html"    data-page="analytics"  role="menuitem"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
-            <a href="schedule.html"     data-page="schedule"   role="menuitem"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
-            <a href="backups.html"      data-page="backups"    role="menuitem"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/></svg> Backups</a>
-            <a href="remote-control.html" data-page="remote"   role="menuitem"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="3"/><circle cx="12" cy="7" r="1"/><path d="M9 11h6M9 14h6M9 17h6"/></svg> Remote</a>
-            <a href="settings.html"     data-page="settings"   role="menuitem"><svg class="ic" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1A2 2 0 0 1 7.1 2.5l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V2a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1A2 2 0 0 1 21.5 7l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1c.2.6.8 1 1.5 1H22a2 2 0 1 1 0 4h-.2c-.7 0-1.3.4-1.5 1Z"/></svg> Settings</a>
+        <div class="more">
+          <a id="moreBtn" class="pill" href="javascript:void(0)">
+            <svg class="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> More
+          </a>
+          <div id="moreMenu" role="menu" aria-label="More">
+            <a href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
+            <a href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
+            <a href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
+            <a href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
+            <a href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
+            <a href="settings.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1-1.9 3.2-0.2-.1a1.7 1.7 0 0 0-1.7 0l-.2.1-1.9-3.2.1-.1A1.7 1.7 0 0 0 14.6 15l-.1-.2 3.2-1.9.1.2a1.7 1.7 0 0 0 1.6 0l.2-.1z"/></svg> Settings</a>
           </div>
         </div>
       </nav>
 
-      <!-- Right side -->
-      <div class="rhs">
+      <div class="actions">
         <span id="adminEmail" class="muted"></span>
-        <button id="themeBtn"  class="btn" title="Theme">☀︎/🌙</button>
-        <button id="signOutBtn" class="btn primary" title="Sign out">Sign out</button>
-        <button id="hamburger" aria-label="Menu">
+        <button id="themeBtn" class="round" title="Light/Dark">☀︎/🌙</button>
+        <button id="signOutBtn" class="round">Sign out</button>
+        <button id="hamburger" class="round" aria-label="Menu">
           <svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
         </button>
       </div>
     </div>
 
     <!-- Mobile sheet -->
-    <div id="sheet" class="sheet" aria-hidden="true">
+    <div id="sheet" aria-hidden="true">
       <div class="back"></div>
       <aside class="panel" role="dialog" aria-modal="true" aria-label="Menu">
         <div class="row">
           <div class="brand"><span class="logo" id="brandLogoM"></span><span class="logotxt">BFA IPTV</span></div>
-          <button id="closeSheet" class="btn" style="min-width:36px;height:36px;padding:0">✕</button>
+          <button id="closeSheet" class="round" aria-label="Close"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
-
-        <div class="menuSec">Primary</div>
-        <nav aria-label="Mobile primary">
-          <a class="pill" href="dealerships.html" data-page="dealerships"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
-          <a class="pill" href="displays.html"    data-page="displays"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
-          <a class="pill" href="users.html"       data-page="users"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
+        <nav>
+          <a class="pill is-active" href="home.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
+          <a class="pill" href="dealerships.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
+          <a class="pill" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
+          <a class="pill" href="users.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
+          <div class="bfa-sec muted">More</div>
+          <a class="pill" href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
+          <a class="pill" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
+          <a class="pill" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
+          <a class="pill" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
+          <a class="pill" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
+          <a class="pill" href="settings.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1-1.9 3.2-0.2-.1a1.7 1.7 0 0 0-1.7 0l-.2.1-1.9-3.2.1-.1A1.7 1.7 0 0 0 14.6 15l-.1-.2 3.2-1.9.1.2a1.7 1.7 0 0 0 1.6 0l.2-.1z"/></svg> Settings</a>
+          <button id="signOutBtnM" class="round" style="margin-top:8px">Sign out</button>
         </nav>
-
-        <div class="menuSec">More</div>
-        <nav aria-label="Mobile more">
-          <a class="pill" href="links.html"         data-page="links"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
-          <a class="pill" href="analytics.html"     data-page="analytics"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
-          <a class="pill" href="schedule.html"      data-page="schedule"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
-          <a class="pill" href="backups.html"       data-page="backups"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/></svg> Backups</a>
-          <a class="pill" href="remote-control.html" data-page="remote"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="3"/><circle cx="12" cy="7" r="1"/><path d="M9 11h6M9 14h6M9 17h6"/></svg> Remote</a>
-          <a class="pill" href="settings.html"      data-page="settings"><svg class="ic" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1A2 2 0 0 1 7.1 2.5l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V2a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1A2 2 0 0 1 21.5 7l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1c.2.6.8 1 1.5 1H22a2 2 0 1 1 0 4h-.2c-.7 0-1.3.4-1.5 1Z"/></svg> Settings</a>
-        </nav>
-
-        <div class="menuSec">Account</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-          <span id="adminEmailM" class="muted"></span>
-          <button id="signOutBtnM" class="btn primary" style="height:34px">Sign out</button>
-        </div>
       </aside>
     </div>
   </header>
@@ -200,16 +182,16 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div>
           <div class="muted" style="margin-bottom:6px">Email</div>
-          <input id="email" class="btn" style="width:100%;border-radius:12px" type="email" placeholder="you@company.com" autocomplete="email" />
+          <input id="email" class="round" style="width:100%;height:40px;padding:0 12px;border:1px solid var(--border);background:transparent" type="email" placeholder="you@company.com" autocomplete="email"/>
         </div>
         <div>
           <div class="muted" style="margin-bottom:6px">Password</div>
-          <input id="password" class="btn" style="width:100%;border-radius:12px" type="password" placeholder="••••••••" autocomplete="current-password" />
+          <input id="password" class="round" style="width:100%;height:40px;padding:0 12px;border:1px solid var(--border);background:transparent" type="password" placeholder="••••••••" autocomplete="current-password"/>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-        <button id="loginBtn" class="btn" style="background:var(--accent);border-color:var(--accent);color:#000">Sign in</button>
-        <button id="resetBtn" class="btn">Send reset link</button>
+        <button id="loginBtn" class="round" style="background:var(--accent);border-color:var(--accent);color:#000">Sign in</button>
+        <button id="resetBtn" class="round">Send reset link</button>
       </div>
       <div class="muted" style="font-size:12px;margin-top:8px">Requires <b>role: "admin"</b> in <code>/user/{uid}</code>.</div>
     </div>
@@ -220,18 +202,46 @@
       <div class="muted" style="font-size:12px">Ask an admin to set your role to <b>admin</b> in the database.</div>
     </div>
 
-    <!-- Home tiles (unchanged) -->
+    <!-- Home tiles (ICONS RESTORED) -->
     <div id="home" style="display:none">
       <div id="grid">
-        <a class="tile" href="dealerships.html"><h3>Dealerships</h3><p>Add • rename • migrate • delete</p></a>
-        <a class="tile" href="displays.html"><h3>Displays</h3><p>Live list • channel • volume</p></a>
-        <a class="tile" href="users.html"><h3>Users</h3><p>Create • roles • duplicates</p></a>
-        <a class="tile" href="links.html"><h3>Links</h3><p>Quick access apps</p></a>
-        <a class="tile" href="analytics.html"><h3>Analytics</h3><p>Now • channels • dealers</p></a>
-        <a class="tile" href="schedule.html"><h3>Schedule</h3><p>Installs • reminders</p></a>
-        <a class="tile" href="backups.html"><h3>Backups</h3><p>Download • restore preview</p></a>
-        <a class="tile" href="remote-control.html"><h3>Remote</h3><p>Player remote control</p></a>
-        <a class="tile" href="settings.html"><h3>Settings</h3><p>GitHub sync • theme</p></a>
+        <a class="tile" href="dealerships.html">
+          <span class="ticon"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg></span>
+          <span class="text"><h3>Dealerships</h3><p>Add • rename • migrate • delete</p></span>
+        </a>
+        <a class="tile" href="displays.html">
+          <span class="ticon"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg></span>
+          <span class="text"><h3>Displays</h3><p>Live list • channel • volume</p></span>
+        </a>
+        <a class="tile" href="users.html">
+          <span class="ticon"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg></span>
+          <span class="text"><h3>Users</h3><p>Create • roles • duplicates</p></span>
+        </a>
+
+        <a class="tile" href="links.html">
+          <span class="ticon"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg></span>
+          <span class="text"><h3>Links</h3><p>Quick access apps</p></span>
+        </a>
+        <a class="tile" href="analytics.html">
+          <span class="ticon"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg></span>
+          <span class="text"><h3>Analytics</h3><p>Now • channels • dealers</p></span>
+        </a>
+        <a class="tile" href="schedule.html">
+          <span class="ticon"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+          <span class="text"><h3>Schedule</h3><p>Installs • reminders</p></span>
+        </a>
+        <a class="tile" href="backups.html">
+          <span class="ticon"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg></span>
+          <span class="text"><h3>Backups</h3><p>Download • restore preview</p></span>
+        </a>
+        <a class="tile" href="remote-control.html">
+          <span class="ticon"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg></span>
+          <span class="text"><h3>Remote</h3><p>Player remote control</p></span>
+        </a>
+        <a class="tile" href="settings.html">
+          <span class="ticon"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1-1.9 3.2-0.2-.1a1.7 1.7 0 0 0-1.7 0l-.2.1-1.9-3.2.1-.1A1.7 1.7 0 0 0 14.6 15l-.1-.2 3.2-1.9.1.2a1.7 1.7 0 0 0 1.6 0l.2-.1z"/></svg></span>
+          <span class="text"><h3>Settings</h3><p>GitHub sync • theme</p></span>
+        </a>
       </div>
     </div>
   </div>
@@ -247,7 +257,7 @@
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    // Firebase
+    /* Firebase */
     const firebaseConfig = {
       apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
       authDomain: "iptv-bfa.firebaseapp.com",
@@ -258,7 +268,6 @@
       appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
     };
     const LOGO_URL = "/IPTV-/icons/icon-512.png";
-
     const app  = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getDatabase(app);
@@ -266,102 +275,90 @@
     const $ = s => document.querySelector(s);
     function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
 
-    // Logo
+    /* Logo */
     $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
-    $('#brandLogoM').style.backgroundImage = `url("${LOGO_URL}")`;
+    const brandLogoM = document.getElementById('brandLogoM');
+    if(brandLogoM){ brandLogoM.style.backgroundImage = `url("${LOGO_URL}")`; }
 
-    // Theme
-    const savedTheme = localStorage.getItem('iptv_theme') || 'light';
-    document.body.classList.toggle('dark', savedTheme==='dark');
+    /* Theme (FIXED: persists + toggles) */
+    const THEME_KEY = 'iptv_theme';
+    const initial = localStorage.getItem(THEME_KEY) || 'light';
+    document.body.classList.toggle('dark', initial==='dark');
     $('#themeBtn').addEventListener('click', ()=>{
-      const dark = !document.body.classList.contains('dark');
-      document.body.classList.toggle('dark', dark);
-      localStorage.setItem('iptv_theme', dark ? 'dark' : 'light');
+      const toDark = !document.body.classList.contains('dark');
+      document.body.classList.toggle('dark', toDark);
+      localStorage.setItem(THEME_KEY, toDark? 'dark' : 'light');
     });
 
-    // Auth UI
-    $('#loginBtn').addEventListener('click', doLogin);
-    $('#resetBtn').addEventListener('click', async ()=>{
-      const email = $('#email').value.trim();
+    /* “More” dropdown (+) */
+    const moreBtn = document.getElementById('moreBtn');
+    const moreMenu = document.getElementById('moreMenu');
+    if(moreBtn){
+      moreBtn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        moreMenu.classList.toggle('open');
+      });
+      document.addEventListener('click', (e)=>{
+        if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)){
+          moreMenu.classList.remove('open');
+        }
+      }, {capture:true});
+      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') moreMenu.classList.remove('open'); });
+      // Highlight current in dropdown too
+      const file=(location.pathname.split("/").pop()||"home.html").toLowerCase();
+      moreMenu.querySelectorAll('a').forEach(a=>{
+        const h=(a.getAttribute('href')||'').toLowerCase();
+        if(h===file){ a.classList.add('is-active'); }
+      });
+    }
+
+    /* Mobile sheet */
+    (()=>{
+      const sheet = document.getElementById('sheet');
+      const open = ()=>{ sheet.classList.add('open'); document.body.style.overflow='hidden'; };
+      const close= ()=>{ sheet.classList.remove('open'); document.body.style.overflow=''; };
+      document.getElementById('hamburger').addEventListener('click', open);
+      document.getElementById('closeSheet').addEventListener('click', close);
+      sheet.querySelector('.back').addEventListener('click', close);
+      // Mobile signout uses desktop button
+      const mainOut = document.getElementById('signOutBtn');
+      const mobOut  = document.getElementById('signOutBtnM');
+      if(mainOut && mobOut){ mobOut.addEventListener('click', ()=> mainOut.click()); }
+    })();
+
+    /* Auth UI */
+    document.getElementById('loginBtn').addEventListener('click', doLogin);
+    document.getElementById('resetBtn').addEventListener('click', async ()=>{
+      const email = document.getElementById('email').value.trim();
       if(!email) return toast('Enter email', true);
       try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed', true); }
     });
-    $('#signOutBtn').addEventListener('click', ()=>signOut(auth));
-    $('#signOutBtnM').addEventListener('click', ()=>signOut(auth));
+    document.getElementById('signOutBtn').addEventListener('click', ()=>signOut(auth));
 
     async function doLogin(){
-      const email=$('#email').value.trim(), pass=$('#password').value;
+      const email=document.getElementById('email').value.trim();
+      const pass =document.getElementById('password').value;
       if(!email||!pass) return toast('Fill email & password', true);
       try{
         await setPersistence(auth, browserLocalPersistence);
         await signInWithEmailAndPassword(auth,email,pass);
       }catch(e){ console.error(e); toast('Sign-in failed', true); }
     }
+
     function showLogin(){ $('#home').style.display='none'; $('#notAdmin').style.display='none'; $('#loginBox').style.display='block'; }
     function showNotAdmin(){ $('#home').style.display='none'; $('#loginBox').style.display='none'; $('#notAdmin').style.display='block'; }
     function showHome(){ $('#loginBox').style.display='none'; $('#notAdmin').style.display='none'; $('#home').style.display='block'; }
 
     onAuthStateChanged(auth, async (user)=>{
-      if(!user){ $('#adminEmail').textContent=''; $('#adminEmailM').textContent=''; showLogin(); return; }
+      if(!user){ $('#adminEmail').textContent=''; showLogin(); return; }
       $('#adminEmail').textContent = user.email || user.uid;
-      $('#adminEmailM').textContent = user.email || user.uid;
       try{
         const snap = await get(ref(db, `user/${user.uid}`));
         const u = snap.val() || {};
-        if(u.role === 'admin'){ showHome(); } else { showNotAdmin(); }
+        if(u.role === 'admin'){ showHome(); }
+        else { showNotAdmin(); }
       }catch(e){ console.error(e); showNotAdmin(); }
     });
-
-    // Mobile sheet
-    const sheet = $('#sheet');
-    const openSheet = ()=>{ sheet.classList.add('open'); document.body.style.overflow='hidden'; };
-    const closeSheet = ()=>{ sheet.classList.remove('open'); document.body.style.overflow=''; };
-    $('#hamburger').addEventListener('click', openSheet);
-    $('#closeSheet').addEventListener('click', closeSheet);
-    sheet.querySelector('.back').addEventListener('click', closeSheet);
-
-    // "More" dropdown
-    const moreBtn  = $('#moreBtn');
-    const moreMenu = $('#moreMenu');
-    const toggleMore = ()=>{
-      const open = !moreMenu.classList.contains('open');
-      moreMenu.classList.toggle('open', open);
-      moreBtn.setAttribute('aria-expanded', String(open));
-    };
-    moreBtn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleMore(); });
-    document.addEventListener('click', (e)=>{
-      if(!moreMenu.classList.contains('open')) return;
-      const inMenu = e.target.closest('#moreMenu'); const inBtn = e.target.closest('#moreBtn');
-      if(!inMenu && !inBtn){ moreMenu.classList.remove('open'); moreBtn.setAttribute('aria-expanded','false'); }
-    });
-    document.addEventListener('keydown', (e)=>{
-      if(e.key==='Escape' && moreMenu.classList.contains('open')){
-        moreMenu.classList.remove('open'); moreBtn.setAttribute('aria-expanded','false');
-      }
-    });
-
-    // Active page highlight (desktop pills + more menu + mobile)
-    (function setActive(){
-      const file=(location.pathname.split('/').pop()||'home.html').toLowerCase();
-      const keyMap={
-        'index.html':'home','home.html':'home',
-        'dealerships.html':'dealerships','displays.html':'displays','users.html':'users',
-        'links.html':'links','analytics.html':'analytics','schedule.html':'schedule',
-        'backups.html':'backups','remote-control.html':'remote','settings.html':'settings'
-      };
-      const key=keyMap[file]||'home';
-
-      // desktop primary
-      document.querySelectorAll(`.nav [data-page="${key}"]`).forEach(a=>a.classList.add('is-active'));
-      // mobile
-      document.querySelectorAll(`.panel [data-page="${key}"]`).forEach(a=>a.classList.add('is-active'));
-      // inside More
-      document.querySelectorAll(`#moreMenu [data-page="${key}"]`).forEach(a=>a.classList.add('is-active'));
-
-      // outline the More button when a "more" page is active
-      const moreKeys = ['links','analytics','schedule','backups','remote','settings'];
-      if(moreKeys.includes(key)) moreBtn.classList.add('is-active');
-    })();
   </script>
 </body>
 </html>
