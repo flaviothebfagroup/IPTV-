@@ -168,4 +168,57 @@ export async function updatePublicName(id,nextName){
 
 // (Optional) tiny query helper re-exports for pages if needed
 export { ref, get, set, update, remove, query, orderByChild, equalTo } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+
+
+
+
+// ===== BFA shared shell init (safe to include everywhere)
+(function(){
+  if (window.BFA_SHELL_INIT) return; window.BFA_SHELL_INIT = true;
+
+  // Load logo(s) if present
+  const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
+  document.getElementById('brandLogo') && (document.getElementById('brandLogo').style.backgroundImage = `url("${LOGO_URL}")`);
+  document.getElementById('brandLogoM') && (document.getElementById('brandLogoM').style.backgroundImage = `url("${LOGO_URL}")`);
+
+  // Active nav pill by filename/title
+  (function(){
+    const file=(location.pathname.split('/').pop()||'').toLowerCase();
+    const map={"":"home","/":"home","index.html":"home","home.html":"home","dealerships.html":"dealerships","displays.html":"displays","users.html":"users","links.html":"links","analytics.html":"analytics","schedule.html":"schedule"};
+    let key=map[file]||(/dealer/i.test(document.title)?"dealerships":/display/i.test(document.title)?"displays":/user/i.test(document.title)?"users":/link/i.test(document.title)?"links":/analytic/i.test(document.title)?"analytics":/schedule/i.test(document.title)?"schedule":"home");
+    document.querySelectorAll(`[data-page="${key}"]`).forEach(a=>a.classList.add("is-active"));
+  })();
+
+  // Mobile sheet open/close
+  (function(){
+    const sh=document.getElementById('sheet');
+    if(!sh) return;
+    const open=()=>{sh.classList.add("open"); document.body.style.overflow="hidden";};
+    const close=()=>{sh.classList.remove("open"); document.body.style.overflow="";};
+    document.getElementById('hamburger')?.addEventListener('click',open);
+    document.getElementById('closeSheet')?.addEventListener('click',close);
+    sh.querySelector('.back')?.addEventListener('click',close);
+
+    // Sync logout
+    const main=document.getElementById('logoutBtn'), mob=document.getElementById('logoutBtnM');
+    if(main && mob) mob.addEventListener('click',()=>main.click());
+  })();
+
+  // Auto-compact if nav doesn’t fit
+  (function(){
+    const row=document.getElementById('toprow'); if(!row) return;
+    const brand=row.querySelector('.brand'), nav=row.querySelector('.nav'), actions=row.querySelector('.actionsTop');
+    function fit(){
+      const total=row.clientWidth, avail=total-brand.offsetWidth-actions.offsetWidth-24, need=nav.scrollWidth;
+      if(need>avail) row.classList.add('compact'); else row.classList.remove('compact');
+    }
+    window.addEventListener('resize',fit,{passive:true});
+    new ResizeObserver(fit).observe(document.body);
+    fit();
+  })();
+})();
+
+
+
 </script>
