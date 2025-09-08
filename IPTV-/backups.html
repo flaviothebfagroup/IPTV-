@@ -1,1 +1,279 @@
-backups.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
+<title>BFA IPTV — Backups</title>
+
+<!-- ===== NAVBAR (shared look) ===== -->
+<style>
+  :root{
+    --accent:#ff9500; --fg:#111; --muted:#6e6e73; --bg:#fff;
+    --border:rgba(0,0,0,.16); --shadow:0 8px 28px rgba(0,0,0,.08);
+    --panel:#fff; --tile:#f7f7f9; --border2:rgba(0,0,0,.12);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
+  a{color:inherit;text-decoration:none}
+
+  .topbar{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid var(--border);
+          padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
+  .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;position:relative}
+  .brand{display:flex;align-items:center;gap:10px}
+  .logo{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:#fff center/cover no-repeat}
+  .logotxt{font-weight:900;letter-spacing:.2px}
+
+  .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;
+        color:inherit;font-weight:800;font-size:14px;line-height:1;white-space:nowrap}
+  .pill:hover{border-color:var(--accent)}
+  .pill.is-active{outline:2px solid var(--accent)}
+  .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
+
+  .actions{display:flex;gap:8px;margin-left:auto}
+  .round{height:36px;min-width:36px;padding:0 12px;border-radius:9999px;border:1px solid var(--border);background:transparent;font-weight:800;cursor:pointer}
+  .round:hover{border-color:var(--accent)}
+  /* Hamburger: orange lines, no border */
+  #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:44px;min-width:44px;padding:0}
+  #hamburger .ic{width:24px;height:24px;stroke:var(--accent);stroke-width:2.25}
+  @media (max-width:920px){
+    .nav{display:none}
+    #hamburger{display:inline-flex;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
+    .actions{margin-left:0;padding-right:48px}
+  }
+
+  /* Mobile sheet */
+  .sheet{position:fixed;inset:0;z-index:120;display:none}
+  .sheet.open{display:block}
+  .sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
+  .panel{position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:#fff;border-left:1px solid var(--border);
+         box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px}
+  .panel .row{display:flex;align-items:center;justify-content:space-between}
+  .panel nav{display:grid;gap:8px}
+  .panel nav a{justify-content:flex-start}
+
+  /* Orange focus / no iOS blue */
+  a,button,input,textarea,select{-webkit-tap-highlight-color:transparent;accent-color:var(--accent);color:inherit}
+  a:visited{color:inherit}
+  button:focus{outline:none}
+  button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<!-- ===== PAGE STYLES ===== -->
+<style>
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  .muted{color:var(--muted);font-size:12px}
+  .card{background:var(--panel);border:1px solid var(--border2);border-radius:18px;padding:16px;box-shadow:0 14px 36px rgba(0,0,0,.06);margin-bottom:12px}
+  h2{margin:0 0 8px}
+  h3{margin:0 0 6px}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:900px){.grid2{grid-template-columns:1fr}}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .input{height:40px;padding:0 12px;border:1px solid var(--border2);border-radius:12px;background:#fff;font-size:14px;flex:1;min-width:220px}
+  .btn{height:36px;padding:0 14px;border-radius:9999px;border:1px solid var(--border2);background:#fff;font-weight:800;cursor:pointer}
+  .btn:hover{border-color:var(--accent)}
+  .btnSolid{height:36px;padding:0 14px;border-radius:9999px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:720px){.cols{grid-template-columns:1fr}}
+
+  .box{border:1px solid var(--border2);border-radius:12px;padding:12px;background:#fff}
+  .checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+  label.chk{display:flex;gap:8px;align-items:center;border:1px solid var(--border2);border-radius:12px;padding:8px;background:#fff}
+  .pre{font-family:ui-monospace, SFMono-Regular, Menlo, monospace;background:#fafafa;border:1px solid var(--border2);border-radius:12px;padding:10px;overflow:auto;max-height:240px}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;z-index:99}
+  .toast.show{opacity:1} .toast.err{background:#ff453a;color:#fff}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="toprow">
+    <a class="brand" href="home.html"><span class="logo" id="brandLogo"></span><span class="logotxt">BFA IPTV</span></a>
+    <nav class="nav" aria-label="Primary">
+      <a class="pill" href="home.html" data-page="home"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
+      <a class="pill" href="dealerships.html" data-page="dealerships"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
+      <a class="pill" href="displays.html" data-page="displays"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
+      <a class="pill" href="users.html" data-page="users"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
+      <a class="pill" href="links.html" data-page="links"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
+      <a class="pill" href="analytics.html" data-page="analytics"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
+      <a class="pill" href="schedule.html" data-page="schedule"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
+    </nav>
+    <div class="actions">
+      <button id="logoutBtn" class="round">Logout</button>
+      <button id="hamburger" aria-label="Menu"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+    </div>
+  </div>
+
+  <!-- Mobile sheet -->
+  <div id="sheet" class="sheet" aria-hidden="true">
+    <div class="back"></div>
+    <aside class="panel" role="dialog" aria-modal="true" aria-label="Menu">
+      <div class="row">
+        <div class="brand"><span class="logo" id="brandLogoM"></span><span class="logotxt">BFA IPTV</span></div>
+        <button id="closeSheet" class="round" aria-label="Close"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <nav aria-label="Mobile">
+        <a class="pill" href="home.html" data-page="home"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
+        <a class="pill" href="dealerships.html" data-page="dealerships"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
+        <a class="pill" href="displays.html" data-page="displays"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
+        <a class="pill" href="users.html" data-page="users"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
+        <a class="pill" href="links.html" data-page="links"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
+        <a class="pill" href="analytics.html" data-page="analytics"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
+        <a class="pill" href="schedule.html" data-page="schedule"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
+        <button id="logoutBtnM" class="round" style="margin-top:8px">Logout</button>
+      </nav>
+    </aside>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <h2>Backups</h2>
+    <div class="muted">Create a JSON backup or simulate a restore. (UI stubs—no DB writes.)</div>
+  </div>
+
+  <div class="grid2">
+    <!-- Create backup -->
+    <div class="card">
+      <h3>Create backup</h3>
+      <div class="box">
+        <div class="checks">
+          <label class="chk"><input type="checkbox" data-sec value="dealerships" checked> Dealerships</label>
+          <label class="chk"><input type="checkbox" data-sec value="displays" checked> Displays</label>
+          <label class="chk"><input type="checkbox" data-sec value="users" checked> Users</label>
+          <label class="chk"><input type="checkbox" data-sec value="links"> Links</label>
+          <label class="chk"><input type="checkbox" data-sec value="analytics"> Analytics</label>
+          <label class="chk"><input type="checkbox" data-sec value="schedule"> Schedule</label>
+          <label class="chk"><input type="checkbox" data-sec value="settings"> Settings</label>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <input id="bkNote" class="input" placeholder="Optional note (e.g., before migration)"/>
+          <button id="genBackup" class="btnSolid">Download .json</button>
+        </div>
+      </div>
+      <div class="muted" style="margin-top:6px">File includes a header + empty sections (no live DB export yet).</div>
+    </div>
+
+    <!-- Restore -->
+    <div class="card">
+      <h3>Restore from backup</h3>
+      <div class="box">
+        <div class="row">
+          <input id="fileInput" type="file" accept=".json" class="input" style="padding:8px"/>
+          <button id="validateBtn" class="btn">Validate</button>
+          <button id="simulateBtn" class="btn">Simulate restore</button>
+        </div>
+        <pre id="preview" class="pre" style="margin-top:10px;display:none"></pre>
+      </div>
+      <div class="muted" style="margin-top:6px">Validation checks the header and section list only.</div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+  const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
+  const LOGO_FALLBACK="/IPTV-/icons/icon-512.png";
+
+  const app=initializeApp(firebaseConfig);
+  const auth=getAuth(app);
+  const db=getDatabase(app);
+
+  const $=s=>document.querySelector(s);
+  function toast(msg,err=false){const t=$("#toast");t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2200);}
+
+  // Logos
+  const savedLogo=localStorage.getItem('iptv_logo')||LOGO_FALLBACK;
+  try{ $('#brandLogo').style.backgroundImage=`url("${savedLogo}")`; $('#brandLogoM').style.backgroundImage=`url("${savedLogo}")`; }catch{}
+
+  // Current page outline (Backups not in navbar; no highlight)
+  (function(){
+    const file=(location.pathname.split("/").pop()||"backups.html").toLowerCase();
+    const map={ "index.html":"home","home.html":"home","dealerships.html":"dealerships","displays.html":"displays","users.html":"users","links.html":"links","analytics.html":"analytics","schedule.html":"schedule" };
+    const key=map[file]||"";
+    if(key) document.querySelectorAll(`[data-page="${key}"]`).forEach(a=>a.classList.add("is-active"));
+  })();
+
+  // Mobile sheet
+  (function(){
+    const sh=$("#sheet"), open=()=>{sh.classList.add("open");document.body.style.overflow="hidden"}, close=()=>{sh.classList.remove("open");document.body.style.overflow=""};
+    $("#hamburger").onclick=open; $("#closeSheet").onclick=close; sh.querySelector(".back").onclick=close;
+    const main=$("#logoutBtn"), mob=$("#logoutBtnM"); if(main&&mob){ mob.addEventListener("click",()=>main.click()); }
+  })();
+
+  // Auth gate (admin)
+  onAuthStateChanged(auth, async (user)=>{
+    if(!user){ location.href='home.html'; return; }
+    try{
+      const snap=await get(ref(db,'user/'+user.uid)); const u=snap.val()||{};
+      if(u.role!=='admin'){ document.body.innerHTML=`<div class="wrap"><div class="card"><h3>Not authorized</h3><div class="muted">Ask an admin to set your role to <b>admin</b>.</div></div></div>`; }
+    }catch(e){ /* fail-open UI */ }
+  });
+  $("#logoutBtn").addEventListener("click",()=>signOut(auth));
+
+  // ===== Backup: generate dummy JSON and download =====
+  function nowStamp(){
+    const d=new Date();
+    const pad=n=>String(n).padStart(2,'0');
+    return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  }
+  function download(name, obj){
+    const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+  }
+  $("#genBackup").addEventListener("click",()=>{
+    const secs=[...document.querySelectorAll('[data-sec]:checked')].map(i=>i.value);
+    if(!secs.length) return toast('Select at least one section',true);
+    const note=$("#bkNote").value.trim();
+    const stamp=nowStamp();
+    const by=(auth.currentUser?.email)||'admin';
+    const payload={
+      kind:"bfa-iptv.backup",
+      version:"v1",
+      exportedAt:new Date().toISOString(),
+      exportedBy:by,
+      note:note||null,
+      sections:secs,
+      data:Object.fromEntries(secs.map(s=>[s,{}])) /* empty placeholders */
+    };
+    download(`bfa-backup-${stamp}.json`, payload);
+    toast('Backup downloaded');
+  });
+
+  // ===== Restore: validate & simulate =====
+  let parsed=null;
+  $("#fileInput").addEventListener("change",async (e)=>{
+    const f=e.target.files?.[0]; if(!f) return;
+    try{
+      const txt=await f.text();
+      parsed=JSON.parse(txt);
+      $("#preview").style.display='block';
+      $("#preview").textContent=txt.slice(0,20000);
+      toast('File loaded');
+    }catch(err){
+      parsed=null; $("#preview").style.display='none';
+      toast('Invalid JSON',true);
+    }
+  });
+  $("#validateBtn").addEventListener("click",()=>{
+    if(!parsed) return toast('Load a backup first',true);
+    const ok = parsed.kind==="bfa-iptv.backup" && typeof parsed.version==="string" && Array.isArray(parsed.sections) && parsed.data && typeof parsed.data==="object";
+    toast(ok?'Backup looks valid':'Backup header missing/invalid', !ok);
+  });
+  $("#simulateBtn").addEventListener("click",()=>{
+    if(!parsed) return toast('Load a backup first',true);
+    const count=Object.keys(parsed.data||{}).length;
+    toast(`Simulated restore of ${count} section(s)`);
+  });
+</script>
+</body>
+</html>
