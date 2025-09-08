@@ -3,18 +3,17 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <!-- Stop iOS auto-blue for phones/emails/URLs -->
   <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
   <title>BFA IPTV — Home</title>
 
-  <!-- Optional PWA bits (safe to keep) -->
+  <!-- PWA (optional) -->
   <link rel="manifest" href="/IPTV-/manifest.webmanifest"/>
   <meta name="theme-color" content="#ffffff"/>
   <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png"/>
   <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png"/>
   <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png"/>
 
-  <!-- ======= SHARED NAVBAR (black/white/orange) ======= -->
+  <!-- ===== NAVBAR (shared look) ===== -->
   <style>
     :root{
       --accent:#ff9500;
@@ -23,12 +22,16 @@
       --bg:#fff;
       --border:rgba(0,0,0,.16);
       --shadow:0 8px 28px rgba(0,0,0,.08);
+
+      /* page components */
+      --panel:#fff;
+      --tile:#f7f7f9;
+      --border2:rgba(0,0,0,.12);
     }
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
     a{color:inherit;text-decoration:none}
 
-    /* Topbar */
     .topbar{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid var(--border);
             padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
     .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;position:relative}
@@ -44,11 +47,17 @@
     .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
 
     .actions{display:flex;gap:8px;margin-left:auto}
-    .round{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1px solid var(--border);background:transparent;font-weight:800;cursor:pointer}
+    .round{height:36px;min-width:36px;padding:0 12px;border-radius:9999px;border:1px solid var(--border);background:transparent;font-weight:800;cursor:pointer}
     .round:hover{border-color:var(--accent)}
-    /* Hamburger: orange lines, no border, perfectly centered right */
-    #hamburger{display:none;border:0;background:transparent;color:var(--accent)}
-    #hamburger .ic{stroke:var(--accent);stroke-width:2}
+
+    /* Hamburger: bigger, centered, orange lines, no border */
+    #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:44px;min-width:44px;padding:0}
+    #hamburger .ic{width:24px;height:24px;stroke:var(--accent);stroke-width:2.25}
+    @media (max-width:920px){
+      .nav{display:none}
+      #hamburger{display:inline-flex;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
+      .actions{margin-left:0;padding-right:48px}
+    }
 
     /* Mobile sheet */
     .sheet{position:fixed;inset:0;z-index:120;display:none}
@@ -60,24 +69,15 @@
     .panel nav{display:grid;gap:8px}
     .panel nav a{justify-content:flex-start}
 
-    @media (max-width:920px){
-      .nav{display:none}
-      #hamburger{display:inline-flex;position:absolute;right:0;top:50%;transform:translateY(-50%)}
-      .actions{margin-left:0;padding-right:36px}
-    }
-
-    /* Remove blue highlights + force orange accents */
+    /* Orange focus / no iOS blue */
     a,button,input,textarea,select{-webkit-tap-highlight-color:transparent;accent-color:var(--accent);color:inherit}
     a:visited{color:inherit}
     button:focus{outline:none}
     button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   </style>
 
-  <!-- ======= PAGE STYLES (Home content) ======= -->
+  <!-- ===== HOME PAGE STYLES (UI polish only) ===== -->
   <style>
-    :root{
-      --panel:#fff;--tile:#f5f5f7;--border2:rgba(0,0,0,.12);
-    }
     .wrap{max-width:1100px;margin:0 auto;padding:18px}
     .card{background:var(--panel);border:1px solid var(--border2);border-radius:18px;padding:16px;box-shadow:0 14px 36px rgba(0,0,0,.06)}
     .muted{color:var(--muted);font-size:12px}
@@ -87,14 +87,17 @@
     .input{width:100%;padding:12px;background:transparent;border:1px solid var(--border2);border-radius:12px;color:#111;font-size:14px}
     .btnSolid{padding:12px;border-radius:12px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
     .btnGhost{padding:12px;border-radius:12px;background:#fff;border:1px solid var(--border2);font-weight:800;cursor:pointer}
+
+    /* Bento tiles to match other page vibe */
     #grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
     @media (max-width:980px){#grid{grid-template-columns:repeat(2,1fr)}}
     @media (max-width:560px){#grid{grid-template-columns:1fr}}
-    .tile{display:flex;flex-direction:column;gap:8px;min-height:120px;padding:18px;border:1px solid var(--border2);border-radius:20px;background:var(--tile);
+    .tile{display:flex;flex-direction:column;gap:8px;min-height:120px;padding:18px;border:1px solid var(--border2);border-radius:18px;background:var(--tile);
           transition:transform .06s ease,border-color .2s,box-shadow .2s}
     .tile:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 8px 22px rgba(255,149,0,.15)}
     .tile h3{margin:0;font-size:18px;font-weight:900;letter-spacing:.2px}
     .tile p{margin:0;color:var(--muted);font-size:12px}
+
     .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;
            font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
     .toast.show{opacity:1}.toast.err{background:#ff453a;color:#fff}
@@ -102,7 +105,7 @@
 </head>
 <body>
 
-<!-- ======= NAVBAR ======= -->
+<!-- ===== NAVBAR ===== -->
 <header class="topbar">
   <div class="toprow">
     <a class="brand" href="home.html" aria-label="BFA IPTV Home">
@@ -147,9 +150,8 @@
   </div>
 </header>
 
-<!-- ======= PAGE CONTENT ======= -->
+<!-- ===== CONTENT (unchanged) ===== -->
 <div class="wrap">
-  <!-- Login -->
   <div id="loginBox" class="card" style="max-width:520px;margin:40px auto;display:none">
     <h2 style="margin:0 0 12px">Admin Sign In</h2>
     <div class="row2">
@@ -169,13 +171,11 @@
     <div class="muted" style="font-size:12px;margin-top:8px">Requires <b>role: "admin"</b> in <code>/user/{uid}</code>.</div>
   </div>
 
-  <!-- Not admin -->
   <div id="notAdmin" class="card" style="display:none;max-width:720px;margin:40px auto">
     <h2>Not authorized</h2>
     <div class="muted" style="font-size:12px">Ask an admin to set your role to <b>admin</b> in the database.</div>
   </div>
 
-  <!-- Home tiles -->
   <div id="home" style="display:none">
     <div class="card" style="margin-bottom:12px">
       <div class="muted" style="font-size:12px">Tap a tile to open a page.</div>
@@ -205,7 +205,6 @@
   } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
   import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-  /* ===== Firebase (yours) ===== */
   const firebaseConfig = {
     apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
     authDomain:"iptv-bfa.firebaseapp.com",
@@ -215,43 +214,36 @@
     messagingSenderId:"838790935867",
     appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"
   };
-  const LOGO_URL = "/IPTV-/icons/icon-512.png";
+  const LOGO_URL="/IPTV-/icons/icon-512.png";
 
-  /* ===== App ===== */
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db   = getDatabase(app);
+  const app=initializeApp(firebaseConfig);
+  const auth=getAuth(app);
+  const db=getDatabase(app);
 
-  /* ===== Helpers ===== */
   const $=s=>document.querySelector(s);
-  function toast(msg,err=false){ const t=$("#toast"); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
+  function toast(msg,err=false){const t=$("#toast");t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2200);}
 
-  /* Brand logos */
+  // Logos
   document.getElementById('brandLogo').style.backgroundImage=`url("${LOGO_URL}")`;
   document.getElementById('brandLogoM').style.backgroundImage=`url("${LOGO_URL}")`;
 
-  /* Current page highlight */
+  // Current page pill
   (function(){
     const file=(location.pathname.split("/").pop()||"home.html").toLowerCase();
-    const map={ "index.html":"home","home.html":"home","dealerships.html":"dealerships","displays.html":"displays","users.html":"users","links.html":"links","analytics.html":"analytics","schedule.html":"schedule" };
+    const map={ "index.html":"home","home.html":"home","dealerships.html":"dealerships","displays.html":"displays",
+                "users.html":"users","links.html":"links","analytics.html":"analytics","schedule.html":"schedule" };
     const key=map[file]||"home";
     document.querySelectorAll(`[data-page="${key}"]`).forEach(a=>a.classList.add("is-active"));
   })();
 
-  /* Mobile sheet */
+  // Mobile sheet
   (function(){
-    const sh=$("#sheet");
-    const open=()=>{sh.classList.add("open");document.body.style.overflow="hidden"};
-    const close=()=>{sh.classList.remove("open");document.body.style.overflow=""};
-    $("#hamburger").onclick=open;
-    $("#closeSheet").onclick=close;
-    sh.querySelector(".back").onclick=close;
-    // Mirror logout
-    const main=$("#logoutBtn"), mob=$("#logoutBtnM");
-    if(main&&mob){ mob.addEventListener("click",()=>main.click()); }
+    const sh=$("#sheet"), open=()=>{sh.classList.add("open");document.body.style.overflow="hidden"}, close=()=>{sh.classList.remove("open");document.body.style.overflow=""};
+    $("#hamburger").onclick=open; $("#closeSheet").onclick=close; sh.querySelector(".back").onclick=close;
+    const main=$("#logoutBtn"), mob=$("#logoutBtnM"); if(main&&mob){ mob.addEventListener("click",()=>main.click()); }
   })();
 
-  /* ===== Auth UI ===== */
+  // Auth UI (content unchanged)
   $("#loginBtn").addEventListener("click", doLogin);
   $("#resetBtn").addEventListener("click", async ()=>{
     const email=$("#email").value.trim();
@@ -264,7 +256,7 @@
     const email=$("#email").value.trim(), pass=$("#password").value;
     if(!email||!pass) return toast("Fill email & password",true);
     try{
-      await setPersistence(auth, browserLocalPersistence);
+      await setPersistence(auth,browserLocalPersistence);
       await signInWithEmailAndPassword(auth,email,pass);
     }catch(e){ console.error(e); toast("Sign-in failed",true); }
   }
@@ -277,7 +269,7 @@
     try{
       const snap = await get(ref(db, `user/${user.uid}`));
       const u = snap.val() || {};
-      if(u.role === "admin"){ showHome(); } else { showNotAdmin(); }
+      if(u.role==='admin'){ showHome(); } else { showNotAdmin(); }
     }catch(e){ console.error(e); showNotAdmin(); }
   });
 </script>
