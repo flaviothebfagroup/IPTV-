@@ -3,42 +3,107 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
   <title>BFA IPTV — Users</title>
 
+  <!-- PWA (optional) -->
+  <link rel="manifest" href="/IPTV-/manifest.webmanifest"/>
+  <meta name="theme-color" content="#ffffff"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png"/>
+  <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png"/>
+
   <style>
+    /* =========================================================
+       Tokens (light default) + dark override
+    ========================================================= */
     :root{
-      --bg:#0b0b0c;--fg:#fff;--muted:#9a9aa0;--panel:#121214;--border:rgba(255,255,255,.14);
-      --accent:#ff9500;--tile:#17171a;--tileActive:#1d1d21;--shadow:0 18px 48px rgba(0,0,0,.45);
-      --radius:18px;--radius-lg:22px;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444
+      --accent:#ff9500;
+      --fg:#111; --muted:#6e6e73; --bg:#ffffff;
+      --panel:#fff; --tile:#f6f6f8; --tileHover:#fff7ea;
+      --border:rgba(0,0,0,.14); --borderStrong:rgba(0,0,0,.28);
+      --shadow:0 14px 36px rgba(0,0,0,.08);
+      --ok:#22c55e; --warn:#f59e0b; --err:#ef4444;
     }
-    body.light{
-      --bg:#f5f5f7;--fg:#111;--muted:#6e6e73;--panel:#fff;--border:rgba(0,0,0,.12);
-      --tile:#f2f2f7;--tileActive:#eaeaef;--shadow:0 14px 36px rgba(0,0,0,.10)
+    body.dark{
+      --bg:#0b0b0c; --fg:#f7f7f8; --muted:#a1a1a8;
+      --panel:#151517; --tile:#1a1a1d; --tileHover:#221e18;
+      --border:rgba(255,255,255,.16); --borderStrong:rgba(255,255,255,.36);
+      --shadow:0 18px 48px rgba(0,0,0,.45);
     }
+
     *{box-sizing:border-box}
-    html,body{height:100%}
-    body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;margin:0}
+    body{margin:0;background:var(--bg);color:var(--fg);
+      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
     a{color:inherit;text-decoration:none}
 
-    /* Topbar */
-    .topbar{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;background:linear-gradient(0deg,transparent,rgba(0,0,0,.06));backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
-    .lhs{display:flex;align-items:center;gap:12px}
-    .logo{width:36px;height:36px;border-radius:10px;background:#000 center/cover no-repeat;border:1px solid var(--border)}
-    .title{font-weight:900;letter-spacing:.3px}
-    .nav{display:flex;gap:8px;flex-wrap:wrap}
-    .btn{height:36px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
-    .btn.primary{border-color:var(--accent);color:var(--accent);background:transparent}
-    .btn.solid{background:var(--accent);color:#000;border-color:var(--accent)}
-    .btn.danger{border-color:#ff6b6b;color:#ff6b6b;background:transparent}
-    .btn:disabled{opacity:.6;cursor:not-allowed}
-    .muted{color:var(--muted);font-size:12px}
+    /* =========================================================
+       Topbar (shared)
+    ========================================================= */
+    .topbar{position:sticky;top:0;z-index:100;background:var(--panel);
+      border-bottom:1px solid var(--border);
+      padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
+    .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;position:relative}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:#fff center/cover no-repeat}
+    .logotxt{font-weight:900;letter-spacing:.2px}
 
-    /* Shell */
-    .wrap{max-width:1200px;margin:0 auto;padding:18px}
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow)}
+    .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;color:inherit;font-weight:800;font-size:14px;line-height:1;white-space:nowrap}
+    .pill:hover{border-color:var(--accent)}
+    .pill.is-active{outline:2px solid var(--accent)}
+    .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
+
+    /* More (+) dropdown */
+    .more{position:relative}
+    #moreBtn .plus{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
+    #moreMenu{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
+      border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none}
+    #moreMenu.open{display:block}
+    #moreMenu a{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px}
+    #moreMenu a:hover{background:var(--tileHover)}
+    #moreMenu a.is-active{outline:2px solid var(--accent)}
+    #moreMenu .ic{width:18px;height:18px;stroke-width:1.9}
+
+    /* Actions */
+    .actions{display:flex;gap:8px;align-items:center}
+    .email{max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);
+      border:1.5px solid var(--borderStrong);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .chip{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1.5px solid var(--borderStrong);
+      background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+    .chip:hover{border-color:var(--accent)}
+    .chip .ic{width:18px;height:18px;stroke-width:2}
+    .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
+    /* Hamburger (orange lines, no border, centered) */
+    #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:42px;min-width:42px;padding:0;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
+    #hamburger .ic{width:22px;height:22px;stroke:var(--accent);stroke-width:2.35}
+
+    @media (max-width:920px){
+      .nav{display:none}
+      #hamburger{display:inline-flex}
+      .email{display:none}
+    }
+
+    /* Mobile sheet */
+    #sheet{position:fixed;inset:0;z-index:120;display:none}
+    #sheet.open{display:block}
+    #sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
+    .panel{position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:var(--panel);border-left:1px solid var(--border);
+      box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px}
+    .panel .row{display:flex;align-items:center;justify-content:space-between}
+    .panel nav{display:grid;gap:8px}
+    .panel nav a{justify-content:flex-start}
+
+    /* =========================================================
+       Page UI
+    ========================================================= */
+    .wrap{max-width:1100px;margin:0 auto;padding:18px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
     h2{margin:0 0 8px}
+    .small{font-size:12px}
+    .muted{color:var(--muted)}
 
-    /* Inputs */
+    /* Inputs / layout */
     .row{display:grid;grid-template-columns:1fr auto;gap:10px;margin:10px 0}
     .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
     .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}
@@ -48,7 +113,10 @@
     .label{font-size:12px;color:var(--muted);margin-bottom:6px}
     .input,.select{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
     .input::placeholder{color:var(--muted)}
-    .small{font-size:12px}
+    .btn{height:34px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center}
+    .btn.solid{background:var(--accent);color:#000;border-color:var(--accent)}
+    .btn.danger{border-color:#ff6b6b;color:#ff6b6b;background:transparent}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
 
     /* Lists / grids */
     .list{margin:8px 0 0;padding:0;list-style:none}
@@ -70,25 +138,81 @@
   </style>
 </head>
 <body>
-  <!-- Topbar -->
-  <div class="topbar">
-    <div class="lhs">
-      <a href="home.html" title="Home"><div id="brandLogo" class="logo"></div></a>
-      <div class="title">BFA IPTV — Users</div>
-    </div>
-    <div class="nav">
-      <a class="btn" href="home.html">Home</a>
-      <a class="btn" href="dealerships.html">Dealerships</a>
-      <a class="btn" href="displays.html">Displays</a>
-      <a class="btn" href="links.html">Links</a>
-      <a class="btn" href="analytics.html">Analytics</a>
-      <a class="btn" href="schedule.html">Schedule</a>
-      <button id="themeBtn" class="btn">☀︎/🌙</button>
-      <button id="reloadBtn" class="btn">Reload</button>
-      <button id="signOutBtn" class="btn primary">Sign out</button>
-    </div>
-  </div>
+  <!-- ===== NAVBAR ===== -->
+  <header class="topbar">
+    <div class="toprow">
+      <a class="brand" href="home.html"><span class="logo" id="brandLogo"></span><span class="logotxt">BFA IPTV</span></a>
 
+      <nav class="nav" aria-label="Primary">
+        <a class="pill" href="home.html" data-page="home">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home
+        </a>
+        <a class="pill" href="dealerships.html" data-page="dealerships">
+          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships
+        </a>
+        <a class="pill" href="displays.html" data-page="displays">
+          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays
+        </a>
+        <a class="pill is-active" href="users.html" data-page="users">
+          <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users
+        </a>
+        <div class="more">
+          <a id="moreBtn" class="pill" href="javascript:void(0)">
+            <svg class="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> More
+          </a>
+          <div id="moreMenu" role="menu" aria-label="More">
+            <a href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
+            <a href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
+            <a href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
+            <a href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
+            <a href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
+            <!-- Settings = sliders icon -->
+            <a href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="actions">
+        <span id="adminEmail" class="email"></span>
+        <button id="themeBtn" class="chip" title="Light/Dark">
+          <svg id="themeIcon" class="ic" viewBox="0 0 24 24"></svg>
+          Theme
+        </button>
+        <button id="reloadBtn" class="chip">Reload</button>
+        <button id="signOutBtn" class="chip">Sign out</button>
+        <button id="hamburger" class="chip" aria-label="Menu">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div id="sheet" aria-hidden="true">
+      <div class="back"></div>
+      <aside class="panel" role="dialog" aria-modal="true" aria-label="Menu">
+        <div class="row">
+          <div class="brand"><span class="logo" id="brandLogoM"></span><span class="logotxt">BFA IPTV</span></div>
+          <button id="closeSheet" class="chip" aria-label="Close"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+        <nav>
+          <a class="pill" href="home.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
+          <a class="pill" href="dealerships.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
+          <a class="pill" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
+          <a class="pill is-active" href="users.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
+          <div class="muted" style="padding:8px 2px 0">More</div>
+          <a class="pill" href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
+          <a class="pill" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
+          <a class="pill" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
+          <a class="pill" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
+          <a class="pill" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
+          <a class="pill" href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
+          <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
+        </nav>
+      </aside>
+    </div>
+  </header>
+
+  <!-- ===================================================== -->
   <div class="wrap">
     <!-- Login -->
     <div id="loginBox" class="card" style="max-width:520px;margin:40px auto;display:none">
@@ -199,7 +323,7 @@
       getDatabase, ref, get, set, update, remove, onValue
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    // ====== CONFIG ======
+    /* Firebase */
     const firebaseConfig = {
       apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
       authDomain: "iptv-bfa.firebaseapp.com",
@@ -209,9 +333,8 @@
       messagingSenderId: "838790935867",
       appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
     };
-    const LOGO_URL = "https://flaviothebfagroup.github.io/IPTV-/icons/icon-512.png";
+    const LOGO_URL = "/IPTV-/icons/icon-512.png";
 
-    // ====== APP ======
     const app  = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getDatabase(app);
@@ -221,28 +344,69 @@
     function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
     function htmlEscape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
 
-    // Theme + logo
-    const savedTheme = localStorage.getItem('iptv_theme') || 'light';
-    document.body.classList.toggle('light', savedTheme==='light');
-    $('#themeBtn').addEventListener('click', ()=>{
-      const isLight = !document.body.classList.contains('light');
-      document.body.classList.toggle('light', isLight);
-      localStorage.setItem('iptv_theme', isLight ? 'light' : 'dark');
-    });
+    /* Logos */
     $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
+    const brandLogoM = document.getElementById('brandLogoM');
+    if(brandLogoM){ brandLogoM.style.backgroundImage = `url("${LOGO_URL}")`; }
 
-    // Nav & auth
+    /* Theme (with icon) */
+    const THEME_KEY='iptv_theme';
+    const themeBtn = document.getElementById('themeBtn');
+    const themeIcon = document.getElementById('themeIcon');
+    const setThemeIcon = ()=>{
+      const dark = document.body.classList.contains('dark');
+      themeIcon.innerHTML = dark
+        ? `<path d="M21 12a9 9 0 1 1-9-9 6 6 0 0 0 9 9z"/>`
+        : `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1.4-1.4M20.4 20.4 19 19M5 19l-1.4 1.4M20.4 3.6 19 5"/>`;
+    };
+    const saved = localStorage.getItem(THEME_KEY) || 'light';
+    document.body.classList.toggle('dark', saved==='dark');
+    setThemeIcon();
+    themeBtn.addEventListener('click', ()=>{
+      const toDark = !document.body.classList.contains('dark');
+      document.body.classList.toggle('dark', toDark);
+      localStorage.setItem(THEME_KEY, toDark? 'dark' : 'light');
+      setThemeIcon();
+    });
+
+    /* “More” dropdown */
+    const moreBtn = document.getElementById('moreBtn');
+    const moreMenu = document.getElementById('moreMenu');
+    if(moreBtn){
+      moreBtn.addEventListener('click', (e)=>{ e.preventDefault(); moreMenu.classList.toggle('open'); });
+      document.addEventListener('click', (e)=>{
+        if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)){ moreMenu.classList.remove('open'); }
+      }, {capture:true});
+      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') moreMenu.classList.remove('open'); });
+      const file=(location.pathname.split("/").pop()||"users.html").toLowerCase();
+      moreMenu.querySelectorAll('a').forEach(a=>{ const h=(a.getAttribute('href')||'').toLowerCase(); if(h===file){ a.classList.add('is-active'); }});
+    }
+
+    /* Mobile sheet */
+    (()=>{
+      const sheet = document.getElementById('sheet');
+      const open = ()=>{ sheet.classList.add('open'); document.body.style.overflow='hidden'; };
+      const close= ()=>{ sheet.classList.remove('open'); document.body.style.overflow=''; };
+      document.getElementById('hamburger').addEventListener('click', open);
+      document.getElementById('closeSheet').addEventListener('click', close);
+      sheet.querySelector('.back').addEventListener('click', close);
+      // Mobile signout uses desktop button
+      const mainOut = document.getElementById('signOutBtn');
+      const mobOut  = document.getElementById('signOutBtnM');
+      if(mainOut && mobOut){ mobOut.addEventListener('click', ()=> mainOut.click()); }
+    })();
+
+    /* Header actions */
     $('#reloadBtn').addEventListener('click', ()=> location.reload());
-    $('#reloadBtn2').addEventListener('click', ()=> refreshUsers(true));
     $('#signOutBtn').addEventListener('click', ()=> signOut(auth));
 
+    /* Login/reset */
     $('#loginBtn').addEventListener('click', doLogin);
     $('#resetBtn').addEventListener('click', async ()=>{
       const email = $('#email').value.trim();
       if(!email) return toast('Enter email', true);
       try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }catch(e){ toast('Reset failed', true); }
     });
-
     async function doLogin(){
       const email=$('#email').value.trim(), pass=$('#password').value;
       if(!email||!pass) return toast('Fill email & password', true);
@@ -255,16 +419,21 @@
         $('#usersPg').style.display='none';
         $('#notAdmin').style.display='none';
         $('#loginBox').style.display='block';
+        $('#adminEmail').textContent='';
         return;
       }
-      // simple admin gate
+      $('#adminEmail').textContent = user.email || user.uid;
+
+      // Admin gate
       try{
         const u = (await get(ref(db, `user/${user.uid}`))).val()||{};
         if(u.role!=='admin'){ $('#loginBox').style.display='none'; $('#notAdmin').style.display='block'; $('#usersPg').style.display='none'; return; }
       }catch(_){}
+
       $('#loginBox').style.display='none';
       $('#notAdmin').style.display='none';
       $('#usersPg').style.display='block';
+
       await loadDealersMap();
       startUsersLive();
     });
@@ -298,8 +467,8 @@
       selF.value=prevF||''; selU.value=prevU||'';
     }
 
-    // ====== Create user (two-step to satisfy rules) ======
-    $('#createUserBtn').addEventListener('click', createUserAdminSafe);
+    // ====== Create user (two-step per your logic) ======
+    document.getElementById('createUserBtn').addEventListener('click', createUserAdminSafe);
 
     async function createUserAdminSafe(){
       const email=$('#userEmail').value.trim();
@@ -307,7 +476,7 @@
       const role=$('#userRole').value;
       const did=$('#userDealer').value;
       const pass=($('#userPass').value || '123456789');
-      const alsoReset = $('#sendResetAfterCreate').checked;
+      const alsoReset = document.getElementById('sendResetAfterCreate').checked;
 
       if(!email||!name||!role||!did){ toast('Fill all fields', true); return; }
       if(pass.length<6){ toast('Password must be at least 6 chars', true); return; }
@@ -336,11 +505,10 @@
         await update(ref(db,`user/${uid}`),{ role });
 
         // 5) optional reset
-        if(alsoReset){ try{ await sendPasswordResetEmail(tempAuth,email); }catch(_){}
-        }
+        if(alsoReset){ try{ await sendPasswordResetEmail(tempAuth,email); }catch(_){} }
 
         toast('User created');
-        $('#userEmail').value=''; $('#userName').value=''; $('#userRole').value='user'; $('#userDealer').value=''; $('#userPass').value=''; $('#sendResetAfterCreate').checked=false;
+        $('#userEmail').value=''; $('#userName').value=''; $('#userRole').value='user'; $('#userDealer').value=''; $('#userPass').value=''; document.getElementById('sendResetAfterCreate').checked=false;
       }catch(e){
         console.error(e);
         const code=e?.code||'';
@@ -364,13 +532,14 @@
       unsub = ()=>off();
     }
 
-    $('#userSearch').addEventListener('input', ()=>refreshUsers());
-    $('#filterDealer').addEventListener('change', ()=>refreshUsers());
-    $('#filterRole').addEventListener('change', ()=>refreshUsers());
-    $('#activeWindow').addEventListener('change', ()=>refreshUsers());
+    document.getElementById('userSearch').addEventListener('input', ()=>refreshUsers());
+    document.getElementById('filterDealer').addEventListener('change', ()=>refreshUsers());
+    document.getElementById('filterRole').addEventListener('change', ()=>refreshUsers());
+    document.getElementById('activeWindow').addEventListener('change', ()=>refreshUsers());
+    document.getElementById('reloadBtn2').addEventListener('click', ()=> refreshUsers(true));
 
     function getActiveWindowMs(){
-      const mins = parseInt($('#activeWindow').value,10)||10;
+      const mins = parseInt(document.getElementById('activeWindow').value,10)||10;
       return mins*60*1000;
     }
 
@@ -454,9 +623,9 @@
     }
 
     function refreshUsers(force=false){
-      const search=($('#userSearch').value||'').toLowerCase();
-      const fDid=$('#filterDealer').value;
-      const fRole=$('#filterRole').value;
+      const search=(document.getElementById('userSearch').value||'').toLowerCase();
+      const fDid=document.getElementById('filterDealer').value;
+      const fRole=document.getElementById('filterRole').value;
       const rows = Object.entries(USERS).map(([uid,v])=>({uid,...v}));
 
       const filtered=rows.filter(r=>{
@@ -475,13 +644,13 @@
         else groups.user.push(r);
       });
 
-      $('#countAdmins').textContent=groups.admin.length;
-      $('#countDevices').textContent=groups.device.length;
-      $('#countUsers').textContent=groups.user.length;
-      $('#countDisabled').textContent=groups.disabled.length;
+      document.getElementById('countAdmins').textContent=groups.admin.length;
+      document.getElementById('countDevices').textContent=groups.device.length;
+      document.getElementById('countUsers').textContent=groups.user.length;
+      document.getElementById('countDisabled').textContent=groups.disabled.length;
 
       const total = groups.admin.length+groups.device.length+groups.user.length+groups.disabled.length;
-      $('#userEmpty').style.display = total? 'none':'block';
+      document.getElementById('userEmpty').style.display = total? 'none':'block';
 
       renderGroup(groups.admin,'gridAdmins');
       renderGroup(groups.device,'gridDevices');
@@ -492,9 +661,9 @@
     // ====== Duplicates ======
     const DUP_SEL = new Set(); // selected uids for deletion
 
-    $('#findDupBtn').addEventListener('click', showDuplicates);
-    $('#deleteDupBtn').addEventListener('click', deleteSelectedDuplicates);
-    $('#autoPruneBtn').addEventListener('click', autoPruneDuplicates);
+    document.getElementById('findDupBtn').addEventListener('click', showDuplicates);
+    document.getElementById('deleteDupBtn').addEventListener('click', deleteSelectedDuplicates);
+    document.getElementById('autoPruneBtn').addEventListener('click', autoPruneDuplicates);
 
     function groupDeviceByDealerAndName(){
       const devices = Object.entries(USERS).map(([uid,v])=>({uid,...v}))
@@ -509,7 +678,7 @@
     }
 
     function showDuplicates(){
-      DUP_SEL.clear(); $('#dupList').innerHTML='';
+      DUP_SEL.clear(); document.getElementById('dupList').innerHTML='';
       const groups = groupDeviceByDealerAndName();
       const now=Date.now(), activeWin=getActiveWindowMs();
       let any=false;
@@ -534,13 +703,13 @@
             </label>`;
         }).join('');
         holder.innerHTML = `<div style="margin-bottom:6px"><b>“${htmlEscape(name)}”</b> — <span class="badge">${htmlEscape(did)}</span></div>${inner}`;
-        $('#dupList').appendChild(holder);
+        document.getElementById('dupList').appendChild(holder);
       });
 
-      $('#dupBox').style.display='block';
-      $('#dupEmpty').style.display= any? 'none':'block';
+      document.getElementById('dupBox').style.display='block';
+      document.getElementById('dupEmpty').style.display= any? 'none':'block';
 
-      $('#dupList').querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+      document.querySelectorAll('#dupList input[type="checkbox"]').forEach(cb=>{
         const uid=cb.dataset.uid;
         if(cb.checked) DUP_SEL.add(uid);
         cb.addEventListener('change',()=>{ if(cb.checked) DUP_SEL.add(uid); else DUP_SEL.delete(uid); });
@@ -552,13 +721,13 @@
       if(!confirm(`Delete ${DUP_SEL.size} selected user(s) from DB?`)) return;
       try{
         await Promise.all(Array.from(DUP_SEL).map(uid=> remove(ref(db,`user/${uid}`)).catch(()=>{})));
-        DUP_SEL.clear(); $('#dupBox').style.display='none'; toast('Deleted');
+        DUP_SEL.clear(); document.getElementById('dupBox').style.display='none'; toast('Deleted');
       }catch(_){ toast('Delete failed',true); }
     }
 
     function autoPruneDuplicates(){
-      // Suggest deletion: keep the most recently updated, mark others for deletion
-      DUP_SEL.clear(); $('#dupList').innerHTML='';
+      // Suggest deletion: keep most recent, mark others
+      DUP_SEL.clear(); document.getElementById('dupList').innerHTML='';
       const groups = groupDeviceByDealerAndName();
       const now=Date.now(), activeWin=getActiveWindowMs();
       let any=false;
@@ -585,13 +754,13 @@
             </label>`;
         }).join('');
         holder.innerHTML = `<div style="margin-bottom:6px"><b>Auto-prune “${htmlEscape(name)}”</b> — <span class="badge">${htmlEscape(did)}</span></div>${inner}`;
-        $('#dupList').appendChild(holder);
+        document.getElementById('dupList').appendChild(holder);
       });
 
-      $('#dupBox').style.display='block';
-      $('#dupEmpty').style.display= any? 'none':'block';
+      document.getElementById('dupBox').style.display='block';
+      document.getElementById('dupEmpty').style.display= any? 'none':'block';
 
-      $('#dupList').querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+      document.querySelectorAll('#dupList input[type="checkbox"]').forEach(cb=>{
         const uid=cb.dataset.uid;
         cb.addEventListener('change',()=>{ if(cb.checked) DUP_SEL.add(uid); else DUP_SEL.delete(uid); });
       });
