@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <!-- Prevent iOS auto-link blue -->
   <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
-  <title>BFA IPTV — Home</title>
+  <title>BFA IPTV — Displays</title>
 
   <!-- PWA (optional) -->
   <link rel="manifest" href="/IPTV-/manifest.webmanifest"/>
@@ -15,7 +16,7 @@
 
   <style>
     /* =========================================================
-       Tokens
+       Tokens (light by default) + dark override
     ========================================================= */
     :root{
       --accent:#ff9500;
@@ -23,6 +24,7 @@
       --panel:#fff; --tile:#f6f6f8; --tileHover:#fff7ea;
       --border:rgba(0,0,0,.14); --borderStrong:rgba(0,0,0,.28);
       --shadow:0 14px 36px rgba(0,0,0,.08);
+      --ok:#22c55e; --err:#ef4444;
     }
     body.dark{
       --bg:#0b0b0c; --fg:#f7f7f8; --muted:#a1a1a8;
@@ -33,11 +35,11 @@
 
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--fg);
-      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
+      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif; line-height:1.35}
     a{color:inherit;text-decoration:none}
 
     /* =========================================================
-       Topbar (same language as Dealerships)
+       Topbar (shared with Home/Dealerships)
     ========================================================= */
     .topbar{position:sticky;top:0;z-index:100;background:var(--panel);
       border-bottom:1px solid var(--border);
@@ -64,7 +66,7 @@
     #moreMenu a.is-active{outline:2px solid var(--accent)}
     #moreMenu .ic{width:18px;height:18px;stroke-width:1.9}
 
-    /* Actions (FIX: strong contrast in dark) */
+    /* Actions */
     .actions{display:flex;gap:8px;align-items:center}
     .email{max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);
       border:1px solid var(--border);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -73,7 +75,7 @@
     .chip:hover{border-color:var(--accent)}
     .chip .ic{width:18px;height:18px;stroke-width:2}
     .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
-    /* Hamburger (orange lines, no border) */
+    /* Hamburger (orange lines, no border, centered) */
     #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:42px;min-width:42px;padding:0;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
     #hamburger .ic{width:22px;height:22px;stroke:var(--accent);stroke-width:2.35}
 
@@ -94,26 +96,36 @@
     .panel nav a{justify-content:flex-start}
 
     /* =========================================================
-       Content
+       Page UI
     ========================================================= */
     .wrap{max-width:1100px;margin:0 auto;padding:18px}
     .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+    .hstack{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-    /* Icon tiles */
-    #grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-    @media (max-width:980px){#grid{grid-template-columns:repeat(2,1fr)}}
-    @media (max-width:560px){#grid{grid-template-columns:1fr}}
-    .tile{display:flex;align-items:center;gap:12px;min-height:96px;padding:16px 18px;border:1px solid var(--border);border-radius:18px;background:var(--tile);transition:transform .06s ease,border-color .2s,box-shadow .2s}
-    .tile:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 8px 22px rgba(255,149,0,.12)}
-    .tile .ticon{width:28px;height:28px;border-radius:9px;border:1px solid var(--border);display:grid;place-items:center;background:#fff}
-    .tile .ticon .ic{width:16px;height:16px;stroke:#111;stroke-width:1.8}
-    body.dark .tile .ticon{background:#111;border-color:#333}
-    body.dark .tile .ticon .ic{stroke:#fff}
-    .tile .text{display:flex;flex-direction:column}
-    .tile h3{margin:0;font-size:18px;font-weight:900}
-    .tile p{margin:2px 0 0;color:var(--muted);font-size:12px}
+    .row3{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin:10px 0}
+    @media (max-width:840px){.row3{grid-template-columns:1fr}}
+    .label{font-size:12px;color:var(--muted);margin:0 0 6px}
+    .input,.select{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
+    .input::placeholder{color:var(--muted)}
+    .btn{height:34px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center}
+    .btn.solid{background:var(--accent);border-color:var(--accent);color:#000}
+    .btn.danger{border-color:#ff6b6b;color:#ff6b6b;background:transparent}
+    .small{font-size:12px}
+    .muted{color:var(--muted)}
 
-    a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    .list{margin:8px 0 0;padding:0;list-style:none}
+    .empty{padding:12px;border:1px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center}
+    .item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px;margin:8px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap}
+    .split{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .col{display:flex;flex-direction:column;gap:6px;min-width:220px}
+    .tag{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:transparent;font-size:12px;color:var(--muted)}
+    .online{display:inline-flex;align-items:center;gap:6px;font-size:12px}
+    .dot{width:8px;height:8px;border-radius:999px;background:#999}
+    .dot.ok{background:var(--ok)}
+    .dot.err{background:var(--err)}
+    .vol{display:flex;align-items:center;gap:8px}
+    .vol input[type="range"]{width:140px;accent-color:var(--accent)}
+    @media (max-width:560px){ .vol input[type="range"]{width:100%} }
 
     /* Toast */
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
@@ -122,19 +134,19 @@
   </style>
 </head>
 <body>
-  <!-- NAVBAR -->
+  <!-- ===== NAVBAR ===== -->
   <header class="topbar">
     <div class="toprow">
       <a class="brand" href="home.html"><span class="logo" id="brandLogo"></span><span class="logotxt">BFA IPTV</span></a>
 
       <nav class="nav" aria-label="Primary">
-        <a class="pill is-active" href="home.html" data-page="home">
+        <a class="pill" href="home.html" data-page="home">
           <svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home
         </a>
         <a class="pill" href="dealerships.html" data-page="dealerships">
           <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships
         </a>
-        <a class="pill" href="displays.html" data-page="displays">
+        <a class="pill is-active" href="displays.html" data-page="displays">
           <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays
         </a>
         <a class="pill" href="users.html" data-page="users">
@@ -150,20 +162,14 @@
             <a href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
             <a href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
             <a href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
-            <!-- SETTINGS (sliders icon) -->
-            <a href="settings.html">
-              <svg class="ic" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"/>
-              </svg>
-              Settings
-            </a>
+            <!-- Settings = sliders icon (not sun) -->
+            <a href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
           </div>
         </div>
       </nav>
 
       <div class="actions">
         <span id="adminEmail" class="email"></span>
-        <!-- Theme toggle with SVG -->
         <button id="themeBtn" class="chip" title="Light/Dark">
           <svg id="themeIcon" class="ic" viewBox="0 0 24 24"></svg>
           Theme
@@ -184,9 +190,9 @@
           <button id="closeSheet" class="chip" aria-label="Close"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
         <nav>
-          <a class="pill is-active" href="home.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
+          <a class="pill" href="home.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
           <a class="pill" href="dealerships.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
-          <a class="pill" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
+          <a class="pill is-active" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
           <a class="pill" href="users.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
           <div class="muted" style="padding:8px 2px 0">More</div>
           <a class="pill" href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
@@ -194,13 +200,7 @@
           <a class="pill" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
           <a class="pill" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
           <a class="pill" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
-          <!-- SETTINGS (sliders icon) -->
-          <a class="pill" href="settings.html">
-            <svg class="ic" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"/>
-            </svg>
-            Settings
-          </a>
+          <a class="pill" href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
           <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
         </nav>
       </aside>
@@ -212,75 +212,57 @@
     <!-- Login -->
     <div id="loginBox" class="card" style="max-width:520px;margin:40px auto;display:none">
       <h2 style="margin:0 0 12px">Admin Sign In</h2>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="row3" style="grid-template-columns:1fr 1fr auto">
         <div>
-          <div class="muted" style="margin-bottom:6px">Email</div>
-          <input id="email" class="chip" style="width:100%" type="email" placeholder="you@company.com" autocomplete="email"/>
+          <div class="label">Email</div>
+          <input id="email" class="input" type="email" placeholder="you@company.com" autocomplete="email"/>
         </div>
         <div>
-          <div class="muted" style="margin-bottom:6px">Password</div>
-          <input id="password" class="chip" style="width:100%" type="password" placeholder="••••••••" autocomplete="current-password"/>
+          <div class="label">Password</div>
+          <input id="password" class="input" type="password" placeholder="••••••••" autocomplete="current-password"/>
+        </div>
+        <div style="display:flex;align-items:end">
+          <button id="loginBtn" class="btn solid" style="width:100%">Sign in</button>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-        <button id="loginBtn" class="chip" style="background:var(--accent);border-color:var(--accent);color:#000">Sign in</button>
-        <button id="resetBtn" class="chip">Send reset link</button>
+      <div class="hstack">
+        <button id="resetBtn" class="btn">Send reset link</button>
+        <span class="small muted">Requires <b>role:"admin"</b> in <code>/user/{uid}</code>.</span>
       </div>
-      <div class="muted" style="font-size:12px;margin-top:8px">Requires <b>role: "admin"</b> in <code>/user/{uid}</code>.</div>
     </div>
 
-    <!-- Not admin -->
-    <div id="notAdmin" class="card" style="display:none;max-width:720px;margin:40px auto">
-      <h2>Not authorized</h2>
-      <div class="muted" style="font-size:12px">Ask an admin to set your role to <b>admin</b> in the database.</div>
-    </div>
+    <!-- Displays -->
+    <div id="content" class="card" style="display:none">
+      <h2 style="margin:0 0 8px">Displays</h2>
+      <div class="muted small">Preview opens the actual player page:
+        <code>https://flaviothebfagroup.github.io/IPTV-/{displayId}.html</code>.
+        “Ping” writes <code>flashAt</code> so your player can blink if it listens for it.</div>
 
-    <!-- Tiles -->
-    <div id="home" style="display:none">
-      <div id="grid">
-        <a class="tile" href="dealerships.html">
-          <span class="ticon"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg></span>
-          <span class="text"><h3>Dealerships</h3><p>Add • rename • migrate • delete</p></span>
-        </a>
-        <a class="tile" href="displays.html">
-          <span class="ticon"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg></span>
-          <span class="text"><h3>Displays</h3><p>Live list • channel • volume</p></span>
-        </a>
-        <a class="tile" href="users.html">
-          <span class="ticon"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg></span>
-          <span class="text"><h3>Users</h3><p>Create • roles • duplicates</p></span>
-        </a>
-
-        <a class="tile" href="links.html">
-          <span class="ticon"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg></span>
-          <span class="text"><h3>Links</h3><p>Quick access apps</p></span>
-        </a>
-        <a class="tile" href="analytics.html">
-          <span class="ticon"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg></span>
-          <span class="text"><h3>Analytics</h3><p>Now • channels • dealers</p></span>
-        </a>
-        <a class="tile" href="schedule.html">
-          <span class="ticon"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
-          <span class="text"><h3>Schedule</h3><p>Installs • reminders</p></span>
-        </a>
-        <a class="tile" href="backups.html">
-          <span class="ticon"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg></span>
-          <span class="text"><h3>Backups</h3><p>Download • restore preview</p></span>
-        </a>
-        <a class="tile" href="remote-control.html">
-          <span class="ticon"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg></span>
-          <span class="text"><h3>Remote</h3><p>Player remote control</p></span>
-        </a>
-        <!-- SETTINGS (sliders icon) -->
-        <a class="tile" href="settings.html">
-          <span class="ticon">
-            <svg class="ic" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"/>
-            </svg>
-          </span>
-          <span class="text"><h3>Settings</h3><p>GitHub sync • theme</p></span>
-        </a>
+      <!-- action strip -->
+      <div class="row3" style="margin:10px 0">
+        <div>
+          <div class="label">Dealership</div>
+          <select id="dealerForDisplays" class="select"><option value="">Select dealership…</option></select>
+        </div>
+        <div>
+          <div class="label">Optional display ID</div>
+          <input id="newDisplayId" class="input" placeholder="Auto if empty (e.g., GW-002)"/>
+        </div>
+        <div style="display:flex;align-items:end;gap:8px;flex-wrap:wrap">
+          <button id="addDisplayBtn" class="btn solid">Add TV</button>
+        </div>
       </div>
+
+      <div class="hstack" style="margin:8px 0">
+        <button id="bulkMute" class="btn">Mute all</button>
+        <button id="bulkUnmute" class="btn">Unmute all</button>
+        <button id="bulkCh1" class="btn">All → CH1</button>
+        <button id="displaysReload" class="btn">Reload</button>
+        <button id="manageUsers" class="btn" title="Open Users filtered to this dealership">Manage Users</button>
+      </div>
+
+      <ul id="displayList" class="list"></ul>
+      <div id="displayEmpty" class="empty" style="display:none">Pick a dealership to list TVs.</div>
     </div>
   </div>
 
@@ -289,11 +271,12 @@
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import {
-      getAuth, setPersistence, browserLocalPersistence,
-      signInWithEmailAndPassword, onAuthStateChanged,
-      sendPasswordResetEmail, signOut
+      getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword,
+      onAuthStateChanged, sendPasswordResetEmail, signOut
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    import {
+      getDatabase, ref, get, set, update, remove, onValue, query, orderByChild, equalTo
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
     /* Firebase */
     const firebaseConfig = {
@@ -306,11 +289,15 @@
       appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
     };
     const LOGO_URL = "/IPTV-/icons/icon-512.png";
+
     const app  = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
     const $ = s => document.querySelector(s);
+    const $$ = s => document.querySelectorAll(s);
+    const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+    function esc(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
     function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
 
     /* Logos */
@@ -318,13 +305,12 @@
     const brandLogoM = document.getElementById('brandLogoM');
     if(brandLogoM){ brandLogoM.style.backgroundImage = `url("${LOGO_URL}")`; }
 
-    /* Theme (with icon update) */
+    /* Theme (dark toggle + icon) */
     const THEME_KEY='iptv_theme';
     const themeBtn = document.getElementById('themeBtn');
     const themeIcon = document.getElementById('themeIcon');
     const setThemeIcon = ()=>{
       const dark = document.body.classList.contains('dark');
-      // Sun/Moon combo icon (thin)
       themeIcon.innerHTML = dark
         ? `<path d="M21 12a9 9 0 1 1-9-9 6 6 0 0 0 9 9z"/>`
         : `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1.4-1.4M20.4 20.4 19 19M5 19l-1.4 1.4M20.4 3.6 19 5"/>`;
@@ -353,8 +339,8 @@
         }
       }, {capture:true});
       document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') moreMenu.classList.remove('open'); });
-      // Highlight current in dropdown too
-      const file=(location.pathname.split("/").pop()||"home.html").toLowerCase();
+      // highlight current page in dropdown when applicable
+      const file=(location.pathname.split("/").pop()||"displays.html").toLowerCase();
       moreMenu.querySelectorAll('a').forEach(a=>{
         const h=(a.getAttribute('href')||'').toLowerCase();
         if(h===file){ a.classList.add('is-active'); }
@@ -394,20 +380,157 @@
       }catch(e){ console.error(e); toast('Sign-in failed', true); }
     }
 
-    function showLogin(){ $('#home').style.display='none'; $('#notAdmin').style.display='none'; $('#loginBox').style.display='block'; }
-    function showNotAdmin(){ $('#home').style.display='none'; $('#loginBox').style.display='none'; $('#notAdmin').style.display='block'; }
-    function showHome(){ $('#loginBox').style.display='none'; $('#notAdmin').style.display='none'; $('#home').style.display='block'; }
-
     onAuthStateChanged(auth, async (user)=>{
-      if(!user){ $('#adminEmail').textContent=''; showLogin(); return; }
+      if(!user){ $('#loginBox').style.display='block'; $('#content').style.display='none'; return; }
       $('#adminEmail').textContent = user.email || user.uid;
+      // admin gate
       try{
         const snap = await get(ref(db, `user/${user.uid}`));
         const u = snap.val() || {};
-        if(u.role === 'admin'){ showHome(); }
-        else { showNotAdmin(); }
-      }catch(e){ console.error(e); showNotAdmin(); }
+        if(u.role !== 'admin'){ $('#loginBox').style.display='none'; $('#content').style.display='none'; alert('Not authorized. Ask an admin to set your role to admin.'); return; }
+      }catch(_){}
+      $('#loginBox').style.display='none';
+      $('#content').style.display='block';
+      await refreshDealers();
+      const did = new URL(location.href).searchParams.get('dealer') || '';
+      if(did){ $('#dealerForDisplays').value=did; watchDisplays(did,true); }
     });
+
+    /* Dealers dropdown */
+    async function refreshDealers(){
+      const sel = $('#dealerForDisplays'); sel.innerHTML='<option value="">Select dealership…</option>';
+      let map={};
+      try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=pub.val(); }catch(e){}
+      if(!map || Object.keys(map).length===0){
+        try{ const d=await get(ref(db,'dealership')); if(d.exists()){ const raw=d.val(); for(const id of Object.keys(raw)) map[id]={name:raw[id]?.name||id}; } }catch(e){}
+      }
+      Object.entries(map||{}).sort((a,b)=> (a[1]?.name||a[0]).localeCompare(b[1]?.name||b[0]) )
+      .forEach(([id,v])=>{
+        const opt=document.createElement('option'); opt.value=id; opt.textContent=v?.name||id; sel.appendChild(opt);
+      });
+    }
+
+    /* Displays logic (unchanged) */
+    let displaysUnsub=null;
+    $('#dealerForDisplays').addEventListener('change', e=>watchDisplays(e.target.value));
+    $('#displaysReload').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(did) watchDisplays(did,true); });
+    $('#manageUsers').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true); location.href = `users.html?dealer=${encodeURIComponent(did)}`; });
+
+    function previewUrlFor(id){ return `https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html`; }
+
+    async function watchDisplays(did,forceOnce=false){
+      const ul=$('#displayList'); ul.innerHTML='';
+      if(!did){ $('#displayEmpty').style.display='block'; if(displaysUnsub) displaysUnsub(); displaysUnsub=null; return; }
+      $('#displayEmpty').style.display='none';
+      if(displaysUnsub){ displaysUnsub(); displaysUnsub=null; }
+
+      const render=(map)=>{
+        ul.innerHTML='';
+        const ids=Object.keys(map||{}).sort();
+        if(ids.length===0){ $('#displayEmpty').style.display='block'; return; }
+        const now=Date.now();
+        ids.forEach(id=>{
+          const st=map[id]||{};
+          const online=(st.lastSeenAt && (now-st.lastSeenAt)<60000) || (st.timestamp && (now-st.timestamp)<120000);
+          const li=document.createElement('li'); li.className='item';
+          li.innerHTML=`
+            <div class="col">
+              <div class="split">
+                <b>${esc(id)}</b>
+                <span class="tag">${esc(did)}</span>
+                <span class="online"><i class="dot ${online?'ok':'err'}"></i>${online?'Online':'Offline'}</span>
+              </div>
+              <span class="muted small">CH ${st.channel ?? 1} • VOL ${st.volume ?? 0} • ${st.muted ? 'Muted' : 'Unmuted'}</span>
+            </div>
+            <div class="split">
+              <select data-id="${id}" class="select small chsel">
+                ${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===(st.channel||1)?'selected':''}>CH ${n}</option>`).join('')}
+              </select>
+              <div class="vol">
+                <span class="muted small">VOL</span>
+                <input type="range" min="0" max="100" value="${st.volume ?? 0}" data-id="${id}" class="vslider"/>
+              </div>
+              <button class="btn" data-id="${id}" data-muted="${!!st.muted}">${st.muted?'Unmute':'Mute'}</button>
+              <button class="btn" data-preview="${id}">Preview</button>
+              <button class="btn" data-flash="${id}">Ping</button>
+              <button class="btn danger" data-remove="${id}">Remove</button>
+            </div>`;
+          ul.appendChild(li);
+        });
+
+        ul.querySelectorAll('.chsel').forEach(el=>{
+          el.addEventListener('change', async (e)=>{ const id=e.target.dataset.id; const ch=parseInt(e.target.value,10); await writeDisplay(id,{channel:ch}); });
+        });
+        const debouncedWrite=debounce(async (id,val)=>{ await writeDisplay(id,{volume:val}); },160);
+        ul.querySelectorAll('.vslider').forEach(el=>{
+          el.addEventListener('input', e=>{ const id=e.target.dataset.id; const v=parseInt(e.target.value,10); debouncedWrite(id,v); });
+        });
+        ul.querySelectorAll('button[data-id]').forEach(el=>{
+          el.addEventListener('click', async ()=>{ const id=el.dataset.id; const cur=el.getAttribute('data-muted')==='true'; await writeDisplay(id,{muted:!cur}); });
+        });
+        ul.querySelectorAll('button[data-preview]').forEach(el=>{
+          el.addEventListener('click', ()=>{ const id=el.dataset.preview; window.open(previewUrlFor(id),'_blank','noopener'); });
+        });
+        ul.querySelectorAll('button[data-flash]').forEach(el=>{
+          el.addEventListener('click', async ()=>{ const id=el.dataset.flash; await writeDisplay(id,{flashAt: Date.now()}); toast(`Pinged ${id}`); });
+        });
+        ul.querySelectorAll('button[data-remove]').forEach(el=>{
+          el.addEventListener('click', async ()=>{ const id=el.dataset.remove; if(!confirm(`Remove ${id}?`)) return;
+            await remove(ref(db,`dealership/${did}/displays/${id}`)).catch(()=>{});
+            await remove(ref(db,`displays/${id}`)).catch(()=>{});
+            toast('Display removed'); });
+        });
+      };
+
+      const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
+      const off=onValue(qRef,snap=>render(snap.val()||{}),err=>console.warn(err));
+      displaysUnsub=()=>off();
+      if(forceOnce){ const once=await get(qRef); render(once.val()||{}); }
+    }
+
+    async function writeDisplay(id,patch){
+      try{
+        const did=$('#dealerForDisplays').value;
+        const snap=await get(ref(db,`displays/${id}`)); const cur=snap.val()||{};
+        await update(ref(db,`displays/${id}`),{...patch,dealership:cur.dealership || did || null,timestamp:Date.now()});
+        toast(`${id}: updated`);
+      }catch(e){ console.error(e); toast('Write denied', true); }
+    }
+
+    $('#bulkMute').addEventListener('click', ()=>bulkWrite({muted:true}));
+    $('#bulkUnmute').addEventListener('click', ()=>bulkWrite({muted:false}));
+    $('#bulkCh1').addEventListener('click', ()=>bulkWrite({channel:1}));
+    async function bulkWrite(patch){
+      const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
+      try{
+        const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
+        const s=await get(qRef); const map=s.val()||{}; const ids=Object.keys(map);
+        for(const id of ids){ await writeDisplay(id,patch); }
+        toast('Applied to all TVs');
+      }catch(e){ console.error(e); toast('Bulk failed',true); }
+    }
+
+    /* Add display */
+    $('#addDisplayBtn').addEventListener('click', async ()=>{
+      const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
+      let id=$('#newDisplayId').value.trim();
+      if(!id){
+        const friendly=(await get(ref(db,`dealershipPublic/${did}`))).val()?.name||did;
+        const pref=initialsFromName(friendly);
+        const existing=await collectDisplays(did);
+        let n=nextSuffix(existing,pref);
+        id=`${pref}-${String(n).padStart(3,'0')}`;
+      }
+      try{
+        await set(ref(db,`dealership/${did}/displays/${id}`),true);
+        await update(ref(db,`displays/${id}`),{channel:1,volume:0,muted:true,dealership:did,timestamp:Date.now()});
+        $('#newDisplayId').value=''; toast('Display added'); watchDisplays(did,true);
+      }catch(e){ console.error(e); toast('Add failed',true); }
+    });
+
+    async function collectDisplays(did){ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const s=await get(qRef); return Object.keys(s.val()||{}); }
+    function initialsFromName(name){ const raw=(name||'').trim(); if(!raw) return 'DS'; let parts=raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g)||raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g)||[]; let a=parts[0]||'', b=parts[1]||''; let p=(a? a[0]:'')+(b? b[0]:''); if(p.length<2 && a.length>=2) p=a.slice(0,2); return p.toUpperCase(); }
+    function nextSuffix(list,pref){ let max=0; list.forEach(id=>{ const m=id.match(new RegExp('^'+pref+'-(\\d{3})$')); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; }}); return max+1; }
   </script>
 </body>
 </html>
