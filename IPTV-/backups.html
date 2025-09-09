@@ -115,6 +115,16 @@
   .two{display:grid;grid-template-columns:1.1fr .9fr;gap:10px}
   @media (max-width:980px){.two{grid-template-columns:1fr}}
   .badge{font-size:11px;border:1px solid var(--border2);border-radius:999px;padding:2px 8px;color:var(--muted)}
+  /* ===== Guided Mode ===== */
+  .guide{position:sticky;top:74px;z-index:50;background:var(--panel);border:1px solid var(--border2);border-radius:14px;padding:10px;margin:10px 18px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+  .guide .steps{display:flex;flex-wrap:wrap;gap:8px}
+  .stepBtn{flex:1;min-width:140px;border:1px solid var(--border2);background:var(--panel);color:var(--fg);padding:10px;border-radius:12px;cursor:pointer;font-weight:800;text-align:left}
+  .stepBtn[disabled]{opacity:.6;cursor:not-allowed}
+  .stepBtn strong{display:block;font-size:13px}
+  .stepBtn span{display:block;font-size:12px;color:var(--muted)}
+  .helper{margin-top:8px;font-size:12px;color:var(--muted)}
+  .big{height:44px;padding:0 16px;border-radius:9999px;border:1px solid var(--border2);background:var(--panel);color:var(--fg);font-weight:900;cursor:pointer}
+  .bigSolid{height:44px;padding:0 16px;border-radius:9999px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
 </style>
 </head>
 <body>
@@ -162,6 +172,23 @@
     </aside>
   </div>
 </header>
+
+<div class="guide" id="guide">
+  <div class="steps">
+    <button class="stepBtn" id="g1"><strong>1) Connect GitHub</strong><span>Paste token → Save → Test</span></button>
+    <button class="stepBtn" id="g2" disabled><strong>2) One‑Click Backup</strong><span>Download or Save to repo</span></button>
+    <button class="stepBtn" id="g3" disabled><strong>3) Paste/Upload Files</strong><span>Save pages, scripts, assets</span></button>
+    <button class="stepBtn" id="g4" disabled><strong>4) Browse / Edit</strong><span>Open, change, move, delete</span></button>
+    <button class="stepBtn" id="g5" disabled><strong>5) Restore Tools</strong><span>Validate a backup file</span></button>
+    <button class="stepBtn" id="gHelp"><strong>❓ Help</strong><span>Show quick instructions</span></button>
+  </div>
+  <div class="helper" id="helper">Start at step 1. I’ll activate the next step automatically.</div>
+  <div class="row" style="margin-top:8px">
+    <button id="btnQuickBackup" class="bigSolid">One‑Click Backup Now</button>
+    <button id="btnShowOnlyEssential" class="big">Simple Mode</button>
+    <button id="btnShowAll" class="big" style="display:none">Show Everything</button>
+  </div>
+</div>
 
 <div class="wrap">
   <!-- Quick toggles / status -->
@@ -615,6 +642,100 @@
   $("#fileInput").addEventListener("change",async (e)=>{ const f=e.target.files?.[0]; if(!f) return; try{ const txt=await f.text(); parsed=JSON.parse(txt); $("#preview").style.display='block'; $("#preview").textContent=txt.slice(0,20000); toast('File loaded'); }catch(err){ parsed=null; $("#preview").style.display='none'; toast('Invalid JSON',true); } });
   $("#validateBtn").addEventListener("click",()=>{ if(!parsed) return toast('Load a backup first',true); const ok = parsed.kind==="bfa-iptv.backup" && typeof parsed.version==="string" && Array.isArray(parsed.sections) && parsed.data && typeof parsed.data==="object"; toast(ok?'Backup looks valid':'Backup header missing/invalid', !ok); });
   $("#simulateBtn").addEventListener("click",()=>{ if(!parsed) return toast('Load a backup first',true); const count=Object.keys(parsed.data||{}).length; toast(`Simulated restore of ${count} section(s)`); });
+  // ===== Guided Mode logic =====
+  const guide={
+    setStep(ok){
+      $('#g2').disabled = !ok;
+      $('#g3').disabled = !ok;
+      $('#g4').disabled = !ok;
+      $('#g5').disabled = !ok;
+    },
+    help(){
+      $('#helper').innerHTML = `
+        <b>Super short:</b> 1) In <i>GitHub Settings</i>, fill Owner/Repo/Branch and paste your token → click <b>Save</b> then <b>Test</b>.
+        2) Click <b>One‑Click Backup Now</b> (downloads a JSON and, if token OK, saves to <code>backups/</code> in GitHub).
+        3) Use <i>Paste & Save</i> or <i>Upload files</i> to get new files into the repo.
+        4) Open <i>Repo Browser</i> to <b>Edit</b>/<b>Delete</b>.
+        5) Use <i>Restore</i> to validate a backup file.`;
+      toast('Help opened');
+    },
+    simple(on){
+      const cards=[...document.querySelectorAll('.card')];
+      // Keep: GitHub Settings, Backup snapshot, Paste & Save, Upload, Repo Browser, Restore
+      const keepTitles=['GitHub Settings','Database Snapshot → GitHub / Download','Paste code → Save to GitHub','Upload files → GitHub','Repo Browser','Restore from backup'];
+      cards.forEach(c=>{
+        const h=c.querySelector('h2');
+        const show = !on || (h && keepTitles.includes(h.textContent.trim()));
+        c.style.display = show? '' : 'none';
+      });
+      $('#btnShowOnlyEssential').style.display = on? 'none':'inline-block';
+      $('#btnShowAll').style.display = on? 'inline-block':'none';
+      toast(on? 'Simple Mode on':'Showing everything');
+    }
+  };
+
+  // Activate step 1 always
+  guide.setStep(false);
+
+  // After Test button runs successfully, enable next steps
+  const originalTest = $('#btnTestGh').onclick;
+  $('#btnTestGh').onclick = async (e)=>{
+    if (originalTest) originalTest(e);
+    // small delay to let status set
+    setTimeout(()=>{ if($('#ghStatus').textContent==='OK') { guide.setStep(true); $('#helper').textContent='Great! Now run a One‑Click Backup or paste/upload files.'; } }, 600);
+  };
+
+  // Guide buttons jump/scroll to the right card
+  function jumpTo(text){
+    const card=[...document.querySelectorAll('.card')].find(c=> (c.querySelector('h2')||{}).textContent?.trim().startsWith(text));
+    if(card) card.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  $('#g1').onclick=()=>jumpTo('GitHub Settings');
+  $('#g2').onclick=()=>jumpTo('Database Snapshot');
+  $('#g3').onclick=()=>jumpTo('Paste code');
+  $('#g4').onclick=()=>jumpTo('Repo Browser');
+  $('#g5').onclick=()=>jumpTo('Restore');
+  $('#gHelp').onclick=()=>guide.help();
+
+  // Simple mode toggles
+  $('#btnShowOnlyEssential').onclick=()=>guide.simple(true);
+  $('#btnShowAll').onclick=()=>guide.simple(false);
+
+  // One‑Click Backup: select all, preview, download, and try saving to GitHub
+  $('#btnQuickBackup').addEventListener('click', async ()=>{
+    try{
+      // Select all sections
+      document.querySelectorAll('[data-sec]').forEach(i=> i.checked = true);
+      const secs=[...document.querySelectorAll('[data-sec]:checked')].map(i=>i.value);
+      const snap = await (async function(){
+        const want = new Set(secs);
+        const req = (path)=> get(ref(db,path)).then(s=>s.val()).catch(()=>null);
+        const [dp, d, ds, us, links] = await Promise.all([
+          want.has('dealershipPublic') ? req('dealershipPublic') : null,
+          want.has('dealership') ? req('dealership') : null,
+          want.has('displays') ? req('displays') : null,
+          want.has('user') ? req('user') : null,
+          want.has('links') ? req('admin/quickLinks') : null
+        ]);
+        const scheduleLocal = want.has('scheduleLocal') ? JSON.parse(localStorage.getItem('iptv_admin_schedule')||'[]') : null;
+        return { kind:"bfa-iptv.backup", version:"v1", exportedAt:new Date().toISOString(), exportedBy:auth.currentUser?.email || 'admin', note:null, sections:[...want], data:{ ...(dp? {dealershipPublic:dp}:{ }), ...(d?  {dealership:d}:{ }), ...(ds? {displays:ds}:{ }), ...(us? {user:us}:{ }), ...(links? {links}:{ }), ...(scheduleLocal? {scheduleLocal}:{ }) } };
+      })();
+      // Download always
+      const name = `bfa-backup-${(new Date()).toISOString().slice(0,19).replace(/[-:T]/g,'')}.json`;
+      const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+
+      // Try save to GitHub if configured
+      try{
+        const base=$('#basePath').value.trim()||'backups/';
+        const folder=(base.endsWith('/')?base:base+'/');
+        const stamp = new Date().toISOString().slice(0,19).replace(/[-:T]/g,'');
+        const path = `${folder}${new Date().getFullYear()}/${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}/bfa-backup-${stamp}.json`;
+        await putFile(path, JSON.stringify(snap,null,2), `backup: ${stamp}`);
+        toast('One‑Click Backup saved to GitHub ✔︎');
+      }catch(e){ toast('GitHub save skipped (check token/repo)', true); }
+    }catch(e){ toast(e.message, true); }
+  });
 </script>
 </body>
 </html>
