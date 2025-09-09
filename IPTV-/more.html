@@ -14,6 +14,9 @@
   <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png"/>
 
   <style>
+    /* =========================================================
+       Tokens (light by default) + dark override
+    ========================================================= */
     :root{
       --accent:#ff9500;
       --fg:#111; --muted:#6e6e73; --bg:#ffffff;
@@ -33,9 +36,10 @@
     body{margin:0;background:var(--bg);color:var(--fg);
       font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif; line-height:1.35}
     a{color:inherit;text-decoration:none}
-    a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-    /* ===== NAVBAR (same as Home/Backups) ===== */
+    /* =========================================================
+       Topbar (shared with Home/Dealerships)
+    ========================================================= */
     .topbar{position:sticky;top:0;z-index:100;background:var(--panel);
       border-bottom:1px solid var(--border);
       padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
@@ -50,6 +54,7 @@
     .pill.is-active{outline:2px solid var(--accent)}
     .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
 
+    /* More (+) dropdown */
     .more{position:relative}
     #moreBtn .plus{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
     #moreMenu{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
@@ -60,18 +65,26 @@
     #moreMenu a.is-active{outline:2px solid var(--accent)}
     #moreMenu .ic{width:18px;height:18px;stroke-width:1.9}
 
+    /* Actions */
     .actions{display:flex;gap:8px;align-items:center}
     .email{max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);
-      border:1.5px solid var(--borderStrong);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      border:1px solid var(--border);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .chip{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1.5px solid var(--borderStrong);
       background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
     .chip:hover{border-color:var(--accent)}
     .chip .ic{width:18px;height:18px;stroke-width:2}
     .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
+    /* Hamburger (orange lines) */
     #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:42px;min-width:42px;padding:0;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
     #hamburger .ic{width:22px;height:22px;stroke:var(--accent);stroke-width:2.35}
-    @media (max-width:920px){ .nav{display:none} #hamburger{display:inline-flex} .email{display:none} }
 
+    @media (max-width:920px){
+      .nav{display:none}
+      #hamburger{display:inline-flex}
+      .email{display:none}
+    }
+
+    /* Mobile sheet */
     #sheet{position:fixed;inset:0;z-index:120;display:none}
     #sheet.open{display:block}
     #sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
@@ -81,7 +94,9 @@
     .panel nav{display:grid;gap:8px}
     .panel nav a{justify-content:flex-start}
 
-    /* ===== Page ===== */
+    /* =========================================================
+       Page UI
+    ========================================================= */
     .wrap{max-width:1100px;margin:0 auto;padding:18px}
     .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
     .hstack{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -111,19 +126,10 @@
     .vol input[type="range"]{width:140px;accent-color:var(--accent)}
     @media (max-width:560px){ .vol input[type="range"]{width:100%} }
 
-    /* Inline preview panel (minimal like Dealerships) */
-    .sub{grid-column:1/-1;margin-top:8px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px}
-    .sub h4{margin:0 0 8px}
-    .iframeWrap{position:relative;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9}
-    .iframeWrap iframe{position:absolute;inset:0;width:100%;height:100%;display:block;background:#000}
-    .badge{position:absolute;left:10px;top:10px;background:#fff;color:#111;border:1px solid var(--accent);border-radius:999px;padding:4px 8px;font-size:12px;font-weight:800;display:none}
-    .is-previewing .badge{display:inline-flex}
-    .overlayControls{ position:absolute; left:0; right:0; bottom:0; display:flex; flex-direction:column; gap:10px; padding:10px; pointer-events:none; opacity:0; transition:opacity .18s ease; background:linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0)); }
-    @media (hover:hover) and (pointer:fine){ .iframeWrap:hover .overlayControls{ opacity:1; pointer-events:auto; } }
-    .cluster{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-    .circle{height:36px;width:36px;border-radius:9999px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
-    .circle svg{width:16px;height:16px;stroke:#fff;stroke-width:2;fill:none}
-    .pct{height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:9999px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);font-size:12px;font-weight:800;color:#fff}
+    /* Inline preview panel */
+    .sub.preview{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;margin-top:8px}
+    .frame{position:relative;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#000;aspect-ratio:16/9}
+    .frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
 
     /* Toast */
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
@@ -138,12 +144,22 @@
       <a class="brand" href="home.html"><span class="logo" id="brandLogo"></span><span class="logotxt">BFA IPTV</span></a>
 
       <nav class="nav" aria-label="Primary">
-        <a class="pill" href="home.html" data-page="home"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
-        <a class="pill" href="dealerships.html" data-page="dealerships"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
-        <a class="pill is-active" href="displays.html" data-page="displays"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
-        <a class="pill" href="users.html" data-page="users"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
+        <a class="pill" href="home.html" data-page="home">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home
+        </a>
+        <a class="pill" href="dealerships.html" data-page="dealerships">
+          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships
+        </a>
+        <a class="pill is-active" href="displays.html" data-page="displays">
+          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays
+        </a>
+        <a class="pill" href="users.html" data-page="users">
+          <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users
+        </a>
         <div class="more">
-          <a id="moreBtn" class="pill" href="javascript:void(0)"><svg class="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> More</a>
+          <a id="moreBtn" class="pill" href="javascript:void(0)">
+            <svg class="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> More
+          </a>
           <div id="moreMenu" role="menu" aria-label="More">
             <a href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
             <a href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
@@ -157,9 +173,14 @@
 
       <div class="actions">
         <span id="adminEmail" class="email"></span>
-        <button id="themeBtn" class="chip" title="Light/Dark"><svg id="themeIcon" class="ic" viewBox="0 0 24 24"></svg> Theme</button>
+        <button id="themeBtn" class="chip" title="Light/Dark">
+          <svg id="themeIcon" class="ic" viewBox="0 0 24 24"></svg>
+          Theme
+        </button>
         <button id="signOutBtn" class="chip">Sign out</button>
-        <button id="hamburger" class="chip" aria-label="Menu"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+        <button id="hamburger" class="chip" aria-label="Menu">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
       </div>
     </div>
 
@@ -181,6 +202,7 @@
           <a class="pill" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
           <a class="pill" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
           <a class="pill" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
+          <a class="pill" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
           <a class="pill" href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
           <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
         </nav>
@@ -215,10 +237,8 @@
     <!-- Displays -->
     <div id="content" class="card" style="display:none">
       <h2 style="margin:0 0 8px">Displays</h2>
-      <div class="muted small">
-        Inline preview opens the actual player page: <code>https://flaviothebfagroup.github.io/IPTV-/Displays/{displayId}.html</code>.
-        “Ping” writes <code>flashAt</code> for a quick visual blink.
-      </div>
+      <div class="muted small">Preview opens the actual player page:
+        <code>https://flaviothebfagroup.github.io/IPTV-/Displays/{displayId}.html</code>. Creating a TV also writes that file to GitHub.</div>
 
       <!-- action strip -->
       <div class="row3" style="margin:10px 0">
@@ -277,25 +297,25 @@
     const db   = getDatabase(app);
 
     const $ = s => document.querySelector(s);
+    const $$ = s => document.querySelectorAll(s);
     const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
-    function esc(s){ return String(s??'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+    function esc(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
     function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
-    const withEmbed = (u)=>{ try{ const x=new URL(u); x.searchParams.set('embed','1'); return x.href; }catch{ return u+(u.includes('?')?'&':'?')+'embed=1'; } };
 
     /* Logos */
     $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
     const brandLogoM = document.getElementById('brandLogoM');
-    if(brandLogoM) brandLogoM.style.backgroundImage = `url("${LOGO_URL}")`;
+    if(brandLogoM){ brandLogoM.style.backgroundImage = `url("${LOGO_URL}")`; }
 
-    /* Theme (dark toggle + icon consistent) */
+    /* Theme (dark toggle + icon) */
     const THEME_KEY='iptv_theme';
     const themeBtn = document.getElementById('themeBtn');
     const themeIcon = document.getElementById('themeIcon');
     const setThemeIcon = ()=>{
       const dark = document.body.classList.contains('dark');
       themeIcon.innerHTML = dark
-        ? `<path d="M21.752 15.002A9 9 0 118.998 2.248a7.5 7.5 0 1012.754 12.754z"/>`
-        : `<path d="M12 4.5v-2.25M12 21.75v-2.25M4.5 12H2.25M21.75 12H19.5M5.636 5.636L4.05 4.05M19.95 19.95l-1.586-1.586M5.636 18.364L4.05 19.95M19.95 4.05l-1.586 1.586"/><circle cx="12" cy="12" r="3.75"/>`;
+        ? `<path d="M21 12a9 9 0 1 1-9-9 6 6 0 0 0 9 9z"/>`
+        : `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1.4-1.4M20.4 20.4 19 19M5 19l-1.4 1.4M20.4 3.6 19 5"/>`;
     };
     const saved = localStorage.getItem(THEME_KEY) || 'light';
     document.body.classList.toggle('dark', saved==='dark');
@@ -308,16 +328,25 @@
     });
 
     /* “More” dropdown */
-    (()=>{
-      const moreBtn = document.getElementById('moreBtn');
-      const moreMenu = document.getElementById('moreMenu');
-      if(!moreBtn) return;
-      moreBtn.addEventListener('click', (e)=>{ e.preventDefault(); moreMenu.classList.toggle('open'); });
-      document.addEventListener('click', (e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)) moreMenu.classList.remove('open'); }, {capture:true});
+    const moreBtn = document.getElementById('moreBtn');
+    const moreMenu = document.getElementById('moreMenu');
+    if(moreBtn){
+      moreBtn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        moreMenu.classList.toggle('open');
+      });
+      document.addEventListener('click', (e)=>{
+        if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)){
+          moreMenu.classList.remove('open');
+        }
+      }, {capture:true});
       document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') moreMenu.classList.remove('open'); });
       const file=(location.pathname.split("/").pop()||"displays.html").toLowerCase();
-      moreMenu.querySelectorAll('a').forEach(a=>{ const h=(a.getAttribute('href')||'').toLowerCase(); if(h===file){ a.classList.add('is-active'); } });
-    })();
+      moreMenu.querySelectorAll('a').forEach(a=>{
+        const h=(a.getAttribute('href')||'').toLowerCase();
+        if(h===file){ a.classList.add('is-active'); }
+      });
+    }
 
     /* Mobile sheet */
     (()=>{
@@ -329,32 +358,31 @@
       sheet.querySelector('.back').addEventListener('click', close);
       const mainOut = document.getElementById('signOutBtn');
       const mobOut  = document.getElementById('signOutBtnM');
-      if(mainOut && mobOut) mobOut.addEventListener('click', ()=> mainOut.click());
+      if(mainOut && mobOut){ mobOut.addEventListener('click', ()=> mainOut.click()); }
     })();
 
     /* Auth UI */
-    $('#loginBtn').addEventListener('click', doLogin);
-    $('#resetBtn').addEventListener('click', async ()=>{
-      const email = $('#email').value.trim();
+    document.getElementById('loginBtn').addEventListener('click', doLogin);
+    document.getElementById('resetBtn').addEventListener('click', async ()=>{
+      const email = document.getElementById('email').value.trim();
       if(!email) return toast('Enter email', true);
-      try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }catch(e){ toast('Reset failed', true); }
+      try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed', true); }
     });
-    $('#signOutBtn').addEventListener('click', ()=>signOut(auth));
+    document.getElementById('signOutBtn').addEventListener('click', ()=>signOut(auth));
 
     async function doLogin(){
-      const email=$('#email').value.trim();
-      const pass =$('#password').value;
+      const email=document.getElementById('email').value.trim();
+      const pass =document.getElementById('password').value;
       if(!email||!pass) return toast('Fill email & password', true);
       try{
         await setPersistence(auth, browserLocalPersistence);
         await signInWithEmailAndPassword(auth,email,pass);
-      }catch(e){ toast('Sign-in failed', true); }
+      }catch(e){ console.error(e); toast('Sign-in failed', true); }
     }
 
     onAuthStateChanged(auth, async (user)=>{
       if(!user){ $('#loginBox').style.display='block'; $('#content').style.display='none'; return; }
       $('#adminEmail').textContent = user.email || user.uid;
-      // admin gate
       try{
         const snap = await get(ref(db, `user/${user.uid}`));
         const u = snap.val() || {};
@@ -367,7 +395,389 @@
       if(did){ $('#dealerForDisplays').value=did; watchDisplays(did,true); }
     });
 
-    /* Dealers dropdown */
+    /* ======================= GitHub helpers ======================= */
+    function ghCfg(){
+      try{ return JSON.parse(localStorage.getItem('iptv_admin_gh')||'') }catch(_){ return null }
+    }
+    async function ghFetch(method, path, body){
+      const cfg = ghCfg();
+      if(!cfg) throw new Error('Configure GitHub (Settings) to use this feature.');
+      const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path}`;
+      const headers = {
+        'Authorization': `token ${cfg.token}`,
+        'Accept': 'application/vnd.github+json'
+      };
+      const res = await fetch(url, { method, headers, body: body? JSON.stringify(body): undefined });
+      if(!res.ok){
+        const txt = await res.text().catch(()=>String(res.status));
+        throw new Error(txt || `GitHub error ${res.status}`);
+      }
+      return res.json();
+    }
+    function toB64(str){ return btoa(unescape(encodeURIComponent(str))); }
+
+    async function upsertGhFile(path, content, message='Update file'){
+      let sha=null;
+      try{
+        const meta = await ghFetch('GET', path);
+        sha = meta.sha;
+      }catch(e){
+        // ignore 404
+      }
+      const cfg = ghCfg(); if(!cfg) throw new Error('Missing GitHub config');
+      const body = { message, content: toB64(content), branch: cfg.branch || 'main' };
+      if(sha) body.sha = sha;
+      return ghFetch('PUT', path, body);
+    }
+
+    /* Build player page — uses YOUR template (</script> escaped) */
+    function buildPlayerPage(displayId, dealershipName){
+      const tpl = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+  <title>Digital Signage — Player</title>
+  <style>
+    :root{ --bg:#000; --fg:#fff; --muted:#b3b3b3; --panel:rgba(255,255,255,.06); --border:rgba(255,255,255,.15); --accent:#ff9500; --ok:#22c55e; --err:#ef4444; }
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%}
+    body{ background:var(--bg); color:var(--fg); font-family: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; overflow:hidden; position:relative; }
+    .video-container{position:absolute; inset:0; background:#000}
+    video{width:100%; height:100%; object-fit:cover; background:#000}
+    .loading-overlay{ position:absolute; inset:0; background:rgba(0,0,0,.85); display:flex; align-items:center; justify-content:center; z-index:100; opacity:0; pointer-events:none; transition:opacity .25s; }
+    .loading-overlay.active{opacity:1; pointer-events:auto}
+    .spinner{ width:54px; height:54px; border-radius:50%; border:3px solid rgba(255,255,255,.15); border-top-color:#fff; animation:spin 1s linear infinite; }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .channel-info{ position:absolute; top:18px; left:18px; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:10px 14px; z-index:50; opacity:0; transform:translateY(-8px); transition:opacity .25s, transform .25s; }
+    .channel-info.show{opacity:1; transform:translateY(0)}
+    .channel-name{font-weight:800}
+    .channel-sub{font-size:12px; color:var(--muted); display:flex; gap:10px; align-items:center}
+    .live-dot{width:8px;height:8px;border-radius:50%; background:var(--accent); box-shadow:0 0 0 0 rgba(255,149,0,.7); animation:pulse 2s infinite}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,149,0,.7)} 70%{box-shadow:0 0 0 8px rgba(255,149,0,0)} 100%{box-shadow:0 0 0 0 rgba(255,149,0,0)}}
+    .status-bar{ position:absolute; right:18px; bottom:18px; display:flex; gap:10px; align-items:center; background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:8px 12px; font-size:12px; z-index:50; }
+    .status-dot{width:10px;height:10px;border-radius:50%; background:var(--ok)}
+    .status-dot.disconnected{background:var(--err)}
+    .divider{opacity:.45}
+    .display-id{ position:absolute; left:18px; bottom:18px; z-index:50; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:8px 12px; font-size:12px; color:#fff; }
+    .error-message{ position:absolute; inset:auto 50% 50% auto; transform:translate(50%,-50%); background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.4); color:#fff; padding:14px 18px; border-radius:14px; display:none; z-index:80; text-align:center; }
+    .error-message.show{display:block}
+    .error-title{font-weight:800; margin-bottom:4px; color:var(--err)}
+    .error-text{font-size:12px; color:#fff}
+    .transition-overlay{position:absolute; inset:0; background:#000; z-index:40; opacity:0; pointer-events:none; transition:opacity .25s}
+    .transition-overlay.active{opacity:1}
+    .volume-control{ position:absolute; left:50%; bottom:100px; transform:translateX(-50%); display:flex; align-items:center; gap:12px; z-index:70; background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:10px 12px; opacity:0; pointer-events:none; transition:opacity .2s; }
+    .volume-control.show{opacity:1; pointer-events:auto}
+    .vol-btn{ width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:transparent; color:#fff; font-size:18px; cursor:pointer; }
+    .vol-track{width:160px; height:8px; border-radius:6px; background:rgba(255,255,255,.12); position:relative; overflow:hidden; border:1px solid var(--border)}
+    .vol-fill{position:absolute; left:0; top:0; bottom:0; width:0%; background:var(--accent)}
+    .vol-percent{font-weight:800; min-width:46px; text-align:right}
+    .vol-icon{width:22px;height:22px; display:block}
+    .bar{opacity:0; transition:opacity .15s}
+    .icon-muted .bar, .icon-level-0 .bar{opacity:0}
+    .icon-level-1 #bar1{opacity:1}
+    .icon-level-2 #bar1, .icon-level-2 #bar2{opacity:1}
+    .icon-level-3 #bar1, .icon-level-3 #bar2, .icon-level-3 #bar3{opacity:1}
+    .icon-muted #x1, .icon-muted #x2{opacity:1}
+    #x1,#x2{opacity:0; stroke:var(--err); stroke-width:2; stroke-linecap:round}
+    .volume-float{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,.92); border:1px solid var(--border); color:#fff; padding:26px 36px; border-radius:18px; font-weight:900; font-size:40px; z-index:90; animation:fadeHud 1.8s ease forwards; }
+    @keyframes fadeHud{0%{opacity:0; transform:translate(-50%,-50%) scale(.96)} 15%{opacity:1; transform:translate(-50%,-50%) scale(1)} 85%{opacity:1} 100%{opacity:0}}
+    @media (prefers-reduced-motion:reduce){ .transition-overlay,.channel-info,.loading-overlay{transition:none} }
+  </style>
+</head>
+<body>
+  <div class="volume-control" id="volumeHud" aria-live="polite">
+    <button class="vol-btn" id="muteBtn" title="Mute/Unmute" aria-label="Mute/Unmute">
+      <svg id="volSvg" class="vol-icon icon-muted" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 10v4h4l5 4V6l-5 4H3Z"/>
+        <path id="bar1" class="bar" d="M16 9a3 3 0 0 1 0 6" />
+        <path id="bar2" class="bar" d="M18.5 7a6 6 0 0 1 0 10" />
+        <path id="bar3" class="bar" d="M21 5a9 9 0 0 1 0 14" />
+        <line id="x1" x1="2" y1="2" x2="22" y2="22"/>
+        <line id="x2" x1="22" y1="2" x2="2" y2="22"/>
+      </svg>
+    </button>
+    <button class="vol-btn" id="volDown" title="Volume down" aria-label="Volume down">−</button>
+    <div class="vol-track"><div class="vol-fill" id="volFill"></div></div>
+    <button class="vol-btn" id="volUp" title="Volume up" aria-label="Volume up">+</button>
+    <div class="vol-percent" id="volPct">0%</div>
+  </div>
+
+  <div class="video-container">
+    <video id="videoPlayer" autoplay muted playsinline></video>
+  </div>
+
+  <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+  <div class="channel-info" id="channelInfo">
+    <div class="channel-name" id="chName">Channel</div>
+    <div class="channel-sub"><span class="live-dot"></span><span>LIVE • CH <span id="chNum">1</span></span></div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot" title="Connection"></div>
+    <span id="statusText">Connected</span>
+    <span class="divider">•</span>
+    <span id="clock">00:00</span>
+  </div>
+
+  <div class="display-id">Display: <b id="displayId">—</b></div>
+
+  <div class="error-message" id="errToast">
+    <div class="error-title">Stream Unavailable</div>
+    <div class="error-text" id="errText">Reconnecting…</div>
+  </div>
+
+  <div class="transition-overlay" id="fade"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"><\/script>
+
+  <script>
+    const CONFIG = {
+      displayId: '${displayId}',
+      dealershipName: '${dealershipName}',
+      channels: [
+        { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
+        { id:2, name:'Sports', url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8', type:'hls' }, /* http may be blocked */
+        { id:3, name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
+        { id:4, name:'Nature', url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8', type:'hls' },
+        { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
+      ]
+    };
+
+    let hls=null, retry=0, switching=false;
+    window.currentChannel = 1;
+    window.currentVolume  = 0;
+    window.isMuted        = true;
+    let lastVolume = 50;
+    const $ = (id)=>document.getElementById(id);
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      $('displayId').textContent = CONFIG.displayId;
+      initVideo();
+      initVolumeUI();
+      tickClock(); setInterval(tickClock, 1000);
+      loadChannel(1);
+    });
+
+    function initVideo(){
+      const v = $('videoPlayer');
+      v.volume = 0; v.muted = true;
+      v.addEventListener('loadstart', ()=> showLoading(true));
+      v.addEventListener('canplay',   ()=> showLoading(false));
+      v.addEventListener('stalled',   ()=> showLoading(true));
+      v.addEventListener('error',     onVideoError);
+      $('volUp').onclick   = ()=> volumeUp();
+      $('volDown').onclick = ()=> volumeDown();
+      $('muteBtn').onclick = ()=> toggleMute();
+    }
+
+    function initVolumeUI(){
+      const savedVol  = localStorage.getItem('displayVolume');
+      const savedMute = localStorage.getItem('displayMuted');
+      if(savedVol !== null){ window.currentVolume = parseInt(savedVol,10); lastVolume = window.currentVolume || 50; }
+      if(savedMute !== null){ window.isMuted = (savedMute === 'true'); }
+      const v = $('videoPlayer');
+      v.volume = (window.currentVolume||0)/100;
+      v.muted  = !!window.isMuted;
+      renderVolumeUI();
+    }
+    function renderVolumeUI(){
+      const pct = Math.max(0, Math.min(100, window.currentVolume|0));
+      $('volFill').style.width = pct + '%';
+      $('volPct').textContent = (window.isMuted || pct===0) ? '0%' : (pct + '%');
+      const cls = window.isMuted || pct===0 ? 'icon-muted' :
+                  pct < 30 ? 'icon-level-1' : pct < 70 ? 'icon-level-2' : 'icon-level-3';
+      $('volSvg').className.baseVal = 'vol-icon ' + cls;
+      hudFlash();
+    }
+    function toggleMute(){ window.isMuted ? unmute() : mute(); }
+    function mute(){ const v=$('videoPlayer'); window.isMuted=true; v.muted=true; localStorage.setItem('displayMuted','true'); renderVolumeUI(); }
+    function unmute(){
+      const v=$('videoPlayer');
+      if(window.currentVolume===0){ window.currentVolume = lastVolume || 50; v.volume = window.currentVolume/100; }
+      window.isMuted=false; v.muted=false; v.play().catch(()=>{});
+      localStorage.setItem('displayMuted','false'); renderVolumeUI();
+    }
+    function setVolume(vol){
+      vol = Math.max(0, Math.min(100, vol|0));
+      const v=$('videoPlayer');
+      window.currentVolume = vol; if(vol>0) lastVolume = vol;
+      v.volume = vol/100;
+      if(vol===0){ window.isMuted = true; v.muted = true; localStorage.setItem('displayMuted','true'); }
+      localStorage.setItem('displayVolume', String(vol));
+      renderVolumeUI();
+    }
+    function volumeUp(){ if(window.isMuted) unmute(); setVolume(window.currentVolume + 10); }
+    function volumeDown(){ setVolume(window.currentVolume - 10); }
+    function showFloat(text){ const old = document.querySelector('.volume-float'); if(old) old.remove(); const el = document.createElement('div'); el.className='volume-float'; el.textContent=text; document.body.appendChild(el); setTimeout(()=>el.remove(), 1800); }
+    function hudFlash(){ const hud = $('volumeHud'); hud.classList.add('show'); clearTimeout(hud._t); hud._t = setTimeout(()=> hud.classList.remove('show'), 1500); }
+    window.applyVolumeSettings = function(volume, muted){
+      let changed=false;
+      if(typeof volume==='number' && volume!==window.currentVolume){ setVolume(volume); changed=true; }
+      if(typeof muted==='boolean' && muted!==window.isMuted){ muted ? mute() : unmute(); changed=true; }
+      if(changed){ const label = (window.isMuted||window.currentVolume===0) ? 'MUTED' : ('VOL ' + window.currentVolume + '%'); showFloat(label); }
+    };
+
+    function loadChannel(channelNumber){
+      if(switching) return;
+      const ch = CONFIG.channels.find(c=>c.id===channelNumber);
+      if(!ch){ console.warn('Channel not found', channelNumber); return; }
+      switching = true; $('fade').classList.add('active');
+      setTimeout(()=>{
+        window.currentChannel = channelNumber; updateChannelInfo(ch);
+        const v = $('videoPlayer');
+        if(Hls.isSupported()){
+          if(hls) { try{ hls.destroy(); }catch(e){} hls=null; }
+          hls = new Hls({ enableWorker:true, lowLatencyMode:true, maxBufferLength:30, maxBufferSize:60*1000*1000, manifestLoadingTimeOut:10000, manifestLoadingMaxRetry:3, levelLoadingTimeOut:10000, levelLoadingMaxRetry:4 });
+          hls.attachMedia(v); hls.loadSource(ch.url);
+          hls.on(Hls.Events.MANIFEST_PARSED, ()=> { v.play().then(()=>{ v.volume = window.currentVolume/100; v.muted = window.isMuted; }).catch(()=>{}); });
+          hls.on(Hls.Events.ERROR, onHlsError);
+        } else if (v.canPlayType('application/vnd.apple.mpegurl')){
+          v.src = ch.url; v.play().then(()=>{ v.volume = window.currentVolume/100; v.muted = window.isMuted; }).catch(()=>{});
+        } else { showError('HLS not supported on this device'); }
+        setTimeout(()=>{ $('fade').classList.remove('active'); switching=false; }, 240);
+      }, 140);
+    }
+    window.loadChannel = loadChannel;
+    function updateChannelInfo(ch){ $('chName').textContent = ch.name || ('Channel ' + ch.id); $('chNum').textContent  = ch.id; const box = $('channelInfo'); box.classList.add('show'); clearTimeout(box._t); box._t = setTimeout(()=> box.classList.remove('show'), 4000); }
+    function onHlsError(evt, data){ if(!data || !data.fatal) return;
+      switch(data.type){
+        case Hls.ErrorTypes.NETWORK_ERROR: if(retry<3){ retry++; setTimeout(()=> hls && hls.startLoad(), 1500); } else showError('Network error'); break;
+        case Hls.ErrorTypes.MEDIA_ERROR: try{ hls.recoverMediaError(); }catch(e){ showError('Media error'); } break;
+        default: showError('Stream error'); setTimeout(()=> loadChannel(window.currentChannel), 3000);
+      }
+    }
+    function onVideoError(){ showError('Playback error'); setTimeout(()=> loadChannel(window.currentChannel), 3000); }
+    function showError(msg){ $('errText').textContent = msg; $('errToast').classList.add('show'); }
+    function hideError(){ $('errToast').classList.remove('show'); }
+    function showLoading(flag){ const el=$('loading'); if(flag){ el.classList.add('active'); } else { el.classList.remove('active'); hideError(); } }
+    function setStatus(connected, msg){ const dot=$('statusDot'), txt=$('statusText'); dot.classList.toggle('disconnected', !connected); txt.textContent = connected ? 'Connected' : ('Disconnected' + (msg?` — ${msg}`:'')); }
+    window.setStatus = setStatus;
+    function tickClock(){ const t = new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'}); $('clock').textContent = t; }
+    document.addEventListener('visibilitychange',()=>{ if(!hls) return; if(document.hidden){ try{ hls.stopLoad(); }catch(e){} } else { try{ hls.startLoad(); }catch(e){} } });
+    if(navigator.userAgent.includes('BrightSign')){ setTimeout(()=>{ const v=$('videoPlayer'); if(window.currentVolume>0 && !window.isMuted){ v.muted=false; v.volume=window.currentVolume/100; } }, 1500); }
+  <\/script>
+
+  <!-- Firebase (module) -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import {
+      getAuth, signInAnonymously, onAuthStateChanged,
+      setPersistence, inMemoryPersistence
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import {
+      getDatabase, ref, onValue, update, get, query, orderByChild, equalTo, remove
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+    const firebaseConfig = ${JSON.stringify(firebaseConfig)};
+
+    const EMBED = /\\bembed=1\\b/i.test(location.search) || (window.top !== window.self);
+    const app = initializeApp(firebaseConfig, EMBED ? 'embed' : undefined);
+    const auth = getAuth(app);
+    if (EMBED) { await setPersistence(auth, inMemoryPersistence); }
+
+    const db   = getDatabase(app);
+    signInAnonymously(auth).catch(e => {
+      console.error('[auth]', e);
+      window.setStatus(false, 'anon auth failed');
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+
+      const displayId      = '${displayId}';
+      const dealershipName = '${dealershipName}';
+
+      if (EMBED) {
+        const dref = ref(db, \`displays/\${displayId}\`);
+        onValue(dref, (snap) => {
+          const data = snap.val();
+          if (!data) return;
+          if (typeof data.channel === 'number' && data.channel !== window.currentChannel) window.loadChannel(data.channel);
+          if (data.volume !== undefined || data.muted !== undefined) window.applyVolumeSettings(data.volume, data.muted);
+          window.setStatus(true, '');
+        }, (err) => {
+          console.error('[listener]', err);
+          window.setStatus(false, 'listener error');
+        });
+        return;
+      }
+
+      try {
+        await update(ref(db, \`user/\${user.uid}\`), {
+          role: 'device',
+          name: displayId,
+          dealershipId: dealershipName,
+          updatedAt: Date.now(),
+          createdAt: Date.now()
+        });
+      } catch (e) {
+        console.warn('[user write denied]', e);
+        window.setStatus(false, 'cannot write user profile');
+        return;
+      }
+
+      try {
+        const uq = query(ref(db, 'user'), orderByChild('name'), equalTo(displayId));
+        const us = await get(uq);
+        const all = us.val() || {};
+        const entries = Object.entries(all);
+        if (entries.length > 1) {
+          const byTime = entries.sort(([,a],[,b]) => (b.updatedAt||0) - (a.updatedAt||0));
+          for (const [uid,data] of byTime) {
+            if (uid !== user.uid && data?.role === 'device') {
+              try { await remove(ref(db, 'user/'+uid)); } catch(_) {}
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[dupe-clean] failed', e);
+      }
+
+      try {
+        const dRef = ref(db, \`displays/\${displayId}\`);
+        const snap = await get(dRef);
+        if (!snap.exists()) {
+          await update(dRef, { channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() });
+        } else {
+          const cur = snap.val() || {};
+          if (cur.dealership !== dealershipName) {
+            await update(dRef, { dealership:dealershipName });
+          }
+        }
+      } catch (e) {
+        console.warn('[display setup denied]', e);
+        window.setStatus(false, 'display/dealership mismatch');
+        return;
+      }
+
+      const dref = ref(db, \`displays/\${displayId}\`);
+      onValue(dref, (snap) => {
+        const data = snap.val();
+        if (!data) return;
+        if (typeof data.channel === 'number' && data.channel !== window.currentChannel) window.loadChannel(data.channel);
+        if (data.volume !== undefined || data.muted !== undefined) window.applyVolumeSettings(data.volume, data.muted);
+        window.setStatus(true, '');
+      }, (err) => {
+        console.error('[listener]', err);
+        window.setStatus(false, 'listener error');
+      });
+
+      try{
+        const hbRef = ref(db, \`displays/\${displayId}\`);
+        const beat  = async ()=>{ try{ await update(hbRef, { lastSeenAt: Date.now(), updatedAt: Date.now() }); }catch(e){} };
+        beat(); setInterval(beat, 15000);
+      }catch(e){}
+    });
+  <\/script>
+</body>
+</html>`;
+      return tpl;
+    }
+
+    /* Dealers dropdown + map of friendly names */
+    const dealerNames = {}; // id -> name
     async function refreshDealers(){
       const sel = $('#dealerForDisplays'); sel.innerHTML='<option value="">Select dealership…</option>';
       let map={};
@@ -378,141 +788,8 @@
       Object.entries(map||{}).sort((a,b)=> (a[1]?.name||a[0]).localeCompare(b[1]?.name||b[0]) )
       .forEach(([id,v])=>{
         const opt=document.createElement('option'); opt.value=id; opt.textContent=v?.name||id; sel.appendChild(opt);
+        dealerNames[id] = v?.name || id;
       });
-    }
-
-    /* GitHub helpers (same keys as Settings) */
-    const LS_GH='iptv_admin_gh';
-    function ghCfg(){ return JSON.parse(localStorage.getItem(LS_GH)||'{}'); }
-    function ghHeaders(){
-      const t=ghCfg().token||''; const h={ 'Accept':'application/vnd.github+json','Content-Type':'application/json' };
-      if(t) h.Authorization=`Bearer ${t}`; return h;
-    }
-    function ghBase(){ const c=ghCfg(); if(!c.owner||!c.repo) throw new Error('GitHub owner/repo missing (set in Settings)'); return `https://api.github.com/repos/${c.owner}/${c.repo}`; }
-    async function ghFetch(url,opts={}){
-      const r=await fetch(url,{...opts,headers:{...ghHeaders(),...(opts.headers||{})}});
-      const tx=await r.text(); let d; try{ d=tx?JSON.parse(tx):{} }catch{ d={raw:tx} }
-      if(!r.ok) throw new Error(d?.message||r.statusText);
-      return d;
-    }
-    async function ghGetSha(path){
-      const c=ghCfg(); try{ const d=await ghFetch(`${ghBase()}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(c.branch||'main')}`); return d.sha||null; }catch(e){ return null; }
-    }
-    function b64(s){ return btoa(unescape(encodeURIComponent(s))); }
-    async function ghPutFile(path, content, message){
-      const c=ghCfg();
-      if(!c.token) throw new Error('GitHub token missing (set in Settings)');
-      const sha = await ghGetSha(path);
-      const body = { message: message||`add ${path}`, branch:c.branch||'main', content:b64(content), ...(sha?{sha}:{}) };
-      return ghFetch(`${ghBase()}/contents/${encodeURIComponent(path)}`, {method:'PUT', body:JSON.stringify(body)});
-    }
-
-    /* Build TV page (Displays/{id}.html) */
-    function buildDisplayHtml(id, dealershipName){
-      const cfg = firebaseConfig;
-      return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>IPTV Display — ${id}</title>
-<meta name="theme-color" content="#000"/>
-<style>
-  :root{--accent:#ff9500}
-  body{margin:0;background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
-  .hud{position:fixed;left:10px;top:10px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:8px 10px;font-size:12px;line-height:1.2}
-  .hud b{font-size:14px}
-  .flash{position:fixed;inset:0;pointer-events:none;background:rgba(255,149,0,.15);opacity:0;transition:opacity .25s}
-  .flash.show{opacity:1}
-  .center{position:fixed;inset:0;display:grid;place-items:center}
-  video{width:100vw;height:100vh;object-fit:contain;background:#000}
-  .msg{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.2);padding:6px 10px;border-radius:999px;font-weight:700}
-</style>
-</head>
-<body>
-<div class="hud">
-  <div><b>${dealershipName||'Dealership'}</b></div>
-  <div>ID: <span id="did">${id}</span></div>
-  <div>CH <span id="ch">1</span> · <span id="muted">Muted</span> · VOL <span id="vol">0</span>%</div>
-</div>
-<div class="flash" id="flash"></div>
-<div class="center">
-  <video id="vid" playsinline webkit-playsinline preload="auto" muted></video>
-  <div id="msg" class="msg" style="display:none">Tap to unmute</div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js"></script>
-<script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-  import { getDatabase, ref, onValue, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-
-  const app = initializeApp(${JSON.stringify(cfg)});
-  const db  = getDatabase(app);
-  const id = ${JSON.stringify(id)};
-  const didEl = document.getElementById('did');
-  const chEl  = document.getElementById('ch');
-  const volEl = document.getElementById('vol');
-  const mutedEl=document.getElementById('muted');
-  const flash = document.getElementById('flash');
-  const msg   = document.getElementById('msg');
-  const vid   = document.getElementById('vid');
-
-  // Fill with your channel URLs (HLS). Leave empty to just show black screen.
-  // Example: 1:'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'
-  const CHANNEL_URLS = { 1:'', 2:'', 3:'', 4:'', 5:'' };
-
-  let hls=null, curUrl='';
-
-  function setMuted(on){
-    vid.muted = !!on;
-    mutedEl.textContent = on ? 'Muted' : 'Unmuted';
-    msg.style.display = (!on && vid.muted) ? 'block' : 'none';
-  }
-  function setVolume(v){
-    const pct = Math.max(0,Math.min(100, v|0));
-    volEl.textContent = pct;
-    // browsers clamp effective volume when muted; keep real value anyway
-    vid.volume = pct/100;
-  }
-  function setChannel(ch){
-    chEl.textContent = ch;
-    const url = CHANNEL_URLS[ch] || '';
-    if(!url){ detach(); return; }
-    if(url === curUrl) return;
-    curUrl = url;
-    if(Hls.isSupported()){
-      if(hls) hls.destroy();
-      hls = new Hls({lowLatencyMode:true});
-      hls.loadSource(url); hls.attachMedia(vid);
-    }else if(vid.canPlayType('application/vnd.apple.mpegurl')){
-      vid.src = url;
-    }else{
-      detach();
-    }
-  }
-  function detach(){
-    if(hls){ hls.destroy(); hls=null; }
-    vid.removeAttribute('src'); try{ vid.load(); }catch{}
-  }
-
-  // Tap to toggle mute (mobile)
-  document.body.addEventListener('touchend', ()=>{ if(vid.muted){ vid.muted=false; msg.style.display='none'; } }, {passive:true});
-
-  let lastFlash=0;
-  onValue(ref(db,'displays/'+id), snap=>{
-    const v=snap.val()||{};
-    setChannel(v.channel||1);
-    setVolume(v.volume||0);
-    setMuted(v.muted!==false? true : false);
-    if(v.flashAt && v.flashAt!==lastFlash){
-      lastFlash=v.flashAt;
-      flash.classList.add('show');
-      setTimeout(()=>flash.classList.remove('show'),180);
-    }
-  });
-</script>
-</body>
-</html>`;
     }
 
     /* Displays logic */
@@ -521,7 +798,7 @@
     $('#displaysReload').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(did) watchDisplays(did,true); });
     $('#manageUsers').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true); location.href = `users.html?dealer=${encodeURIComponent(did)}`; });
 
-    const previewUrlFor = (id)=> `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(id)}.html`;
+    function previewUrlFor(id){ return `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(id)}.html`; }
 
     async function watchDisplays(did,forceOnce=false){
       const ul=$('#displayList'); ul.innerHTML='';
@@ -537,7 +814,8 @@
         ids.forEach(id=>{
           const st=map[id]||{};
           const online=(st.lastSeenAt && (now-st.lastSeenAt)<60000) || (st.timestamp && (now-st.timestamp)<120000);
-          const li=document.createElement('li'); li.className='item'; li.dataset.id=id;
+          const li=document.createElement('li'); li.className='item';
+          li.dataset.did = id;
           li.innerHTML=`
             <div class="col">
               <div class="split">
@@ -557,14 +835,14 @@
               </div>
               <button class="btn" data-id="${id}" data-muted="${!!st.muted}">${st.muted?'Unmute':'Mute'}</button>
               <button class="btn" data-preview="${id}">Preview</button>
+              <button class="btn" data-make="${id}">Create/Overwrite page</button>
               <button class="btn" data-flash="${id}">Ping</button>
-              <button class="btn" data-create="${id}">Create/Overwrite page</button>
               <button class="btn danger" data-remove="${id}">Remove</button>
             </div>`;
           ul.appendChild(li);
         });
 
-        // control bindings
+        // Channel/volume/mute
         ul.querySelectorAll('.chsel').forEach(el=>{
           el.addEventListener('change', async (e)=>{ const id=e.target.dataset.id; const ch=parseInt(e.target.value,10); await writeDisplay(id,{channel:ch}); });
         });
@@ -575,6 +853,52 @@
         ul.querySelectorAll('button[data-id]').forEach(el=>{
           el.addEventListener('click', async ()=>{ const id=el.dataset.id; const cur=el.getAttribute('data-muted')==='true'; await writeDisplay(id,{muted:!cur}); });
         });
+
+        // Preview toggle underneath
+        ul.querySelectorAll('button[data-preview]').forEach(el=>{
+          el.addEventListener('click', ()=>{
+            const id = el.dataset.preview;
+            const row = el.closest('.item');
+            const opened = row.querySelector('.sub.preview');
+            if(opened){ opened.remove(); return; }
+            // close other open previews
+            ul.querySelectorAll('.sub.preview').forEach(p=>p.remove());
+
+            const panel = document.createElement('div');
+            panel.className = 'sub preview';
+            const url = previewUrlFor(id) + '?embed=1';
+            panel.innerHTML = `
+              <div class="hstack" style="justify-content:space-between;margin-bottom:8px">
+                <div class="muted small">Preview: <code>${esc(url)}</code></div>
+                <div class="hstack">
+                  <button class="btn" data-open>Open in tab</button>
+                  <button class="btn" data-reload>Reload</button>
+                </div>
+              </div>
+              <div class="frame"><iframe src="${url}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
+            `;
+            row.appendChild(panel);
+            panel.querySelector('[data-open]').onclick = ()=> window.open(previewUrlFor(id),'_blank','noopener');
+            panel.querySelector('[data-reload]').onclick = ()=>{
+              const f = panel.querySelector('iframe'); f.src='about:blank'; setTimeout(()=> f.src = url, 20);
+            };
+            panel.scrollIntoView({behavior:'smooth', block:'center'});
+          });
+        });
+
+        // GitHub page create/overwrite
+        ul.querySelectorAll('button[data-make]').forEach(el=>{
+          el.addEventListener('click', async ()=>{
+            const id = el.dataset.make;
+            const name = dealerNames[$('#dealerForDisplays').value] || $('#dealerForDisplays').value || 'Dealership';
+            try{
+              await createOrOverwriteDisplayPage(id, name);
+              toast('Page updated on GitHub');
+            }catch(e){ console.error(e); toast('GitHub write failed', true); }
+          });
+        });
+
+        // Ping & remove
         ul.querySelectorAll('button[data-flash]').forEach(el=>{
           el.addEventListener('click', async ()=>{ const id=el.dataset.flash; await writeDisplay(id,{flashAt: Date.now()}); toast(`Pinged ${id}`); });
         });
@@ -583,69 +907,6 @@
             await remove(ref(db,`dealership/${did}/displays/${id}`)).catch(()=>{});
             await remove(ref(db,`displays/${id}`)).catch(()=>{});
             toast('Display removed'); });
-        });
-
-        // inline preview toggle
-        ul.querySelectorAll('button[data-preview]').forEach(el=>{
-          el.addEventListener('click', async ()=>{
-            const id = el.dataset.preview;
-            const row = el.closest('.item');
-            const opened = row.querySelector('.sub.preview');
-            if(opened){ opened.remove(); return; }
-
-            // build panel
-            const panel = document.createElement('div');
-            panel.className = 'sub preview';
-            panel.innerHTML = `
-              <h4>Preview</h4>
-              <div class="iframeWrap">
-                <span class="badge">● Previewing</span>
-                <iframe title="Preview ${esc(id)}" src="${withEmbed(previewUrlFor(id))}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>
-                <div class="overlayControls">
-                  <div class="cluster">
-                    <button class="circle" data-prev title="Previous">
-                      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
-                    </button>
-                    <button class="circle" data-next title="Next">
-                      <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
-                    </button>
-                    <button class="circle" data-mute title="Mute">
-                      <svg viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6l-5 4Z"/><path d="M16 9a3 3 0 0 1 0 6"/></svg>
-                    </button>
-                  </div>
-                  <div class="cluster">
-                    <input class="range" type="range" min="0" max="100" value="${Number((map[id]||{}).volume)||0}" data-vol>
-                    <span class="pct" data-voltxt>${Number((map[id]||{}).volume)||0}%</span>
-                  </div>
-                </div>
-              </div>`;
-            row.appendChild(panel);
-
-            const pctTxt = panel.querySelector('[data-voltxt]');
-            const volRange = panel.querySelector('[data-vol]');
-            const updPct = (v)=>{ pctTxt.textContent = `${v|0}%`; };
-
-            panel.addEventListener('click',(ev)=>{
-              const t=ev.target.closest('[data-prev],[data-next],[data-mute]');
-              if(!t) return;
-              if(t.hasAttribute('data-prev')) writeDisplay(id,{channel:Math.max(1,((map[id]?.channel||1)-1))});
-              else if(t.hasAttribute('data-next')) writeDisplay(id,{channel:((map[id]?.channel||1)+1)});
-              else if(t.hasAttribute('data-mute')) writeDisplay(id,{muted:!(map[id]?.muted)});
-            });
-            volRange.addEventListener('input', e=>{ const v=+e.target.value|0; updPct(v); });
-            volRange.addEventListener('change', e=>{ const v=+e.target.value|0; writeDisplay(id,{volume:v}); });
-          });
-        });
-
-        // per-row Create/Overwrite page
-        ul.querySelectorAll('button[data-create]').forEach(el=>{
-          el.addEventListener('click', async ()=>{
-            const id = el.dataset.create;
-            try{
-              await ensureTvPageOnGithub(id);
-              toast(`Page created for ${id}`);
-            }catch(e){ toast(e.message||'GitHub error',true); }
-          });
         });
       };
 
@@ -659,10 +920,9 @@
       try{
         const did=$('#dealerForDisplays').value;
         const snap=await get(ref(db,`displays/${id}`)); const cur=snap.val()||{};
-        const next={...patch,dealership:cur.dealership || did || null,timestamp:Date.now()};
-        await update(ref(db,`displays/${id}`),next);
+        await update(ref(db,`displays/${id}`),{...patch,dealership:cur.dealership || did || null,timestamp:Date.now()});
         toast(`${id}: updated`);
-      }catch(e){ toast('Write denied', true); }
+      }catch(e){ console.error(e); toast('Write denied', true); }
     }
 
     $('#bulkMute').addEventListener('click', ()=>bulkWrite({muted:true}));
@@ -675,54 +935,45 @@
         const s=await get(qRef); const map=s.val()||{}; const ids=Object.keys(map);
         for(const id of ids){ await writeDisplay(id,patch); }
         toast('Applied to all TVs');
-      }catch(e){ toast('Bulk failed',true); }
+      }catch(e){ console.error(e); toast('Bulk failed',true); }
     }
 
-    /* Add display + GitHub page */
+    /* Add display + create GitHub page */
     $('#addDisplayBtn').addEventListener('click', async ()=>{
       const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
+      const friendly = dealerNames[did] || did;
       let id=$('#newDisplayId').value.trim();
-
       if(!id){
-        const friendly=(await get(ref(db,`dealershipPublic/${did}`))).val()?.name||did;
         const pref=initialsFromName(friendly);
         const existing=await collectDisplays(did);
         let n=nextSuffix(existing,pref);
         id=`${pref}-${String(n).padStart(3,'0')}`;
       }
-
       try{
         await set(ref(db,`dealership/${did}/displays/${id}`),true);
         await update(ref(db,`displays/${id}`),{channel:1,volume:0,muted:true,dealership:did,timestamp:Date.now()});
         $('#newDisplayId').value='';
-        toast('Display added');
-
-        // create page on GitHub
+        // Create/overwrite GitHub file
         try{
-          await ensureTvPageOnGithub(id, did);
-          toast('GitHub page created');
-        }catch(e){ toast('Added (GitHub: '+(e.message||'error')+')',true); }
-
+          await createOrOverwriteDisplayPage(id, friendly);
+          toast('Display added + page created');
+        }catch(ghErr){
+          console.warn(ghErr);
+          toast('TV added (GitHub page not created — check Settings)', true);
+        }
         watchDisplays(did,true);
-      }catch(e){ toast('Add failed',true); }
+      }catch(e){ console.error(e); toast('Add failed',true); }
     });
 
-    async function ensureTvPageOnGithub(id, did){
-      const gh = ghCfg();
-      if(!gh || !gh.token || !gh.owner || !gh.repo) throw new Error('Configure GitHub in Settings first');
-      let dealerName = did || $('#dealerForDisplays').value || '';
-      if(dealerName){
-        const pub = await get(ref(db,'dealershipPublic/'+dealerName));
-        if(pub.exists()) dealerName = pub.val()?.name || dealerName;
-      }
-      const html = buildDisplayHtml(id, dealerName || '');
-      const path = `Displays/${id}.html`;
-      await ghPutFile(path, html, `feat(displays): add/update ${id}.html`);
+    async function createOrOverwriteDisplayPage(displayId, dealershipFriendlyName){
+      const html = buildPlayerPage(displayId, dealershipFriendlyName);
+      return upsertGhFile(`Displays/${displayId}.html`, html, `Add/Update display page ${displayId}`);
     }
 
     async function collectDisplays(did){ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const s=await get(qRef); return Object.keys(s.val()||{}); }
     function initialsFromName(name){ const raw=(name||'').trim(); if(!raw) return 'DS'; let parts=raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g)||raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g)||[]; let a=parts[0]||'', b=parts[1]||''; let p=(a? a[0]:'')+(b? b[0]:''); if(p.length<2 && a.length>=2) p=a.slice(0,2); return p.toUpperCase(); }
     function nextSuffix(list,pref){ let max=0; list.forEach(id=>{ const m=id.match(new RegExp('^'+pref+'-(\\d{3})$')); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; }}); return max+1; }
+
   </script>
 </body>
 </html>
