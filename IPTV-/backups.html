@@ -1,103 +1,106 @@
 <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
+  <title>BFA IPTV — Backups</title>
 
+  <!-- Unified header styles -->
+  <link rel="stylesheet" href="./assets/header.css">
 
-<style>
-:root{ --ok:#28a745; --warn:#ff9500; --err:#e13238; }
-body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
-.wrapper{max-width:1000px;margin:24px auto;padding:0 16px}
-.panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:16px}
-.row{display:flex;gap:12px;flex-wrap:wrap}
-.grow{flex:1 1 260px}
-.actions{display:flex;gap:8px;flex-wrap:wrap}
-.btn{appearance:none;border:1px solid var(--border);background:var(--tile);color:var(--fg);padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}
-.btn.primary{background:var(--accent);border-color:transparent;color:#000}
-.btn[disabled]{opacity:.5;cursor:not-allowed}
-.kpi{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center}
-.dot{width:10px;height:10px;border-radius:50%}
-.dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.err{background:var(--err)}
-.muted{color:var(--muted)}
-table{width:100%;border-collapse:separate;border-spacing:0}
-th,td{padding:10px;border-bottom:1px solid var(--border)}
-th{text-align:left;color:var(--muted);font-weight:600}
-tr:hover td{background:var(--tile)}
-.log{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;white-space:pre-wrap;background:var(--tile);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:220px;overflow:auto}
-</style>
+  <style>
+    :root{ --ok:#28a745; --warn:#ff9500; --err:#e13238; }
+    body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
+    .wrapper{max-width:1000px;margin:24px auto;padding:0 16px}
+    .panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:16px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .grow{flex:1 1 260px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{appearance:none;border:1px solid var(--border);background:var(--tile);color:var(--fg);padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}
+    .btn.primary{background:var(--accent);border-color:transparent;color:#000}
+    .btn[disabled]{opacity:.5;cursor:not-allowed}
+    .kpi{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center}
+    .dot{width:10px;height:10px;border-radius:50%}
+    .dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.err{background:var(--err)}
+    .muted{color:var(--muted)}
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    th,td{padding:10px;border-bottom:1px solid var(--border)}
+    th{text-align:left;color:var(--muted);font-weight:600}
+    tr:hover td{background:var(--tile)}
+    .log{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;white-space:pre-wrap;background:var(--tile);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:220px;overflow:auto}
+  </style>
 </head>
 <body>
-<div id="site-header"></div>
+  <!-- Header mount -->
+  <div id="site-header"></div>
 
+  <main class="wrapper" aria-live="polite">
+    <section class="panel" style="margin-bottom:16px">
+      <h1 style="margin:0 0 8px">Backups</h1>
+      <p class="muted" style="margin:0">One-click snapshot of <strong>Firebase Realtime Database</strong> + <strong>GitHub code</strong>. Files are saved in Firebase Storage with easy download buttons.</p>
+    </section>
 
-<main class="wrapper" aria-live="polite">
-<section class="panel" style="margin-bottom:16px">
-<h1 style="margin:0 0 8px">Backups</h1>
-<p class="muted" style="margin:0">One‑click snapshot of <strong>Firebase Realtime Database</strong> + <strong>GitHub code</strong>. Files are stored in Firebase Storage and can be downloaded anytime.</p>
-</section>
+    <!-- Status + Action Row -->
+    <section class="row" style="margin-bottom:16px">
+      <div class="panel grow">
+        <div class="kpi">
+          <span class="dot ok" id="authDot" title="Auth status"></span>
+          <div>
+            <div id="authText">Checking sign-in…</div>
+            <div class="muted" id="userText"></div>
+          </div>
+        </div>
+        <div class="actions" style="margin-top:12px">
+          <button class="btn" id="signinBtn" hidden>Sign in with Google</button>
+          <button class="btn" id="signoutBtn" hidden>Sign out</button>
+        </div>
+      </div>
 
+      <div class="panel grow">
+        <div class="kpi">
+          <span class="dot warn" id="bkDot" title="Backup status"></span>
+          <div>
+            <div id="bkText">Ready</div>
+            <div class="muted">Click <strong>Backup Now</strong> to create a new snapshot.</div>
+          </div>
+        </div>
+        <div class="actions" style="margin-top:12px">
+          <button class="btn primary" id="backupBtn">Backup Now</button>
+          <button class="btn" id="refreshBtn">Refresh List</button>
+        </div>
+      </div>
+    </section>
 
-<!-- Status + Action Row -->
-<section class="row" style="margin-bottom:16px">
-<div class="panel grow">
-<div class="kpi">
-<span class="dot ok" id="authDot" title="Auth status"></span>
-<div>
-<div id="authText">Checking sign‑in…</div>
-<div class="muted" id="userText"></div>
-</div>
-</div>
-<div class="actions" style="margin-top:12px">
-<button class="btn" id="signinBtn" hidden>Sign in with Google</button>
-<button class="btn" id="signoutBtn" hidden>Sign out</button>
-</div>
-</div>
+    <!-- Log -->
+    <section class="panel" style="margin-bottom:16px">
+      <strong>Activity</strong>
+      <div class="log" id="log"></div>
+    </section>
 
+    <!-- History table -->
+    <section class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+        <strong>Backup history</strong>
+        <span class="muted" id="countText">—</span>
+      </div>
+      <table aria-label="Previous backups">
+        <thead>
+          <tr>
+            <th scope="col">When</th>
+            <th scope="col">Files</th>
+            <th scope="col">Sizes</th>
+            <th scope="col">Download</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </section>
+  </main>
 
-<div class="panel grow">
-<div class="kpi">
-<span class="dot warn" id="bkDot" title="Backup status"></span>
-<div>
-<div id="bkText">Ready</div>
-<div class="muted">Click <strong>Backup Now</strong> to create a new snapshot.</div>
-</div>
-</div>
-<div class="actions" style="margin-top:12px">
-<button class="btn primary" id="backupBtn">Backup Now</button>
-<button class="btn" id="refreshBtn">Refresh List</button>
-</div>
-</div>
-</section>
-
-
-<!-- Log -->
-<section class="panel" style="margin-bottom:16px">
-<strong>Activity</strong>
-<div class="log" id="log"></div>
-</section>
-
-
-<!-- History table -->
-<section class="panel">
-<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
-<strong>Backup history</strong>
-<span class="muted" id="countText">—</span>
-</div>
-<table aria-label="Previous backups">
-<thead>
-<tr>
-<th scope="col">When</th>
-<th scope="col">Files</th>
-<th scope="col">Sizes</th>
-<th scope="col">Download</th>
-</tr>
-</thead>
-<tbody id="rows"></tbody>
-</table>
-</section>
-</main>
-
-
-<!-- Scripts -->
-<script src="./assets/header.js"></script>
-<script> injectHeader('site-header', { logo:'./icons/icon-192.png' }); </script>
-<script type="module" src="./assets/backups.js"></script>
+  <!-- Scripts (order matters) -->
+  <script src="./assets/header.js"></script>
+  <script>injectHeader('site-header', { logo:'./icons/icon-192.png' });</script>
+  <script type="module" src="./assets/backups.js"></script>
 </body>
 </html>
