@@ -11,15 +11,17 @@ const rows = document.getElementById('rows');
 const logEl = document.getElementById('log');
 
 export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+  authDomain: "iptv-bfa.firebaseapp.com",
+  databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+  projectId: "iptv-bfa",
+  storageBucket: "iptv-bfa.appspot.com", // bucket ID
+  messagingSenderId: "838790935867",
+  appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
 };
-export const CF_REGION = "us-central1"; // change if you deploy elsewhere
+
+export const CF_REGION = "us-central1";
+
 
 
 function log(msg){
