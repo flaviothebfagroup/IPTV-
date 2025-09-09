@@ -108,7 +108,7 @@
     .icbtn svg{width:20px;height:20px;stroke:currentColor;stroke-width:1.8;fill:none}
     .icbtn.primary{background:var(--accent);color:#000;border-color:var(--accent)}
 
-    /* Drawer — FIXED: own scroll, safe JSON */
+    /* Drawer — flex + own scroll + wrapped JSON */
     .drawer{position:fixed;right:0;top:0;height:100dvh;width:min(92vw,560px);max-width:100vw;background:var(--panel);
       border-left:1px solid var(--border);box-shadow:var(--shadow);transform:translateX(100%);transition:transform .25s ease;z-index:200;display:flex;flex-direction:column;overflow:hidden}
     .drawer.open{transform:translateX(0)}
@@ -127,6 +127,13 @@
       white-space:pre-wrap;word-break:break-word}
 
     .safety{display:flex;align-items:center;gap:8px;margin-top:6px}
+
+    /* Friendly names list */
+    .namesgrid{display:grid;gap:6px;margin-top:8px}
+    .namesgrid h4{margin:8px 0 2px;font-size:13px}
+    .namesgrid ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    @media (max-width:560px){.namesgrid ul{grid-template-columns:1fr}}
+    .namesgrid li{padding:6px 8px;border:1px solid var(--border);border-radius:10px;background:var(--panel);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
     /* Undo banner */
     .undo{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--border);
@@ -248,7 +255,7 @@
       </label>
       <div class="muted" style="margin-top:6px">
         Backups are saved locally in this browser (you can also download them). Restores require admin login.
-        An auto-backup is created **before** every restore.
+        An auto-backup is created <b>before</b> every restore.
       </div>
     </div>
 
@@ -347,7 +354,6 @@
     const db   = getDatabase(app);
 
     const $ = s => document.querySelector(s);
-    const $$ = s => document.querySelectorAll(s);
     function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
 
     /* Logos */
@@ -407,7 +413,7 @@
     document.getElementById('signOutBtn').addEventListener('click', ()=>signOut(auth));
 
     /* ===== Timeline storage ===== */
-    const LS_TIMELINE='iptv_backups_timeline_v5';
+    const LS_TIMELINE='iptv_backups_timeline_v6';
     const timeline = {
       list(){ try{return JSON.parse(localStorage.getItem(LS_TIMELINE)||'[]')}catch{return []} },
       save(arr){ localStorage.setItem(LS_TIMELINE, JSON.stringify(arr)); },
@@ -457,20 +463,23 @@
       box.querySelectorAll('[data-dl]').forEach(b=> b.onclick=()=>{ const it=timeline.get(b.getAttribute('data-dl')); downloadFile(it.filename, JSON.stringify(it.payload,null,2)); });
       box.querySelectorAll('[data-res]').forEach(b=> b.onclick=async ()=>{ const it=timeline.get(b.getAttribute('data-res')); confirmAndRestore(it); });
     }
-    $('#searchInput').addEventListener('input', render);
+    document.getElementById('searchInput').addEventListener('input', render);
 
     function downloadFile(name, text){
       const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));
       a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1500);
     }
 
-    /* Drawer preview */
-    const drawer=$('#drawer'), drawerPre=$('#drawerPre'), drawerTitle=$('#drawerTitle');
-    const sumList=$('#sumList'), diffList=$('#diffList');
-    $('#drawerClose').onclick=()=> drawer.classList.remove('open');
-    $('#drawerDownload').onclick=()=>{ const it=currentPreview; if(it) downloadFile(it.filename, JSON.stringify(it.payload,null,2)); };
-    $('#drawerRestore').onclick=()=>{ const it=currentPreview; if(it) confirmAndRestore(it); };
-    $('#drawerDelete').onclick=()=>{ const it=currentPreview; if(!it) return; if(confirm('Delete this backup from this browser?')){ timeline.remove(it.id); drawer.classList.remove('open'); render(); toast('Deleted'); } };
+    /* Drawer preview + friendly names */
+    const drawer=document.getElementById('drawer'),
+          drawerPre=document.getElementById('drawerPre'),
+          drawerTitle=document.getElementById('drawerTitle'),
+          sumList=document.getElementById('sumList'),
+          diffList=document.getElementById('diffList');
+    document.getElementById('drawerClose').onclick=()=> drawer.classList.remove('open');
+    document.getElementById('drawerDownload').onclick=()=>{ const it=currentPreview; if(it) downloadFile(it.filename, JSON.stringify(it.payload,null,2)); };
+    document.getElementById('drawerRestore').onclick=()=>{ const it=currentPreview; if(it) confirmAndRestore(it); };
+    document.getElementById('drawerDelete').onclick=()=>{ const it=currentPreview; if(!it) return; if(confirm('Delete this backup from this browser?')){ timeline.remove(it.id); drawer.classList.remove('open'); render(); toast('Deleted'); } };
     let currentPreview=null;
 
     function countItems(obj){
@@ -479,38 +488,106 @@
       if(typeof obj==='object') return Object.keys(obj).length;
       return 1;
     }
+
+    function listNamesForSection(key, data, limit=16){
+      const out=[];
+      const obj = data?.[key];
+      if(!obj || typeof obj!=='object') return out;
+
+      const pick = (o, keys)=> keys.map(k=>o?.[k]).find(Boolean);
+      const safe = v => (v==null ? '' : String(v)).trim();
+
+      if(key==='user'){
+        for(const [uid, u] of Object.entries(obj)){
+          const name = safe(pick(u, ['displayName','name','email'])) || uid;
+          out.push(name);
+          if(out.length>=limit) break;
+        }
+      } else if(key==='dealershipPublic'){
+        for(const [code, d] of Object.entries(obj)){
+          const name = safe(pick(d, ['name','NAME'])) || code;
+          out.push(name);
+          if(out.length>=limit) break;
+        }
+      } else if(key==='dealership'){
+        for(const code of Object.keys(obj)){
+          out.push(code);
+          if(out.length>=limit) break;
+        }
+      } else if(key==='displays'){
+        for(const [id, d] of Object.entries(obj)){
+          const name = safe(pick(d, ['name'])) || id;
+          const hint = safe(pick(d, ['dealer','location']));
+          out.push(hint ? `${name} — ${hint}` : name);
+          if(out.length>=limit) break;
+        }
+      }
+      return out;
+    }
+
     function friendlySummary(payload){
-      const d=payload?.data||{};
-      const rows=[];
-      const map=[
+      const d = payload?.data || {};
+      const sections = [
         ['dealershipPublic','Dealer profiles'],
         ['dealership','Private dealer data'],
         ['displays','Displays'],
         ['user','Users']
       ];
-      for(const [key,label] of map){
+      const rows = [];
+      const lists = [];
+
+      for(const [key,label] of sections){
         if(d[key]!==undefined){
-          const c=countItems(d[key]); rows.push([label,c]);
+          const c = countItems(d[key]);
+          rows.push([label,c]);
+          const items = listNamesForSection(key, d);
+          if(items.length){ lists.push({label, items}); }
         }
       }
-      return rows;
+      return { rows, lists };
     }
+
     function renderSummary(payload){
-      const rows=friendlySummary(payload);
-      sumList.innerHTML = rows.map(([label,c])=>`<div class="sumrow"><span>${label}</span><b>${c}</b></div>`).join('') || '<div class="muted">No sections.</div>';
+      const {rows, lists} = friendlySummary(payload);
+
+      sumList.innerHTML = rows.map(([label,c]) =>
+        `<div class="sumrow"><span>${label}</span><b>${c}</b></div>`
+      ).join('') || '<div class="muted">No sections.</div>';
+
       const when = new Date(payload.exportedAt||Date.now());
       const nice = when.toLocaleString();
-      const note = payload.note? ` Note: “${String(payload.note).slice(0,140)}”.` : '';
-      const info = document.createElement('div'); info.className='muted'; info.style.margin='6px 0 0'; info.textContent = `Saved on ${nice}.${note}`;
+      const note = payload.note ? ` Note: “${String(payload.note).slice(0,140)}”.` : '';
+      const info = document.createElement('div');
+      info.className = 'muted';
+      info.style.margin = '6px 0 0';
+      info.textContent = `Saved on ${nice}.${note}`;
       sumList.append(info);
-      drawerPre.textContent = JSON.stringify(payload,null,2).slice(0,20000);
+
+      if(lists.length){
+        const box = document.createElement('div');
+        box.className = 'namesgrid';
+        for(const {label, items} of lists){
+          const h = document.createElement('h4');
+          h.textContent = `${label} (first ${items.length})`;
+          const ul = document.createElement('ul');
+          items.forEach(name=>{
+            const li = document.createElement('li'); li.textContent = name; ul.appendChild(li);
+          });
+          box.appendChild(h);
+          box.appendChild(ul);
+        }
+        sumList.append(box);
+      }
+
+      drawerPre.textContent = JSON.stringify(payload, null, 2).slice(0, 20000);
     }
+
     function openPreview(id){
       const it=timeline.get(id); if(!it) return;
       currentPreview=it; drawerTitle.textContent=`Preview — ${it.filename}`;
       renderSummary(it.payload); diffList.innerHTML='Click Compare…';
       drawer.classList.add('open');
-      $('#drawerRestore').style.display='inline-flex';
+      document.getElementById('drawerRestore').style.display='inline-flex';
     }
 
     async function compareWithCurrent(payload){
@@ -528,7 +605,7 @@
       }).join('');
       diffList.innerHTML = rows || '<div class="muted">No sections.</div>';
     }
-    $('#btnCompare').onclick=()=>{ if(currentPreview) compareWithCurrent(currentPreview.payload); };
+    document.getElementById('btnCompare').onclick=()=>{ if(currentPreview) compareWithCurrent(currentPreview.payload); };
 
     /* Snapshot helpers */
     function nowStamp(){ const d=new Date(); const z=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}`; }
@@ -549,12 +626,12 @@
 
     /* One-Click Backup (preview first) */
     async function doSnapshot(){
-      const payload = await fetchSnapshot($('#noteInput').value||null);
+      const payload = await fetchSnapshot(document.getElementById('noteInput').value||null);
       const id = crypto.randomUUID();
       const fn = `bfa-backup-${nowStamp()}.json`;
       const rec = { id, ts:Date.now(), note:payload.note||'', sections:payload.sections, filename:fn, payload };
       currentPreview=rec; drawerTitle.textContent=`Preview — ${fn}`; renderSummary(payload); drawer.classList.add('open');
-      $('#drawerRestore').style.display='none';
+      document.getElementById('drawerRestore').style.display='none';
       if(confirm('Save this backup locally and download the file?')){
         timeline.add(rec); render(); downloadFile(fn, JSON.stringify(payload,null,2)); toast('Backup saved locally + downloaded');
       }
@@ -563,7 +640,7 @@
     /* Auto-backup before restore + Undo + Safety mode */
     let lastAutoId=null;
     async function confirmAndRestore(it){ if(!it) return;
-      if($('#safetyToggle').checked){
+      if(document.getElementById('safetyToggle').checked){
         const code = prompt('Type RESTORE to confirm:');
         if(code!=="RESTORE") return toast('Cancelled', true);
       }else{
@@ -589,8 +666,8 @@
       }catch(e){ console.error(e); toast('Restore failed — check admin permissions / rules', true); }
     }
 
-    function showUndo(){ const b=$('#undoBanner'); b.classList.add('show'); setTimeout(()=>b.classList.remove('show'), 12000); }
-    $('#btnUndo').onclick=async()=>{ if(!lastAutoId) return; const rec = timeline.get(lastAutoId); if(!rec) return toast('Nothing to undo', true); try{
+    function showUndo(){ const b=document.getElementById('undoBanner'); b.classList.add('show'); setTimeout(()=>b.classList.remove('show'), 12000); }
+    document.getElementById('btnUndo').onclick=async()=>{ if(!lastAutoId) return; const rec = timeline.get(lastAutoId); if(!rec) return toast('Nothing to undo', true); try{
         const data=rec.payload.data||{}; const writes=[];
         if(data.dealershipPublic!==undefined) writes.push(set(ref(db,'dealershipPublic'), data.dealershipPublic));
         if(data.dealership!==undefined)      writes.push(set(ref(db,'dealership'), data.dealership));
@@ -603,21 +680,21 @@
     };
 
     /* Add from file (preview first) */
-    $('#btnAddFromFile').onclick=()=>$('#fileAdd').click();
-    $('#fileAdd').addEventListener('change', async (e)=>{
+    document.getElementById('btnAddFromFile').onclick=()=>document.getElementById('fileAdd').click();
+    document.getElementById('fileAdd').addEventListener('change', async (e)=>{
       const f=e.target.files?.[0]; if(!f) return;
       try{
         const txt=await f.text(); const payload=JSON.parse(txt);
         const id=crypto.randomUUID(); const ts=Date.now();
         const rec={id, ts, note: payload.note||'', sections:payload.sections||[], filename:f.name||`import-${nowStamp()}.json`, payload};
-        currentPreview=rec; drawerTitle.textContent=`Preview — ${rec.filename}`; renderSummary(payload); drawer.classList.add('open'); $('#drawerRestore').style.display='none';
+        currentPreview=rec; drawerTitle.textContent=`Preview — ${rec.filename}`; renderSummary(payload); drawer.classList.add('open'); document.getElementById('drawerRestore').style.display='none';
         if(confirm('Add this file to the timeline?')){ timeline.add(rec); render(); toast('Added to timeline'); }
       }catch{ toast('Invalid JSON',true) }
     });
 
     /* Buttons */
-    $('#btnBackup').onclick=()=>doSnapshot();
-    $('#btnClearAll').onclick=()=>{ if(confirm('Remove all backups stored in this browser?')){ localStorage.removeItem(LS_TIMELINE); render(); toast('Cleared'); } };
+    document.getElementById('btnBackup').onclick=()=>doSnapshot();
+    document.getElementById('btnClearAll').onclick=()=>{ if(confirm('Remove all backups stored in this browser?')){ localStorage.removeItem(LS_TIMELINE); render(); toast('Cleared'); } };
 
     /* First paint */
     render();
