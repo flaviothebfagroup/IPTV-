@@ -19,9 +19,11 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const functions = getFunctions(app, CF_REGION);
 
-// Cloud Functions (callable)
-const backupNow = httpsCallable(functions, "backupNow");
-const listBackups = httpsCallable(functions, "listBackups");
+// Callables
+const backupNow         = httpsCallable(functions, "backupNow");
+const listBackups       = httpsCallable(functions, "listBackups");
+const restoreFromBackup = httpsCallable(functions, "restoreFromBackup");
+const restoreFromJson   = httpsCallable(functions, "restoreFromJson");
 
 // UI elements
 const authDot   = document.getElementById("authDot");
@@ -35,6 +37,11 @@ const backupBtn = document.getElementById("backupBtn");
 const refreshBtn= document.getElementById("refreshBtn");
 const rows      = document.getElementById("rows");
 const logEl     = document.getElementById("log");
+const restoreSelectedBtn = document.getElementById("restoreFromSelectedBtn");
+const restoreFromFileBtn = document.getElementById("restoreFromFileBtn");
+const jsonFileInput      = document.getElementById("jsonFile");
+
+let selectedBackupId = null;
 
 function log(msg){
   const time = new Date().toLocaleTimeString();
@@ -43,7 +50,7 @@ function log(msg){
 }
 
 function setBusy(b){
-  backupBtn.disabled = b; refreshBtn.disabled = b;
+  backupBtn.disabled = b; refreshBtn.disabled = b; restoreSelectedBtn.disabled = b || !selectedBackupId;
   bkDot.className = "dot " + (b ? "warn" : "ok");
   bkText.textContent = b ? "Working…" : "Ready";
 }
@@ -82,13 +89,42 @@ backupBtn?.addEventListener("click", async () => {
   }catch(e){
     console.error(e);
     alert(e.message || "Backup failed");
-    log("Backup failed");
-  }finally{
-    setBusy(false);
-  }
+    log("Error: " + (e.message || e));
+  }finally{ setBusy(false); }
 });
 
 refreshBtn?.addEventListener("click", loadBackups);
+
+// Restore selected
+restoreSelectedBtn?.addEventListener("click", async () => {
+  if (!selectedBackupId) return;
+  if (!confirm(`Restore backup ${selectedBackupId}?\nThis overwrites the entire database.`)) return;
+  setBusy(true); log(`Restoring from backup ${selectedBackupId}…`);
+  try{
+    await restoreFromBackup({ id: selectedBackupId });
+    log("Restore complete.");
+    alert("Restore complete.");
+  }catch(e){
+    console.error(e); log("Error: " + (e.message || e)); alert(e.message || "Restore failed");
+  }finally{ setBusy(false); }
+});
+
+// Restore from JSON file
+restoreFromFileBtn?.addEventListener("click", () => jsonFileInput.click());
+jsonFileInput?.addEventListener("change", async (ev) => {
+  const file = ev.target.files?.[0];
+  if (!file) return;
+  const text = await file.text();
+  if (!confirm("Restore from selected JSON file?\nThis overwrites the entire database.")) return;
+  setBusy(true); log("Restoring from uploaded JSON…");
+  try{
+    await restoreFromJson({ json: text }); // note: ~10MB payload limit
+    log("Restore complete.");
+    alert("Restore complete.");
+  }catch(e){
+    console.error(e); log("Error: " + (e.message || e)); alert(e.message || "Restore failed");
+  }finally{ setBusy(false); ev.target.value = ""; }
+});
 
 async function loadBackups(){
   setBusy(true);
@@ -115,18 +151,26 @@ async function loadBackups(){
             <a class="btn" href="${b.files.github?.url}" target="_blank" rel="noreferrer">Code</a>
             <a class="btn" href="${b.files.manifest?.url}" target="_blank" rel="noreferrer">Info</a>
           </div>
+        </td>
+        <td>
+          <input type="radio" name="pick" value="${b.id}" aria-label="Select ${b.id}">
         </td>`;
       rows.appendChild(tr);
     }
     if (!items.length){
-      rows.innerHTML = `<tr><td colspan="4" class="muted">No backups yet.</td></tr>`;
+      rows.innerHTML = `<tr><td colspan="5" class="muted">No backups yet.</td></tr>`;
     }
+    rows.addEventListener("change", (e) => {
+      const r = e.target;
+      if (r && r.name === "pick"){
+        selectedBackupId = r.value;
+        restoreSelectedBtn.disabled = false;
+      }
+    }, { once: true });
   }catch(e){
     console.error(e);
     alert(e.message || "Failed to load backups");
-  }finally{
-    setBusy(false);
-  }
+  }finally{ setBusy(false); }
 }
 
 function fmtSize(n){
