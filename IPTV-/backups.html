@@ -1,244 +1,431 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
-<title>BFA IPTV — Backups (Simple)</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
+  <title>BFA IPTV — Backups</title>
 
-<style>
-  :root{
-    --accent:#ff9500; --fg:#111; --muted:#6e6e73; --bg:#fff;
-    --panel:#fff; --tile:#f7f7f9; --border:rgba(0,0,0,.16); --border2:rgba(0,0,0,.12);
-  }
-  [data-theme="dark"]{
-    --bg:#0b0b0c; --fg:#fff; --muted:#9a9aa0; --panel:#121214; --tile:#17171a; --border:rgba(255,255,255,.14); --border2:rgba(255,255,255,.18);
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
-  a{color:inherit;text-decoration:none}
+  <!-- PWA (optional) -->
+  <link rel="manifest" href="/IPTV-/manifest.webmanifest"/>
+  <meta name="theme-color" content="#ffffff"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png"/>
+  <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png"/>
 
-  /* ===== NAVBAR (matches last layout) ===== */
-  .topbar{position:sticky;top:0;z-index:100;background:var(--panel);border-bottom:1px solid var(--border);
-          padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
-  .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;position:relative}
-  .brand{display:flex;align-items:center;gap:10px}
-  .logo{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:#fff center/cover no-repeat}
-  .logotxt{font-weight:900;letter-spacing:.2px}
+  <style>
+    /* =========================================================
+       Tokens
+    ========================================================= */
+    :root{
+      --accent:#ff9500;
+      --fg:#111; --muted:#6e6e73; --bg:#ffffff;
+      --panel:#fff; --tile:#f6f6f8; --tileHover:#fff7ea;
+      --border:rgba(0,0,0,.14); --borderStrong:rgba(0,0,0,.28);
+      --shadow:0 14px 36px rgba(0,0,0,.08);
+    }
+    body.dark{
+      --bg:#0b0b0c; --fg:#f7f7f8; --muted:#a1a1a8;
+      --panel:#151517; --tile:#1a1a1d; --tileHover:#221e18;
+      --border:rgba(255,255,255,.16); --borderStrong:rgba(255,255,255,.36);
+      --shadow:0 18px 48px rgba(0,0,0,.45);
+    }
 
-  .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto}
-  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;
-        color:inherit;font-weight:800;font-size:14px;line-height:1;white-space:nowrap}
-  .pill:hover{border-color:var(--accent)}
-  .pill.is-active{outline:2px solid var(--accent)}
-  .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--fg);
+      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
+    a{color:inherit;text-decoration:none}
 
-  .actions{display:flex;gap:8px;margin-left:auto;align-items:center}
-  .round{height:36px;min-width:36px;padding:0 12px;border-radius:9999px;border:1px solid var(--border);background:var(--panel);font-weight:800;cursor:pointer;color:var(--fg)}
-  .round:hover{border-color:var(--accent)}
-  .email{max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--panel);border:1px solid var(--border);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    /* =========================================================
+       Topbar — identical language to Home
+    ========================================================= */
+    .topbar{position:sticky;top:0;z-index:100;background:var(--panel);
+      border-bottom:1px solid var(--border);
+      padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
+    .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;position:relative}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:#fff center/cover no-repeat}
+    .logotxt{font-weight:900;letter-spacing:.2px}
 
-  #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:44px;min-width:44px;padding:0}
-  #hamburger .ic{width:24px;height:24px;stroke:var(--accent);stroke-width:2.25}
-  @media (max-width:920px){.nav{display:none}#hamburger{display:inline-flex;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}.actions{margin-left:0;padding-right:48px}.email{display:none}}
+    .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;color:inherit;font-weight:800;font-size:14px;line-height:1;white-space:nowrap}
+    .pill:hover{border-color:var(--accent)}
+    .pill.is-active{outline:2px solid var(--accent)}
+    .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
 
-  .sheet{position:fixed;inset:0;z-index:120;display:none}
-  .sheet.open{display:block}
-  .sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
-  .panel{position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:var(--panel);border-left:1px solid var(--border);box-shadow:0 8px 28px rgba(0,0,0,.1);padding:16px;display:flex;flex-direction:column;gap:14px}
-  .panel .row{display:flex;align-items:center;justify-content:space-between}
-  .panel nav{display:grid;gap:8px}
-  .panel nav a{justify-content:flex-start}
+    /* More (+) dropdown */
+    .more{position:relative}
+    #moreBtn .plus{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
+    #moreMenu{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
+      border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none}
+    #moreMenu.open{display:block}
+    #moreMenu a{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px}
+    #moreMenu a:hover{background:var(--tileHover)}
+    #moreMenu a.is-active{outline:2px solid var(--accent)}
+    #moreMenu .ic{width:18px;height:18px;stroke-width:1.9}
 
-  /* ===== PAGE ===== */
-  .wrap{max-width:1100px;margin:0 auto;padding:18px}
-  .card{background:var(--panel);border:1px solid var(--border2);border-radius:18px;padding:16px;box-shadow:0 14px 36px rgba(0,0,0,.06);margin-bottom:12px}
-  .muted{color:var(--muted);font-size:12px}
-  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .input{height:44px;padding:0 14px;border:1px solid var(--border2);border-radius:12px;background:var(--panel);color:var(--fg);font-size:16px}
-  .btn{height:44px;padding:0 18px;border-radius:9999px;border:1px solid var(--border2);background:var(--panel);color:var(--fg);font-weight:900;cursor:pointer}
-  .btn:hover{border-color:var(--accent)}
-  .btnSolid{height:44px;padding:0 18px;border-radius:9999px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
-  .btnDanger{height:44px;padding:0 18px;border-radius:9999px;border:1px solid #ff6b6b;background:transparent;color:#ff6b6b;font-weight:900;cursor:pointer}
+    /* Actions */
+    .actions{display:flex;gap:8px;align-items:center}
+    .email{max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);
+      border:1px solid var(--border);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .chip{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1.5px solid var(--borderStrong);
+      background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+    .chip:hover{border-color:var(--accent)}
+    .chip .ic{width:18px;height:18px;stroke-width:2}
+    .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
+    #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:42px;min-width:42px;padding:0;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
+    #hamburger .ic{width:22px;height:22px;stroke:var(--accent);stroke-width:2.35}
 
-  /* ===== SIMPLE HEADER CONTROLS ===== */
-  .hero{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media (max-width:900px){.hero{grid-template-columns:1fr}}
-  .big{font-size:18px}
+    @media (max-width:920px){
+      .nav{display:none}
+      #hamburger{display:inline-flex}
+      .email{display:none}
+    }
 
-  /* ===== TIMELINE ===== */
-  .timeline{display:grid;gap:10px}
-  .bcard{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border:1px solid var(--border2);border-radius:16px;padding:14px;background:var(--panel)}
-  .bmeta{display:flex;flex-direction:column;gap:6px}
-  .btitle{font-weight:900}
-  .bnote{font-size:13px;color:var(--muted)}
-  .bicons{display:flex;gap:8px;align-items:center}
-  .icbtn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--border2);background:var(--panel);cursor:pointer;font-weight:900}
-  .icbtn svg{width:22px;height:22px}
-  .icbtn.restore{background:var(--accent);color:#000;border-color:transparent}
-  .pillTag{border:1px solid var(--border2);border-radius:9999px;padding:6px 10px;font-size:12px;color:var(--muted)}
+    /* Mobile sheet */
+    #sheet{position:fixed;inset:0;z-index:120;display:none}
+    #sheet.open{display:block}
+    #sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
+    .panel{position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:var(--panel);border-left:1px solid var(--border);
+      box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px}
+    .panel .row{display:flex;align-items:center;justify-content:space-between}
+    .panel nav{display:grid;gap:8px}
+    .panel nav a{justify-content:flex-start}
 
-  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;z-index:99}
-  .toast.show{opacity:1} .toast.err{background:#ff453a;color:#fff}
-</style>
+    /* =========================================================
+       Content
+    ========================================================= */
+    .wrap{max-width:1100px;margin:0 auto;padding:18px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+    .muted{color:var(--muted);font-size:12px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+    .input{height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-size:16px}
+    .btn{height:44px;padding:0 18px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:900;cursor:pointer}
+    .btn:hover{border-color:var(--accent)}
+    .btnSolid{height:44px;padding:0 18px;border-radius:9999px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
+    .btnDanger{height:44px;padding:0 18px;border-radius:9999px;border:1px solid #ff453a;background:transparent;color:#ff453a;font-weight:900;cursor:pointer}
+
+    /* Timeline */
+    .timeline{display:grid;gap:12px}
+    .bcard{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border:1px solid var(--border);border-radius:16px;padding:14px;background:var(--tile)}
+    .bmeta{display:flex;flex-direction:column;gap:6px}
+    .btitle{font-weight:900}
+    .bnote{font-size:13px;color:var(--muted)}
+    .bicons{display:flex;gap:8px;align-items:center}
+    .icbtn{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--panel);cursor:pointer;font-weight:900}
+    .icbtn svg{width:20px;height:20px;stroke:currentColor;stroke-width:1.8;fill:none}
+    .icbtn.primary{background:var(--accent);color:#000;border-color:var(--accent)}
+
+    /* Minimal icons (elegant, thin) */
+    .i-restore{stroke-linecap:round;stroke-linejoin:round}
+    .i-download{stroke-linecap:round;stroke-linejoin:round}
+    .i-delete{stroke-linecap:round;stroke-linejoin:round}
+    .i-eye{stroke-linecap:round;stroke-linejoin:round}
+
+    /* Drawer preview */
+    .drawer{position:fixed;right:0;top:0;height:100%;width:min(90vw,560px);background:var(--panel);border-left:1px solid var(--border);box-shadow:var(--shadow);transform:translateX(100%);transition:transform .25s ease;z-index:200;display:flex;flex-direction:column}
+    .drawer.open{transform:translateX(0)}
+    .dhead{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)}
+    .dtitle{font-weight:900}
+    .dmain{padding:14px;display:grid;gap:10px}
+    .pre{font-family:ui-monospace, SFMono-Regular, Menlo, monospace;background:var(--tile);border:1px solid var(--border);border-radius:12px;padding:12px;overflow:auto;max-height:60vh;font-size:12px}
+
+    /* Toast */
+    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
+    .toast.show{opacity:1}
+    .toast.err{background:#ff453a;color:#fff}
+  </style>
 </head>
 <body>
-<header class="topbar">
-  <div class="toprow">
-    <a class="brand" href="home.html"><span class="logo" id="brandLogo"></span><span class="logotxt">BFA IPTV</span></a>
-    <nav class="nav" aria-label="Primary">
-      <a class="pill" href="home.html" data-page="home"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
-      <a class="pill" href="dealerships.html" data-page="dealerships"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
-      <a class="pill" href="displays.html" data-page="displays"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
-      <a class="pill" href="users.html" data-page="users"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
-      <a class="pill" href="links.html" data-page="links"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
-      <a class="pill" href="analytics.html" data-page="analytics"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
-      <a class="pill" href="schedule.html" data-page="schedule"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
-      <a class="pill is-active" href="backups.html" data-page="backups"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
-      <a class="pill" href="more.html" data-page="more"><svg class="ic" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg> More</a>
-    </nav>
-    <div class="actions">
-      <span id="adminEmail" class="email"></span>
-      <button id="themeBtn" class="round" title="Theme">Theme</button>
-      <button id="logoutBtn" class="round">Logout</button>
-      <button id="hamburger" aria-label="Menu"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
-    </div>
-  </div>
+  <!-- NAVBAR (Home-style) -->
+  <header class="topbar">
+    <div class="toprow">
+      <a class="brand" href="home.html"><span class="logo" id="brandLogo"></span><span class="logotxt">BFA IPTV</span></a>
 
-  <div id="sheet" class="sheet" aria-hidden="true">
-    <div class="back"></div>
-    <aside class="panel" role="dialog" aria-modal="true" aria-label="Menu">
-      <div class="row">
-        <div class="brand"><span class="logo" id="brandLogoM"></span><span class="logotxt">BFA IPTV</span></div>
-        <button id="closeSheet" class="round" aria-label="Close"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-      </div>
-      <nav aria-label="Mobile">
-        <a class="pill" href="home.html" data-page="home">Home</a>
-        <a class="pill" href="dealerships.html" data-page="dealerships">Dealerships</a>
-        <a class="pill" href="displays.html" data-page="displays">Displays</a>
-        <a class="pill" href="users.html" data-page="users">Users</a>
-        <a class="pill" href="links.html" data-page="links">Links</a>
-        <a class="pill" href="analytics.html" data-page="analytics">Analytics</a>
-        <a class="pill" href="schedule.html" data-page="schedule">Schedule</a>
-        <a class="pill is-active" href="backups.html" data-page="backups">Backups</a>
-        <a class="pill" href="more.html" data-page="more">More</a>
-        <button id="logoutBtnM" class="round" style="margin-top:8px">Logout</button>
+      <nav class="nav" aria-label="Primary">
+        <a class="pill" href="home.html" data-page="home">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home
+        </a>
+        <a class="pill" href="dealerships.html" data-page="dealerships">
+          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships
+        </a>
+        <a class="pill" href="displays.html" data-page="displays">
+          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays
+        </a>
+        <a class="pill" href="users.html" data-page="users">
+          <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users
+        </a>
+        <div class="more">
+          <a id="moreBtn" class="pill" href="javascript:void(0)">
+            <svg class="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> More
+          </a>
+          <div id="moreMenu" role="menu" aria-label="More">
+            <a href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
+            <a href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
+            <a href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
+            <a href="backups.html" class="is-active"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
+            <a href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
+            <a href="settings.html">
+              <svg class="ic" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"/>
+              </svg>
+              Settings
+            </a>
+          </div>
+        </div>
       </nav>
-    </aside>
-  </div>
-</header>
 
-<div class="wrap">
-  <div class="card">
-    <div class="hero">
+      <div class="actions">
+        <span id="adminEmail" class="email"></span>
+        <button id="themeBtn" class="chip" title="Light/Dark">
+          <svg id="themeIcon" class="ic" viewBox="0 0 24 24"></svg>
+          Theme
+        </button>
+        <button id="signOutBtn" class="chip">Sign out</button>
+        <button id="hamburger" class="chip" aria-label="Menu">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div id="sheet" aria-hidden="true">
+      <div class="back"></div>
+      <aside class="panel" role="dialog" aria-modal="true" aria-label="Menu">
+        <div class="row">
+          <div class="brand"><span class="logo" id="brandLogoM"></span><span class="logotxt">BFA IPTV</span></div>
+          <button id="closeSheet" class="chip" aria-label="Close"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+        <nav>
+          <a class="pill" href="home.html">Home</a>
+          <a class="pill" href="dealerships.html">Dealerships</a>
+          <a class="pill" href="displays.html">Displays</a>
+          <a class="pill" href="users.html">Users</a>
+          <div class="muted" style="padding:8px 2px 0">More</div>
+          <a class="pill" href="links.html">Links</a>
+          <a class="pill" href="analytics.html">Analytics</a>
+          <a class="pill" href="schedule.html">Schedule</a>
+          <a class="pill is-active" href="backups.html">Backups</a>
+          <a class="pill" href="remote-control.html">Remote</a>
+          <a class="pill" href="settings.html">Settings</a>
+          <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
+        </nav>
+      </aside>
+    </div>
+  </header>
+
+  <!-- ===================================================== -->
+  <div class="wrap">
+    <!-- Quick actions -->
+    <div class="card" style="margin-bottom:12px">
+      <h2 style="margin:0 0 10px">Backups — Simple</h2>
       <div class="row">
-        <button id="btnQuickBackup" class="btnSolid big">🟠 One‑Click Backup</button>
+        <button id="btnBackup" class="btnSolid">🟠 One‑Click Backup</button>
         <input id="noteInput" class="input" placeholder="Note (e.g., Before migration)"/>
         <input id="fileAdd" type="file" accept=".json" style="display:none"/>
-        <button id="btnAddFromFile" class="btn">➕ Add from .json</button>
+        <button id="btnAddFromFile" class="btn">＋ Add from .json</button>
+        <button id="btnExportAll" class="btn">⤓ Export all (.zip soon)</button>
+        <button id="btnClearAll" class="btnDanger">🗑️ Clear local</button>
       </div>
-      <div class="row" style="justify-content:flex-end">
-        <button id="btnSimple" class="btn">👴 Simple Mode</button>
-        <button id="btnAdvanced" class="btn">👨‍💻 Advanced</button>
-      </div>
+      <div class="muted" style="margin-top:8px">Backups are saved locally in this browser (and can also be downloaded). Restores require admin login and confirmation.</div>
     </div>
-    <div class="muted" style="margin-top:8px">Backups are saved locally in this browser (and can also be downloaded). Restores require admin login and confirmation.</div>
+
+    <!-- Timeline list -->
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px">
+        <h3 style="margin:0">Backups Timeline</h3>
+        <span class="muted" id="countTag">0 items</span>
+      </div>
+      <div id="timeline" class="timeline"></div>
+    </div>
+
+    <!-- Advanced (GitHub optional) -->
+    <div class="card" id="advanced" style="display:none">
+      <h3 style="margin:0 0 8px">GitHub Sync (optional)</h3>
+      <div class="row">
+        <input id="ghOwner" class="input" placeholder="Owner"/>
+        <input id="ghRepo"  class="input" placeholder="Repo (e.g., IPTV-)"/>
+        <input id="ghBranch" class="input" placeholder="Branch (main)"/>
+        <input id="ghToken" class="input" type="password" placeholder="Token (contents:write)"/>
+        <button id="btnSaveGh" class="btn">Save</button>
+        <button id="btnTestGh" class="btn">Test</button>
+      </div>
+      <div class="muted">If set, backups also save to <code>backups/YYYY/MM-DD/</code> in your repo.</div>
+    </div>
   </div>
 
-  <div class="card">
-    <h2 style="margin:0 0 8px">Backups Timeline</h2>
-    <div class="row" style="margin-bottom:8px">
-      <span class="pillTag" id="countTag">0 items</span>
-      <button id="btnExportAll" class="btn">⤓ Export all (.zip soon)</button>
-      <button id="btnClearAll" class="btnDanger">🗑️ Clear all (local)</button>
+  <!-- Drawer preview (JSON) -->
+  <aside id="drawer" class="drawer" aria-hidden="true">
+    <div class="dhead">
+      <div class="dtitle" id="drawerTitle">Preview</div>
+      <button id="drawerClose" class="chip">Close</button>
     </div>
-    <div id="timeline" class="timeline"></div>
-  </div>
-
-  <!-- Advanced panel (hidden in Simple Mode) -->
-  <div id="advancedPanel" class="card" style="display:none">
-    <h2 style="margin:0 0 8px">Advanced (optional)</h2>
-    <div class="row">
-      <input id="ghOwner" class="input" placeholder="GitHub Owner"/>
-      <input id="ghRepo"  class="input" placeholder="Repo (e.g., IPTV-)"/>
-      <input id="ghBranch" class="input" placeholder="Branch (main)"/>
-      <input id="ghToken" class="input" type="password" placeholder="GitHub token (contents:write)"/>
-      <button id="btnSaveGh" class="btn">Save</button>
-      <button id="btnTestGh" class="btn">Test</button>
-    </div>
-    <div class="muted">If set, backups will also be pushed to GitHub under <code>backups/YYYY/MM-DD/</code>.</div>
-  </div>
-</div>
-
-<div id="toast" class="toast"></div>
-
-<script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-  import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-  import { getDatabase, ref, get, set } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-
-  const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
-  const LOGO="/IPTV-/icons/icon-512.png";
-
-  const app=initializeApp(firebaseConfig);
-  const auth=getAuth(app);
-  const db=getDatabase(app);
-
-  const $=s=>document.querySelector(s);
-  const $$=s=>document.querySelectorAll(s);
-  function toast(msg,err=false){const t=$('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2200);}  
-
-  // Theme + nav highlight
-  const LS_THEME='iptv_admin_theme';
-  document.documentElement.setAttribute('data-theme', (localStorage.getItem(LS_THEME)||'light'));
-  $('#themeBtn').onclick=()=>{const cur=document.documentElement.getAttribute('data-theme');const nxt=cur==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',nxt);localStorage.setItem(LS_THEME,nxt)};
-  try{ $('#brandLogo').style.backgroundImage=`url("${LOGO}")`; $('#brandLogoM').style.backgroundImage=`url("${LOGO}")`; }catch{}
-  (function(){ const file=(location.pathname.split("/").pop()||"backups.html").toLowerCase();
-    const map={"index.html":"home","home.html":"home","dealerships.html":"dealerships","displays.html":"displays","users.html":"users","links.html":"links","analytics.html":"analytics","schedule.html":"schedule","backups.html":"backups","more.html":"more"};
-    const key=map[file]||""; if(key) $$(`[data-page="${key}"]`).forEach(a=>a.classList.add('is-active'));
-  })();
-
-  // Mobile sheet
-  (function(){const sh=$('#sheet'), open=()=>{sh.classList.add('open');document.body.style.overflow='hidden'}, close=()=>{sh.classList.remove('open');document.body.style.overflow=''};$('#hamburger').onclick=open;$('#closeSheet').onclick=close;sh.querySelector('.back').onclick=close;const main=$('#logoutBtn'), mob=$('#logoutBtnM'); if(main&&mob){ mob.addEventListener('click',()=>main.click()); }})();
-
-  // Auth gate
-  onAuthStateChanged(auth,(user)=>{ if(!user){ location.href='home.html'; return;} $('#adminEmail').textContent=user.email||user.uid; });
-  $('#logoutBtn').addEventListener('click',()=>signOut(auth));
-
-  // ===== Simple/Advanced toggle =====
-  const LS_SIMPLE='iptv_simple_mode';
-  function applySimpleMode(){ const on=(localStorage.getItem(LS_SIMPLE)||'on')==='on'; $('#advancedPanel').style.display= on? 'none':'block'; toast(on? 'Simple Mode':'Advanced Mode'); }
-  $('#btnSimple').onclick=()=>{localStorage.setItem(LS_SIMPLE,'on');applySimpleMode()};
-  $('#btnAdvanced').onclick=()=>{localStorage.setItem(LS_SIMPLE,'off');applySimpleMode()};
-  applySimpleMode();
-
-  // ===== Local timeline storage =====
-  const LS_TIMELINE='iptv_backups_timeline_v1';
-  const timeline = {
-    list(){ try{return JSON.parse(localStorage.getItem(LS_TIMELINE)||'[]')}catch{return []} },
-    save(arr){ localStorage.setItem(LS_TIMELINE, JSON.stringify(arr)); },
-    add(item){ const arr=this.list(); arr.push(item); arr.sort((a,b)=>b.ts-a.ts); this.save(arr); },
-    remove(id){ this.save(this.list().filter(x=>x.id!==id)); },
-    get(id){ return this.list().find(x=>x.id===id); }
-  };
-
-  function fmt(ts){ const d=new Date(ts); const z=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`; }
-  function render(){ const list=timeline.list(); $('#countTag').textContent=`${list.length} item${list.length!==1?'s':''}`; const box=$('#timeline'); box.innerHTML=''; if(!list.length){ box.innerHTML='<div class="muted">No backups yet. Click "One‑Click Backup".</div>'; return; }
-    for(const it of list){ const div=document.createElement('div'); div.className='bcard'; div.innerHTML=`
-      <div class="bmeta">
-        <div class="btitle">📅 ${fmt(it.ts)} <span class="pillTag">${it.sections?.length||0} section(s)</span></div>
-        <div class="bnote">${it.note? it.note.replace(/</g,'&lt;') : '— no note —'}</div>
+    <div class="dmain">
+      <div class="muted">First 20,000 chars</div>
+      <pre id="drawerPre" class="pre"></pre>
+      <div class="row">
+        <button id="drawerRestore" class="btnSolid" style="display:none">
+          <svg class="i-restore" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M12 7v5l3 2"/></svg>
+          Restore now
+        </button>
+        <button id="drawerDownload" class="btn">
+          <svg class="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 19h14"/></svg>
+          Download
+        </button>
       </div>
-      <div class="bicons">
-        <button class="icbtn restore" data-res="${it.id}">⏪ Restore</button>
-        <button class="icbtn" data-dl="${it.id}">⬇️ Download</button>
-        <button class="icbtn" data-del="${it.id}">🗑️ Delete</button>
-      </div>`; box.appendChild(div); }
-    box.querySelectorAll('[data-del]').forEach(b=> b.onclick=()=>{ const id=b.getAttribute('data-del'); if(confirm('Delete this backup from this browser?')){ timeline.remove(id); render(); toast('Deleted'); } });
-    box.querySelectorAll('[data-dl]').forEach(b=> b.onclick=()=>{ const it=timeline.get(b.getAttribute('data-dl')); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(it.payload,null,2)],{type:'application/json'})); a.download=it.filename; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1500); });
-    box.querySelectorAll('[data-res]').forEach(b=> b.onclick=async ()=>{ const it=timeline.get(b.getAttribute('data-res')); if(!it) return; const ok=confirm('Restore this backup to Firebase? This will overwrite same sections.'); if(!ok) return; try{
-        const data=it.payload.data||{};
-        const writes=[];
+    </div>
+  </aside>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import {
+      getAuth, setPersistence, browserLocalPersistence,
+      signInWithEmailAndPassword, onAuthStateChanged,
+      sendPasswordResetEmail, signOut
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getDatabase, ref, get, set } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+    /* Firebase */
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+      authDomain: "iptv-bfa.firebaseapp.com",
+      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+      projectId: "iptv-bfa",
+      storageBucket: "iptv-bfa.firebasestorage.app",
+      messagingSenderId: "838790935867",
+      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    };
+    const LOGO_URL = "/IPTV-/icons/icon-512.png";
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
+
+    const $ = s => document.querySelector(s);
+    function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
+
+    /* Logos */
+    $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
+    const brandLogoM = document.getElementById('brandLogoM');
+    if(brandLogoM){ brandLogoM.style.backgroundImage = `url("${LOGO_URL}")`; }
+
+    /* Theme (with icon update) */
+    const THEME_KEY='iptv_theme';
+    const themeBtn = document.getElementById('themeBtn');
+    const themeIcon = document.getElementById('themeIcon');
+    const setThemeIcon = ()=>{
+      const dark = document.body.classList.contains('dark');
+      themeIcon.innerHTML = dark
+        ? `<path d="M21 12a9 9 0 1 1-9-9 6 6 0 0 0 9 9z"/>`
+        : `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1.4-1.4M20.4 20.4 19 19M5 19l-1.4 1.4M20.4 3.6 19 5"/>`;
+    };
+    const saved = localStorage.getItem(THEME_KEY) || 'light';
+    document.body.classList.toggle('dark', saved==='dark');
+    setThemeIcon();
+    themeBtn.addEventListener('click', ()=>{
+      const toDark = !document.body.classList.contains('dark');
+      document.body.classList.toggle('dark', toDark);
+      localStorage.setItem(THEME_KEY, toDark? 'dark' : 'light');
+      setThemeIcon();
+    });
+
+    /* “More” dropdown */
+    const moreBtn = document.getElementById('moreBtn');
+    const moreMenu = document.getElementById('moreMenu');
+    if(moreBtn){
+      moreBtn.addEventListener('click', (e)=>{ e.preventDefault(); moreMenu.classList.toggle('open'); });
+      document.addEventListener('click', (e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)){ moreMenu.classList.remove('open'); } }, {capture:true});
+      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') moreMenu.classList.remove('open'); });
+      const file=(location.pathname.split("/").pop()||"backups.html").toLowerCase();
+      moreMenu.querySelectorAll('a').forEach(a=>{ const h=(a.getAttribute('href')||'').toLowerCase(); if(h===file){ a.classList.add('is-active'); } });
+    }
+
+    /* Mobile sheet */
+    (()=>{
+      const sheet = document.getElementById('sheet');
+      const open = ()=>{ sheet.classList.add('open'); document.body.style.overflow='hidden'; };
+      const close= ()=>{ sheet.classList.remove('open'); document.body.style.overflow=''; };
+      document.getElementById('hamburger').addEventListener('click', open);
+      document.getElementById('closeSheet').addEventListener('click', close);
+      sheet.querySelector('.back').addEventListener('click', close);
+      const mainOut = document.getElementById('signOutBtn');
+      const mobOut  = document.getElementById('signOutBtnM');
+      if(mainOut && mobOut){ mobOut.addEventListener('click', ()=> mainOut.click()); }
+    })();
+
+    /* Auth minimal (show email only) */
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ $('#adminEmail').textContent=''; return; }
+      $('#adminEmail').textContent = user.email || user.uid;
+    });
+    document.getElementById('signOutBtn').addEventListener('click', ()=>signOut(auth));
+
+    /* ===== Timeline storage ===== */
+    const LS_TIMELINE='iptv_backups_timeline_v2';
+    const timeline = {
+      list(){ try{return JSON.parse(localStorage.getItem(LS_TIMELINE)||'[]')}catch{return []} },
+      save(arr){ localStorage.setItem(LS_TIMELINE, JSON.stringify(arr)); },
+      add(item){ const arr=this.list(); arr.push(item); arr.sort((a,b)=>b.ts-a.ts); this.save(arr); },
+      remove(id){ this.save(this.list().filter(x=>x.id!==id)); },
+      get(id){ return this.list().find(x=>x.id===id); }
+    };
+
+    function fmt(ts){ const d=new Date(ts); const z=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`; }
+
+    function render(){
+      const list=timeline.list();
+      $('#countTag').textContent=`${list.length} item${list.length!==1?'s':''}`;
+      const box=$('#timeline'); box.innerHTML='';
+      if(!list.length){ box.innerHTML='<div class="muted">No backups yet. Click “One‑Click Backup”.</div>'; return; }
+      for(const it of list){
+        const div=document.createElement('div'); div.className='bcard';
+        div.innerHTML=`
+          <div class="bmeta">
+            <div class="btitle">${fmt(it.ts)} · <span class="muted">${it.sections?.length||0} section(s)</span></div>
+            <div class="bnote">${(it.note||'— no note —').replace(/</g,'&lt;')}</div>
+          </div>
+          <div class="bicons">
+            <button class="icbtn" data-view="${it.id}" title="Preview">
+              <svg class="i-eye" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z"/></svg>
+              Preview
+            </button>
+            <button class="icbtn primary" data-res="${it.id}" title="Restore">
+              <svg class="i-restore" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M12 7v5l3 2"/></svg>
+              Restore
+            </button>
+            <button class="icbtn" data-dl="${it.id}" title="Download">
+              <svg class="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 19h14"/></svg>
+              Download
+            </button>
+            <button class="icbtn" data-del="${it.id}" title="Delete">
+              <svg class="i-delete" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6v14"/><path d="M16 6v14"/><path d="M6 6l1-2h10l1 2"/></svg>
+              Delete
+            </button>
+          </div>`;
+        box.appendChild(div);
+      }
+      // actions
+      box.querySelectorAll('[data-view]').forEach(b=> b.onclick=()=> openPreview(b.getAttribute('data-view')));
+      box.querySelectorAll('[data-del]').forEach(b=> b.onclick=()=>{ const id=b.getAttribute('data-del'); if(confirm('Delete this backup from this browser?')){ timeline.remove(id); render(); toast('Deleted'); }});
+      box.querySelectorAll('[data-dl]').forEach(b=> b.onclick=()=>{ const it=timeline.get(b.getAttribute('data-dl')); downloadFile(it.filename, JSON.stringify(it.payload,null,2)); });
+      box.querySelectorAll('[data-res]').forEach(b=> b.onclick=async ()=>{ const it=timeline.get(b.getAttribute('data-res')); confirmAndRestore(it); });
+    }
+
+    function downloadFile(name, text){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'application/json'})); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1500); }
+
+    // Drawer preview
+    const drawer=$('#drawer'), drawerPre=$('#drawerPre'), drawerTitle=$('#drawerTitle');
+    $('#drawerClose').onclick=()=> drawer.classList.remove('open');
+    $('#drawerDownload').onclick=()=>{ const it=currentPreview; if(it) downloadFile(it.filename, JSON.stringify(it.payload,null,2)); };
+    $('#drawerRestore').onclick=()=>{ const it=currentPreview; if(it) confirmAndRestore(it); };
+    let currentPreview=null;
+    function openPreview(id){ const it=timeline.get(id); if(!it) return; currentPreview=it; drawerTitle.textContent=`Preview — ${it.filename}`; drawerPre.textContent=JSON.stringify(it.payload,null,2).slice(0,20000); drawer.classList.add('open'); $('#drawerRestore').style.display='inline-flex'; }
+
+    // Restore helper
+    async function confirmAndRestore(it){ if(!it) return; const ok=confirm('Restore this backup to Firebase? This will overwrite the same sections.'); if(!ok) return; try{
+        const data=it.payload.data||{}; const writes=[];
         if(data.dealershipPublic!==undefined) writes.push(set(ref(db,'dealershipPublic'), data.dealershipPublic));
         if(data.dealership!==undefined)      writes.push(set(ref(db,'dealership'), data.dealership));
         if(data.displays!==undefined)        writes.push(set(ref(db,'displays'), data.displays));
@@ -246,56 +433,57 @@
         if(data.links!==undefined)           writes.push(set(ref(db,'admin/quickLinks'), data.links));
         await Promise.all(writes);
         toast('Restore complete ✔︎');
-      }catch(e){ toast('Restore failed — check admin permissions / rules', true); }
+      }catch(e){ console.error(e); toast('Restore failed — check admin permissions / rules', true); }
+    }
+
+    // Snapshot
+    function nowStamp(){ const d=new Date(); const z=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}`; }
+    async function doSnapshot(){
+      const req = (path)=> get(ref(db,path)).then(s=>s.val()).catch(()=>null);
+      const [dp, d, ds, us, links] = await Promise.all([
+        req('dealershipPublic'), req('dealership'), req('displays'), req('user'), req('admin/quickLinks')
+      ]);
+      const sections=[]; if(dp) sections.push('dealershipPublic'); if(d) sections.push('dealership'); if(ds) sections.push('displays'); if(us) sections.push('user'); if(links) sections.push('links');
+      const payload={ kind:'bfa-iptv.backup', version:'v1', exportedAt:new Date().toISOString(), exportedBy:auth.currentUser?.email||'admin', note:($('#noteInput').value||null), sections, data:{ ...(dp?{dealershipPublic:dp}:{ }), ...(d?{dealership:d}:{ }), ...(ds?{displays:ds}:{ }), ...(us?{user:us}:{ }), ...(links?{links}:{ }) } };
+      const id = crypto.randomUUID();
+      const fn = `bfa-backup-${nowStamp()}.json`;
+      const rec = { id, ts:Date.now(), note:$('#noteInput').value||'', sections, filename:fn, payload };
+      // Preview before saving
+      currentPreview=rec; drawerTitle.textContent=`Preview — ${fn}`; drawerPre.textContent=JSON.stringify(payload,null,2).slice(0,20000); drawer.classList.add('open');
+      $('#drawerRestore').style.display='none'; // during new save
+      // Ask to confirm save
+      if(confirm('Save this backup locally and download the file?')){
+        timeline.add(rec); render(); downloadFile(fn, JSON.stringify(payload,null,2)); toast('Backup saved locally + downloaded');
+        try{ await saveToGitHub(fn, payload); }catch{}
+      }
+    }
+
+    // Add from file (with preview first)
+    $('#btnAddFromFile').onclick=()=>$('#fileAdd').click();
+    $('#fileAdd').addEventListener('change', async (e)=>{
+      const f=e.target.files?.[0]; if(!f) return; try{ const txt=await f.text(); const payload=JSON.parse(txt); const id=crypto.randomUUID(); const ts=Date.now(); const rec={id, ts, note: payload.note||'', sections:payload.sections||[], filename:f.name||`import-${nowStamp()}.json`, payload}; currentPreview=rec; drawerTitle.textContent=`Preview — ${rec.filename}`; drawerPre.textContent=JSON.stringify(payload,null,2).slice(0,20000); drawer.classList.add('open'); $('#drawerRestore').style.display='none'; if(confirm('Add this file to the timeline?')){ timeline.add(rec); render(); toast('Added to timeline'); } }catch{ toast('Invalid JSON',true) }
     });
-  }
 
-  // ===== One‑Click Backup (fetch → save local → optional GitHub) =====
-  function nowStamp(){ const d=new Date(); const z=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}`; }
-  async function doSnapshot(){
-    const req = (path)=> get(ref(db,path)).then(s=>s.val()).catch(()=>null);
-    const [dp, d, ds, us, links] = await Promise.all([
-      req('dealershipPublic'), req('dealership'), req('displays'), req('user'), req('admin/quickLinks')
-    ]);
-    const sections=[]; if(dp) sections.push('dealershipPublic'); if(d) sections.push('dealership'); if(ds) sections.push('displays'); if(us) sections.push('user'); if(links) sections.push('links');
-    const payload={ kind:'bfa-iptv.backup', version:'v1', exportedAt:new Date().toISOString(), exportedBy:auth.currentUser?.email||'admin', note:($('#noteInput').value||null), sections, data:{ ...(dp?{dealershipPublic:dp}:{ }), ...(d?{dealership:d}:{ }), ...(ds?{displays:ds}:{ }), ...(us?{user:us}:{ }), ...(links?{links}:{ }) } };
-    const id = crypto.randomUUID();
-    const fn = `bfa-backup-${nowStamp()}.json`;
-    timeline.add({ id, ts:Date.now(), note:$('#noteInput').value||'', sections, filename:fn, payload });
+    // Buttons
+    $('#btnBackup').onclick=()=>doSnapshot();
+    $('#btnClearAll').onclick=()=>{ if(confirm('Remove all backups stored in this browser?')){ localStorage.removeItem(LS_TIMELINE); render(); toast('Cleared'); } };
+    $('#btnExportAll').onclick=()=> toast('Export .zip coming soon');
+
+    // GitHub (optional)
+    const LS_GH='iptv_admin_gh_simple';
+    const gh = JSON.parse(localStorage.getItem(LS_GH)||'{}');
+    $('#ghOwner').value=gh.owner||''; $('#ghRepo').value=gh.repo||''; $('#ghBranch').value=gh.branch||'main'; $('#ghToken').value=gh.token||'';
+    $('#btnSaveGh').onclick=()=>{ const obj={ owner:$('#ghOwner').value.trim(), repo:$('#ghRepo').value.trim(), branch:$('#ghBranch').value.trim()||'main', token:$('#ghToken').value.trim() }; localStorage.setItem(LS_GH, JSON.stringify(obj)); toast('GitHub settings saved'); };
+    $('#btnTestGh').onclick=async()=>{ try{ const meta=await ghFetch(repoBase()); toast(`Repo OK: ${meta.full_name}`);}catch(e){ toast(`GitHub error: ${e.message}`,true);} };
+    function ghHeaders(){ const t=(JSON.parse(localStorage.getItem(LS_GH)||'{}').token)||''; const h={'Accept':'application/vnd.github+json','Content-Type':'application/json'}; if(t) h['Authorization']=`Bearer ${t}`; return h; }
+    async function ghFetch(url,opts={}){ const h=ghHeaders(); if(!h.Authorization) throw new Error('Add token'); const r=await fetch(url,{...opts,headers:{...h,...(opts.headers||{})}}); const t=await r.text(); let d; try{d=t?JSON.parse(t):{};}catch{d={raw:t}} if(!r.ok) throw new Error(d.message||r.statusText); return d; }
+    function repoBase(){ const c=JSON.parse(localStorage.getItem(LS_GH)||'{}'); if(!c.owner||!c.repo) throw new Error('Owner/repo missing'); return `https://api.github.com/repos/${c.owner}/${c.repo}`; }
+    async function getFileSha(path){ try{ const c=JSON.parse(localStorage.getItem(LS_GH)||'{}'); const d=await ghFetch(`${repoBase()}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(c.branch||'main')}`); return d.sha; }catch{ return null } }
+    async function putFile(path, contentString, message){ const c=JSON.parse(localStorage.getItem(LS_GH)||'{}'); const sha=await getFileSha(path); const body={ message: message||`update: ${path}`, branch: c.branch||'main', content: btoa(unescape(encodeURIComponent(contentString))), ...(sha?{sha}:{}) }; return ghFetch(`${repoBase()}/contents/${encodeURIComponent(path)}`, {method:'PUT', body:JSON.stringify(body)}); }
+    async function saveToGitHub(filename, payload){ try{ const c=JSON.parse(localStorage.getItem(LS_GH)||'{}'); if(!c.owner||!c.repo||!c.token) return; const d=new Date(); const folder=`backups/${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}/`; const path=`${folder}${filename}`; await putFile(path, JSON.stringify(payload,null,2), `backup: ${filename}`); toast('Also saved to GitHub ✔︎'); }catch(e){ toast('GitHub save skipped',true) } }
+
+    // First paint
     render();
-    // auto download for safety
-    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'})); a.download=fn; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1500);
-    toast('Backup saved locally + downloaded');
-    // optional GitHub push
-    try{ await saveToGitHub(fn, payload); }catch{}
-  }
-  $('#btnQuickBackup').onclick=()=>doSnapshot();
-
-  // Add from file
-  $('#btnAddFromFile').onclick=()=>$('#fileAdd').click();
-  $('#fileAdd').addEventListener('change', async (e)=>{
-    const f=e.target.files?.[0]; if(!f) return; try{ const txt=await f.text(); const payload=JSON.parse(txt); const id=crypto.randomUUID(); const ts=Date.now(); timeline.add({id, ts, note: payload.note||'', sections:payload.sections||[], filename:f.name||`import-${nowStamp()}.json`, payload}); render(); toast('Added to timeline'); }catch{ toast('Invalid JSON',true) }
-  });
-
-  // Clear all
-  $('#btnClearAll').onclick=()=>{ if(confirm('Remove all backups stored in this browser?')){ localStorage.removeItem(LS_TIMELINE); render(); toast('Cleared'); } };
-  $('#btnExportAll').onclick=()=>{ toast('Export .zip coming soon'); };
-
-  // ===== GitHub optional =====
-  const LS_GH='iptv_admin_gh_simple';
-  const gh = JSON.parse(localStorage.getItem(LS_GH)||'{}');
-  $('#ghOwner').value=gh.owner||''; $('#ghRepo').value=gh.repo||''; $('#ghBranch').value=gh.branch||'main'; $('#ghToken').value=gh.token||'';
-  $('#btnSaveGh').onclick=()=>{ const obj={ owner:$('#ghOwner').value.trim(), repo:$('#ghRepo').value.trim(), branch:$('#ghBranch').value.trim()||'main', token:$('#ghToken').value.trim() }; localStorage.setItem(LS_GH, JSON.stringify(obj)); toast('GitHub settings saved'); };
-  $('#btnTestGh').onclick=async()=>{ try{ const meta=await ghFetch(repoBase()); toast(`Repo OK: ${meta.full_name}`);}catch(e){ toast(`GitHub error: ${e.message}`,true);} };
-  function ghHeaders(){ const t=(JSON.parse(localStorage.getItem(LS_GH)||'{}').token)||''; const h={'Accept':'application/vnd.github+json','Content-Type':'application/json'}; if(t) h['Authorization']=`Bearer ${t}`; return h; }
-  async function ghFetch(url,opts={}){ const h=ghHeaders(); if(!h.Authorization) throw new Error('Add token'); const r=await fetch(url,{...opts,headers:{...h,...(opts.headers||{})}}); const t=await r.text(); let d; try{d=t?JSON.parse(t):{};}catch{d={raw:t}} if(!r.ok) throw new Error(d.message||r.statusText); return d; }
-  function repoBase(){ const c=JSON.parse(localStorage.getItem(LS_GH)||'{}'); if(!c.owner||!c.repo) throw new Error('Owner/repo missing'); return `https://api.github.com/repos/${c.owner}/${c.repo}`; }
-  async function getFileSha(path){ try{ const c=JSON.parse(localStorage.getItem(LS_GH)||'{}'); const d=await ghFetch(`${repoBase()}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(c.branch||'main')}`); return d.sha; }catch{ return null } }
-  async function putFile(path, contentString, message){ const c=JSON.parse(localStorage.getItem(LS_GH)||'{}'); const sha=await getFileSha(path); const body={ message: message||`update: ${path}`, branch: c.branch||'main', content: btoa(unescape(encodeURIComponent(contentString))), ...(sha?{sha}:{}) }; return ghFetch(`${repoBase()}/contents/${encodeURIComponent(path)}`, {method:'PUT', body:JSON.stringify(body)}); }
-  async function saveToGitHub(filename, payload){ try{ const c=JSON.parse(localStorage.getItem(LS_GH)||'{}'); if(!c.owner||!c.repo||!c.token) return; const d=new Date(); const folder=`backups/${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}/`; const path=`${folder}${filename}`; await putFile(path, JSON.stringify(payload,null,2), `backup: ${filename}`); toast('Also saved to GitHub ✔︎'); }catch(e){ toast('GitHub save skipped',true) } }
-
-  // First paint
-  render();
-</script>
+  </script>
 </body>
 </html>
