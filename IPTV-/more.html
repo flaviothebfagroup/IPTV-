@@ -4,18 +4,23 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
   <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
-  <title>BFA IPTV — Dealerships</title>
+  <title>BFA IPTV — Displays</title>
+
+  <!-- PWA (optional) -->
+  <link rel="manifest" href="/IPTV-/manifest.webmanifest"/>
+  <meta name="theme-color" content="#ffffff"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png"/>
+  <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png"/>
 
   <style>
-    /* =========================================================
-       Tokens
-    ========================================================= */
     :root{
       --accent:#ff9500;
       --fg:#111; --muted:#6e6e73; --bg:#ffffff;
       --panel:#fff; --tile:#f6f6f8; --tileHover:#fff7ea;
       --border:rgba(0,0,0,.14); --borderStrong:rgba(0,0,0,.28);
       --shadow:0 14px 36px rgba(0,0,0,.08);
+      --ok:#22c55e; --err:#ef4444;
     }
     body.dark{
       --bg:#0b0b0c; --fg:#f7f7f8; --muted:#a1a1a8;
@@ -26,12 +31,11 @@
 
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--fg);
-      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
+      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif; line-height:1.35}
     a{color:inherit;text-decoration:none}
+    a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-    /* =========================================================
-       Topbar (Home/Backups style)
-    ========================================================= */
+    /* ===== NAVBAR (same as Home/Backups) ===== */
     .topbar{position:sticky;top:0;z-index:100;background:var(--panel);
       border-bottom:1px solid var(--border);
       padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
@@ -46,7 +50,6 @@
     .pill.is-active{outline:2px solid var(--accent)}
     .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
 
-    /* More (+) dropdown */
     .more{position:relative}
     #moreBtn .plus{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
     #moreMenu{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
@@ -59,23 +62,16 @@
 
     .actions{display:flex;gap:8px;align-items:center}
     .email{max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);
-      border:1px solid var(--border);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      border:1.5px solid var(--borderStrong);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .chip{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1.5px solid var(--borderStrong);
       background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
     .chip:hover{border-color:var(--accent)}
     .chip .ic{width:18px;height:18px;stroke-width:2}
     .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
-    /* Hamburger */
     #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:42px;min-width:42px;padding:0;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
     #hamburger .ic{width:22px;height:22px;stroke:var(--accent);stroke-width:2.35}
+    @media (max-width:920px){ .nav{display:none} #hamburger{display:inline-flex} .email{display:none} }
 
-    @media (max-width:920px){
-      .nav{display:none}
-      #hamburger{display:inline-flex}
-      .email{display:none}
-    }
-
-    /* Mobile sheet */
     #sheet{position:fixed;inset:0;z-index:120;display:none}
     #sheet.open{display:block}
     #sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
@@ -85,143 +81,85 @@
     .panel nav{display:grid;gap:8px}
     .panel nav a{justify-content:flex-start}
 
-    /* =========================================================
-       Page styles (your existing UI)
-    ========================================================= */
-    :root{ --tileBorder: var(--border); --danger:#e11d48; --border2:rgba(0,0,0,.12); }
+    /* ===== Page ===== */
     .wrap{max-width:1100px;margin:0 auto;padding:18px}
     .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
-    .muted{color:var(--muted);font-size:12px}
+    .hstack{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-    details.legend{margin:8px 0} details.legend summary{cursor:pointer;font-weight:800}
-    .legend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:8px}
-    .legend-item{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border:1px solid var(--tileBorder);border-radius:12px;padding:10px}
-    .legend-item .iconbtn{flex:0 0 36px}
+    .row3{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin:10px 0}
+    @media (max-width:840px){.row3{grid-template-columns:1fr}}
+    .label{font-size:12px;color:var(--muted);margin:0 0 6px}
+    .input,.select{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
+    .input::placeholder{color:var(--muted)}
+    .btn{height:34px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center}
+    .btn.solid{background:var(--accent);border-color:var(--accent);color:#000}
+    .btn.danger{border-color:#ff6b6b;color:#ff6b6b;background:transparent}
+    .small{font-size:12px}
+    .muted{color:var(--muted)}
 
-    .inputbar{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap}
-    .input{flex:1;min-width:220px;height:40px;padding:0 14px;background:var(--panel);border:1px solid var(--tileBorder);border-radius:9999px;color:var(--fg);font-size:14px}
-    .input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-    .btnText{height:36px;padding:0 14px;border:1px solid var(--tileBorder);border-radius:9999px;background:var(--panel);font-weight:800;cursor:pointer}
-    .btnText:hover{border-color:var(--accent)}
+    .list{margin:8px 0 0;padding:0;list-style:none}
+    .empty{padding:12px;border:1px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center}
+    .item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px;margin:8px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap}
+    .split{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .col{display:flex;flex-direction:column;gap:6px;min-width:220px}
+    .tag{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:transparent;font-size:12px;color:var(--muted)}
+    .online{display:inline-flex;align-items:center;gap:6px;font-size:12px}
+    .dot{width:8px;height:8px;border-radius:999px;background:#999}
+    .dot.ok{background:var(--ok)}
+    .dot.err{background:var(--err)}
+    .vol{display:flex;align-items:center;gap:8px}
+    .vol input[type="range"]{width:140px;accent-color:var(--accent)}
+    @media (max-width:560px){ .vol input[type="range"]{width:100%} }
 
-    .list{list-style:none;margin:14px 0 0;padding:0}
-    .item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;background:var(--tile);border:1px solid var(--tileBorder);border-radius:16px;padding:12px;margin:10px 0}
-    .title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .tag{padding:2px 8px;border:1px solid var(--tileBorder);border-radius:9999px;background:transparent;font-size:12px}
-    .actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-    .iconbtn{height:36px;width:36px;padding:0;border-radius:10px;border:1px solid var(--tileBorder);background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
-    .iconbtn:hover{border-color:var(--accent)}
-    .iconbtn.danger{color:var(--danger);border-color:rgba(225,29,72,.35)}
-    .icon{stroke:currentColor;stroke-width:1.9;fill:none}
-
-    .selected{ background:var(--accent)!important; color:#000!important; border-color:var(--accent)!important; box-shadow:0 2px 0 rgba(0,0,0,.05), 0 0 0 3px rgba(255,149,0,.12); }
-    .selected .icon{ stroke:#000 !important; }
-
-    .sub{grid-column:1/-1;margin-top:8px;background:var(--panel);border:1px solid var(--tileBorder);border-radius:12px;padding:10px}
+    /* Inline preview panel (minimal like Dealerships) */
+    .sub{grid-column:1/-1;margin-top:8px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px}
     .sub h4{margin:0 0 8px}
-    .sublist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
-    .subitem{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--panel);border:1px solid var(--tileBorder);border-radius:10px;padding:10px}
-    .subleft{font-weight:800}
-    .subright{display:flex;gap:6px;align-items:center}
-
-    .remoteBox{display:none;margin-top:10px;border:1px solid var(--tileBorder);border-radius:12px;overflow:hidden}
-    .remoteHead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--panel)}
-    .remoteHead .left{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .remoteHead .right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .pillMini{height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:9999px;border:1px solid var(--tileBorder);background:var(--panel);font-size:12px;font-weight:800}
-    .remoteBody{padding:10px;background:var(--panel)}
-
-    .iframeWrap{position:relative;border:1px solid var(--tileBorder);border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9}
-    .iframeSlot{position:absolute; inset:0; width:100%; height:100%;}
-    .iframeWrap iframe{position:absolute; inset:0; width:100%; height:100%; display:block; background:#000}
-
-    .badge{position:absolute;left:10px;top:10px;background:var(--panel);color:var(--fg);border:1px solid var(--accent);border-radius:999px;padding:4px 8px;font-size:12px;font-weight:800;display:none}
-    .remoteBox.is-previewing .iframeWrap{border-color:var(--accent);box-shadow:inset 0 0 0 2px rgba(255,149,0,.15)}
-    .remoteBox.is-previewing .badge{display:inline-flex}
-
-    .overlayControls{ position:absolute; left:0; right:0; bottom:0; display:none; flex-direction:column; gap:10px; padding:10px; pointer-events:none; opacity:0; transition:opacity .18s ease; background:linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0)); }
-    @media (hover:hover) and (pointer:fine){
-      .overlayControls{ display:flex; }
-      .iframeWrap:hover .overlayControls{ opacity:1; pointer-events:auto; }
-      .iframeWrap.forceShow .overlayControls{ opacity:1; pointer-events:auto; }
-    }
-    @media (max-width:760px){ .overlayControls{ display:none !important; } }
-
+    .iframeWrap{position:relative;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9}
+    .iframeWrap iframe{position:absolute;inset:0;width:100%;height:100%;display:block;background:#000}
+    .badge{position:absolute;left:10px;top:10px;background:#fff;color:#111;border:1px solid var(--accent);border-radius:999px;padding:4px 8px;font-size:12px;font-weight:800;display:none}
+    .is-previewing .badge{display:inline-flex}
+    .overlayControls{ position:absolute; left:0; right:0; bottom:0; display:flex; flex-direction:column; gap:10px; padding:10px; pointer-events:none; opacity:0; transition:opacity .18s ease; background:linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0)); }
+    @media (hover:hover) and (pointer:fine){ .iframeWrap:hover .overlayControls{ opacity:1; pointer-events:auto; } }
     .cluster{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
     .circle{height:36px;width:36px;border-radius:9999px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
-    .circle .icon{stroke:#fff;stroke-width:2}
-    .circle.selected{background:var(--accent);border-color:var(--accent)}
-    .circle.selected .icon{stroke:#000}
-
-    .range{width:220px;height:6px;border-radius:999px;-webkit-appearance:none;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.35)}
-    .range::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);border:1px solid rgba(0,0,0,.35)}
+    .circle svg{width:16px;height:16px;stroke:#fff;stroke-width:2;fill:none}
     .pct{height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:9999px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);font-size:12px;font-weight:800;color:#fff}
-    @media (max-width:760px){ .range{width:160px} }
 
-    .chip{height:34px;padding:0 14px;border-radius:14px;border:1px solid var(--tileBorder);background:var(--panel);font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
-    .chip:hover{border-color:var(--accent)}
-    .chip svg{width:16px;height:16px;stroke:currentColor;stroke-width:1.9;fill:none}
-
-    .underControls{display:none;margin-top:10px;border:1px solid var(--tileBorder);border-radius:12px;padding:10px;background:var(--panel);display:flex;flex-direction:column;gap:10px}
-    .underControls .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .underControls .iconbtn{height:34px;width:34px;border-radius:9999px}
-    .underControls .range{width:180px;background:#eee;border:1px solid var(--tileBorder)}
-    .underControls .pct{color:var(--fg);background:var(--panel);border-color:var(--tileBorder)}
-    @media (min-width:761px){ .underControls{display:none!important} }
-
-    .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;z-index:99}
-    .toast.show{opacity:1} .toast.err{background:#ff453a;color:#fff}
+    /* Toast */
+    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
+    .toast.show{opacity:1}
+    .toast.err{background:#ff453a;color:#fff}
   </style>
 </head>
 <body>
-  <!-- NAVBAR -->
+  <!-- ===== NAVBAR ===== -->
   <header class="topbar">
     <div class="toprow">
       <a class="brand" href="home.html"><span class="logo" id="brandLogo"></span><span class="logotxt">BFA IPTV</span></a>
 
       <nav class="nav" aria-label="Primary">
-        <a class="pill" href="home.html" data-page="home">
-          <svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home
-        </a>
-        <a class="pill is-active" href="dealerships.html" data-page="dealerships">
-          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships
-        </a>
-        <a class="pill" href="displays.html" data-page="displays">
-          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays
-        </a>
-        <a class="pill" href="users.html" data-page="users">
-          <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users
-        </a>
+        <a class="pill" href="home.html" data-page="home"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
+        <a class="pill" href="dealerships.html" data-page="dealerships"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
+        <a class="pill is-active" href="displays.html" data-page="displays"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
+        <a class="pill" href="users.html" data-page="users"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
         <div class="more">
-          <a id="moreBtn" class="pill" href="javascript:void(0)">
-            <svg class="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> More
-          </a>
+          <a id="moreBtn" class="pill" href="javascript:void(0)"><svg class="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> More</a>
           <div id="moreMenu" role="menu" aria-label="More">
             <a href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
             <a href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
             <a href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
             <a href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
             <a href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
-            <a href="settings.html">
-              <svg class="ic" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"/>
-              </svg>
-              Settings
-            </a>
+            <a href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
           </div>
         </div>
       </nav>
 
       <div class="actions">
         <span id="adminEmail" class="email"></span>
-        <button id="themeBtn" class="chip" title="Light/Dark">
-          <svg id="themeIcon" class="ic" viewBox="0 0 24 24"></svg>
-          Theme
-        </button>
+        <button id="themeBtn" class="chip" title="Light/Dark"><svg id="themeIcon" class="ic" viewBox="0 0 24 24"></svg> Theme</button>
         <button id="signOutBtn" class="chip">Sign out</button>
-        <button id="hamburger" class="chip" aria-label="Menu">
-          <svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-        </button>
+        <button id="hamburger" class="chip" aria-label="Menu"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
       </div>
     </div>
 
@@ -235,47 +173,78 @@
         </div>
         <nav>
           <a class="pill" href="home.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
-          <a class="pill is-active" href="dealerships.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
-          <a class="pill" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
+          <a class="pill" href="dealerships.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
+          <a class="pill is-active" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
           <a class="pill" href="users.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
           <div class="muted" style="padding:8px 2px 0">More</div>
           <a class="pill" href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
           <a class="pill" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
           <a class="pill" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
           <a class="pill" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
-          <a class="pill" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
-          <a class="pill" href="settings.html">
-            <svg class="ic" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"/>
-            </svg>
-            Settings
-          </a>
+          <a class="pill" href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
           <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
         </nav>
       </aside>
     </div>
   </header>
 
+  <!-- ===================================================== -->
   <div class="wrap">
-    <div class="card">
-      <h2 style="margin:0">Dealerships</h2>
-      <div class="muted">Create, edit public name, migrate ID, delete. Tap icons for actions.</div>
+    <!-- Login -->
+    <div id="loginBox" class="card" style="max-width:520px;margin:40px auto;display:none">
+      <h2 style="margin:0 0 12px">Admin Sign In</h2>
+      <div class="row3" style="grid-template-columns:1fr 1fr auto">
+        <div>
+          <div class="label">Email</div>
+          <input id="email" class="input" type="email" placeholder="you@company.com" autocomplete="email"/>
+        </div>
+        <div>
+          <div class="label">Password</div>
+          <input id="password" class="input" type="password" placeholder="••••••••" autocomplete="current-password"/>
+        </div>
+        <div style="display:flex;align-items:end">
+          <button id="loginBtn" class="btn solid" style="width:100%">Sign in</button>
+        </div>
+      </div>
+      <div class="hstack">
+        <button id="resetBtn" class="btn">Send reset link</button>
+        <span class="small muted">Requires <b>role:"admin"</b> in <code>/user/{uid}</code>.</span>
+      </div>
+    </div>
 
-      <details class="legend">
-        <summary>Icon legend</summary>
-        <div id="legendGrid" class="legend-grid"></div>
-      </details>
-
-      <div class="inputbar">
-        <input id="dealerName" class="input" placeholder="New dealership name (e.g., Genesis Winnipeg)"/>
-        <button id="addBtn" class="btnText" data-flash>Add</button>
-        <button id="reloadList" class="btnText" data-flash>Reload</button>
+    <!-- Displays -->
+    <div id="content" class="card" style="display:none">
+      <h2 style="margin:0 0 8px">Displays</h2>
+      <div class="muted small">
+        Inline preview opens the actual player page: <code>https://flaviothebfagroup.github.io/IPTV-/Displays/{displayId}.html</code>.
+        “Ping” writes <code>flashAt</code> for a quick visual blink.
       </div>
 
-      <div class="muted" style="margin-top:6px">Creates <code>/dealership/{ID}</code> and <code>/dealershipPublic/{ID}</code>. ID allows letters, numbers, CAPS, <b>-</b>, <b>_</b>.</div>
+      <!-- action strip -->
+      <div class="row3" style="margin:10px 0">
+        <div>
+          <div class="label">Dealership</div>
+          <select id="dealerForDisplays" class="select"><option value="">Select dealership…</option></select>
+        </div>
+        <div>
+          <div class="label">Optional display ID</div>
+          <input id="newDisplayId" class="input" placeholder="Auto if empty (e.g., GW-002)"/>
+        </div>
+        <div style="display:flex;align-items:end;gap:8px;flex-wrap:wrap">
+          <button id="addDisplayBtn" class="btn solid">Add TV (and create page)</button>
+        </div>
+      </div>
 
-      <ul id="list" class="list"></ul>
-      <div id="empty" class="muted" style="display:none">No dealerships.</div>
+      <div class="hstack" style="margin:8px 0">
+        <button id="bulkMute" class="btn">Mute all</button>
+        <button id="bulkUnmute" class="btn">Unmute all</button>
+        <button id="bulkCh1" class="btn">All → CH1</button>
+        <button id="displaysReload" class="btn">Reload</button>
+        <button id="manageUsers" class="btn" title="Open Users filtered to this dealership">Manage Users</button>
+      </div>
+
+      <ul id="displayList" class="list"></ul>
+      <div id="displayEmpty" class="empty" style="display:none">Pick a dealership to list TVs.</div>
     </div>
   </div>
 
@@ -284,30 +253,41 @@
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import {
-      getAuth, onAuthStateChanged, signOut
+      getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword,
+      onAuthStateChanged, sendPasswordResetEmail, signOut
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import {
-      getDatabase, ref, get, set, update, remove, query, orderByChild, equalTo
+      getDatabase, ref, get, set, update, remove, onValue, query, orderByChild, equalTo
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
     /* Firebase */
-    const firebaseConfig = { apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e" };
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+      authDomain: "iptv-bfa.firebaseapp.com",
+      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+      projectId: "iptv-bfa",
+      storageBucket: "iptv-bfa.firebasestorage.app",
+      messagingSenderId: "838790935867",
+      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    };
     const LOGO_URL = "/IPTV-/icons/icon-512.png";
-    const app = initializeApp(firebaseConfig);
+
+    const app  = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    const $=s=>document.querySelector(s);
-    function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));}
-    function toast(msg,err=false){const t=$("#toast");t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2200);}
-    function sanitizeId(raw){ let id=(raw||'').replace(/[^A-Za-z0-9\-_]/g,'').slice(0,40); if(!id){ id=(raw||'').normalize('NFKD').replace(/[^\w\-]+/g,'').slice(0,40);} return id; }
+    const $ = s => document.querySelector(s);
+    const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+    function esc(s){ return String(s??'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+    function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
+    const withEmbed = (u)=>{ try{ const x=new URL(u); x.searchParams.set('embed','1'); return x.href; }catch{ return u+(u.includes('?')?'&':'?')+'embed=1'; } };
 
-    /* Logo */
-    $('#brandLogo').style.backgroundImage=`url("${LOGO_URL}")`;
+    /* Logos */
+    $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
     const brandLogoM = document.getElementById('brandLogoM');
-    if(brandLogoM){ brandLogoM.style.backgroundImage=`url("${LOGO_URL}")`; }
+    if(brandLogoM) brandLogoM.style.backgroundImage = `url("${LOGO_URL}")`;
 
-    /* Theme (with icon) */
+    /* Theme (dark toggle + icon consistent) */
     const THEME_KEY='iptv_theme';
     const themeBtn = document.getElementById('themeBtn');
     const themeIcon = document.getElementById('themeIcon');
@@ -318,7 +298,8 @@
         : `<path d="M12 4.5v-2.25M12 21.75v-2.25M4.5 12H2.25M21.75 12H19.5M5.636 5.636L4.05 4.05M19.95 19.95l-1.586-1.586M5.636 18.364L4.05 19.95M19.95 4.05l-1.586 1.586"/><circle cx="12" cy="12" r="3.75"/>`;
     };
     const saved = localStorage.getItem(THEME_KEY) || 'light';
-    document.body.classList.toggle('dark', saved==='dark'); setThemeIcon();
+    document.body.classList.toggle('dark', saved==='dark');
+    setThemeIcon();
     themeBtn.addEventListener('click', ()=>{
       const toDark = !document.body.classList.contains('dark');
       document.body.classList.toggle('dark', toDark);
@@ -326,19 +307,17 @@
       setThemeIcon();
     });
 
-    /* More dropdown */
-    const moreBtn = document.getElementById('moreBtn');
-    const moreMenu = document.getElementById('moreMenu');
-    if(moreBtn){
+    /* “More” dropdown */
+    (()=>{
+      const moreBtn = document.getElementById('moreBtn');
+      const moreMenu = document.getElementById('moreMenu');
+      if(!moreBtn) return;
       moreBtn.addEventListener('click', (e)=>{ e.preventDefault(); moreMenu.classList.toggle('open'); });
-      document.addEventListener('click', (e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)){ moreMenu.classList.remove('open'); } }, {capture:true});
+      document.addEventListener('click', (e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)) moreMenu.classList.remove('open'); }, {capture:true});
       document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') moreMenu.classList.remove('open'); });
-      const file=(location.pathname.split("/").pop()||"dealerships.html").toLowerCase();
-      moreMenu.querySelectorAll('a').forEach(a=>{
-        const h=(a.getAttribute('href')||'').toLowerCase();
-        if(h===file){ a.classList.add('is-active'); }
-      });
-    }
+      const file=(location.pathname.split("/").pop()||"displays.html").toLowerCase();
+      moreMenu.querySelectorAll('a').forEach(a=>{ const h=(a.getAttribute('href')||'').toLowerCase(); if(h===file){ a.classList.add('is-active'); } });
+    })();
 
     /* Mobile sheet */
     (()=>{
@@ -348,370 +327,402 @@
       document.getElementById('hamburger').addEventListener('click', open);
       document.getElementById('closeSheet').addEventListener('click', close);
       sheet.querySelector('.back').addEventListener('click', close);
-      // Mobile signout uses desktop button
       const mainOut = document.getElementById('signOutBtn');
       const mobOut  = document.getElementById('signOutBtnM');
-      if(mainOut && mobOut){ mobOut.addEventListener('click', ()=> mainOut.click()); }
+      if(mainOut && mobOut) mobOut.addEventListener('click', ()=> mainOut.click());
     })();
 
-    /* Auth + gate */
-    onAuthStateChanged(auth, async (user)=>{
-      if(!user){ location.href='home.html'; return; }
-      $('#adminEmail').textContent = user.email || user.uid;
-      const u = (await get(ref(db, 'user/'+user.uid))).val()||{};
-      if(u.role!=='admin'){
-        document.body.innerHTML = `<div style="padding:40px"><div class="card"><h3>Not authorized</h3><div class="muted">Ask an admin to set your role to <b>admin</b> in the database.</div></div></div>`;
-        return;
-      }
-      loadList();
+    /* Auth UI */
+    $('#loginBtn').addEventListener('click', doLogin);
+    $('#resetBtn').addEventListener('click', async ()=>{
+      const email = $('#email').value.trim();
+      if(!email) return toast('Enter email', true);
+      try{ await sendPasswordResetEmail(auth, email); toast('Reset sent'); }catch(e){ toast('Reset failed', true); }
     });
-    document.getElementById('signOutBtn')?.addEventListener('click', ()=> signOut(auth).then(()=>location.href='home.html'));
+    $('#signOutBtn').addEventListener('click', ()=>signOut(auth));
 
-    /* ===== Icons & helpers (same as your page) ===== */
-    const I={
-      eye:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7"/><circle cx="12" cy="12" r="3"/></svg>`,
-      users:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><circle cx="9" cy="8" r="4"/><path d="M17 11a4 4 0 1 0-4-4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/><path d="M17 22c0-2 .8-3.8 2-5"/></svg>`,
-      edit:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>`,
-      swap:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M17 7H7l4-4M7 17h10l-4 4"/></svg>`,
-      trash:()=>`<svg class="icon icon-danger" viewBox="0 0 24 24" width="18" height="18"><path d="M3 6h18"/><path d="M8 6l1-2h6l1 2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,
-      open:()=>`<svg class="icon" viewBox="0 0 24 24" width="18" height="18"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v7h-7"/></svg>`,
-      left:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M15 18l-6-6 6-6"/></svg>`,
-      right:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M9 6l6 6-6 6"/></svg>`,
-      vol:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M3 10v4h4l5 4V6l-5 4Z"/><path d="M16 9a3 3 0 0 1 0 6"/></svg>`,
-      link:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M10.5 13.5 8 16a4.5 4.5 0 1 1-6.4-6.3L5 6.2"/><path d="M13.5 10.5 16 8a4.5 4.5 0 1 1 6.4 6.3L19 17.8"/></svg>`,
-      ctrl:()=>`<svg class="icon" viewBox="0 0 24 24" width="16" height="16"><path d="M4 8h10"/><circle cx="16" cy="8" r="2"/><path d="M20 16H10"/><circle cx="8" cy="16" r="2"/></svg>`
-    };
-
-    (function renderLegend(){
-      const items=[
-        {icon:I.eye(),   title:'Preview TVs', desc:'Inline preview (keeps your admin login).'},
-        {icon:I.users(), title:'Users',       desc:'Show users under the card.'},
-        {icon:I.edit(),  title:'Edit name',   desc:'Change public dealership name.'},
-        {icon:I.swap(),  title:'Rename ID',   desc:'Migrate dealership ID & refs.'},
-        {icon:'URL',     title:'Edit URL',    desc:'Store a custom preview URL for each TV.'},
-        {icon:I.open(),  title:'Open tab',    desc:'Open preview in a new tab.'},
-        {icon:`<svg class="icon icon-danger" viewBox="0 0 24 24" width="18" height="18"><path d="M3 6h18"/><path d="M8 6l1-2h6l1 2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,  title:'Delete', desc:'Only if it has no TVs.'}
-      ];
-      document.getElementById('legendGrid').innerHTML = items.map(i=>`
-        <div class="legend-item">
-          <button class="iconbtn" disabled>${i.icon}</button>
-          <div><b>${i.title}</b><div class="muted">${i.desc}</div></div>
-        </div>`).join('');
-    })();
-
-    /* ===== Dealerships logic (unchanged) ===== */
-    document.getElementById('reloadList').addEventListener('click', loadList);
-    const select=el=>el&&el.classList.add('selected');
-    const deselect=el=>el&&el.classList.remove('selected');
-
-    async function countDisplaysForDealer(id){
-      try{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; }
-      catch(e){ return 0; }
-    }
-    async function listDisplays(dealershipId){
-      const snap=await get(query(ref(db,'displays'),orderByChild('dealership'),equalTo(dealershipId)));
-      return Object.keys(snap.val()||{}).sort();
-    }
-    async function getPreviewUrl(displayId){
-      const s=await get(ref(db,'displays/'+displayId)); const v=s.val()||{};
-      return v.previewUrl || `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(displayId)}.html`;
-    }
-
-    async function loadList(){
-      const list=$("#list"); list.innerHTML='';
-      let map={}; try{ const snap=await get(ref(db,'dealershipPublic')); map=snap.val()||{}; }catch(e){ map={}; }
-      if(!Object.keys(map).length){ try{ const s2=await get(ref(db,'dealership')); const raw=s2.val()||{}; for(const id of Object.keys(raw)) map[id]={name: raw[id]?.name||id}; }catch(e){} }
-      const ids=Object.keys(map).sort();
-      $("#empty").style.display = ids.length? 'none':'block';
-
-      for(const id of ids){
-        const dName = map[id]?.name || id;
-        const li=document.createElement('li'); li.className='item'; li.dataset.id=id;
-        const count = await countDisplaysForDealer(id);
-        li.innerHTML=`
-          <div class="title">
-            <b>${esc(dName)}</b>
-            <span class="tag">${esc(id)}</span>
-            <span class="muted">${count} TV${count===1?'':'s'}</span>
-          </div>
-          <div class="actions">
-            <button class="iconbtn" title="Preview TVs" data-act="preview">${I.eye()}</button>
-            <button class="iconbtn" title="Show users" data-act="users">${I.users()}</button>
-            <button class="iconbtn" title="Edit public name" data-act="edit">${I.edit()}</button>
-            <button class="iconbtn" title="Rename ID (migrate)" data-act="rename">${I.swap()}</button>
-            <button class="iconbtn" title="Open tab" data-act="safe">${I.open()}</button>
-            <button class="iconbtn danger" title="Delete" data-act="delete">${I.trash()}</button>
-          </div>`;
-        list.appendChild(li);
-      }
-
-      list.onclick = async (e)=>{
-        const btn=e.target.closest('.iconbtn'); if(!btn) return;
-        const li=btn.closest('.item'); const id=li.dataset.id; const act=btn.dataset.act;
-        const clearRowSelections=()=> li.querySelectorAll('.actions .iconbtn.selected').forEach(b=>deselect(b));
-
-        if(act==='edit'){ await editName(id); btn.blur(); }
-        else if(act==='rename'){ await renameId(id); btn.blur(); }
-        else if(act==='delete'){ await delDealer(id); btn.blur(); }
-        else if(act==='safe'){ const dids=await listDisplays(id);
-          if(dids.length){ const u = await getPreviewUrl(dids[0]); window.open(u+(u.includes('?')?'&':'?')+'embed=1','_blank','noopener'); } else toast('No TVs yet',true);
-        }
-        else if(act==='users'){
-          const opened=li.querySelector('.sub.users'); if(opened){ opened.remove(); return; }
-          clearRowSelections(); await toggleUsersUnder(li,id);
-        }
-        else if(act==='preview'){
-          const opened=li.querySelector('.sub.displays'); if(opened){ opened.remove(); return; }
-          clearRowSelections(); await toggleDisplaysUnder(li,id);
-        }
-      };
-
-      document.getElementById('addBtn').onclick = async ()=>{
-        const name=document.getElementById('dealerName').value.trim(); if(!name) return toast('Enter a name',true);
-        const suggested = name.replace(/\s+/g,'').replace(/[^A-Za-z0-9\-_]/g,'').slice(0,40);
-        const id = sanitizeId(suggested||name);
-        try{
-          const exists = (await get(ref(db,'dealershipPublic/'+id))).exists() || (await get(ref(db,'dealership/'+id))).exists();
-          if(exists){ toast('ID exists — choose another',true); return; }
-          const meta={ name, createdAt:Date.now(), createdBy: auth.currentUser?.email||'admin', displays:{} };
-          await set(ref(db,'dealership/'+id), meta);
-          await set(ref(db,'dealershipPublic/'+id), { name });
-          document.getElementById('dealerName').value=''; toast('Dealership added'); loadList();
-        }catch(e){ toast('Create failed',true); }
-      };
-    }
-
-    async function editName(id){
-      const cur=(await get(ref(db,'dealershipPublic/'+id))).val()?.name||id;
-      const next=prompt('Public name',cur); if(!next || next===cur) return;
-      try{ await set(ref(db,'dealershipPublic/'+id),{name:next}); try{await update(ref(db,'dealership/'+id),{name:next});}catch(_){}
-           toast('Name updated'); loadList(); }catch(e){ toast('Update failed',true); }
-    }
-    async function renameId(oldId){
-      const asked = prompt('New dealership ID (letters/numbers/-/_; CAPS allowed):', oldId);
-      const newId = sanitizeId(asked||''); if(!newId || newId===oldId) return;
-      if(!confirm(`Migrate ${oldId} → ${newId}? Displays & users will be updated.`)) return;
+    async function doLogin(){
+      const email=$('#email').value.trim();
+      const pass =$('#password').value;
+      if(!email||!pass) return toast('Fill email & password', true);
       try{
-        const existsPub=(await get(ref(db,'dealershipPublic/'+newId))).exists();
-        const existsMeta=(await get(ref(db,'dealership/'+newId))).exists();
-        if(existsPub||existsMeta){ alert('Target ID exists.'); return; }
-        const pubName=(await get(ref(db,'dealershipPublic/'+oldId))).val()?.name||oldId;
-        await set(ref(db,'dealershipPublic/'+newId),{name:pubName});
-        const meta=(await get(ref(db,'dealership/'+oldId))).val()||{}; if(Object.keys(meta).length) await set(ref(db,'dealership/'+newId),meta);
-
-        const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(oldId));
-        const dMap=(await get(qRef)).val()||{}; for(const did of Object.keys(dMap)){
-          await update(ref(db,'displays/'+did),{dealership:newId, timestamp:Date.now()});
-          try{ await remove(ref(db,'dealership/'+oldId+'/displays/'+did)); }catch(_){}
-          try{ await set(ref(db,'dealership/'+newId+'/displays/'+did),true); }catch(_){}
-        }
-        const users=(await get(ref(db,'user'))).val()||{}; for(const uid of Object.keys(users)){
-          if(users[uid]?.dealershipId===oldId) await update(ref(db,'user/'+uid),{dealershipId:newId,dealershipName:pubName});
-        }
-        await remove(ref(db,'dealershipPublic/'+oldId)).catch(()=>{});
-        await remove(ref(db,'dealership/'+oldId)).catch(()=>{});
-        toast('ID migrated'); loadList();
-      }catch(e){ toast('Rename failed',true); }
-    }
-    async function delDealer(id){
-      const cnt = await (async()=>{ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)); const s=await get(qRef); return Object.keys(s.val()||{}).length; })();
-      if(cnt>0){ alert(`This dealership still has ${cnt} TV(s). Remove/migrate first.`); return; }
-      if(!confirm(`Delete ${id}?`)) return;
-      try{ await remove(ref(db,'dealershipPublic/'+id)).catch(()=>{}); await remove(ref(db,'dealership/'+id)).catch(()=>{});
-           toast('Deleted'); loadList(); }catch(e){ toast('Delete failed',true); }
+        await setPersistence(auth, browserLocalPersistence);
+        await signInWithEmailAndPassword(auth,email,pass);
+      }catch(e){ toast('Sign-in failed', true); }
     }
 
-    function closeSubs(li){ li.querySelectorAll('.sub').forEach(n=>n.remove()); }
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ $('#loginBox').style.display='block'; $('#content').style.display='none'; return; }
+      $('#adminEmail').textContent = user.email || user.uid;
+      // admin gate
+      try{
+        const snap = await get(ref(db, `user/${user.uid}`));
+        const u = snap.val() || {};
+        if(u.role !== 'admin'){ $('#loginBox').style.display='none'; $('#content').style.display='none'; alert('Not authorized. Ask an admin to set your role to admin.'); return; }
+      }catch(_){}
+      $('#loginBox').style.display='none';
+      $('#content').style.display='block';
+      await refreshDealers();
+      const did = new URL(location.href).searchParams.get('dealer') || '';
+      if(did){ $('#dealerForDisplays').value=did; watchDisplays(did,true); }
+    });
 
-    async function toggleUsersUnder(li, id){
-      const opened=li.querySelector('.sub.users'); if(opened){ opened.remove(); return; }
-      closeSubs(li);
-      const all=(await get(ref(db,'user'))).val()||{};
-      const list=Object.entries(all).map(([uid,v])=>({uid,...v})).filter(u=>u.dealershipId===id)
-        .sort((a,b)=> (a.role||'').localeCompare(b.role||'') || (a.name||'').localeCompare(b.name||''));
-      const sub=document.createElement('div'); sub.className='sub users';
-      sub.innerHTML=`<h4>Users</h4>
-        <ul class="sublist">
-          ${list.length? list.map(u=>`<li class="subitem"><span><b>${esc(u.name||'No name')}</b><br><span class="muted">${esc(u.email||'')}</span></span><span class="tag">${esc(u.role||'user')}</span></li>`).join(''): `<li class="subitem"><span class="muted">No users in this dealership.</span></li>`}
-        </ul>`;
-      li.appendChild(sub);
-    }
-
-    async function toggleDisplaysUnder(li, id){
-      const opened=li.querySelector('.sub.displays'); if(opened){ opened.remove(); return; }
-      closeSubs(li);
-      const snap=await get(query(ref(db,'displays'),orderByChild('dealership'),equalTo(id)));
-      const map=snap.val()||{}; const ids=Object.keys(map).sort();
-
-      const sub=document.createElement('div'); sub.className='sub displays';
-      sub.innerHTML=`<h4>Displays</h4>
-        ${ids.length? `<ul class="sublist">${
-          ids.map(did=>`<li class="subitem" data-did="${esc(did)}">
-              <div class="subleft">${esc(did)}</div>
-              <div class="subright"><button class="chip" data-ctrl="${esc(did)}">Open controls</button></div>
-            </li>`).join('')
-        }</ul>` : `<div class="muted">No TVs yet.</div>`}
-        <div class="remoteBox" role="region" aria-label="Controls">
-          <div class="remoteHead">
-            <div class="left">
-              <span class="pillMini">Display <b data-role="did">—</b></span>
-              <span class="pillMini">On channel <b data-role="ch">—</b></span>
-            </div>
-            <div class="right">
-              <button class="chip" data-url>${I.link()} URL</button>
-              <button class="chip" data-preview>${I.eye()} Preview</button>
-              <button class="chip" data-ovctrl>${I.ctrl()} Controls</button>
-              <button class="chip" data-open>${I.open()} Open</button>
-            </div>
-          </div>
-          <div class="remoteBody">
-            <div class="iframeWrap" style="display:none">
-              <span class="badge">● Previewing</span>
-              <div class="iframeSlot"></div>
-              <div class="overlayControls">
-                <div class="cluster">
-                  <button class="circle" data-prev title="Previous">${I.left()}</button>
-                  <button class="circle" data-next title="Next">${I.right()}</button>
-                  <button class="circle" data-mute title="Mute">${I.vol()}</button>
-                </div>
-                <div class="cluster">
-                  <input class="range" type="range" min="0" max="100" value="50" data-vol>
-                  <span class="pct" data-role="voltxt">50%</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="underControls" style="display:none">
-              <div class="row">
-                <button class="iconbtn" data-prev title="Previous">${I.left()}</button>
-                <button class="iconbtn" data-next title="Next">${I.right()}</button>
-                <button class="iconbtn" data-mute title="Mute">${I.vol()}</button>
-                <span class="pillMini" data-role="voltxt">50%</span>
-              </div>
-              <div class="row">
-                <input class="range" type="range" min="0" max="100" value="50" data-vol>
-              </div>
-            </div>
-          </div>
-        </div>`;
-      li.appendChild(sub);
-
-      const box=sub.querySelector('.remoteBox');
-      const didEl=sub.querySelector('[data-role="did"]');
-      const chEl=sub.querySelector('[data-role="ch"]');
-      const frame=sub.querySelector('.iframeWrap');
-      const slot=sub.querySelector('.iframeSlot');
-      const urlBtn=sub.querySelector('[data-url]');
-      const prevBtn=sub.querySelector('[data-preview]');
-      const ctrlBtn=sub.querySelector('[data-ovctrl]');
-      const openBtn=sub.querySelector('[data-open]');
-      const under=sub.querySelector('.underControls');
-
-      let currentDid=null, currentUrl=null, ch=1, vol=50, muted=true, winRef=null;
-
-      function syncVolUI(){
-        sub.querySelectorAll('[data-role="voltxt"]').forEach(el=>{el.textContent=(muted||vol===0)?'0%':(vol+'%');});
-        sub.querySelectorAll('[data-vol]').forEach(r=>{ if(+r.value!==vol) r.value=vol; });
-        sub.querySelectorAll('[data-mute]').forEach(b=> b.classList.toggle('selected', !!muted));
+    /* Dealers dropdown */
+    async function refreshDealers(){
+      const sel = $('#dealerForDisplays'); sel.innerHTML='<option value="">Select dealership…</option>';
+      let map={};
+      try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=pub.val(); }catch(e){}
+      if(!map || Object.keys(map).length===0){
+        try{ const d=await get(ref(db,'dealership')); if(d.exists()){ const raw=d.val(); for(const id of Object.keys(raw)) map[id]={name:raw[id]?.name||id}; } }catch(e){}
       }
-      async function loadState(did){
-        try{
-          const s=await get(ref(db,'displays/'+did)); const v=s.val()||{};
-          ch=v.channel??1; vol=v.volume??50; muted=(v.muted!==undefined)?v.muted:true;
-          chEl.textContent=ch; syncVolUI();
-        }catch(e){}
-      }
-      const send = async (patch)=>{ try{ await update(ref(db,'displays/'+currentDid), {...patch, timestamp:Date.now()}); }catch(e){} };
+      Object.entries(map||{}).sort((a,b)=> (a[1]?.name||a[0]).localeCompare(b[1]?.name||b[0]) )
+      .forEach(([id,v])=>{
+        const opt=document.createElement('option'); opt.value=id; opt.textContent=v?.name||id; sel.appendChild(opt);
+      });
+    }
 
-      sub.querySelectorAll('[data-ctrl]').forEach(btn=>{
-        btn.addEventListener('click', async ()=>{
-          sub.querySelectorAll('[data-ctrl].selected').forEach(b=>deselect(b));
-          btn.classList.add('selected');
-          if(winRef && !winRef.closed){ try{ winRef.close(); }catch(e){} } winRef=null; openBtn.classList.remove('selected');
-          prevBtn.classList.remove('selected'); ctrlBtn.classList.remove('selected');
-          frame.classList.remove('forceShow'); frame.style.display='none'; slot.innerHTML=''; box.classList.remove('is-previewing');
-          under.style.display='none';
+    /* GitHub helpers (same keys as Settings) */
+    const LS_GH='iptv_admin_gh';
+    function ghCfg(){ return JSON.parse(localStorage.getItem(LS_GH)||'{}'); }
+    function ghHeaders(){
+      const t=ghCfg().token||''; const h={ 'Accept':'application/vnd.github+json','Content-Type':'application/json' };
+      if(t) h.Authorization=`Bearer ${t}`; return h;
+    }
+    function ghBase(){ const c=ghCfg(); if(!c.owner||!c.repo) throw new Error('GitHub owner/repo missing (set in Settings)'); return `https://api.github.com/repos/${c.owner}/${c.repo}`; }
+    async function ghFetch(url,opts={}){
+      const r=await fetch(url,{...opts,headers:{...ghHeaders(),...(opts.headers||{})}});
+      const tx=await r.text(); let d; try{ d=tx?JSON.parse(tx):{} }catch{ d={raw:tx} }
+      if(!r.ok) throw new Error(d?.message||r.statusText);
+      return d;
+    }
+    async function ghGetSha(path){
+      const c=ghCfg(); try{ const d=await ghFetch(`${ghBase()}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(c.branch||'main')}`); return d.sha||null; }catch(e){ return null; }
+    }
+    function b64(s){ return btoa(unescape(encodeURIComponent(s))); }
+    async function ghPutFile(path, content, message){
+      const c=ghCfg();
+      if(!c.token) throw new Error('GitHub token missing (set in Settings)');
+      const sha = await ghGetSha(path);
+      const body = { message: message||`add ${path}`, branch:c.branch||'main', content:b64(content), ...(sha?{sha}:{}) };
+      return ghFetch(`${ghBase()}/contents/${encodeURIComponent(path)}`, {method:'PUT', body:JSON.stringify(body)});
+    }
 
-          currentDid = btn.getAttribute('data-ctrl');
-          didEl.textContent = currentDid;
-          currentUrl = await getPreviewUrl(currentDid);
-          await loadState(currentDid);
+    /* Build TV page (Displays/{id}.html) */
+    function buildDisplayHtml(id, dealershipName){
+      const cfg = firebaseConfig;
+      return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>IPTV Display — ${id}</title>
+<meta name="theme-color" content="#000"/>
+<style>
+  :root{--accent:#ff9500}
+  body{margin:0;background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
+  .hud{position:fixed;left:10px;top:10px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:8px 10px;font-size:12px;line-height:1.2}
+  .hud b{font-size:14px}
+  .flash{position:fixed;inset:0;pointer-events:none;background:rgba(255,149,0,.15);opacity:0;transition:opacity .25s}
+  .flash.show{opacity:1}
+  .center{position:fixed;inset:0;display:grid;place-items:center}
+  video{width:100vw;height:100vh;object-fit:contain;background:#000}
+  .msg{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.2);padding:6px 10px;border-radius:999px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="hud">
+  <div><b>${dealershipName||'Dealership'}</b></div>
+  <div>ID: <span id="did">${id}</span></div>
+  <div>CH <span id="ch">1</span> · <span id="muted">Muted</span> · VOL <span id="vol">0</span>%</div>
+</div>
+<div class="flash" id="flash"></div>
+<div class="center">
+  <video id="vid" playsinline webkit-playsinline preload="auto" muted></video>
+  <div id="msg" class="msg" style="display:none">Tap to unmute</div>
+</div>
 
-          box.style.display='block';
-          box.scrollIntoView({behavior:'smooth',block:'center'});
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js"></script>
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getDatabase, ref, onValue, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+  const app = initializeApp(${JSON.stringify(cfg)});
+  const db  = getDatabase(app);
+  const id = ${JSON.stringify(id)};
+  const didEl = document.getElementById('did');
+  const chEl  = document.getElementById('ch');
+  const volEl = document.getElementById('vol');
+  const mutedEl=document.getElementById('muted');
+  const flash = document.getElementById('flash');
+  const msg   = document.getElementById('msg');
+  const vid   = document.getElementById('vid');
+
+  // Fill with your channel URLs (HLS). Leave empty to just show black screen.
+  // Example: 1:'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'
+  const CHANNEL_URLS = { 1:'', 2:'', 3:'', 4:'', 5:'' };
+
+  let hls=null, curUrl='';
+
+  function setMuted(on){
+    vid.muted = !!on;
+    mutedEl.textContent = on ? 'Muted' : 'Unmuted';
+    msg.style.display = (!on && vid.muted) ? 'block' : 'none';
+  }
+  function setVolume(v){
+    const pct = Math.max(0,Math.min(100, v|0));
+    volEl.textContent = pct;
+    // browsers clamp effective volume when muted; keep real value anyway
+    vid.volume = pct/100;
+  }
+  function setChannel(ch){
+    chEl.textContent = ch;
+    const url = CHANNEL_URLS[ch] || '';
+    if(!url){ detach(); return; }
+    if(url === curUrl) return;
+    curUrl = url;
+    if(Hls.isSupported()){
+      if(hls) hls.destroy();
+      hls = new Hls({lowLatencyMode:true});
+      hls.loadSource(url); hls.attachMedia(vid);
+    }else if(vid.canPlayType('application/vnd.apple.mpegurl')){
+      vid.src = url;
+    }else{
+      detach();
+    }
+  }
+  function detach(){
+    if(hls){ hls.destroy(); hls=null; }
+    vid.removeAttribute('src'); try{ vid.load(); }catch{}
+  }
+
+  // Tap to toggle mute (mobile)
+  document.body.addEventListener('touchend', ()=>{ if(vid.muted){ vid.muted=false; msg.style.display='none'; } }, {passive:true});
+
+  let lastFlash=0;
+  onValue(ref(db,'displays/'+id), snap=>{
+    const v=snap.val()||{};
+    setChannel(v.channel||1);
+    setVolume(v.volume||0);
+    setMuted(v.muted!==false? true : false);
+    if(v.flashAt && v.flashAt!==lastFlash){
+      lastFlash=v.flashAt;
+      flash.classList.add('show');
+      setTimeout(()=>flash.classList.remove('show'),180);
+    }
+  });
+</script>
+</body>
+</html>`;
+    }
+
+    /* Displays logic */
+    let displaysUnsub=null;
+    $('#dealerForDisplays').addEventListener('change', e=>watchDisplays(e.target.value));
+    $('#displaysReload').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(did) watchDisplays(did,true); });
+    $('#manageUsers').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true); location.href = `users.html?dealer=${encodeURIComponent(did)}`; });
+
+    const previewUrlFor = (id)=> `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(id)}.html`;
+
+    async function watchDisplays(did,forceOnce=false){
+      const ul=$('#displayList'); ul.innerHTML='';
+      if(!did){ $('#displayEmpty').style.display='block'; if(displaysUnsub) displaysUnsub(); displaysUnsub=null; return; }
+      $('#displayEmpty').style.display='none';
+      if(displaysUnsub){ displaysUnsub(); displaysUnsub=null; }
+
+      const render=(map)=>{
+        ul.innerHTML='';
+        const ids=Object.keys(map||{}).sort();
+        if(ids.length===0){ $('#displayEmpty').style.display='block'; return; }
+        const now=Date.now();
+        ids.forEach(id=>{
+          const st=map[id]||{};
+          const online=(st.lastSeenAt && (now-st.lastSeenAt)<60000) || (st.timestamp && (now-st.timestamp)<120000);
+          const li=document.createElement('li'); li.className='item'; li.dataset.id=id;
+          li.innerHTML=`
+            <div class="col">
+              <div class="split">
+                <b>${esc(id)}</b>
+                <span class="tag">${esc(did)}</span>
+                <span class="online"><i class="dot ${online?'ok':'err'}"></i>${online?'Online':'Offline'}</span>
+              </div>
+              <span class="muted small">CH ${st.channel ?? 1} • VOL ${st.volume ?? 0} • ${st.muted ? 'Muted' : 'Unmuted'}</span>
+            </div>
+            <div class="split">
+              <select data-id="${id}" class="select small chsel">
+                ${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===(st.channel||1)?'selected':''}>CH ${n}</option>`).join('')}
+              </select>
+              <div class="vol">
+                <span class="muted small">VOL</span>
+                <input type="range" min="0" max="100" value="${st.volume ?? 0}" data-id="${id}" class="vslider"/>
+              </div>
+              <button class="btn" data-id="${id}" data-muted="${!!st.muted}">${st.muted?'Unmute':'Mute'}</button>
+              <button class="btn" data-preview="${id}">Preview</button>
+              <button class="btn" data-flash="${id}">Ping</button>
+              <button class="btn" data-create="${id}">Create/Overwrite page</button>
+              <button class="btn danger" data-remove="${id}">Remove</button>
+            </div>`;
+          ul.appendChild(li);
         });
-      });
 
-      urlBtn.onclick = async ()=>{
-        if(!currentDid) return;
-        urlBtn.classList.add('selected');
-        const cur = await getPreviewUrl(currentDid);
-        const next = prompt('Preview URL for '+currentDid, cur);
-        if(!next || next===cur){ urlBtn.classList.remove('selected'); return; }
-        try{ await update(ref(db, 'displays/'+currentDid), { previewUrl:next, timestamp:Date.now() }); toast('URL saved'); currentUrl=next; }
-        catch(e){ toast('Save failed', true); }
-        urlBtn.classList.remove('selected');
+        // control bindings
+        ul.querySelectorAll('.chsel').forEach(el=>{
+          el.addEventListener('change', async (e)=>{ const id=e.target.dataset.id; const ch=parseInt(e.target.value,10); await writeDisplay(id,{channel:ch}); });
+        });
+        const debouncedWrite=debounce(async (id,val)=>{ await writeDisplay(id,{volume:val}); },160);
+        ul.querySelectorAll('.vslider').forEach(el=>{
+          el.addEventListener('input', e=>{ const id=e.target.dataset.id; const v=parseInt(e.target.value,10); debouncedWrite(id,v); });
+        });
+        ul.querySelectorAll('button[data-id]').forEach(el=>{
+          el.addEventListener('click', async ()=>{ const id=el.dataset.id; const cur=el.getAttribute('data-muted')==='true'; await writeDisplay(id,{muted:!cur}); });
+        });
+        ul.querySelectorAll('button[data-flash]').forEach(el=>{
+          el.addEventListener('click', async ()=>{ const id=el.dataset.flash; await writeDisplay(id,{flashAt: Date.now()}); toast(`Pinged ${id}`); });
+        });
+        ul.querySelectorAll('button[data-remove]').forEach(el=>{
+          el.addEventListener('click', async ()=>{ const id=el.dataset.remove; if(!confirm(`Remove ${id}?`)) return;
+            await remove(ref(db,`dealership/${did}/displays/${id}`)).catch(()=>{});
+            await remove(ref(db,`displays/${id}`)).catch(()=>{});
+            toast('Display removed'); });
+        });
+
+        // inline preview toggle
+        ul.querySelectorAll('button[data-preview]').forEach(el=>{
+          el.addEventListener('click', async ()=>{
+            const id = el.dataset.preview;
+            const row = el.closest('.item');
+            const opened = row.querySelector('.sub.preview');
+            if(opened){ opened.remove(); return; }
+
+            // build panel
+            const panel = document.createElement('div');
+            panel.className = 'sub preview';
+            panel.innerHTML = `
+              <h4>Preview</h4>
+              <div class="iframeWrap">
+                <span class="badge">● Previewing</span>
+                <iframe title="Preview ${esc(id)}" src="${withEmbed(previewUrlFor(id))}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+                <div class="overlayControls">
+                  <div class="cluster">
+                    <button class="circle" data-prev title="Previous">
+                      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+                    </button>
+                    <button class="circle" data-next title="Next">
+                      <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+                    </button>
+                    <button class="circle" data-mute title="Mute">
+                      <svg viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6l-5 4Z"/><path d="M16 9a3 3 0 0 1 0 6"/></svg>
+                    </button>
+                  </div>
+                  <div class="cluster">
+                    <input class="range" type="range" min="0" max="100" value="${Number((map[id]||{}).volume)||0}" data-vol>
+                    <span class="pct" data-voltxt>${Number((map[id]||{}).volume)||0}%</span>
+                  </div>
+                </div>
+              </div>`;
+            row.appendChild(panel);
+
+            const pctTxt = panel.querySelector('[data-voltxt]');
+            const volRange = panel.querySelector('[data-vol]');
+            const updPct = (v)=>{ pctTxt.textContent = `${v|0}%`; };
+
+            panel.addEventListener('click',(ev)=>{
+              const t=ev.target.closest('[data-prev],[data-next],[data-mute]');
+              if(!t) return;
+              if(t.hasAttribute('data-prev')) writeDisplay(id,{channel:Math.max(1,((map[id]?.channel||1)-1))});
+              else if(t.hasAttribute('data-next')) writeDisplay(id,{channel:((map[id]?.channel||1)+1)});
+              else if(t.hasAttribute('data-mute')) writeDisplay(id,{muted:!(map[id]?.muted)});
+            });
+            volRange.addEventListener('input', e=>{ const v=+e.target.value|0; updPct(v); });
+            volRange.addEventListener('change', e=>{ const v=+e.target.value|0; writeDisplay(id,{volume:v}); });
+          });
+        });
+
+        // per-row Create/Overwrite page
+        ul.querySelectorAll('button[data-create]').forEach(el=>{
+          el.addEventListener('click', async ()=>{
+            const id = el.dataset.create;
+            try{
+              await ensureTvPageOnGithub(id);
+              toast(`Page created for ${id}`);
+            }catch(e){ toast(e.message||'GitHub error',true); }
+          });
+        });
       };
 
-      prevBtn.onclick = async ()=>{
-        if(!currentDid) return;
-        const active = prevBtn.classList.contains('selected');
-        if(active){
-          prevBtn.classList.remove('selected'); box.classList.remove('is-previewing');
-          frame.classList.remove('forceShow'); frame.style.display='none'; slot.innerHTML='';
-          under.style.display='none';
-          return;
-        }
-        prevBtn.classList.add('selected');
-        const u = currentUrl;
-        frame.style.display='block';
-        slot.innerHTML = `<iframe title="Preview ${esc(currentDid)}" src="${u+(u.includes('?')?'&':'?')+'embed=1'}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
-        box.classList.add('is-previewing');
-      };
-
-      ctrlBtn.onclick = async ()=>{
-        if(!currentDid) return;
-        if(!prevBtn.classList.contains('selected')) await prevBtn.click();
-        const on = !ctrlBtn.classList.contains('selected');
-        if(on){
-          ctrlBtn.classList.add('selected');
-          frame.classList.add('forceShow');
-          under.style.display = 'flex';
-        }else{
-          ctrlBtn.classList.remove('selected');
-          frame.classList.remove('forceShow');
-          under.style.display = 'none';
-        }
-      };
-
-      openBtn.onclick = async ()=>{
-        if(!currentDid) return;
-        const isOpen = !!(winRef && !winRef.closed);
-        if(isOpen){ try{ winRef.close(); }catch(e){} winRef=null; openBtn.classList.remove('selected'); return; }
-        const u = currentUrl;
-        winRef = window.open(u+(u.includes('?')?'&':'?')+'embed=1','_blank','noopener');
-        if(!winRef){ toast('Popup blocked — enable popups', true); return; }
-        openBtn.classList.add('selected');
-      };
-
-      sub.addEventListener('click',(ev)=>{
-        const t = ev.target.closest('[data-prev],[data-next],[data-mute]');
-        if(!t || !currentDid) return;
-        if(t.hasAttribute('data-prev')){
-          ch=Math.max(1,(ch|0)-1); chEl.textContent=ch; t.classList.add('selected'); send({channel:ch}); setTimeout(()=>t.classList.remove('selected'),120);
-        }else if(t.hasAttribute('data-next')){
-          ch=(ch|0)+1; chEl.textContent=ch; t.classList.add('selected'); send({channel:ch}); setTimeout(()=>t.classList.remove('selected'),120);
-        }else if(t.hasAttribute('data-mute')){
-          muted=!muted; syncVolUI(); send({muted});
-        }
-      });
-
-      sub.querySelectorAll('[data-vol]').forEach(r=>{
-        r.addEventListener('input',()=>{ if(!currentDid) return; vol = +r.value|0; syncVolUI(); });
-        r.addEventListener('change',()=>{ if(!currentDid) return; vol = +r.value|0; send({volume:vol}); });
-      });
+      const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
+      const off=onValue(qRef,snap=>render(snap.val()||{}),err=>console.warn(err));
+      displaysUnsub=()=>off();
+      if(forceOnce){ const once=await get(qRef); render(once.val()||{}); }
     }
 
+    async function writeDisplay(id,patch){
+      try{
+        const did=$('#dealerForDisplays').value;
+        const snap=await get(ref(db,`displays/${id}`)); const cur=snap.val()||{};
+        const next={...patch,dealership:cur.dealership || did || null,timestamp:Date.now()};
+        await update(ref(db,`displays/${id}`),next);
+        toast(`${id}: updated`);
+      }catch(e){ toast('Write denied', true); }
+    }
+
+    $('#bulkMute').addEventListener('click', ()=>bulkWrite({muted:true}));
+    $('#bulkUnmute').addEventListener('click', ()=>bulkWrite({muted:false}));
+    $('#bulkCh1').addEventListener('click', ()=>bulkWrite({channel:1}));
+    async function bulkWrite(patch){
+      const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
+      try{
+        const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
+        const s=await get(qRef); const map=s.val()||{}; const ids=Object.keys(map);
+        for(const id of ids){ await writeDisplay(id,patch); }
+        toast('Applied to all TVs');
+      }catch(e){ toast('Bulk failed',true); }
+    }
+
+    /* Add display + GitHub page */
+    $('#addDisplayBtn').addEventListener('click', async ()=>{
+      const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
+      let id=$('#newDisplayId').value.trim();
+
+      if(!id){
+        const friendly=(await get(ref(db,`dealershipPublic/${did}`))).val()?.name||did;
+        const pref=initialsFromName(friendly);
+        const existing=await collectDisplays(did);
+        let n=nextSuffix(existing,pref);
+        id=`${pref}-${String(n).padStart(3,'0')}`;
+      }
+
+      try{
+        await set(ref(db,`dealership/${did}/displays/${id}`),true);
+        await update(ref(db,`displays/${id}`),{channel:1,volume:0,muted:true,dealership:did,timestamp:Date.now()});
+        $('#newDisplayId').value='';
+        toast('Display added');
+
+        // create page on GitHub
+        try{
+          await ensureTvPageOnGithub(id, did);
+          toast('GitHub page created');
+        }catch(e){ toast('Added (GitHub: '+(e.message||'error')+')',true); }
+
+        watchDisplays(did,true);
+      }catch(e){ toast('Add failed',true); }
+    });
+
+    async function ensureTvPageOnGithub(id, did){
+      const gh = ghCfg();
+      if(!gh || !gh.token || !gh.owner || !gh.repo) throw new Error('Configure GitHub in Settings first');
+      let dealerName = did || $('#dealerForDisplays').value || '';
+      if(dealerName){
+        const pub = await get(ref(db,'dealershipPublic/'+dealerName));
+        if(pub.exists()) dealerName = pub.val()?.name || dealerName;
+      }
+      const html = buildDisplayHtml(id, dealerName || '');
+      const path = `Displays/${id}.html`;
+      await ghPutFile(path, html, `feat(displays): add/update ${id}.html`);
+    }
+
+    async function collectDisplays(did){ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const s=await get(qRef); return Object.keys(s.val()||{}); }
+    function initialsFromName(name){ const raw=(name||'').trim(); if(!raw) return 'DS'; let parts=raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g)||raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g)||[]; let a=parts[0]||'', b=parts[1]||''; let p=(a? a[0]:'')+(b? b[0]:''); if(p.length<2 && a.length>=2) p=a.slice(0,2); return p.toUpperCase(); }
+    function nextSuffix(list,pref){ let max=0; list.forEach(id=>{ const m=id.match(new RegExp('^'+pref+'-(\\d{3})$')); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; }}); return max+1; }
   </script>
 </body>
 </html>
