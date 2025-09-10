@@ -1,116 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
-  <title>BFA IPTV — Settings</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
+<title>BFA IPTV — Settings</title>
 
-  <!-- ===== TOKENS (same design language as Home/Backups) ===== -->
-  <style>
-    :root{
-      --accent:#ff9500;
-      --fg:#111; --muted:#6e6e73; --bg:#ffffff;
-      --panel:#fff; --tile:#f6f6f8; --tileHover:#fff7ea;
-      --border:rgba(0,0,0,.14); --borderStrong:rgba(0,0,0,.28);
-      --shadow:0 14px 36px rgba(0,0,0,.08);
-    }
-    body.dark{
-      --bg:#0b0b0c; --fg:#f7f7f8; --muted:#a1a1a8;
-      --panel:#151517; --tile:#1a1a1d; --tileHover:#221e18;
-      --border:rgba(255,255,255,.16); --borderStrong:rgba(255,255,255,.36);
-      --shadow:0 18px 48px rgba(0,0,0,.45);
-    }
+<!-- PWA (optional) -->
+<link rel="manifest" href="/IPTV-/manifest.webmanifest"/>
+<meta name="theme-color" content="#ffffff"/>
+<link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png"/>
+<link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png"/>
+<link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png"/>
 
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--fg);
-      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
-    a{color:inherit;text-decoration:none} a:visited{color:inherit}
-    button:focus{outline:none}
-    a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+<style>
+  /* =========================================================
+     Tokens (light default) + dark override (same as Schedule)
+  ========================================================= */
+  :root{
+    --accent:#ff9500;
+    --fg:#111; --muted:#6e6e73; --bg:#ffffff;
+    --panel:#fff; --tile:#f6f6f8; --tileHover:#fff7ea;
+    --border:rgba(0,0,0,.14); --borderStrong:rgba(0,0,0,.28);
+    --shadow:0 14px 36px rgba(0,0,0,.08);
+  }
+  body.dark{
+    --bg:#0b0b0c; --fg:#f7f7f8; --muted:#a1a1a8;
+    --panel:#151517; --tile:#1a1a1d; --tileHover:#221e18;
+    --border:rgba(255,255,255,.16); --borderStrong:rgba(255,255,255,.36);
+    --shadow:0 18px 48px rgba(0,0,0,.45);
+  }
 
-    /* ===== NAVBAR (copied 1:1 from Home/Backups) ===== */
-    .topbar{position:sticky;top:0;z-index:100;background:var(--panel);
-      border-bottom:1px solid var(--border);
-      padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
-    .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;position:relative}
-    .brand{display:flex;align-items:center;gap:10px}
-    .logo{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:#fff center/cover no-repeat}
-    .logotxt{font-weight:900;letter-spacing:.2px}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
+  a{color:inherit;text-decoration:none}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
 
-    .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;color:inherit;font-weight:800;font-size:14px;line-height:1;white-space:nowrap}
-    .pill:hover{border-color:var(--accent)}
-    .pill.is-active{outline:2px solid var(--accent)}
-    .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
+  /* =========================================================
+     Topbar (shared — identical to Schedule)
+  ========================================================= */
+  .topbar{position:sticky;top:0;z-index:100;background:var(--panel);
+    border-bottom:1px solid var(--border);
+    padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
+  .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;position:relative}
+  .brand{display:flex;align-items:center;gap:10px}
+  .logo{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:#fff center/cover no-repeat}
+  .logotxt{font-weight:900;letter-spacing:.2px}
 
-    .more{position:relative}
-    #moreBtn .plus{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
-    #moreMenu{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
-      border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none}
-    #moreMenu.open{display:block}
-    #moreMenu a{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px}
-    #moreMenu a:hover{background:var(--tileHover)}
-    #moreMenu a.is-active{outline:2px solid var(--accent)}
-    #moreMenu .ic{width:18px;height:18px;stroke-width:1.9}
+  .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;color:inherit;font-weight:800;font-size:14px;line-height:1;white-space:nowrap}
+  .pill:hover{border-color:var(--accent)}
+  .pill.is-active{outline:2px solid var(--accent)}
+  .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
 
-    .actions{display:flex;gap:8px;align-items:center}
-    .email{max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);
-      border:1px solid var(--border);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .chip{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1.5px solid var(--borderStrong);
-      background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
-    .chip:hover{border-color:var(--accent)}
-    .chip .ic{width:18px;height:18px;stroke-width:2}
-    .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
-    #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:42px;min-width:42px;padding:0;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
-    #hamburger .ic{width:22px;height:22px;stroke:var(--accent);stroke-width:2.35}
+  .more{position:relative}
+  #moreBtn .plus{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
+  #moreMenu{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
+    border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none}
+  #moreMenu.open{display:block}
+  #moreMenu a{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px}
+  #moreMenu a:hover{background:var(--tileHover)}
+  #moreMenu a.is-active{outline:2px solid var(--accent)}
+  #moreMenu .ic{width:18px;height:18px;stroke-width:1.9}
 
-    @media (max-width:920px){ .nav{display:none} #hamburger{display:inline-flex} .email{display:none} }
+  .actions{display:flex;gap:8px;align-items:center}
+  .email{max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);
+    border:1.5px solid var(--borderStrong);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .chip{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1.5px solid var(--borderStrong);
+    background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+  .chip:hover{border-color:var(--accent)}
+  .chip .ic{width:18px;height:18px;stroke-width:2}
+  .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
+  #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:42px;min-width:42px;padding:0;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
+  #hamburger .ic{width:22px;height:22px;stroke:var(--accent);stroke-width:2.35}
+  @media (max-width:920px){ .nav{display:none} #hamburger{display:inline-flex} .email{display:none} }
 
-    #sheet{position:fixed;inset:0;z-index:120;display:none}
-    #sheet.open{display:block}
-    #sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
-    .panel{position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:var(--panel);border-left:1px solid var(--border);
-      box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px}
-    .panel .row{display:flex;align-items:center;justify-content:space-between}
-    .panel nav{display:grid;gap:8px}
-    .panel nav a{justify-content:flex-start}
+  #sheet{position:fixed;inset:0;z-index:120;display:none}
+  #sheet.open{display:block}
+  #sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
+  .panel{position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:var(--panel);border-left:1px solid var(--border);
+    box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px}
+  .panel .row{display:flex;align-items:center;justify-content:space-between}
+  .panel nav{display:grid;gap:8px}
+  .panel nav a{justify-content:flex-start}
 
-    /* ===== PAGE ===== */
-    .wrap{max-width:1100px;margin:0 auto;padding:18px;display:grid;gap:14px}
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
-    .card h2{margin:0 0 6px}
-    .muted{color:var(--muted);font-size:12px}
+  /* =========================================================
+     Page UI (cards & inputs)
+  ========================================================= */
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+  .muted{color:var(--muted);font-size:12px}
+  .label{font-size:12px;color:var(--muted);margin-bottom:6px}
+  .input, textarea, select{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
+  textarea{min-height:120px;resize:vertical}
+  .btn{height:34px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center}
+  .btn.solid{background:var(--accent);border-color:var(--accent);color:#000}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}
+  @media (max-width:720px){.row2,.row3{grid-template-columns:1fr}}
 
-    /* Stat tiles */
-    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-    @media (max-width:920px){ .stats{grid-template-columns:repeat(2,1fr)} }
-    @media (max-width:520px){ .stats{grid-template-columns:1fr} }
-    .stat{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:14px;background:var(--tile);padding:12px}
-    .stat .ticon{width:28px;height:28px;border-radius:9px;border:1px solid var(--border);display:grid;place-items:center;background:#fff}
-    .stat .ticon .ic{width:16px;height:16px;stroke-width:1.9}
-    .stat b{font-size:18px}
-
-    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .input{height:40px;padding:0 14px;border:1px solid var(--border);border-radius:12px;background:var(--panel);font-size:14px;min-width:200px}
-    .btn{height:36px;padding:0 14px;border:1px solid var(--border);border-radius:9999px;background:var(--panel);font-weight:800;cursor:pointer}
-    .btn:hover{border-color:var(--accent)}
-    .btnSolid{height:36px;padding:0 14px;border-radius:9999px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
-
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    @media (max-width:920px){ .grid2{grid-template-columns:1fr} }
-    .pill{padding:2px 8px;border:1px solid var(--border);border-radius:9999px}
-    .kv{display:grid;grid-template-columns:140px 1fr;gap:10px}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-    .ok{color:#0a7d26} .danger{color:#b4232a}
-    .hr{height:1px;background:var(--border);margin:10px 0;border:0}
-
-    .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-    .chipSlim{padding:6px 10px;border:1px solid var(--border);border-radius:9999px;background:transparent;font-size:12px}
-  </style>
+  .stat{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--tile)}
+  .badge{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:9999px;padding:2px 8px;font-size:11px;color:var(--muted);background:transparent}
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
+  .toast.show{opacity:1}
+</style>
 </head>
 <body>
-  <!-- ===== NAVBAR ===== -->
+  <!-- ===== NAVBAR (identical) ===== -->
   <header class="topbar">
     <div class="toprow">
       <a class="brand" href="home.html"><span class="logo" id="brandLogo"></span><span class="logotxt">BFA IPTV</span></a>
@@ -137,12 +134,8 @@
             <a href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
             <a href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
             <a href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
-            <a class="is-active" href="settings.html">
-              <svg class="ic" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"/>
-              </svg>
-              Settings
-            </a>
+            <a href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
+            <a class="is-active" href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
           </div>
         </div>
       </nav>
@@ -178,131 +171,146 @@
           <a class="pill" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
           <a class="pill" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
           <a class="pill" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
-          <a class="pill is-active" href="settings.html">
-            <svg class="ic" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"/>
-            </svg>
-            Settings
-          </a>
           <a class="pill" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
+          <a class="pill is-active" href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
           <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
         </nav>
       </aside>
     </div>
   </header>
 
-  <!-- ===== CONTENT ===== -->
+  <!-- =========================================================
+       SETTINGS CONTENT
+  ========================================================= -->
   <div class="wrap">
     <!-- Overview -->
-    <div class="card">
-      <h2>Overview</h2>
-      <div class="stats" id="stats">
-        <div class="stat"><span class="ticon"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></span><div><div class="muted">Dealer profiles</div><b id="stDealers">—</b></div></div>
-        <div class="stat"><span class="ticon"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg></span><div><div class="muted">Displays</div><b id="stDisplays">—</b></div></div>
-        <div class="stat"><span class="ticon"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg></span><div><div class="muted">Users</div><b id="stUsers">—</b></div></div>
-        <div class="stat"><span class="ticon"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg></span><div><div class="muted">Admins</div><b id="stAdmins">—</b></div></div>
+    <div class="card" style="margin-bottom:12px">
+      <h2 style="margin:0 0 8px">Overview</h2>
+      <div class="row3">
+        <div class="stat"><b>Firebase Project:</b> <span id="ov-fb-project" class="mono" style="margin-left:6px">—</span></div>
+        <div class="stat"><b>Auth User:</b> <span id="ov-user" class="mono" style="margin-left:6px">—</span></div>
+        <div class="stat"><b>Role:</b> <span id="ov-role" class="mono" style="margin-left:6px">—</span></div>
       </div>
-      <div class="chips" id="adminsList"></div>
+      <div class="row3" style="margin-top:8px">
+        <div class="stat"><b>Displays:</b> <span id="ov-displays" class="mono" style="margin-left:6px">—</span></div>
+        <div class="stat"><b>Dealers:</b> <span id="ov-dealers" class="mono" style="margin-left:6px">—</span></div>
+        <div class="stat"><b>GitHub Account:</b> <span id="ov-gh" class="mono" style="margin-left:6px">—</span></div>
+      </div>
+      <div style="margin-top:10px"><button id="btn-refresh-overview" class="btn">Refresh Overview</button></div>
+      <div class="muted" style="margin-top:6px">Counts read from Firestore collections (names configurable below).</div>
     </div>
 
-    <!-- GitHub + Backups -->
-    <div class="card">
-      <h2>GitHub & Backups</h2>
-      <div class="grid2" style="margin-top:6px">
-        <div>
-          <div class="row">
-            <input id="ghOwner" class="input" placeholder="Owner (org or user)"/>
-            <input id="ghRepo"  class="input" placeholder="Repo (e.g., IPTV-)"/>
-            <input id="ghBranch" class="input" placeholder="Branch (e.g., main)"/>
-          </div>
-          <div class="row" style="margin-top:8px">
-            <input id="ghToken" class="input" type="password" placeholder="GitHub token (fine-grained, contents:write)"/>
-            <button id="btnSaveGh" class="btn">Save</button>
-            <button id="btnTestGh" class="btn">Test</button>
-            <a id="btnOpenRepo" class="btn" href="#" target="_blank" rel="noopener">Open Repo</a>
-          </div>
-          <div class="row" style="margin-top:8px">
-            <input id="basePath" class="input" placeholder="Base backup folder (e.g., backups/)" />
-            <button id="btnCreateFolder" class="btn">Create .gitkeep</button>
-          </div>
-          <div id="ghStatus" class="muted" style="margin-top:8px">—</div>
-        </div>
-
-        <div>
-          <div class="kv">
-            <b>Repo</b><span id="ghName" class="mono">—</span>
-            <b>Branch</b><span id="ghDefault">—</span>
-            <b>Visibility</b><span id="ghVis">—</span>
-            <b>Last push</b><span id="ghPush">—</span>
-            <b>Rate limit</b><span id="ghRate">—</span>
-          </div>
-          <div class="hr"></div>
-          <div class="muted">Base folder contents (first 25)</div>
-          <div id="ghList" class="chips"></div>
-        </div>
+    <!-- Quick preferences -->
+    <div class="card" style="margin-bottom:12px">
+      <h3 style="margin:0 0 8px">Quick Preferences</h3>
+      <div class="row3">
+        <div><div class="label">Displays collection</div><input id="inp-displays-col" class="input" placeholder="displays"/></div>
+        <div><div class="label">Dealers collection</div><input id="inp-dealers-col" class="input" placeholder="dealers"/></div>
+        <div><div class="label">Functions region</div><input id="inp-functions-region" class="input" placeholder="us-central1"/></div>
       </div>
+      <div style="margin-top:10px"><button id="btn-save-preferences" class="btn solid">Save Preferences</button></div>
+      <div class="muted" style="margin-top:6px">Stored in localStorage.</div>
     </div>
 
-    <!-- Safety & App options -->
-    <div class="card">
-      <h2>Safety & App Options</h2>
-      <div class="grid2">
-        <div>
-          <div class="row">
-            <label class="pill">Auto-backup before restore
-              <input id="autoBackup" type="checkbox" style="margin-left:8px">
-            </label>
-            <label class="pill">Keep last
-              <input id="autoKeep" class="input" style="width:90px;margin:0 8px" type="number" min="1" value="20"> files
-            </label>
-          </div>
-          <div class="row" style="margin-top:8px">
-            <label class="pill">Safety mode (type <span class="mono">RESTORE</span> to confirm)
-              <input id="safetyMode" type="checkbox" style="margin-left:8px">
-            </label>
-          </div>
-          <div class="muted" style="margin-top:6px">These flags are read by other admin pages (Backups, Restore, etc.).</div>
-        </div>
-        <div>
-          <div class="row">
-            <button id="btnExport" class="btn">Export settings (.json)</button>
-            <label class="btn">Import settings
-              <input id="importFile" type="file" accept="application/json" style="display:none">
-            </label>
-          </div>
-          <div class="row" style="margin-top:8px">
-            <button id="btnClearLocalBackups" class="btn">Clear local backups</button>
-            <button id="btnResetAll" class="btn" style="border-color:#ffb3b3;color:#b4232a">Reset all local settings</button>
-          </div>
-          <div id="localUsage" class="muted" style="margin-top:6px">—</div>
+    <!-- GitHub -->
+    <div class="card" style="margin-bottom:12px">
+      <h3 style="margin:0 0 8px">GitHub Settings</h3>
+      <div class="row3">
+        <div><div class="label">Owner</div><input id="inp-gh-owner" class="input" placeholder="owner"/></div>
+        <div><div class="label">Repo</div><input id="inp-gh-repo" class="input" placeholder="repo"/></div>
+        <div><div class="label">Branch</div><input id="inp-gh-branch" class="input" placeholder="main"/></div>
+      </div>
+      <div class="row2">
+        <div><div class="label">Config path</div><input id="inp-gh-path" class="input" placeholder="config/iptv-config.json"/></div>
+        <div><div class="label">PAT (masked)</div><input id="inp-gh-token" class="input" type="password" placeholder="ghp_••••••••"/></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button id="btn-gh-save-session" class="btn">Use for this session</button>
+        <button id="btn-gh-encrypted-save" class="btn">Encrypt & save locally</button>
+        <button id="btn-gh-clear" class="btn">Clear saved</button>
+        <button id="btn-gh-test" class="btn solid">Test Token</button>
+      </div>
+      <div class="row2" style="margin-top:12px">
+        <div><div class="label">Token expiry (optional)</div><input id="inp-gh-expiry" type="datetime-local" class="input"/></div>
+        <div style="display:flex;align-items:end;gap:8px;flex-wrap:wrap">
+          <button id="btn-gh-expiry-save" class="btn">Save expiry</button>
+          <button id="btn-gh-expiry-ics" class="btn">Download .ics reminder</button>
+          <span id="gh-expiry-info" class="mono" style="font-size:12px;color:var(--muted)"></span>
         </div>
       </div>
+      <div class="muted" style="margin-top:6px">PAT is session-only unless you encrypt & save it with a passphrase (WebCrypto AES-GCM).</div>
     </div>
 
-    <!-- Your Account (from DB) -->
+    <!-- Firebase -->
+    <div class="card" style="margin-bottom:12px">
+      <h3 style="margin:0 0 8px">Firebase Settings</h3>
+      <div class="row3">
+        <div><div class="label">apiKey</div><input id="fb-apiKey" class="input"/></div>
+        <div><div class="label">authDomain</div><input id="fb-authDomain" class="input"/></div>
+        <div><div class="label">databaseURL</div><input id="fb-databaseURL" class="input"/></div>
+      </div>
+      <div class="row3">
+        <div><div class="label">projectId</div><input id="fb-projectId" class="input"/></div>
+        <div><div class="label">storageBucket</div><input id="fb-storageBucket" class="input"/></div>
+        <div><div class="label">messagingSenderId</div><input id="fb-msgId" class="input"/></div>
+      </div>
+      <div class="row2">
+        <div><div class="label">appId</div><input id="fb-appId" class="input"/></div>
+        <div style="display:flex;align-items:end;gap:8px;flex-wrap:wrap">
+          <button id="btn-fb-save" class="btn solid">Save & Init</button>
+          <button id="btn-fb-test" class="btn">Test Firebase</button>
+          <button id="btn-fb-logout" class="btn">Sign out</button>
+        </div>
+      </div>
+      <div class="muted">Saved in localStorage as <span class="mono">firebaseConfig</span>. Test writes/reads a small ping in RTDB.</div>
+    </div>
+
+    <!-- Purge anonymous -->
+    <div class="card" style="margin-bottom:12px">
+      <h3 style="margin:0 0 8px">Purge Anonymous Logins</h3>
+      <div class="row2">
+        <div><div class="label">Delete anon users older than (days)</div><input id="inp-anon-days" class="input" placeholder="30"/></div>
+        <div style="display:flex;align-items:end"><button id="btn-purge-anon" class="btn">Run Purge</button></div>
+      </div>
+      <div class="muted">This calls a Firebase <b>callable</b> function named <span class="mono">purgeAnonymousUsers</span> (see stub in code).</div>
+    </div>
+
+    <!-- Backup / Restore -->
+    <div class="card" style="margin-bottom:12px">
+      <h3 style="margin:0 0 8px">Backup / Restore Settings</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="btn-export-settings" class="btn">Export JSON</button>
+        <label class="btn" style="cursor:pointer">Import JSON<input id="inp-import-settings" type="file" accept="application/json" style="display:none"></label>
+      </div>
+      <div class="muted" style="margin-top:6px">Exports GitHub prefs, encrypted token (if any), Firebase config, collection names, region, and token expiry.</div>
+    </div>
+
+    <!-- Log -->
     <div class="card">
-      <h2>Your Account</h2>
-      <div class="kv">
-        <b>Email</b><span id="accEmail" class="mono">—</span>
-        <b>Role</b><span id="accRole">—</span>
-        <b>Last sign-in</b><span id="accLast">—</span>
-        <b>Project</b><span id="accProject" class="mono">—</span>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <button id="signOutBtn2" class="btn">Sign out</button>
-      </div>
+      <h3 style="margin:0 0 8px">Log</h3>
+      <textarea id="log" class="input mono" placeholder="Output…"></textarea>
+      <div style="margin-top:8px"><button id="btn-log-clear" class="btn">Clear Log</button></div>
     </div>
   </div>
 
-  <div id="toast" class="toast" style="position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;z-index:999">OK</div>
+  <div id="toast" class="toast"></div>
 
-  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+<!-- Firebase v10 modular (same family as Schedule) -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, signOut, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  import { getDatabase, ref as rtdbRef, set as rtdbSet, get as rtdbGet } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+  import { getFirestore, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+  import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js';
 
-    /* Firebase config (same as other pages) */
-    const firebaseConfig = {
+  /* ===== Defaults (pre-filled) ===== */
+  const DEFAULTS = {
+    githubOwner: 'flaviothebfagroup',
+    githubRepo: 'IPTV-',
+    githubBranch: 'main',
+    githubPath: 'config/iptv-config.json',
+    githubToken: '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',
+    firebaseConfig: {
       apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
       authDomain: "iptv-bfa.firebaseapp.com",
       databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
@@ -310,255 +318,395 @@
       storageBucket: "iptv-bfa.firebasestorage.app",
       messagingSenderId: "838790935867",
       appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    },
+    displaysCol: 'displays',
+    dealersCol: 'dealers',
+    functionsRegion: 'us-central1',
+    LOGO_URL: "/IPTV-/icons/icon-512.png"
+  };
+
+  /* ===== Storage keys ===== */
+  const SKEYS = {
+    displaysCol: 'pref_displays_collection',
+    dealersCol:  'pref_dealers_collection',
+    functionsRegion: 'pref_functions_region',
+    githubOwner: 'pref_github_owner',
+    githubRepo:  'pref_github_repo',
+    githubBranch:'pref_github_branch',
+    githubPath:  'pref_github_path',
+    ghTokenEnc:  'secure_github_token',
+    ghTokenExp:  'github_token_expiry',
+    fbConfig:    'firebaseConfig'
+  };
+
+  const $ = s => document.querySelector(s);
+  function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+  const logEl = $('#log'); function log(msg){ logEl.value += (msg + '\n'); logEl.scrollTop = logEl.scrollHeight; }
+
+  /* ===== Apply defaults on first load ===== */
+  function applyDefaultsIfEmpty(){
+    if(!localStorage.getItem(SKEYS.githubOwner))  localStorage.setItem(SKEYS.githubOwner,  DEFAULTS.githubOwner);
+    if(!localStorage.getItem(SKEYS.githubRepo))   localStorage.setItem(SKEYS.githubRepo,   DEFAULTS.githubRepo);
+    if(!localStorage.getItem(SKEYS.githubBranch)) localStorage.setItem(SKEYS.githubBranch, DEFAULTS.githubBranch);
+    if(!localStorage.getItem(SKEYS.githubPath))   localStorage.setItem(SKEYS.githubPath,   DEFAULTS.githubPath);
+    if(!localStorage.getItem(SKEYS.displaysCol))  localStorage.setItem(SKEYS.displaysCol,  DEFAULTS.displaysCol);
+    if(!localStorage.getItem(SKEYS.dealersCol))   localStorage.setItem(SKEYS.dealersCol,   DEFAULTS.dealersCol);
+    if(!localStorage.getItem(SKEYS.functionsRegion)) localStorage.setItem(SKEYS.functionsRegion, DEFAULTS.functionsRegion);
+    if(!localStorage.getItem(SKEYS.fbConfig))     localStorage.setItem(SKEYS.fbConfig, JSON.stringify(DEFAULTS.firebaseConfig));
+  }
+
+  /* ===== UI load/save ===== */
+  function loadPrefs(){
+    $('#inp-displays-col').value = localStorage.getItem(SKEYS.displaysCol);
+    $('#inp-dealers-col').value  = localStorage.getItem(SKEYS.dealersCol);
+    $('#inp-functions-region').value = localStorage.getItem(SKEYS.functionsRegion);
+
+    $('#inp-gh-owner').value  = localStorage.getItem(SKEYS.githubOwner);
+    $('#inp-gh-repo').value   = localStorage.getItem(SKEYS.githubRepo);
+    $('#inp-gh-branch').value = localStorage.getItem(SKEYS.githubBranch);
+    $('#inp-gh-path').value   = localStorage.getItem(SKEYS.githubPath);
+    // Show PAT in field for convenience (not saved unless you encrypt/save)
+    $('#inp-gh-token').value  = DEFAULTS.githubToken;
+
+    // Firebase form
+    const cfg = JSON.parse(localStorage.getItem(SKEYS.fbConfig) || 'null');
+    if(cfg){
+      $('#fb-apiKey').value        = cfg.apiKey || '';
+      $('#fb-authDomain').value    = cfg.authDomain || '';
+      $('#fb-databaseURL').value   = cfg.databaseURL || '';
+      $('#fb-projectId').value     = cfg.projectId || '';
+      $('#fb-storageBucket').value = cfg.storageBucket || '';
+      $('#fb-msgId').value         = cfg.messagingSenderId || '';
+      $('#fb-appId').value         = cfg.appId || '';
+    }
+    updateExpiryInfo();
+  }
+  function savePrefs(){
+    localStorage.setItem(SKEYS.displaysCol, $('#inp-displays-col').value.trim() || 'displays');
+    localStorage.setItem(SKEYS.dealersCol,  $('#inp-dealers-col').value.trim()  || 'dealers');
+    localStorage.setItem(SKEYS.functionsRegion, $('#inp-functions-region').value.trim() || 'us-central1');
+
+    localStorage.setItem(SKEYS.githubOwner,  $('#inp-gh-owner').value.trim());
+    localStorage.setItem(SKEYS.githubRepo,   $('#inp-gh-repo').value.trim());
+    localStorage.setItem(SKEYS.githubBranch, $('#inp-gh-branch').value.trim());
+    localStorage.setItem(SKEYS.githubPath,   $('#inp-gh-path').value.trim());
+    toast('Preferences saved');
+  }
+
+  /* ===== WebCrypto for encrypted token save ===== */
+  async function deriveKey(passphrase){
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name:'PBKDF2', salt: enc.encode('bfa-iptv-salt-v1'), iterations:120000, hash:'SHA-256' },
+      keyMaterial, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']
+    );
+  }
+  async function encryptToken(token, pass){ const iv = crypto.getRandomValues(new Uint8Array(12)); const key=await deriveKey(pass); const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(token)); return {iv:Array.from(iv),data:Array.from(new Uint8Array(ct))}; }
+  async function decryptToken(blob, pass){ const key=await deriveKey(pass); const iv=new Uint8Array(blob.iv); const data=new Uint8Array(blob.data); const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,data); return new TextDecoder().decode(pt); }
+
+  /* ===== GitHub helpers ===== */
+  let ghTokenSession = '';
+  function ghHeaders(){
+    const t = ghTokenSession;
+    if(!t) return null;
+    return { 'Authorization':'Bearer '+t, 'Accept':'application/vnd.github+json' };
+  }
+  async function testGitHubToken(){
+    const h = ghHeaders(); if(!h){ log('GitHub token missing (session).'); return; }
+    try{
+      const res = await fetch('https://api.github.com/user', { headers: h });
+      const t = await res.json();
+      if(res.ok){ $('#ov-gh').textContent = `${t.login} (id ${t.id})`; log('GitHub token OK: '+t.login); }
+      else { $('#ov-gh').textContent = 'Bad credentials'; log('GitHub token failed: '+(t.message||res.status)); }
+    }catch(e){ log('GitHub test error: '+e.message); }
+  }
+
+  /* ===== Firebase init (modular) ===== */
+  let app, auth, db, fs, fns;
+
+  function readFirebaseForm(){
+    return {
+      apiKey: $('#fb-apiKey').value.trim(),
+      authDomain: $('#fb-authDomain').value.trim(),
+      databaseURL: $('#fb-databaseURL').value.trim(),
+      projectId: $('#fb-projectId').value.trim(),
+      storageBucket: $('#fb-storageBucket').value.trim(),
+      messagingSenderId: $('#fb-msgId').value.trim(),
+      appId: $('#fb-appId').value.trim()
     };
-    const LOGO_URL = "/IPTV-/icons/icon-512.png";
+  }
+  function saveFirebaseConfig(){
+    const cfg = readFirebaseForm();
+    localStorage.setItem(SKEYS.fbConfig, JSON.stringify(cfg));
+    initFirebase(cfg);
+    toast('Firebase saved & initialized');
+  }
+  function initFirebase(cfg){
+    try{ if(!cfg) cfg = JSON.parse(localStorage.getItem(SKEYS.fbConfig) || 'null'); }catch(e){}
+    if(!cfg || !cfg.apiKey){ log('Firebase config missing.'); return; }
 
-    const app  = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db   = getDatabase(app);
+    app = initializeApp(cfg);
+    auth = getAuth(app);
+    db = getDatabase(app);
+    fs = getFirestore(app);
+    const region = localStorage.getItem(SKEYS.functionsRegion) || 'us-central1';
+    fns = getFunctions(app, region);
 
-    const $ = s => document.querySelector(s);
-    function toast(msg,err=false){ const t=$('#toast'); t.textContent=msg; t.style.background=err?'#ff453a':'var(--accent)'; t.style.color=err?'#fff':'#000'; t.style.opacity=1; setTimeout(()=>{t.style.opacity=0},2200); }
+    setPersistence(auth, browserLocalPersistence);
+    onAuthStateChanged(auth, async (u)=>{
+      if(!u){ await signInAnonymously(auth).catch(err=>log('Anon sign-in error: '+err.message)); }
+      $('#adminEmail').textContent = (auth.currentUser?.email) || auth.currentUser?.uid || '';
+      refreshOverview();
+    });
+  }
+  async function testFirebase(){
+    if(!db){ log('Firebase not initialized.'); return; }
+    try{
+      const path = 'ping';
+      const ts = Date.now();
+      await rtdbSet(rtdbRef(db, path), { time: ts, by: auth.currentUser?.uid || 'unknown' });
+      const snap = await rtdbGet(rtdbRef(db, path));
+      log('RTDB OK: '+ JSON.stringify(snap.val()));
+    }catch(e){ log('Firebase test failed: '+e.message); }
+  }
+  async function signOutFirebase(){ try{ await signOut(auth); log('Signed out.'); refreshOverview(); }catch(e){ log('Sign out error: '+e.message); } }
 
-    /* Logo */
-    $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
-    const brandLogoM = document.getElementById('brandLogoM');
-    if(brandLogoM) brandLogoM.style.backgroundImage = `url("${LOGO_URL}")`;
+  /* ===== Overview ===== */
+  async function refreshOverview(){
+    try{
+      const cfg = JSON.parse(localStorage.getItem(SKEYS.fbConfig) || 'null');
+      $('#ov-fb-project').textContent = (cfg && cfg.projectId) ? cfg.projectId : '—';
+    }catch(e){}
 
-    /* Theme toggle (same icon logic as Home) */
-    const THEME_KEY='iptv_theme';
-    const themeBtn = document.getElementById('themeBtn');
-    const themeIcon = document.getElementById('themeIcon');
-    const setThemeIcon = ()=>{
-      const dark = document.body.classList.contains('dark');
-      themeIcon.innerHTML = dark
-        ? `<path d="M21.752 15.002A9 9 0 118.998 2.248a7.5 7.5 0 1012.754 12.754z"/>`
-        : `<path d="M12 4.5v-2.25M12 21.75v-2.25M4.5 12H2.25M21.75 12H19.5M5.636 5.636L4.05 4.05M19.95 19.95l-1.586-1.586M5.636 18.364L4.05 19.95M19.95 4.05l-1.586 1.586"/><circle cx="12" cy="12" r="3.75"/>`;
+    const u = auth?.currentUser;
+    if(u){
+      const provider = (u.providerData?.[0]?.providerId) || (u.isAnonymous ? 'anonymous' : 'password');
+      $('#ov-user').textContent = (u.email || '(anon)') + ' • uid ' + u.uid + ' • ' + provider;
+      // role from RTDB user/{uid}/role (optional)
+      try{
+        const snap = await rtdbGet(rtdbRef(db, `user/${u.uid}/role`));
+        $('#ov-role').textContent = snap.exists() ? snap.val() : '—';
+      }catch(_){ $('#ov-role').textContent = '—'; }
+    }else{
+      $('#ov-user').textContent = '—'; $('#ov-role').textContent = '—';
+    }
+
+    // Firestore counts
+    try{
+      const displaysCol = localStorage.getItem(SKEYS.displaysCol);
+      const dealersCol  = localStorage.getItem(SKEYS.dealersCol);
+      const d1 = await getDocs(collection(fs, displaysCol));  $('#ov-displays').textContent = d1.size;
+      const d2 = await getDocs(collection(fs, dealersCol));   $('#ov-dealers').textContent  = d2.size;
+    }catch(_){
+      $('#ov-displays').textContent = '—';
+      $('#ov-dealers').textContent  = '—';
+    }
+  }
+
+  /* ===== Purge anonymous via callable ===== */
+  async function purgeAnonymous(){
+    if(!fns){ log('Functions not initialized.'); return; }
+    const days = parseInt($('#inp-anon-days').value || '30', 10);
+    try{
+      const callable = httpsCallable(fns, 'purgeAnonymousUsers');
+      const res = await callable({ olderThanDays: days });
+      log('Purge result: '+ JSON.stringify(res.data));
+      toast('Purge requested');
+    }catch(e){ log('Purge error: '+e.message); }
+  }
+
+  /* ===== Token expiry helper ===== */
+  function updateExpiryInfo(){
+    const iso = localStorage.getItem(SKEYS.ghTokenExp);
+    const el = $('#gh-expiry-info');
+    if(!iso){ el.textContent = 'No expiry set.'; return; }
+    const now = new Date(), dt = new Date(iso);
+    const days = Math.ceil((dt - now) / (1000*60*60*24));
+    el.textContent = (days>=0)? `${days} day(s) left • ${dt}` : `Expired ${-days} day(s) ago • ${dt}`;
+  }
+  function saveExpiry(){
+    const v = $('#inp-gh-expiry').value;
+    if(!v){ localStorage.removeItem(SKEYS.ghTokenExp); updateExpiryInfo(); toast('Removed'); return; }
+    localStorage.setItem(SKEYS.ghTokenExp, new Date(v).toISOString());
+    updateExpiryInfo(); toast('Expiry saved');
+  }
+  function downloadICS(){
+    const iso = localStorage.getItem(SKEYS.ghTokenExp);
+    if(!iso){ toast('Set an expiry first'); return; }
+    const dt = new Date(iso);
+    const uid = 'bfa-iptv-gh-token-'+dt.getTime()+'@settings';
+    const stamp = d => d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');
+    const ics = [
+      'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//BFA IPTV//Settings//EN',
+      'BEGIN:VEVENT','UID:'+uid,'DTSTAMP:'+stamp(new Date()),
+      'DTSTART:'+stamp(dt),'DTEND:'+stamp(new Date(dt.getTime()+30*60*1000)),
+      'SUMMARY:Rotate GitHub Token','DESCRIPTION:Update the GitHub PAT used by BFA IPTV.',
+      'END:VEVENT','END:VCALENDAR'
+    ].join('\r\n');
+    const blob = new Blob([ics], {type:'text/calendar'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='github-token-reminder.ics';
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  }
+
+  /* ===== Backup / Restore ===== */
+  function exportSettings(){
+    const out = {
+      [SKEYS.displaysCol]: localStorage.getItem(SKEYS.displaysCol),
+      [SKEYS.dealersCol]: localStorage.getItem(SKEYS.dealersCol),
+      [SKEYS.functionsRegion]: localStorage.getItem(SKEYS.functionsRegion),
+      [SKEYS.githubOwner]: localStorage.getItem(SKEYS.githubOwner),
+      [SKEYS.githubRepo]: localStorage.getItem(SKEYS.githubRepo),
+      [SKEYS.githubBranch]: localStorage.getItem(SKEYS.githubBranch),
+      [SKEYS.githubPath]: localStorage.getItem(SKEYS.githubPath),
+      [SKEYS.ghTokenExp]: localStorage.getItem(SKEYS.ghTokenExp) || '',
+      [SKEYS.fbConfig]: localStorage.getItem(SKEYS.fbConfig) || '',
+      [SKEYS.ghTokenEnc]: localStorage.getItem(SKEYS.ghTokenEnc) || ''
     };
-    const saved = localStorage.getItem(THEME_KEY) || 'light';
-    document.body.classList.toggle('dark', saved==='dark');
+    const blob = new Blob([JSON.stringify(out,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'bfa-iptv-settings.json';
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  }
+  function importSettings(file){
+    const r = new FileReader();
+    r.onload = () => {
+      try{
+        const json = JSON.parse(r.result);
+        Object.keys(json).forEach(k => localStorage.setItem(k, json[k]));
+        loadPrefs(); initFirebase(); toast('Settings imported');
+      }catch(e){ toast('Invalid JSON'); }
+    };
+    r.readAsText(file);
+  }
+
+  /* ===== Navbar wiring (identical behaviors) ===== */
+  const LOGO_URL = DEFAULTS.LOGO_URL;
+  $('#brandLogo').style.backgroundImage=`url("${LOGO_URL}")`;
+  const brandLogoM=$('#brandLogoM'); if(brandLogoM){ brandLogoM.style.backgroundImage=`url("${LOGO_URL}")`; }
+
+  const THEME_KEY='iptv_theme';
+  const themeBtn=$('#themeBtn'), themeIcon=$('#themeIcon');
+  const setThemeIcon=()=>{
+    const dark=document.body.classList.contains('dark');
+    themeIcon.innerHTML = dark
+      ? `<path d="M21 12a9 9 0 1 1-9-9 6 6 0 0 0 9 9z"/>`
+      : `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1.4-1.4M20.4 20.4 19 19M5 19l-1.4 1.4M20.4 3.6 19 5"/>`;
+  };
+  const saved=localStorage.getItem(THEME_KEY)||'light';
+  document.body.classList.toggle('dark', saved==='dark'); setThemeIcon();
+  themeBtn.addEventListener('click', ()=>{
+    const toDark=!document.body.classList.contains('dark');
+    document.body.classList.toggle('dark', toDark);
+    localStorage.setItem(THEME_KEY, toDark?'dark':'light');
     setThemeIcon();
-    themeBtn.addEventListener('click', ()=>{
-      const toDark = !document.body.classList.contains('dark');
-      document.body.classList.toggle('dark', toDark);
-      localStorage.setItem(THEME_KEY, toDark? 'dark' : 'light');
-      setThemeIcon();
-    });
+  });
 
-    /* More dropdown */
-    const moreBtn = document.getElementById('moreBtn');
-    const moreMenu = document.getElementById('moreMenu');
-    if(moreBtn){
-      moreBtn.addEventListener('click', (e)=>{ e.preventDefault(); moreMenu.classList.toggle('open'); });
-      document.addEventListener('click', (e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)) moreMenu.classList.remove('open'); }, {capture:true});
-      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') moreMenu.classList.remove('open'); });
-      const file=(location.pathname.split("/").pop()||"settings.html").toLowerCase();
-      moreMenu.querySelectorAll('a').forEach(a=>{ if((a.getAttribute('href')||'').toLowerCase()===file){ a.classList.add('is-active'); } });
-    }
+  const moreBtn=$('#moreBtn'), moreMenu=$('#moreMenu');
+  if(moreBtn){
+    moreBtn.addEventListener('click',(e)=>{ e.preventDefault(); moreMenu.classList.toggle('open');});
+    document.addEventListener('click',(e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)){ moreMenu.classList.remove('open'); } },{capture:true});
+    document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') moreMenu.classList.remove('open'); });
+    const file=(location.pathname.split("/").pop()||"settings.html").toLowerCase();
+    moreMenu.querySelectorAll('a').forEach(a=>{ const h=(a.getAttribute('href')||'').toLowerCase(); if(h===file){ a.classList.add('is-active'); }});
+  }
 
-    /* Mobile sheet */
-    (()=>{
-      const sheet = document.getElementById('sheet');
-      const open = ()=>{ sheet.classList.add('open'); document.body.style.overflow='hidden'; };
-      const close= ()=>{ sheet.classList.remove('open'); document.body.style.overflow=''; };
-      document.getElementById('hamburger').addEventListener('click', open);
-      document.getElementById('closeSheet').addEventListener('click', close);
-      sheet.querySelector('.back').addEventListener('click', close);
-      const mainOut = document.getElementById('signOutBtn');
-      const mobOut  = document.getElementById('signOutBtnM');
-      if(mainOut && mobOut) mobOut.addEventListener('click', ()=> mainOut.click());
-    })();
+  (()=>{
+    const sheet=$('#sheet');
+    const open=()=>{ sheet.classList.add('open'); document.body.style.overflow='hidden'; };
+    const close=()=>{ sheet.classList.remove('open'); document.body.style.overflow=''; };
+    $('#hamburger').addEventListener('click', open);
+    $('#closeSheet').addEventListener('click', close);
+    sheet.querySelector('.back').addEventListener('click', close);
+    const mainOut=$('#signOutBtn'); const mobOut=$('#signOutBtnM');
+    if(mainOut && mobOut){ mobOut.addEventListener('click', ()=> mainOut.click()); }
+  })();
 
-    /* ===== Local keys used across pages ===== */
-    const LS_GH   = 'iptv_admin_gh';
-    const LS_BASE = 'iptv_admin_basepath';
-    const LS_AUTO = 'iptv_auto_backup';
-    const LS_AUTO_KEEP = 'iptv_auto_keep';
-    const LS_SAFE = 'iptv_safety_mode';
+  /* ===== App bootstrap ===== */
+  applyDefaultsIfEmpty();
+  loadPrefs();
+  initFirebase(); // auto init with defaults
 
-    /* ===== GitHub helpers ===== */
-    function ghHeaders(){
-      const token=(JSON.parse(localStorage.getItem(LS_GH)||'{}').token)||'';
-      return { 'Authorization': token ? `Bearer ${token}` : undefined,
-               'Accept':'application/vnd.github+json','Content-Type':'application/json' };
-    }
-    async function ghFetch(url,opts={}){
-      const headers=ghHeaders();
-      if(!headers.Authorization) throw new Error('Token missing (save it below)');
-      const r=await fetch(url,{...opts,headers:{...headers,...(opts.headers||{})}});
-      const t=await r.text(); let d; try{d=t?JSON.parse(t):{};}catch{d={raw:t}}
-      if(!r.ok) throw new Error((d && (d.message||d.raw)) || r.statusText);
-      return d;
-    }
-    function repoBase(){
-      const cfg=JSON.parse(localStorage.getItem(LS_GH)||'{}');
-      if(!cfg.owner||!cfg.repo) throw new Error('Owner/Repo missing');
-      return `https://api.github.com/repos/${cfg.owner}/${cfg.repo}`;
-    }
-    async function getFileSha(path){
-      const cfg=JSON.parse(localStorage.getItem(LS_GH)||'{}');
-      const base=repoBase();
-      try{
-        const d=await ghFetch(`${base}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(cfg.branch||'main')}`);
-        return d.sha;
-      }catch(e){ return null; }
-    }
-    async function putFile(path, contentString, message){
-      const cfg=JSON.parse(localStorage.getItem(LS_GH)||'{}');
-      const base=repoBase();
-      const sha=await getFileSha(path);
-      const body={ message: message||`update: ${path}`, branch: (cfg.branch||'main'),
-                   content: btoa(unescape(encodeURIComponent(contentString))), ...(sha?{sha}:{}) };
-      return ghFetch(`${base}/contents/${encodeURIComponent(path)}`, {method:'PUT', body:JSON.stringify(body)});
-    }
+  /* ===== Buttons ===== */
+  $('#btn-save-preferences').addEventListener('click', savePrefs);
 
-    /* ===== Populate forms from localStorage ===== */
-    (function initForm(){
-      const gh = JSON.parse(localStorage.getItem(LS_GH)||'{}');
-      $('#ghOwner').value  = gh.owner || '';
-      $('#ghRepo').value   = gh.repo  || '';
-      $('#ghBranch').value = gh.branch|| 'main';
-      $('#ghToken').value  = gh.token || '';
-      $('#basePath').value = localStorage.getItem(LS_BASE) || 'backups/';
-      $('#autoBackup').checked = localStorage.getItem(LS_AUTO)==='true';
-      $('#autoKeep').value = Number(localStorage.getItem(LS_AUTO_KEEP)||20);
-      $('#safetyMode').checked = localStorage.getItem(LS_SAFE)==='true';
-      $('#btnOpenRepo').href = (gh.owner&&gh.repo) ? `https://github.com/${encodeURIComponent(gh.owner)}/${encodeURIComponent(gh.repo)}` : '#';
-    })();
-
-    /* ===== GitHub UI actions ===== */
-    $('#btnSaveGh').addEventListener('click', ()=>{
-      const obj={ owner:$('#ghOwner').value.trim(), repo:$('#ghRepo').value.trim(), branch:$('#ghBranch').value.trim()||'main', token:$('#ghToken').value.trim() };
-      localStorage.setItem(LS_GH, JSON.stringify(obj));
-      $('#btnOpenRepo').href = (obj.owner&&obj.repo)? `https://github.com/${encodeURIComponent(obj.owner)}/${encodeURIComponent(obj.repo)}` : '#';
-      toast('GitHub settings saved');
-    });
-
-    $('#btnCreateFolder').addEventListener('click', async ()=>{
-      try{
-        const base = ($('#basePath').value.trim()||'backups/').replace(/\/+$/,'') + '/.gitkeep';
-        await putFile(base, '', `chore: ensure ${base.replace('/.gitkeep','/')}`);
-        toast('Folder ensured on GitHub');
-      }catch(e){ toast(e.message,true); }
-    });
-
-    $('#btnTestGh').addEventListener('click', async ()=>{
-      const s=$('#ghStatus'); s.textContent='Testing…';
-      try{
-        const base = repoBase();
-        const meta = await ghFetch(base);
-        const rate = await ghFetch('https://api.github.com/rate_limit');
-        $('#ghName').textContent = meta.full_name || '—';
-        $('#ghDefault').textContent = meta.default_branch || '—';
-        $('#ghVis').textContent = meta.private? 'private' : 'public';
-        $('#ghPush').textContent = meta.pushed_at ? new Date(meta.pushed_at).toLocaleString() : '—';
-        $('#ghRate').textContent = `${rate.rate.remaining}/${rate.rate.limit}`;
-        s.innerHTML = `<span class="ok">✔ Repo OK</span>`;
-        // list base path
-        const cfg=JSON.parse(localStorage.getItem(LS_GH)||'{}');
-        const path = ($('#basePath').value.trim()||'backups/').replace(/^\/+|\/+$/g,'');
-        try{
-          const list = await ghFetch(`${base}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(cfg.branch||'main')}`);
-          const arr = Array.isArray(list)?list:list? [list]:[];
-          $('#ghList').innerHTML = arr.slice(0,25).map(ent=>`<span class="chipSlim">${ent.type.toUpperCase()}: ${ent.name}</span>`).join('') || '<span class="muted">Empty.</span>';
-        }catch{ $('#ghList').innerHTML = '<span class="muted">Folder not found (will be created on first save).</span>'; }
-      }catch(e){ s.innerHTML=`<span class="danger">✖ ${e.message}</span>`; }
-    });
-
-    /* ===== Safety/App settings ===== */
-    $('#autoBackup').addEventListener('change', e=>{ localStorage.setItem(LS_AUTO, e.target.checked?'true':'false'); toast('Auto-backup '+(e.target.checked?'enabled':'disabled')); });
-    $('#autoKeep').addEventListener('change', e=>{ localStorage.setItem(LS_AUTO_KEEP, String(Math.max(1, Number(e.target.value)||20))); toast('Retention saved'); });
-    $('#safetyMode').addEventListener('change', e=>{ localStorage.setItem(LS_SAFE, e.target.checked?'true':'false'); toast('Safety mode '+(e.target.checked?'on':'off')); });
-
-    $('#btnExport').addEventListener('click', ()=>{
-      const dump={};
-      for(const k in localStorage){ if(Object.prototype.hasOwnProperty.call(localStorage,k) && k.startsWith('iptv_')) dump[k]=localStorage.getItem(k); }
-      const blob=new Blob([JSON.stringify(dump,null,2)],{type:'application/json'});
-      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='iptv-settings.json'; a.click();
-      setTimeout(()=>URL.revokeObjectURL(a.href),1200);
-    });
-    $('#importFile').addEventListener('change', async (e)=>{
-      const f=e.target.files?.[0]; if(!f) return;
-      try{
-        const obj=JSON.parse(await f.text());
-        let n=0; for(const k of Object.keys(obj||{})){ localStorage.setItem(k, obj[k]); n++; }
-        toast(`Imported ${n} setting(s)`); setTimeout(()=>location.reload(),600);
-      }catch{ toast('Invalid file',true); }
-    });
-    $('#btnClearLocalBackups').addEventListener('click', ()=>{
-      if(!confirm('Clear local backups stored in this browser?')) return;
-      let removed=0; for(const k in localStorage){ if(k.startsWith('iptv_backup_') || k.startsWith('bfa_backup_')){ localStorage.removeItem(k); removed++; } }
-      toast(removed?`Cleared ${removed} backup(s)`:'No local backups found');
-      updateLocalUsage();
-    });
-    $('#btnResetAll').addEventListener('click', ()=>{
-      if(!confirm('Reset ALL local settings for this app?')) return;
-      const toRemove=[]; for(const k in localStorage){ if(k.startsWith('iptv_')) toRemove.push(k); }
-      toRemove.forEach(k=>localStorage.removeItem(k)); toast('Local settings cleared'); setTimeout(()=>location.reload(),600);
-    });
-
-    function updateLocalUsage(){
-      let bytes=0, backups=0, keys=0;
-      for(const k in localStorage){
-        if(!Object.prototype.hasOwnProperty.call(localStorage,k)) continue;
-        const v=localStorage.getItem(k)||'';
-        bytes += k.length + v.length;
-        keys++;
-        if(k.startsWith('iptv_backup_')||k.startsWith('bfa_backup_')) backups++;
-      }
-      const kb=(bytes/1024).toFixed(1);
-      $('#localUsage').textContent = `LocalStorage: ~${kb} KB in ${keys} key(s). Local backups: ${backups}.`;
-    }
-
-    /* ===== Firebase overview ===== */
-    async function loadOverview(user){
-      $('#adminEmail').textContent = user.email || user.uid;
-      $('#accEmail').textContent = user.email || user.uid;
-      $('#accLast').textContent = user.metadata?.lastSignInTime || '—';
-      $('#accProject').textContent = `${firebaseConfig.projectId} (${firebaseConfig.databaseURL})`;
-
-      try{
-        const [dp, ds, us] = await Promise.all([
-          get(ref(db,'dealershipPublic')).then(s=>s.val()).catch(()=>null),
-          get(ref(db,'displays')).then(s=>s.val()).catch(()=>null),
-          get(ref(db,'user')).then(s=>s.val()).catch(()=>null)
-        ]);
-        const dealers = dp? Object.keys(dp).length : 0;
-        const displays = ds? Object.keys(ds).length : 0;
-        const users = us? Object.keys(us).length : 0;
-        const admins = us? Object.values(us).filter(u=>u && u.role==='admin').length : 0;
-
-        $('#stDealers').textContent = dealers;
-        $('#stDisplays').textContent = displays;
-        $('#stUsers').textContent = users;
-        $('#stAdmins').textContent = admins;
-
-        const adminChips = (us? Object.values(us).filter(u=>u && u.role==='admin') : [])
-          .slice(0,12)
-          .map(u=>`<span class="chipSlim"><b>${(u.name||'Admin')}</b> · <span class="mono">${(u.email||'')}</span></span>`)
-          .join('');
-        $('#adminsList').innerHTML = adminChips || '<span class="muted">No admin accounts found.</span>';
-      }catch(e){
-        console.error(e);
+  // GitHub token
+  $('#btn-gh-save-session').addEventListener('click', ()=>{
+    const v = $('#inp-gh-token').value.trim(); if(!v) return toast('Enter a token first');
+    ghTokenSession = v; toast('Token set for session');
+  });
+  $('#btn-gh-encrypted-save').addEventListener('click', async ()=>{
+    const token = $('#inp-gh-token').value.trim(); if(!token) return toast('Enter a token first');
+    const pass = prompt('Set a passphrase to encrypt your token (store it safely):'); if(!pass) return;
+    try{ const blob = await encryptToken(token, pass); localStorage.setItem(SKEYS.ghTokenEnc, JSON.stringify(blob)); toast('Encrypted token saved'); }
+    catch(e){ toast('Encrypt failed'); }
+  });
+  $('#btn-gh-clear').addEventListener('click', ()=>{ localStorage.removeItem(SKEYS.ghTokenEnc); toast('Saved token cleared'); });
+  $('#btn-gh-test').addEventListener('click', async ()=>{
+    if(!ghTokenSession){
+      const blob = localStorage.getItem(SKEYS.ghTokenEnc);
+      if(blob){
+        const pass = prompt('Enter passphrase to unlock saved token:');
+        if(pass){ try{ ghTokenSession = await decryptToken(JSON.parse(blob), pass); } catch(e){ log('Decrypt failed: '+e.message); return; } }
+      } else {
+        const field = $('#inp-gh-token').value.trim(); if(field) ghTokenSession = field;
       }
     }
+    await testGitHubToken();
+  });
 
-    /* ===== Auth gate ===== */
-    onAuthStateChanged(auth, async (user)=>{
-      if(!user){ location.href='home.html'; return; }
-      try{
-        const u = (await get(ref(db, `user/${user.uid}`))).val() || {};
-        if(u.role !== 'admin'){
-          document.body.innerHTML = `<div style="padding:40px"><div class="card"><h3>Not authorized</h3><div class="muted">Ask an admin to set your role to <b>admin</b> in the database.</div></div></div>`;
-          return;
-        }
-      }catch(e){}
-      loadOverview(user);
-    });
-    document.getElementById('signOutBtn').addEventListener('click', ()=>signOut(auth));
-    document.getElementById('signOutBtn2').addEventListener('click', ()=>signOut(auth).then(()=>location.href='home.html'));
+  // Expiry
+  $('#btn-gh-expiry-save').addEventListener('click', saveExpiry);
+  $('#btn-gh-expiry-ics').addEventListener('click', downloadICS);
 
-    updateLocalUsage();
-  </script>
+  // Firebase
+  $('#btn-fb-save').addEventListener('click', saveFirebaseConfig);
+  $('#btn-fb-test').addEventListener('click', testFirebase);
+  $('#btn-fb-logout').addEventListener('click', signOutFirebase);
+
+  // Purge
+  $('#btn-purge-anon').addEventListener('click', purgeAnonymous);
+
+  // Overview + Log
+  $('#btn-refresh-overview').addEventListener('click', refreshOverview);
+  $('#btn-log-clear').addEventListener('click', ()=>{ logEl.value=''; });
+
+  // Backup / Restore
+  $('#btn-export-settings').addEventListener('click', exportSettings);
+  $('#inp-import-settings').addEventListener('change', (e)=>{ if(e.target.files && e.target.files[0]) importSettings(e.target.files[0]); });
+
+  // Keep prefs in sync on edits
+  ['inp-gh-owner','inp-gh-repo','inp-gh-branch','inp-gh-path'].forEach(id=>$('#'+id).addEventListener('change', savePrefs));
+
+  // Sign out (navbar)
+  $('#signOutBtn').addEventListener('click',()=>signOut(auth).catch(()=>{}));
+  onAuthStateChanged(getAuth(), u=>{
+    if(!u){ /* optional redirect */ }
+    $('#adminEmail').textContent = u?.email || u?.uid || '';
+  });
+
+  /* ===== Cloud Functions stub (Node 18+) =====
+  // functions/index.js
+  // import { onCall } from "firebase-functions/v2/https";
+  // import * as admin from "firebase-admin";
+  // admin.initializeApp();
+  // export const purgeAnonymousUsers = onCall(async (req) => {
+  //   const olderThanDays = Number(req.data?.olderThanDays || 30);
+  //   const cutoff = Date.now() - olderThanDays*24*60*60*1000;
+  //   let deleted = 0, nextPageToken = undefined;
+  //   do {
+  //     const list = await admin.auth().listUsers(1000, nextPageToken);
+  //     for (const u of list.users){
+  //       const isAnon = !u.providerData || u.providerData.length===0;
+  //       const created = new Date(u.metadata.creationTime).getTime();
+  //       if(isAnon && created < cutoff){ await admin.auth().deleteUser(u.uid).catch(()=>{}); deleted++; }
+  //     }
+  //     nextPageToken = list.pageToken;
+  //   } while (nextPageToken);
+  //   return { deleted, olderThanDays };
+  // });
+  */
+</script>
 </body>
 </html>
