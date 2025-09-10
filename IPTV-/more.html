@@ -162,7 +162,7 @@
             <a href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
             <a href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
             <a href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
-            <!-- Settings = sliders icon (not sun) -->
+            <!-- Settings = sliders icon -->
             <a href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
           </div>
         </div>
@@ -227,7 +227,7 @@
       </div>
       <div class="hstack">
         <button id="resetBtn" class="btn">Send reset link</button>
-        <span class="small muted">Requires <b>role:"admin"</b> in <code>/users/{uid}</code>.</span>
+        <span class="small muted">Requires <b>role:"admin"</b> in <code>/user/{uid}</code> or <code>/users/{uid}</code>.</span>
       </div>
     </div>
 
@@ -380,21 +380,44 @@
       }catch(e){ console.error(e); toast('Sign-in failed', true); }
     }
 
+    /* ========= ADMIN GATE (tolerant: /user or /users) ========= */
+    async function readProfile(db, uid){
+      try { const s = await get(ref(db, 'users/'+uid)); if (s.exists()) return s.val(); } catch(_){}
+      try { const s = await get(ref(db, 'user/'+uid));  if (s.exists()) return s.val(); } catch(_){}
+      return null;
+    }
+    function isAdminProfile(p){
+      if(!p) return false;
+      const role = (p.role || p.Role || '').toString().toLowerCase().trim();
+      if (role === 'admin') return true;
+      if (p.isAdmin === true || p.admin === true) return true;
+      if (p.roles && (p.roles.admin === true)) return true;
+      if (Array.isArray(p.roles) && p.roles.map(x=>String(x).toLowerCase()).includes('admin')) return true;
+      return false;
+    }
+
     onAuthStateChanged(auth, async (user)=>{
-      if(!user){ $('#loginBox').style.display='block'; $('#content').style.display='none'; return; }
+      if(!user){
+        $('#loginBox').style.display='block';
+        $('#content').style.display='none';
+        return;
+      }
       $('#adminEmail').textContent = user.email || user.uid;
-      // admin gate  (FIX: plural 'users')
-      try{
-        const snap = await get(ref(db, `users/${user.uid}`));
-        const u = snap.val() || {};
-        if(u.role !== 'admin'){ $('#loginBox').style.display='none'; $('#content').style.display='none'; alert('Not authorized. Ask an admin to set your role to admin.'); return; }
-      }catch(_){}
-      $('#loginBox').style.display='none';
-      $('#content').style.display='block';
-      await refreshDealers();
-      const did = new URL(location.href).searchParams.get('dealer') || '';
-      if(did){ $('#dealerForDisplays').value=did; watchDisplays(did,true); }
+
+      const profile = await readProfile(db, user.uid);
+      if (isAdminProfile(profile)) {
+        $('#loginBox').style.display='none';
+        $('#content').style.display='block';
+        await refreshDealers();
+        const did = new URL(location.href).searchParams.get('dealer') || '';
+        if(did){ $('#dealerForDisplays').value=did; watchDisplays(did,true); }
+      } else {
+        $('#loginBox').style.display='none';
+        $('#content').style.display='none';
+        alert('Not authorized. Ask an admin to set your role to admin.');
+      }
     });
+    /* ========================================================== */
 
     /* Dealers dropdown */
     async function refreshDealers(){
@@ -410,7 +433,7 @@
       });
     }
 
-    /* Displays logic (unchanged) */
+    /* Displays logic */
     let displaysUnsub=null;
     $('#dealerForDisplays').addEventListener('change', e=>watchDisplays(e.target.value));
     $('#displaysReload').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(did) watchDisplays(did,true); });
