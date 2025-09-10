@@ -112,7 +112,7 @@
     .toast.show{opacity:1}
     .toast.err{background:#ff453a;color:#fff}
 
-    /* Inline preview panel (like Dealerships) */
+    /* Inline preview panel */
     .sub.preview{grid-column:1/-1;width:100%;background:var(--panel);
       border:1px solid var(--border);border-radius:12px;padding:10px;margin-top:6px}
     .sub.preview .bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
@@ -120,7 +120,6 @@
   </style>
 </head>
 <body>
-  <!-- ===== NAVBAR ===== -->
   <header class="topbar">
     <div class="toprow">
       <a class="brand" href="home.html"><span class="logo" id="brandLogo"></span><span class="logotxt">BFA IPTV</span></a>
@@ -357,7 +356,7 @@
       dealershipName: '(NEW-NAME)',
       channels: [
         { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
-        { id:2, name:'Sports', url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8', type:'hls' }, /* http may be blocked */
+        { id:2, name:'Sports', url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8', type:'hls' },
         { id:3, name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
         { id:4, name:'Nature', url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8', type:'hls' },
         { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
@@ -408,7 +407,6 @@
       const cls = window.isMuted || pct===0 ? 'icon-muted' :
                   pct < 30 ? 'icon-level-1' : pct < 70 ? 'icon-level-2' : 'icon-level-3';
       $('volSvg').className.baseVal = 'vol-icon ' + cls;
-      hudFlash();
     }
     function toggleMute(){ window.isMuted ? mute() : unmute(); }
     function mute(){ const v=$('videoPlayer'); window.isMuted=true; v.muted=true; localStorage.setItem('displayMuted','true'); renderVolumeUI(); }
@@ -429,65 +427,47 @@
     }
     function volumeUp(){ if(window.isMuted) unmute(); setVolume(window.currentVolume + 10); }
     function volumeDown(){ setVolume(window.currentVolume - 10); }
-    function showFloat(text){ const old = document.querySelector('.volume-float'); if(old) old.remove(); const el = document.createElement('div'); el.className='volume-float'; el.textContent=text; document.body.appendChild(el); setTimeout(()=>el.remove(), 1800); }
-    function hudFlash(){ const hud = $('volumeHud'); hud.classList.add('show'); clearTimeout(hud._t); hud._t = setTimeout(()=> hud.classList.remove('show'), 1500); }
-    window.applyVolumeSettings = function(volume, muted){
-      let changed=false;
-      if(typeof volume==='number' && volume!==window.currentVolume){ setVolume(volume); changed=true; }
-      if(typeof muted==='boolean' && muted!==window.isMuted){ muted ? mute() : unmute(); changed=true; }
-      if(changed){ const label = (window.isMuted||window.currentVolume===0) ? 'MUTED' : ('VOL ' + window.currentVolume + '%'); showFloat(label); }
-    };
-
-    function loadChannel(channelNumber){
-      if(switching) return;
-      const ch = CONFIG.channels.find(c=>c.id===channelNumber);
-      if(!ch){ console.warn('Channel not found', channelNumber); return; }
-      switching = true; $('fade').classList.add('active');
-      setTimeout(()=>{
-        window.currentChannel = channelNumber; updateChannelInfo(ch);
-        const v = $('videoPlayer');
-        if(Hls.isSupported()){
-          if(hls) { try{ hls.destroy(); }catch(e){} hls=null; }
-          hls = new Hls({ enableWorker:true, lowLatencyMode:true, maxBufferLength:30, maxBufferSize:60*1000*1000, manifestLoadingTimeOut:10000, manifestLoadingMaxRetry:3, levelLoadingTimeOut:10000, levelLoadingMaxRetry:4 });
-          hls.attachMedia(v); hls.loadSource(ch.url);
-          hls.on(Hls.Events.MANIFEST_PARSED, ()=> { v.play().then(()=>{ v.volume = window.currentVolume/100; v.muted = window.isMuted; }).catch(()=>{}); });
-          hls.on(Hls.Events.ERROR, onHlsError);
-        } else if (v.canPlayType('application/vnd.apple.mpegurl')){
-          v.src = ch.url; v.play().then(()=>{ v.volume = window.currentVolume/100; v.muted = window.isMuted; }).catch(()=>{});
-        } else { showError('HLS not supported on this device'); }
-        setTimeout(()=>{ $('fade').classList.remove('active'); switching=false; }, 240);
-      }, 140);
-    }
-    window.loadChannel = loadChannel;
-    function updateChannelInfo(ch){ $('chName').textContent = ch.name || ('Channel ' + ch.id); $('chNum').textContent  = ch.id; const box = $('channelInfo'); box.classList.add('show'); clearTimeout(box._t); box._t = setTimeout(()=> box.classList.remove('show'), 4000); }
-    function onHlsError(evt, data){ if(!data || !data.fatal) return;
-      switch(data.type){
-        case Hls.ErrorTypes.NETWORK_ERROR: if(retry<3){ retry++; setTimeout(()=> hls && hls.startLoad(), 1500); } else showError('Network error'); break;
-        case Hls.ErrorTypes.MEDIA_ERROR: try{ hls.recoverMediaError(); }catch(e){ showError('Media error'); } break;
-        default: showError('Stream error'); setTimeout(()=> loadChannel(window.currentChannel), 3000);
-      }
-    }
-    function onVideoError(){ showError('Playback error'); setTimeout(()=> loadChannel(window.currentChannel), 3000); }
     function showError(msg){ $('errText').textContent = msg; $('errToast').classList.add('show'); }
     function hideError(){ $('errToast').classList.remove('show'); }
     function showLoading(flag){ const el=$('loading'); if(flag){ el.classList.add('active'); } else { el.classList.remove('active'); hideError(); } }
     function setStatus(connected, msg){ const dot=$('statusDot'), txt=$('statusText'); dot.classList.toggle('disconnected', !connected); txt.textContent = connected ? 'Connected' : ('Disconnected' + (msg?` — ${msg}`:'')); }
-    window.setStatus = setStatus;
     function tickClock(){ const t = new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'}); $('clock').textContent = t; }
-    document.addEventListener('visibilitychange',()=>{ if(!hls) return; if(document.hidden){ try{ hls.stopLoad(); }catch(e){} } else { try{ hls.startLoad(); }catch(e){} } });
-    if(navigator.userAgent.includes('BrightSign')){ setTimeout(()=>{ const v=$('videoPlayer'); if(window.currentVolume>0 && !window.isMuted){ v.muted=false; v.volume=window.currentVolume/100; } }, 1500); }
+    function updateChannelInfo(ch){ $('chName').textContent = ch.name || ('Channel ' + ch.id); $('chNum').textContent  = ch.id; const box = $('channelInfo'); box.classList.add('show'); clearTimeout(box._t); box._t = setTimeout(()=> box.classList.remove('show'), 4000); }
+    function onHlsError(evt, data){ if(!data || !data.fatal) return;
+      switch(data.type){
+        case Hls.ErrorTypes.NETWORK_ERROR: showError('Network error'); break;
+        case Hls.ErrorTypes.MEDIA_ERROR: showError('Media error'); break;
+        default: showError('Stream error');
+      }
+    }
+    function onVideoError(){ showError('Playback error'); }
+    function loadChannel(channelNumber){
+      const ch = CONFIG.channels.find(c=>c.id===channelNumber); if(!ch) return;
+      const v = $('videoPlayer'); showLoading(true);
+      if(Hls.isSupported()){
+        if(hls) { try{ hls.destroy(); }catch(e){} hls=null; }
+        hls = new Hls({ enableWorker:true, lowLatencyMode:true });
+        hls.attachMedia(v); hls.loadSource(ch.url);
+        hls.on(Hls.Events.MANIFEST_PARSED, ()=> { v.play().then(()=>{ v.volume = window.currentVolume/100; v.muted = window.isMuted; showLoading(false); }).catch(()=>{}); });
+        hls.on(Hls.Events.ERROR, onHlsError);
+      } else if (v.canPlayType('application/vnd.apple.mpegurl')){
+        v.src = ch.url; v.play().then(()=>{ v.volume = window.currentVolume/100; v.muted = window.isMuted; showLoading(false); }).catch(()=>{});
+      } else { showError('HLS not supported'); }
+      updateChannelInfo(ch);
+      window.currentChannel = channelNumber;
+    }
+    window.setStatus = setStatus;
+    window.applyVolumeSettings = function(volume, muted){
+      if(typeof volume==='number') setVolume(volume);
+      if(typeof muted==='boolean') muted ? mute() : unmute();
+    };
   </script>
 
-  <!-- Firebase (module) -->
+  <!-- Firebase (module) for the player -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import {
-      getAuth, signInAnonymously, onAuthStateChanged,
-      setPersistence, inMemoryPersistence
-    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import {
-      getDatabase, ref, onValue, update, get, query, orderByChild, equalTo, remove
-    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
@@ -503,13 +483,9 @@
     const app = initializeApp(firebaseConfig, EMBED ? 'embed' : undefined);
     const auth = getAuth(app);
     if (EMBED) { await setPersistence(auth, inMemoryPersistence); }
-
     const db   = getDatabase(app);
 
-    signInAnonymously(auth).catch(e => {
-      console.error('[auth]', e);
-      window.setStatus(false, 'anon auth failed');
-    });
+    signInAnonymously(auth).catch(e => { console.error('[auth]', e); window.setStatus(false, 'anon auth failed'); });
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) return;
@@ -520,60 +496,31 @@
       if (EMBED) {
         const dref = ref(db, `displays/${displayId}`);
         onValue(dref, (snap) => {
-          const data = snap.val();
-          if (!data) return;
+          const data = snap.val(); if (!data) return;
           if (typeof data.channel === 'number' && data.channel !== window.currentChannel) window.loadChannel(data.channel);
           if (data.volume !== undefined || data.muted !== undefined) window.applyVolumeSettings(data.volume, data.muted);
           window.setStatus(true, '');
-        }, (err) => {
-          console.error('[listener]', err);
-          window.setStatus(false, 'listener error');
-        });
+        }, (err) => { console.error('[listener]', err); window.setStatus(false, 'listener error'); });
         return;
       }
 
-      try {
-        await update(ref(db, `user/${user.uid}`), {
-          role: 'device',
-          name: displayId,
-          dealershipId: dealershipName,
-          updatedAt: Date.now(),
-          createdAt: Date.now()
-        });
-      } catch (e) {
-        console.warn('[user write denied]', e);
-        window.setStatus(false, 'cannot write user profile');
-        return;
-      }
+      try { await update(ref(db, `user/${user.uid}`), { role:'device', name:displayId, dealershipId:dealershipName, updatedAt:Date.now(), createdAt:Date.now() }); } catch(e){}
 
       try {
         const dRef = ref(db, `displays/${displayId}`);
         const snap = await get(dRef);
         if (!snap.exists()) {
           await update(dRef, { channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() });
-        } else {
-          const cur = snap.val() || {};
-          if (cur.dealership !== dealershipName) {
-            await update(dRef, { dealership:dealershipName });
-          }
         }
-      } catch (e) {
-        console.warn('[display setup denied]', e);
-        window.setStatus(false, 'display/dealership mismatch');
-        return;
-      }
+      } catch(e){}
 
       const dref = ref(db, `displays/${displayId}`);
       onValue(dref, (snap) => {
-        const data = snap.val();
-        if (!data) return;
+        const data = snap.val(); if (!data) return;
         if (typeof data.channel === 'number' && data.channel !== window.currentChannel) window.loadChannel(data.channel);
         if (data.volume !== undefined || data.muted !== undefined) window.applyVolumeSettings(data.volume, data.muted);
         window.setStatus(true, '');
-      }, (err) => {
-        console.error('[listener]', err);
-        window.setStatus(false, 'listener error');
-      });
+      }, (err) => { console.error('[listener]', err); window.setStatus(false, 'listener error'); });
 
       try{
         const hbRef = ref(db, `displays/${displayId}`);
@@ -597,7 +544,7 @@
       getDatabase, ref, get, set, update, remove, onValue, query, orderByChild, equalTo
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    /* Firebase */
+    /* ================= Base app ================= */
     const firebaseConfig = {
       apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
       authDomain: "iptv-bfa.firebaseapp.com",
@@ -617,9 +564,8 @@
     const $$ = s => document.querySelectorAll(s);
     const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
     function esc(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
-    function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2200); }
+    function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.classList.remove('show'),2400); }
 
-    /* Logos */
     $('#brandLogo').style.backgroundImage = `url("${LOGO_URL}")`;
     const brandLogoM = document.getElementById('brandLogoM');
     if(brandLogoM){ brandLogoM.style.backgroundImage = `url("${LOGO_URL}")`; }
@@ -644,28 +590,16 @@
       setThemeIcon();
     });
 
-    /* More dropdown */
+    /* Menus */
     const moreBtn = document.getElementById('moreBtn');
     const moreMenu = document.getElementById('moreMenu');
     if(moreBtn){
-      moreBtn.addEventListener('click', (e)=>{
-        e.preventDefault();
-        moreMenu.classList.toggle('open');
-      });
-      document.addEventListener('click', (e)=>{
-        if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)){
-          moreMenu.classList.remove('open');
-        }
-      }, {capture:true});
+      moreBtn.addEventListener('click', (e)=>{ e.preventDefault(); moreMenu.classList.toggle('open'); });
+      document.addEventListener('click', (e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)){ moreMenu.classList.remove('open'); } }, {capture:true});
       document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') moreMenu.classList.remove('open'); });
       const file=(location.pathname.split("/").pop()||"displays.html").toLowerCase();
-      moreMenu.querySelectorAll('a').forEach(a=>{
-        const h=(a.getAttribute('href')||'').toLowerCase();
-        if(h===file){ a.classList.add('is-active'); }
-      });
+      moreMenu.querySelectorAll('a').forEach(a=>{ const h=(a.getAttribute('href')||'').toLowerCase(); if(h===file){ a.classList.add('is-active'); }});
     }
-
-    /* Mobile sheet */
     (()=>{
       const sheet = document.getElementById('sheet');
       const open = ()=>{ sheet.classList.add('open'); document.body.style.overflow='hidden'; };
@@ -726,7 +660,68 @@
       });
     }
 
-    /* Displays listing & controls */
+    /* ===== GitHub helpers (defined BEFORE handlers) ===== */
+    function ghCfg(){ try{ return JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}'); }catch{ return {}; } }
+    function saveGhCfg(c){ localStorage.setItem('iptv_admin_gh', JSON.stringify(c)); }
+    function ghNeedsConfig(){ const c=ghCfg(); return !(c.owner&&c.repo&&c.branch&&c.token); }
+    function ghSafePath(p){ return (p||'').split('/').map(encodeURIComponent).join('/'); }
+    function ghHeaders(token, scheme='Bearer'){
+      return { 'Authorization': `${scheme} ${token}`, 'Accept':'application/vnd.github+json', 'Content-Type':'application/json', 'X-GitHub-Api-Version':'2022-11-28' };
+    }
+    async function ghGet(path){
+      const c = ghCfg();
+      const url = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}?ref=${encodeURIComponent(c.branch||'main')}`;
+      let r = await fetch(url, { headers: ghHeaders(c.token, 'Bearer') });
+      if(r.status===401){ r = await fetch(url, { headers: ghHeaders(c.token, 'token') }); }
+      if(!r.ok) return null; return r.json();
+    }
+    function toBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
+    async function ghUpsert(path, content, message){
+      const c=ghCfg(); 
+      if(ghNeedsConfig()) throw new Error('GitHub not configured');
+      const safeContent = (content && String(content).length) ? content : '<!doctype html><meta charset="utf-8"><title>Empty</title>';
+      let sha=null; try{ sha=(await ghGet(path))?.sha||null; }catch(_){}
+      const url = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
+      const body = JSON.stringify({ message: message || `Update ${path}`, content: toBase64(safeContent), branch: c.branch, ...(sha?{sha}:{}) });
+      let res = await fetch(url, { method:'PUT', headers: ghHeaders(c.token, 'Bearer'), body });
+      if(res.status===401){ res = await fetch(url, { method:'PUT', headers: ghHeaders(c.token, 'token'), body }); }
+      if(!res.ok){
+        let details=''; try{ const j=await res.json(); details=j.message||''; }catch{ details=await res.text().catch(()=>String(res.status)); }
+        throw new Error(`GitHub publish failed [${res.status}] ${details}`);
+      }
+      return res.json();
+    }
+    async function configureGitHubInteractive(){
+      const cur=ghCfg();
+      const owner  = (prompt('GitHub owner/user', cur.owner||'flaviothebfagroup')||'').trim(); if(!owner) return;
+      const repo   = (prompt('Repo name', cur.repo||'IPTV-')||'').trim(); if(!repo) return;
+      const branch = (prompt('Branch', cur.branch||'main')||'main').trim();
+      const token  = (prompt('Personal Access Token (fine-grained Contents: Read & write, or classic repo/public_repo)', cur.token||'')||'').trim(); if(!token) return;
+      saveGhCfg({owner,repo,branch,token});
+      toast('GitHub saved!');
+    }
+    document.getElementById('ghSetupBtn').addEventListener('click', configureGitHubInteractive);
+
+    function buildPlayerFileHtml(displayId, dealershipPublicName){
+      const tpl = document.getElementById('playerTemplate');
+      let html  = (tpl?.innerHTML||'')
+        .replaceAll('(NEW-CODE)', displayId)
+        .replaceAll('(NEW-NAME)', dealershipPublicName);
+      return html;
+    }
+
+    // Optional helpers in console:
+    window.ghVerify = async function(){
+      try{
+        const c=ghCfg();
+        let r = await fetch('https://api.github.com/user', { headers: ghHeaders(c.token,'Bearer') });
+        if(r.status===401){ r = await fetch('https://api.github.com/user', { headers: ghHeaders(c.token,'token') }); }
+        const ok=r.ok; toast(ok?'Token ok':'Token invalid', !ok);
+      }catch(e){ toast('Verify failed', true); }
+    };
+    window.ghProbe = async function(){ try{ await ghUpsert('Displays/_probe.txt','ok '+new Date().toISOString(),'probe'); toast('GH probe ok'); }catch(e){ toast(String(e.message||e),true); } };
+
+    /* Displays listing + inline preview */
     let displaysUnsub=null;
     $('#dealerForDisplays').addEventListener('change', e=>watchDisplays(e.target.value));
     $('#displaysReload').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(did) watchDisplays(did,true); });
@@ -736,10 +731,7 @@
     const previewLegacy  = (id)=> `https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html`;
     async function resolvePreviewUrl(id){
       const noc = `nocache=${Date.now()}`;
-      try{
-        const r = await fetch(`${previewPrimary(id)}?${noc}`, {method:'HEAD'});
-        if(r.ok) return `${previewPrimary(id)}?embed=1&${noc}`;
-      }catch(_){}
+      try{ const r = await fetch(`${previewPrimary(id)}?${noc}`, {method:'HEAD'}); if(r.ok) return `${previewPrimary(id)}?embed=1&${noc}`; }catch(_){}
       return `${previewLegacy(id)}?embed=1&${noc}`;
     }
 
@@ -861,115 +853,15 @@
       }catch(e){ console.error(e); toast('Bulk failed',true); }
     }
 
-
-/* ===== GitHub helpers (401-hardened) ===== */
-function ghCfg(){ try{ return JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}'); }catch{ return {}; } }
-function saveGhCfg(c){ localStorage.setItem('iptv_admin_gh', JSON.stringify(c)); }
-function ghNeedsConfig(){ const c=ghCfg(); return !(c.owner&&c.repo&&c.branch&&c.token); }
-function ghSafePath(p){ return (p||'').split('/').map(encodeURIComponent).join('/'); }
-
-function ghHeaders(token, scheme='Bearer'){
-  return {
-    'Authorization': `${scheme} ${token}`,
-    'Accept':'application/vnd.github+json',
-    'Content-Type':'application/json',
-    'X-GitHub-Api-Version':'2022-11-28'
-  };
-}
-
-async function ghGet(path, useAuth=true){
-  const c = ghCfg();
-  const url = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}?ref=${encodeURIComponent(c.branch||'main')}`;
-  const opts = useAuth ? { headers: ghHeaders(c.token, 'Bearer') } : {};
-  // Try with auth; if 401, retry with 'token '
-  let r = await fetch(url, opts);
-  if(r.status===401 && useAuth){
-    r = await fetch(url, { headers: ghHeaders(c.token, 'token') });
-  }
-  if(!r.ok) return null;
-  return r.json();
-}
-
-function toBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
-
-/* Create or update file; auto-retry Bearer -> token on 401 */
-async function ghUpsert(path, content, message){
-  const c=ghCfg();
-  if(ghNeedsConfig()) throw new Error('GitHub not configured (owner/repo/branch/token)');
-  const safeContent = (content && String(content).length) ? content : '<!doctype html><meta charset="utf-8"><title>Empty</title>';
-
-  // Check if file exists (auth’d to avoid rate limits/private cases)
-  let sha=null; try{ sha=(await ghGet(path,true))?.sha||null; }catch(_){}
-
-  const url = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
-  const body = JSON.stringify({ message: message || `Update ${path}`, content: toBase64(safeContent), branch: c.branch, ...(sha?{sha}:{}) });
-
-  // 1) Bearer try
-  let res = await fetch(url, { method:'PUT', headers: ghHeaders(c.token, 'Bearer'), body });
-  // 2) Fallback to legacy 'token' scheme if 401
-  if(res.status===401){
-    res = await fetch(url, { method:'PUT', headers: ghHeaders(c.token, 'token'), body });
-  }
-
-  if(!res.ok){
-    let details = '';
-    try { const j = await res.json(); details = j.message || ''; } catch { details = await res.text().catch(()=>String(res.status)); }
-    throw new Error(`GitHub publish failed [${res.status}] ${details}`);
-  }
-  return res.json();
-}
-
-/* One-time interactive setup (trims whitespace) */
-async function configureGitHubInteractive(){
-  const cur=ghCfg();
-  const owner  = (prompt('GitHub owner/user', cur.owner||'flaviothebfagroup')||'').trim(); if(!owner) return;
-  const repo   = (prompt('Repo name', cur.repo||'IPTV-')||'').trim(); if(!repo) return;
-  const branch = (prompt('Branch', cur.branch||'main')||'main').trim();
-  const token  = (prompt('Personal Access Token (fine-grained: Contents Read/Write; or classic: public_repo/repo)', cur.token||'')||'').trim();
-  if(!token) return;
-  saveGhCfg({owner,repo,branch,token});
-  toast('GitHub saved!');
-}
-document.getElementById('ghSetupBtn')?.addEventListener('click', configureGitHubInteractive);
-
-/* Verify helper: checks the token, repo, and branch quickly */
-async function ghVerify(){
-  try{
-    const c = ghCfg();
-    // Who am I?
-    let r = await fetch('https://api.github.com/user', { headers: ghHeaders(c.token,'Bearer') });
-    if(r.status===401){ r = await fetch('https://api.github.com/user', { headers: ghHeaders(c.token,'token') }); }
-    const me = r.ok ? await r.json() : null;
-
-    // Repo & branch
-    const repoRes = await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}`, { headers: ghHeaders(c.token,'Bearer') });
-    const repoOk = repoRes.ok;
-    const brRes = await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/branches/${encodeURIComponent(c.branch)}`, { headers: ghHeaders(c.token,'Bearer') });
-    const brOk = brRes.ok;
-
-    console.log('[GH Verify]', { me, repoOk, brOk, cfg:c });
-    toast(repoOk && brOk && me ? `Token ok: ${me.login}` : 'Token or repo/branch not accessible', ! (repoOk && brOk && me));
-  }catch(e){
-    console.error(e); toast('Verify failed: '+(e.message||e), true);
-  }
-}
-window.ghVerify = ghVerify;
-/* Optional quick probe to write a tiny file */
-window.ghProbe = async function(){
-  try{ await ghUpsert('Displays/_probe.txt', 'ok '+new Date().toISOString(), 'probe'); toast('GH probe ok'); }catch(e){ console.error(e); toast(String(e.message||e), true); }
-};
-
-
-
-    /* ===== Add display (fresh dealership read + GitHub create) ===== */
+    /* ===== Add display ===== */
     document.getElementById('addDisplayBtn').addEventListener('click', async ()=>{
       const didNow = document.getElementById('dealerForDisplays').value;
       if(!didNow) return toast('Pick a dealership', true);
 
-      // get friendly/public name for the dealership (used in template)
+      // Fetch friendly public name (NEW-NAME)
       const friendly = (await get(ref(db,`dealershipPublic/${didNow}`))).val()?.name || didNow;
 
-      // ID logic (auto if empty)
+      // Build or accept typed ID
       let id = document.getElementById('newDisplayId').value.trim();
       if(!id){
         const pref = initialsFromName(friendly);
@@ -979,32 +871,37 @@ window.ghProbe = async function(){
       }
 
       try{
-        // 1) DB writes
+        // 1) Write DB
         await set(ref(db,`dealership/${didNow}/displays/${id}`), true);
         await update(ref(db,`displays/${id}`),{channel:1,volume:0,muted:true,dealership:didNow,timestamp:Date.now()});
 
-        // 2) GitHub page create/update with YOUR template, filled
-        try{
-          if(ghNeedsConfig()){
-            toast('TV added. Run GH Setup to enable page creation.');
-          }else{
-            const html = buildPlayerFileHtml(id, friendly);
-            await ghUpsert(`Displays/${id}.html`, html, `Create player for ${id} (${friendly})`);
-            toast('TV added + page created');
-          }
-        }catch(ghErr){
-          console.error(ghErr);
-          toast(`GitHub publish failed: ${ghErr.message||ghErr}`, true);
+        // 2) Ensure GH configured (prompt if not)
+        if(ghNeedsConfig()){
+          toast('Configure GitHub to create the page…');
+          await configureGitHubInteractive();
+        }
+
+        // 3) Create/Update GitHub file
+        if(!ghNeedsConfig()){
+          const html = buildPlayerFileHtml(id, friendly);
+          await ghUpsert(`Displays/${id}.html`, html, `Create player for ${id} (${friendly})`);
+          toast('TV added + page created');
+        }else{
+          toast('TV added. GitHub not configured.', true);
         }
 
         document.getElementById('newDisplayId').value='';
         document.getElementById('displaysReload')?.click();
-      }catch(e){ console.error(e); toast('Add failed',true); }
+      }catch(e){ console.error(e); toast((e && e.message)||'Add failed',true); }
     });
 
     async function collectDisplays(did){ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const s=await get(qRef); return Object.keys(s.val()||{}); }
     function initialsFromName(name){ const raw=(name||'').trim(); if(!raw) return 'DS'; let parts=raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g)||raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g)||[]; let a=parts[0]||'', b=parts[1]||''; let p=(a? a[0]:'')+(b? b[0]:''); if(p.length<2 && a.length>=2) p=a.slice(0,2); return p.toUpperCase(); }
     function nextSuffix(list,pref){ let max=0; list.forEach(id=>{ const m=id.match(new RegExp('^'+pref+'-(\\d{3})$')); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; }}); return max+1; }
+
+    // Start list
+    function start(){ const did=$('#dealerForDisplays').value; if(did) watchDisplays(did,true); else $('#displayEmpty').style.display='block'; }
+    start();
   </script>
 </body>
 </html>
