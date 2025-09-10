@@ -240,7 +240,7 @@
     <div id="content" class="card" style="display:none">
       <h2 style="margin:0 0 8px">Displays</h2>
       <div class="muted small">Preview opens the player page. New files are created at
-        <code>/Displays/{displayId}.html</code> and (by default) redirect to your old <code>/{displayId}.html</code>.
+        <code>/Displays/{displayId}.html</code> and embed your working page so playback matches your current setup.
       </div>
 
       <!-- action strip -->
@@ -272,29 +272,40 @@
     </div>
   </div>
 
-  <!-- Player file template.
-       Default content: a tiny redirect so your NEW /Displays/{ID}.html
-       behaves exactly like your OLD /{ID}.html right now.
-       Replace this template later with your real player code. -->
-  <template id="playerTemplate">
-<!DOCTYPE html>
+  <!-- ===== Player file template (pre-filled) =====
+       This creates /Displays/{ID}.html that *embeds* your existing working page
+       at /IPTV-/{ID}.html so playback is identical right now.
+       Later, replace the iframe with your full player HTML. -->
+  <template id="playerTemplate"><!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>(DISPLAY CODE) — Player</title>
-  <meta http-equiv="refresh" content="0; url=/IPTV-/(DISPLAY CODE).html?from=Displays">
-  <style>html,body{margin:0;height:100%;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif}</style>
+  <meta name="color-scheme" content="dark light">
+  <style>
+    html,body{height:100%;margin:0;background:#000;color:#fff}
+    .wrap{height:100%;display:flex;flex-direction:column}
+    header{display:flex;align-items:center;gap:10px;padding:8px 10px;background:#0b0b0c;color:#fff;border-bottom:1px solid rgba(255,255,255,.08)}
+    header .tag{font:12px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color:#bbb; border:1px solid rgba(255,255,255,.16); border-radius:999px; padding:2px 8px}
+    iframe{flex:1; width:100%; border:0; background:#000}
+  </style>
 </head>
 <body>
-  <noscript>Redirecting…</noscript>
-  <script>
-    const target = `/IPTV-/${encodeURIComponent('(DISPLAY CODE)')}.html?from=Displays`;
-    location.replace(target);
-  </script>
+  <div class="wrap">
+    <header>
+      <strong>(DISPLAY CODE)</strong>
+      <span class="tag">(DISPLAY_ID)</span>
+      <span class="tag">Embedded</span>
+    </header>
+    <iframe
+      src="/IPTV-/(DISPLAY CODE).html?embed=1"
+      allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+      allowfullscreen
+      title="Player (DISPLAY CODE)"></iframe>
+  </div>
 </body>
-</html>
-  </template>
+</html></template>
 
   <div id="toast" class="toast"></div>
 
@@ -369,6 +380,7 @@
         }
       }, {capture:true});
       document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') moreMenu.classList.remove('open'); });
+      // highlight current page in dropdown when applicable
       const file=(location.pathname.split("/").pop()||"displays.html").toLowerCase();
       moreMenu.querySelectorAll('a').forEach(a=>{
         const h=(a.getAttribute('href')||'').toLowerCase();
@@ -384,36 +396,46 @@
       document.getElementById('hamburger').addEventListener('click', open);
       document.getElementById('closeSheet').addEventListener('click', close);
       sheet.querySelector('.back').addEventListener('click', close);
+      // Mobile signout uses desktop button
       const mainOut = document.getElementById('signOutBtn');
       const mobOut  = document.getElementById('signOutBtnM');
       if(mainOut && mobOut){ mobOut.addEventListener('click', ()=> mainOut.click()); }
     })();
 
-    /* ===== GitHub helpers ===== */
+    /* ===== GitHub helpers (safe path + good errors) ===== */
     function ghCfg(){ try{ return JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}'); }catch{ return {}; } }
     function saveGhCfg(c){ localStorage.setItem('iptv_admin_gh', JSON.stringify(c)); }
     function ghNeedsConfig(){ const c=ghCfg(); return !(c.owner&&c.repo&&c.branch&&c.token); }
+    function ghSafePath(p){ return (p||'').split('/').map(encodeURIComponent).join('/'); }
     async function ghGet(path){
       const {owner,repo} = ghCfg();
-      const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`);
-      return r.ok ? r.json() : null;
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${ghSafePath(path)}`;
+      const r = await fetch(url);
+      if(!r.ok) return null;
+      return r.json();
     }
     function toBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
     async function ghUpsert(path, content, message){
       const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
       let sha=null; try{ sha=(await ghGet(path))?.sha||null; }catch(_){}
-      const res = await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encodeURIComponent(path)}`,{
+      const url = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
+      const res = await fetch(url, {
         method:'PUT',
         headers:{
           'Authorization':`Bearer ${c.token}`,
           'Accept':'application/vnd.github+json',
           'Content-Type':'application/json'
         },
-        body: JSON.stringify({ message:message||`Update ${path}`, content:toBase64(content), branch:c.branch, ...(sha?{sha}: {}) })
+        body: JSON.stringify({
+          message: message || `Update ${path}`,
+          content: toBase64(content),
+          branch:  c.branch,
+          ...(sha ? { sha } : {})
+        })
       });
       if(!res.ok){
         const txt = await res.text().catch(()=>String(res.status));
-        throw new Error(`GitHub ${res.status}: ${txt.slice(0,180)}`);
+        throw new Error(`GitHub publish failed (${res.status}): ${txt.slice(0,300)}`);
       }
       return res.json();
     }
@@ -422,15 +444,17 @@
       const owner  = prompt('GitHub owner/user', cur.owner||'flaviothebfagroup'); if(!owner) return;
       const repo   = prompt('Repo name', cur.repo||'IPTV-'); if(!repo) return;
       const branch = prompt('Branch', cur.branch||'main') || 'main';
-      const token  = prompt('Personal Access Token (repo or public_repo scope)', cur.token||''); if(!token) return;
+      const token  = prompt('Personal Access Token (public_repo or repo scope)', cur.token||''); if(!token) return;
       saveGhCfg({owner,repo,branch,token}); toast('GitHub saved!');
     }
+    document.getElementById('ghSetupBtn').addEventListener('click', configureGitHubInteractive);
     function buildPlayerFileHtml(displayId, dealershipId){
       const tpl = document.getElementById('playerTemplate');
-      let html  = (tpl?.innerHTML||'').replaceAll('(DISPLAY CODE)', displayId).replaceAll('(DISPLAY_ID)', dealershipId);
+      let html  = (tpl?.innerHTML||'')
+        .replaceAll('(DISPLAY CODE)', displayId)
+        .replaceAll('(DISPLAY_ID)',  dealershipId);
       return html;
     }
-    document.getElementById('ghSetupBtn').addEventListener('click', configureGitHubInteractive);
 
     /* ===== Auth UI ===== */
     document.getElementById('loginBtn').addEventListener('click', doLogin);
@@ -487,7 +511,7 @@
     $('#displaysReload').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(did) watchDisplays(did,true); });
     $('#manageUsers').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true); location.href = `users.html?dealer=${encodeURIComponent(did)}`; });
 
-    // Primary preview URL is new folder; we fall back to old root if needed.
+    // Preview URL helpers — try new Displays path, fallback to legacy root
     const previewPrimary = (id)=> `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(id)}.html`;
     const previewLegacy  = (id)=> `https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html`;
     async function resolvePreviewUrl(id){
@@ -549,7 +573,6 @@
         ul.querySelectorAll('button[data-id]').forEach(el=>{
           el.addEventListener('click', async ()=>{ const id=el.dataset.id; const cur=el.getAttribute('data-muted')==='true'; await writeDisplay(id,{muted:!cur}); });
         });
-        // Remove old window.open handler — we now use delegation below for inline preview
         ul.querySelectorAll('button[data-flash]').forEach(el=>{
           el.addEventListener('click', async ()=>{ const id=el.dataset.flash; await writeDisplay(id,{flashAt: Date.now()}); toast(`Pinged ${id}`); });
         });
@@ -618,38 +641,41 @@
       }catch(e){ console.error(e); toast('Bulk failed',true); }
     }
 
-    /* ===== Add display (with GitHub page create) ===== */
-    $('#addDisplayBtn').addEventListener('click', async ()=>{
-      const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
-      let id=$('#newDisplayId').value.trim();
+    /* ===== Add display (fresh dealership read + GitHub create) ===== */
+    document.getElementById('addDisplayBtn').addEventListener('click', async ()=>{
+      const didNow = document.getElementById('dealerForDisplays').value;
+      if(!didNow) return toast('Pick a dealership', true);
+
+      let id = document.getElementById('newDisplayId').value.trim();
       if(!id){
-        const friendly=(await get(ref(db,`dealershipPublic/${did}`))).val()?.name||did;
+        const friendly=(await get(ref(db,`dealershipPublic/${didNow}`))).val()?.name||didNow;
         const pref=initialsFromName(friendly);
-        const existing=await collectDisplays(did);
+        const existing=await collectDisplays(didNow);
         let n=nextSuffix(existing,pref);
         id=`${pref}-${String(n).padStart(3,'0')}`;
       }
+
       try{
-        // 1) DB writes (unchanged)
-        await set(ref(db,`dealership/${did}/displays/${id}`),true);
-        await update(ref(db,`displays/${id}`),{channel:1,volume:0,muted:true,dealership:did,timestamp:Date.now()});
+        // 1) DB writes
+        await set(ref(db,`dealership/${didNow}/displays/${id}`), true);
+        await update(ref(db,`displays/${id}`),{channel:1,volume:0,muted:true,dealership:didNow,timestamp:Date.now()});
 
         // 2) GitHub page
         try{
           if(ghNeedsConfig()){
-            toast('TV added. Configure GitHub (GH Setup) to create the page.');
+            toast('TV added. Run GH Setup to enable page creation.');
           }else{
-            const html = buildPlayerFileHtml(id, did);
-            await ghUpsert(`Displays/${id}.html`, html, `Create player for ${id}`);
+            const html = buildPlayerFileHtml(id, didNow);
+            await ghUpsert(`Displays/${id}.html`, html, `Create player for ${id} (${didNow})`);
             toast('TV added + page created');
           }
         }catch(ghErr){
           console.error(ghErr);
-          toast('TV added, but publish failed (GH)', true);
+          toast('TV added, but GitHub publish failed', true);
         }
 
-        $('#newDisplayId').value='';
-        $('#displaysReload')?.click();
+        document.getElementById('newDisplayId').value='';
+        document.getElementById('displaysReload')?.click();
       }catch(e){ console.error(e); toast('Add failed',true); }
     });
 
