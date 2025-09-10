@@ -597,7 +597,7 @@
       // inline preview handler
       ul.addEventListener('click', async (e)=>{
         const btn=e.target.closest('button[data-preview]'); if(!btn) return;
-        const id=btn.dataset.preview; const row=btn.closest('.item'); const opened=row.querySelector('.sub.preview'); if(opened){ opened.remove(); return; }
+        const id=btn.dataset.preview; const row=btn.closest('.item'); row.querySelectorAll('.sub.preview').forEach(p=>p.remove()); // close only inside this row
         const panel=document.createElement('div'); panel.className='sub preview';
         panel.innerHTML=`<div class="bar"><span class="muted small">Preview — ${id}</span><button class="btn" data-open>Open tab</button><button class="btn" data-reload>Reload</button></div><iframe title="Preview ${id}" src="about:blank" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
         row.appendChild(panel);
@@ -607,14 +607,18 @@
       });
     }
 
-    async function writeDisplay(id,patch){
-      try{
-        const did=document.getElementById('dealerForDisplays').value;
-        const snap=await get(ref(db,`displays/${id}`)); const cur=snap.val()||{};
-        await update(ref(db,`displays/${id}`),{...patch,dealership:cur.dealership||did||null,timestamp:Date.now()});
-        toast(`${id}: updated`);
-      }catch(e){ console.error(e); toast('Write denied', true); }
-    }
+    /* ===== GitHub delete helper ===== */
+async function ghDelete(path,message){
+  const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
+  const info=await ghGet(path); if(!info?.sha) throw new Error('File not found in GitHub');
+  const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
+  const body=JSON.stringify({message:message||`Delete ${path}`,sha:info.sha,branch:c.branch});
+  let res=await fetch(url,{method:'DELETE',headers:ghHeaders(c.token,'Bearer'),body});
+  if(res.status===401){ res=await fetch(url,{method:'DELETE',headers:ghHeaders(c.token,'token'),body}); }
+  if(!res.ok){ throw new Error(`GitHub delete failed [${res.status}]`); }
+  return res.json();
+}
+
 
     document.getElementById('bulkMute').addEventListener('click', ()=>bulkWrite({muted:true}));
     document.getElementById('bulkUnmute').addEventListener('click', ()=>bulkWrite({muted:false}));
