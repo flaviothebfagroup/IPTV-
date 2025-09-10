@@ -3,7 +3,6 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <!-- Prevent iOS auto-link blue -->
   <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
   <title>BFA IPTV — Displays</title>
 
@@ -15,9 +14,6 @@
   <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png"/>
 
   <style>
-    /* =========================================================
-       Tokens (light by default) + dark override
-    ========================================================= */
     :root{
       --accent:#ff9500;
       --fg:#111; --muted:#6e6e73; --bg:#ffffff;
@@ -38,9 +34,6 @@
       font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif; line-height:1.35}
     a{color:inherit;text-decoration:none}
 
-    /* =========================================================
-       Topbar (shared with Home/Dealerships)
-    ========================================================= */
     .topbar{position:sticky;top:0;z-index:100;background:var(--panel);
       border-bottom:1px solid var(--border);
       padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
@@ -55,7 +48,6 @@
     .pill.is-active{outline:2px solid var(--accent)}
     .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
 
-    /* More (+) dropdown */
     .more{position:relative}
     #moreBtn .plus{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
     #moreMenu{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
@@ -66,7 +58,6 @@
     #moreMenu a.is-active{outline:2px solid var(--accent)}
     #moreMenu .ic{width:18px;height:18px;stroke-width:1.9}
 
-    /* Actions */
     .actions{display:flex;gap:8px;align-items:center}
     .email{max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);
       border:1px solid var(--border);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -75,17 +66,10 @@
     .chip:hover{border-color:var(--accent)}
     .chip .ic{width:18px;height:18px;stroke-width:2}
     .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
-    /* Hamburger (orange lines, no border, centered) */
     #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:42px;min-width:42px;padding:0;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
     #hamburger .ic{width:22px;height:22px;stroke:var(--accent);stroke-width:2.35}
+    @media (max-width:920px){ .nav{display:none} #hamburger{display:inline-flex} .email{display:none} }
 
-    @media (max-width:920px){
-      .nav{display:none}
-      #hamburger{display:inline-flex}
-      .email{display:none}
-    }
-
-    /* Mobile sheet */
     #sheet{position:fixed;inset:0;z-index:120;display:none}
     #sheet.open{display:block}
     #sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
@@ -95,9 +79,6 @@
     .panel nav{display:grid;gap:8px}
     .panel nav a{justify-content:flex-start}
 
-    /* =========================================================
-       Page UI
-    ========================================================= */
     .wrap{max-width:1100px;margin:0 auto;padding:18px}
     .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
     .hstack{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -127,12 +108,11 @@
     .vol input[type="range"]{width:140px;accent-color:var(--accent)}
     @media (max-width:560px){ .vol input[type="range"]{width:100%} }
 
-    /* Toast */
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
     .toast.show{opacity:1}
     .toast.err{background:#ff453a;color:#fff}
 
-    /* ===== Inline preview (like Dealerships) ===== */
+    /* Inline preview panel (like Dealerships) */
     .sub.preview{grid-column:1/-1;width:100%;background:var(--panel);
       border:1px solid var(--border);border-radius:12px;padding:10px;margin-top:6px}
     .sub.preview .bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
@@ -212,7 +192,6 @@
     </div>
   </header>
 
-  <!-- ===================================================== -->
   <div class="wrap">
     <!-- Login -->
     <div id="loginBox" class="card" style="max-width:520px;margin:40px auto;display:none">
@@ -239,11 +218,10 @@
     <!-- Displays -->
     <div id="content" class="card" style="display:none">
       <h2 style="margin:0 0 8px">Displays</h2>
-      <div class="muted small">Preview opens the player page. New files are created at
-        <code>/Displays/{displayId}.html</code> and embed your working page so playback matches your current setup.
+      <div class="muted small">
+        New players are created at <code>/Displays/{displayId}.html</code> with your template (IDs &amp; names auto-filled).
       </div>
 
-      <!-- action strip -->
       <div class="row3" style="margin:10px 0">
         <div>
           <div class="label">Dealership</div>
@@ -272,38 +250,338 @@
     </div>
   </div>
 
-  <!-- ===== Player file template (pre-filled) =====
-       This creates /Displays/{ID}.html that *embeds* your existing working page
-       at /IPTV-/{ID}.html so playback is identical right now.
-       Later, replace the iframe with your full player HTML. -->
+  <!-- ===== Player file template (YOUR EXACT TEMPLATE) ===== -->
   <template id="playerTemplate"><!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>(DISPLAY CODE) — Player</title>
-  <meta name="color-scheme" content="dark light">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+  <title>Digital Signage — Player</title>
   <style>
-    html,body{height:100%;margin:0;background:#000;color:#fff}
-    .wrap{height:100%;display:flex;flex-direction:column}
-    header{display:flex;align-items:center;gap:10px;padding:8px 10px;background:#0b0b0c;color:#fff;border-bottom:1px solid rgba(255,255,255,.08)}
-    header .tag{font:12px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color:#bbb; border:1px solid rgba(255,255,255,.16); border-radius:999px; padding:2px 8px}
-    iframe{flex:1; width:100%; border:0; background:#000}
+    :root{ --bg:#000; --fg:#fff; --muted:#b3b3b3; --panel:rgba(255,255,255,.06); --border:rgba(255,255,255,.15); --accent:#ff9500; --ok:#22c55e; --err:#ef4444; }
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%}
+    body{ background:var(--bg); color:var(--fg); font-family: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; overflow:hidden; position:relative; }
+    .video-container{position:absolute; inset:0; background:#000}
+    video{width:100%; height:100%; object-fit:cover; background:#000}
+    .loading-overlay{ position:absolute; inset:0; background:rgba(0,0,0,.85); display:flex; align-items:center; justify-content:center; z-index:100; opacity:0; pointer-events:none; transition:opacity .25s; }
+    .loading-overlay.active{opacity:1; pointer-events:auto}
+    .spinner{ width:54px; height:54px; border-radius:50%; border:3px solid rgba(255,255,255,.15); border-top-color:#fff; animation:spin 1s linear infinite; }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .channel-info{ position:absolute; top:18px; left:18px; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:10px 14px; z-index:50; opacity:0; transform:translateY(-8px); transition:opacity .25s, transform .25s; }
+    .channel-info.show{opacity:1; transform:translateY(0)}
+    .channel-name{font-weight:800}
+    .channel-sub{font-size:12px; color:var(--muted); display:flex; gap:10px; align-items:center}
+    .live-dot{width:8px;height:8px;border-radius:50%; background:var(--accent); box-shadow:0 0 0 0 rgba(255,149,0,.7); animation:pulse 2s infinite}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,149,0,.7)} 70%{box-shadow:0 0 0 8px rgba(255,149,0,0)} 100%{box-shadow:0 0 0 0 rgba(255,149,0,0)}}
+    .status-bar{ position:absolute; right:18px; bottom:18px; display:flex; gap:10px; align-items:center; background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:8px 12px; font-size:12px; z-index:50; }
+    .status-dot{width:10px;height:10px;border-radius:50%; background:var(--ok)}
+    .status-dot.disconnected{background:var(--err)}
+    .divider{opacity:.45}
+    .display-id{ position:absolute; left:18px; bottom:18px; z-index:50; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:8px 12px; font-size:12px; color:#fff; }
+    .error-message{ position:absolute; inset:auto 50% 50% auto; transform:translate(50%,-50%); background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.4); color:#fff; padding:14px 18px; border-radius:14px; display:none; z-index:80; text-align:center; }
+    .error-message.show{display:block}
+    .error-title{font-weight:800; margin-bottom:4px; color:var(--err)}
+    .error-text{font-size:12px; color:#fff}
+    .transition-overlay{position:absolute; inset:0; background:#000; z-index:40; opacity:0; pointer-events:none; transition:opacity .25s}
+    .transition-overlay.active{opacity:1}
+    .volume-control{ position:absolute; left:50%; bottom:100px; transform:translateX(-50%); display:flex; align-items:center; gap:12px; z-index:70; background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:10px 12px; opacity:0; pointer-events:none; transition:opacity .2s; }
+    .volume-control.show{opacity:1; pointer-events:auto}
+    .vol-btn{ width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:transparent; color:#fff; font-size:18px; cursor:pointer; }
+    .vol-track{width:160px; height:8px; border-radius:6px; background:rgba(255,255,255,.12); position:relative; overflow:hidden; border:1px solid var(--border)}
+    .vol-fill{position:absolute; left:0; top:0; bottom:0; width:0%; background:var(--accent)}
+    .vol-percent{font-weight:800; min-width:46px; text-align:right}
+    .vol-icon{width:22px;height:22px; display:block}
+    .bar{opacity:0; transition:opacity .15s}
+    .icon-muted .bar, .icon-level-0 .bar{opacity:0}
+    .icon-level-1 #bar1{opacity:1}
+    .icon-level-2 #bar1, .icon-level-2 #bar2{opacity:1}
+    .icon-level-3 #bar1, .icon-level-3 #bar2, #bar3{opacity:1}
+    .icon-muted #x1, .icon-muted #x2{opacity:1}
+    #x1,#x2{opacity:0; stroke:var(--err); stroke-width:2; stroke-linecap:round}
+    .volume-float{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,.92); border:1px solid var(--border); color:#fff; padding:26px 36px; border-radius:18px; font-weight:900; font-size:40px; z-index:90; animation:fadeHud 1.8s ease forwards; }
+    @keyframes fadeHud{0%{opacity:0; transform:translate(-50%,-50%) scale(.96)} 15%{opacity:1; transform:translate(-50%,-50%) scale(1)} 85%{opacity:1} 100%{opacity:0}}
+    @media (prefers-reduced-motion:reduce){ .transition-overlay,.channel-info,.loading-overlay{transition:none} }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <strong>(DISPLAY CODE)</strong>
-      <span class="tag">(DISPLAY_ID)</span>
-      <span class="tag">Embedded</span>
-    </header>
-    <iframe
-      src="/IPTV-/(DISPLAY CODE).html?embed=1"
-      allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-      allowfullscreen
-      title="Player (DISPLAY CODE)"></iframe>
+  <div class="volume-control" id="volumeHud" aria-live="polite">
+    <button class="vol-btn" id="muteBtn" title="Mute/Unmute" aria-label="Mute/Unmute">
+      <svg id="volSvg" class="vol-icon icon-muted" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 10v4h4l5 4V6l-5 4H3Z"/>
+        <path id="bar1" class="bar" d="M16 9a3 3 0 0 1 0 6" />
+        <path id="bar2" class="bar" d="M18.5 7a6 6 0 0 1 0 10" />
+        <path id="bar3" class="bar" d="M21 5a9 9 0 0 1 0 14" />
+        <line id="x1" x1="2" y1="2" x2="22" y2="22"/>
+        <line id="x2" x1="22" y1="2" x2="2" y2="22"/>
+      </svg>
+    </button>
+    <button class="vol-btn" id="volDown" title="Volume down" aria-label="Volume down">−</button>
+    <div class="vol-track"><div class="vol-fill" id="volFill"></div></div>
+    <button class="vol-btn" id="volUp" title="Volume up" aria-label="Volume up">+</button>
+    <div class="vol-percent" id="volPct">0%</div>
   </div>
+
+  <div class="video-container">
+    <video id="videoPlayer" autoplay muted playsinline></video>
+  </div>
+
+  <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+  <div class="channel-info" id="channelInfo">
+    <div class="channel-name" id="chName">Channel</div>
+    <div class="channel-sub"><span class="live-dot"></span><span>LIVE • CH <span id="chNum">1</span></span></div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot" title="Connection"></div>
+    <span id="statusText">Connected</span>
+    <span class="divider">•</span>
+    <span id="clock">00:00</span>
+  </div>
+
+  <div class="display-id">Display: <b id="displayId">—</b></div>
+
+  <div class="error-message" id="errToast">
+    <div class="error-title">Stream Unavailable</div>
+    <div class="error-text" id="errText">Reconnecting…</div>
+  </div>
+
+  <div class="transition-overlay" id="fade"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
+
+  <script>
+    const CONFIG = {
+      displayId: '(NEW-CODE)',
+      dealershipName: '(NEW-NAME)',
+      channels: [
+        { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
+        { id:2, name:'Sports', url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8', type:'hls' }, /* http may be blocked */
+        { id:3, name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
+        { id:4, name:'Nature', url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8', type:'hls' },
+        { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
+      ]
+    };
+
+    let hls=null, retry=0, switching=false;
+    window.currentChannel = 1;
+    window.currentVolume  = 0;
+    window.isMuted        = true;
+    let lastVolume = 50;
+    const $ = (id)=>document.getElementById(id);
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      $('displayId').textContent = CONFIG.displayId;
+      initVideo();
+      initVolumeUI();
+      tickClock(); setInterval(tickClock, 1000);
+      loadChannel(1);
+    });
+
+    function initVideo(){
+      const v = $('videoPlayer');
+      v.volume = 0; v.muted = true;
+      v.addEventListener('loadstart', ()=> showLoading(true));
+      v.addEventListener('canplay',   ()=> showLoading(false));
+      v.addEventListener('stalled',   ()=> showLoading(true));
+      v.addEventListener('error',     onVideoError);
+      $('volUp').onclick   = ()=> volumeUp();
+      $('volDown').onclick = ()=> volumeDown();
+      $('muteBtn').onclick = ()=> toggleMute();
+    }
+
+    function initVolumeUI(){
+      const savedVol  = localStorage.getItem('displayVolume');
+      const savedMute = localStorage.getItem('displayMuted');
+      if(savedVol !== null){ window.currentVolume = parseInt(savedVol,10); lastVolume = window.currentVolume || 50; }
+      if(savedMute !== null){ window.isMuted = (savedMute === 'true'); }
+      const v = $('videoPlayer');
+      v.volume = (window.currentVolume||0)/100;
+      v.muted  = !!window.isMuted;
+      renderVolumeUI();
+    }
+    function renderVolumeUI(){
+      const pct = Math.max(0, Math.min(100, window.currentVolume|0));
+      $('volFill').style.width = pct + '%';
+      $('volPct').textContent = (window.isMuted || pct===0) ? '0%' : (pct + '%');
+      const cls = window.isMuted || pct===0 ? 'icon-muted' :
+                  pct < 30 ? 'icon-level-1' : pct < 70 ? 'icon-level-2' : 'icon-level-3';
+      $('volSvg').className.baseVal = 'vol-icon ' + cls;
+      hudFlash();
+    }
+    function toggleMute(){ window.isMuted ? mute() : unmute(); }
+    function mute(){ const v=$('videoPlayer'); window.isMuted=true; v.muted=true; localStorage.setItem('displayMuted','true'); renderVolumeUI(); }
+    function unmute(){
+      const v=$('videoPlayer');
+      if(window.currentVolume===0){ window.currentVolume = lastVolume || 50; v.volume = window.currentVolume/100; }
+      window.isMuted=false; v.muted=false; v.play().catch(()=>{});
+      localStorage.setItem('displayMuted','false'); renderVolumeUI();
+    }
+    function setVolume(vol){
+      vol = Math.max(0, Math.min(100, vol|0));
+      const v=$('videoPlayer');
+      window.currentVolume = vol; if(vol>0) lastVolume = vol;
+      v.volume = vol/100;
+      if(vol===0){ window.isMuted = true; v.muted = true; localStorage.setItem('displayMuted','true'); }
+      localStorage.setItem('displayVolume', String(vol));
+      renderVolumeUI();
+    }
+    function volumeUp(){ if(window.isMuted) unmute(); setVolume(window.currentVolume + 10); }
+    function volumeDown(){ setVolume(window.currentVolume - 10); }
+    function showFloat(text){ const old = document.querySelector('.volume-float'); if(old) old.remove(); const el = document.createElement('div'); el.className='volume-float'; el.textContent=text; document.body.appendChild(el); setTimeout(()=>el.remove(), 1800); }
+    function hudFlash(){ const hud = $('volumeHud'); hud.classList.add('show'); clearTimeout(hud._t); hud._t = setTimeout(()=> hud.classList.remove('show'), 1500); }
+    window.applyVolumeSettings = function(volume, muted){
+      let changed=false;
+      if(typeof volume==='number' && volume!==window.currentVolume){ setVolume(volume); changed=true; }
+      if(typeof muted==='boolean' && muted!==window.isMuted){ muted ? mute() : unmute(); changed=true; }
+      if(changed){ const label = (window.isMuted||window.currentVolume===0) ? 'MUTED' : ('VOL ' + window.currentVolume + '%'); showFloat(label); }
+    };
+
+    function loadChannel(channelNumber){
+      if(switching) return;
+      const ch = CONFIG.channels.find(c=>c.id===channelNumber);
+      if(!ch){ console.warn('Channel not found', channelNumber); return; }
+      switching = true; $('fade').classList.add('active');
+      setTimeout(()=>{
+        window.currentChannel = channelNumber; updateChannelInfo(ch);
+        const v = $('videoPlayer');
+        if(Hls.isSupported()){
+          if(hls) { try{ hls.destroy(); }catch(e){} hls=null; }
+          hls = new Hls({ enableWorker:true, lowLatencyMode:true, maxBufferLength:30, maxBufferSize:60*1000*1000, manifestLoadingTimeOut:10000, manifestLoadingMaxRetry:3, levelLoadingTimeOut:10000, levelLoadingMaxRetry:4 });
+          hls.attachMedia(v); hls.loadSource(ch.url);
+          hls.on(Hls.Events.MANIFEST_PARSED, ()=> { v.play().then(()=>{ v.volume = window.currentVolume/100; v.muted = window.isMuted; }).catch(()=>{}); });
+          hls.on(Hls.Events.ERROR, onHlsError);
+        } else if (v.canPlayType('application/vnd.apple.mpegurl')){
+          v.src = ch.url; v.play().then(()=>{ v.volume = window.currentVolume/100; v.muted = window.isMuted; }).catch(()=>{});
+        } else { showError('HLS not supported on this device'); }
+        setTimeout(()=>{ $('fade').classList.remove('active'); switching=false; }, 240);
+      }, 140);
+    }
+    window.loadChannel = loadChannel;
+    function updateChannelInfo(ch){ $('chName').textContent = ch.name || ('Channel ' + ch.id); $('chNum').textContent  = ch.id; const box = $('channelInfo'); box.classList.add('show'); clearTimeout(box._t); box._t = setTimeout(()=> box.classList.remove('show'), 4000); }
+    function onHlsError(evt, data){ if(!data || !data.fatal) return;
+      switch(data.type){
+        case Hls.ErrorTypes.NETWORK_ERROR: if(retry<3){ retry++; setTimeout(()=> hls && hls.startLoad(), 1500); } else showError('Network error'); break;
+        case Hls.ErrorTypes.MEDIA_ERROR: try{ hls.recoverMediaError(); }catch(e){ showError('Media error'); } break;
+        default: showError('Stream error'); setTimeout(()=> loadChannel(window.currentChannel), 3000);
+      }
+    }
+    function onVideoError(){ showError('Playback error'); setTimeout(()=> loadChannel(window.currentChannel), 3000); }
+    function showError(msg){ $('errText').textContent = msg; $('errToast').classList.add('show'); }
+    function hideError(){ $('errToast').classList.remove('show'); }
+    function showLoading(flag){ const el=$('loading'); if(flag){ el.classList.add('active'); } else { el.classList.remove('active'); hideError(); } }
+    function setStatus(connected, msg){ const dot=$('statusDot'), txt=$('statusText'); dot.classList.toggle('disconnected', !connected); txt.textContent = connected ? 'Connected' : ('Disconnected' + (msg?` — ${msg}`:'')); }
+    window.setStatus = setStatus;
+    function tickClock(){ const t = new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'}); $('clock').textContent = t; }
+    document.addEventListener('visibilitychange',()=>{ if(!hls) return; if(document.hidden){ try{ hls.stopLoad(); }catch(e){} } else { try{ hls.startLoad(); }catch(e){} } });
+    if(navigator.userAgent.includes('BrightSign')){ setTimeout(()=>{ const v=$('videoPlayer'); if(window.currentVolume>0 && !window.isMuted){ v.muted=false; v.volume=window.currentVolume/100; } }, 1500); }
+  </script>
+
+  <!-- Firebase (module) -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import {
+      getAuth, signInAnonymously, onAuthStateChanged,
+      setPersistence, inMemoryPersistence
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import {
+      getDatabase, ref, onValue, update, get, query, orderByChild, equalTo, remove
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+      authDomain: "iptv-bfa.firebaseapp.com",
+      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+      projectId: "iptv-bfa",
+      storageBucket: "iptv-bfa.firebasestorage.app",
+      messagingSenderId: "838790935867",
+      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    };
+
+    const EMBED = /\bembed=1\b/i.test(location.search) || (window.top !== window.self);
+    const app = initializeApp(firebaseConfig, EMBED ? 'embed' : undefined);
+    const auth = getAuth(app);
+    if (EMBED) { await setPersistence(auth, inMemoryPersistence); }
+
+    const db   = getDatabase(app);
+
+    signInAnonymously(auth).catch(e => {
+      console.error('[auth]', e);
+      window.setStatus(false, 'anon auth failed');
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+
+      const displayId      = CONFIG.displayId;
+      const dealershipName = CONFIG.dealershipName;
+
+      if (EMBED) {
+        const dref = ref(db, `displays/${displayId}`);
+        onValue(dref, (snap) => {
+          const data = snap.val();
+          if (!data) return;
+          if (typeof data.channel === 'number' && data.channel !== window.currentChannel) window.loadChannel(data.channel);
+          if (data.volume !== undefined || data.muted !== undefined) window.applyVolumeSettings(data.volume, data.muted);
+          window.setStatus(true, '');
+        }, (err) => {
+          console.error('[listener]', err);
+          window.setStatus(false, 'listener error');
+        });
+        return;
+      }
+
+      try {
+        await update(ref(db, `user/${user.uid}`), {
+          role: 'device',
+          name: displayId,
+          dealershipId: dealershipName,
+          updatedAt: Date.now(),
+          createdAt: Date.now()
+        });
+      } catch (e) {
+        console.warn('[user write denied]', e);
+        window.setStatus(false, 'cannot write user profile');
+        return;
+      }
+
+      try {
+        const dRef = ref(db, `displays/${displayId}`);
+        const snap = await get(dRef);
+        if (!snap.exists()) {
+          await update(dRef, { channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() });
+        } else {
+          const cur = snap.val() || {};
+          if (cur.dealership !== dealershipName) {
+            await update(dRef, { dealership:dealershipName });
+          }
+        }
+      } catch (e) {
+        console.warn('[display setup denied]', e);
+        window.setStatus(false, 'display/dealership mismatch');
+        return;
+      }
+
+      const dref = ref(db, `displays/${displayId}`);
+      onValue(dref, (snap) => {
+        const data = snap.val();
+        if (!data) return;
+        if (typeof data.channel === 'number' && data.channel !== window.currentChannel) window.loadChannel(data.channel);
+        if (data.volume !== undefined || data.muted !== undefined) window.applyVolumeSettings(data.volume, data.muted);
+        window.setStatus(true, '');
+      }, (err) => {
+        console.error('[listener]', err);
+        window.setStatus(false, 'listener error');
+      });
+
+      try{
+        const hbRef = ref(db, `displays/${displayId}`);
+        const beat  = async ()=>{ try{ await update(hbRef, { lastSeenAt: Date.now(), updatedAt: Date.now() }); }catch(e){} };
+        beat(); setInterval(beat, 15000);
+      }catch(e){}
+    });
+  </script>
 </body>
 </html></template>
 
@@ -346,7 +624,7 @@
     const brandLogoM = document.getElementById('brandLogoM');
     if(brandLogoM){ brandLogoM.style.backgroundImage = `url("${LOGO_URL}")`; }
 
-    /* Theme (dark toggle + icon) */
+    /* Theme */
     const THEME_KEY='iptv_theme';
     const themeBtn = document.getElementById('themeBtn');
     const themeIcon = document.getElementById('themeIcon');
@@ -366,7 +644,7 @@
       setThemeIcon();
     });
 
-    /* “More” dropdown */
+    /* More dropdown */
     const moreBtn = document.getElementById('moreBtn');
     const moreMenu = document.getElementById('moreMenu');
     if(moreBtn){
@@ -380,7 +658,6 @@
         }
       }, {capture:true});
       document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') moreMenu.classList.remove('open'); });
-      // highlight current page in dropdown when applicable
       const file=(location.pathname.split("/").pop()||"displays.html").toLowerCase();
       moreMenu.querySelectorAll('a').forEach(a=>{
         const h=(a.getAttribute('href')||'').toLowerCase();
@@ -396,67 +673,12 @@
       document.getElementById('hamburger').addEventListener('click', open);
       document.getElementById('closeSheet').addEventListener('click', close);
       sheet.querySelector('.back').addEventListener('click', close);
-      // Mobile signout uses desktop button
       const mainOut = document.getElementById('signOutBtn');
       const mobOut  = document.getElementById('signOutBtnM');
       if(mainOut && mobOut){ mobOut.addEventListener('click', ()=> mainOut.click()); }
     })();
 
-    /* ===== GitHub helpers (safe path + good errors) ===== */
-    function ghCfg(){ try{ return JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}'); }catch{ return {}; } }
-    function saveGhCfg(c){ localStorage.setItem('iptv_admin_gh', JSON.stringify(c)); }
-    function ghNeedsConfig(){ const c=ghCfg(); return !(c.owner&&c.repo&&c.branch&&c.token); }
-    function ghSafePath(p){ return (p||'').split('/').map(encodeURIComponent).join('/'); }
-    async function ghGet(path){
-      const {owner,repo} = ghCfg();
-      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${ghSafePath(path)}`;
-      const r = await fetch(url);
-      if(!r.ok) return null;
-      return r.json();
-    }
-    function toBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
-    async function ghUpsert(path, content, message){
-      const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
-      let sha=null; try{ sha=(await ghGet(path))?.sha||null; }catch(_){}
-      const url = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
-      const res = await fetch(url, {
-        method:'PUT',
-        headers:{
-          'Authorization':`Bearer ${c.token}`,
-          'Accept':'application/vnd.github+json',
-          'Content-Type':'application/json'
-        },
-        body: JSON.stringify({
-          message: message || `Update ${path}`,
-          content: toBase64(content),
-          branch:  c.branch,
-          ...(sha ? { sha } : {})
-        })
-      });
-      if(!res.ok){
-        const txt = await res.text().catch(()=>String(res.status));
-        throw new Error(`GitHub publish failed (${res.status}): ${txt.slice(0,300)}`);
-      }
-      return res.json();
-    }
-    async function configureGitHubInteractive(){
-      const cur=ghCfg();
-      const owner  = prompt('GitHub owner/user', cur.owner||'flaviothebfagroup'); if(!owner) return;
-      const repo   = prompt('Repo name', cur.repo||'IPTV-'); if(!repo) return;
-      const branch = prompt('Branch', cur.branch||'main') || 'main';
-      const token  = prompt('Personal Access Token (public_repo or repo scope)', cur.token||''); if(!token) return;
-      saveGhCfg({owner,repo,branch,token}); toast('GitHub saved!');
-    }
-    document.getElementById('ghSetupBtn').addEventListener('click', configureGitHubInteractive);
-    function buildPlayerFileHtml(displayId, dealershipId){
-      const tpl = document.getElementById('playerTemplate');
-      let html  = (tpl?.innerHTML||'')
-        .replaceAll('(DISPLAY CODE)', displayId)
-        .replaceAll('(DISPLAY_ID)',  dealershipId);
-      return html;
-    }
-
-    /* ===== Auth UI ===== */
+    /* Auth UI */
     document.getElementById('loginBtn').addEventListener('click', doLogin);
     document.getElementById('resetBtn').addEventListener('click', async ()=>{
       const email = document.getElementById('email').value.trim();
@@ -478,7 +700,6 @@
     onAuthStateChanged(auth, async (user)=>{
       if(!user){ $('#loginBox').style.display='block'; $('#content').style.display='none'; return; }
       $('#adminEmail').textContent = user.email || user.uid;
-      // admin gate
       try{
         const snap = await get(ref(db, `user/${user.uid}`));
         const u = snap.val() || {};
@@ -505,13 +726,12 @@
       });
     }
 
-    /* Displays logic */
+    /* Displays listing & controls */
     let displaysUnsub=null;
     $('#dealerForDisplays').addEventListener('change', e=>watchDisplays(e.target.value));
     $('#displaysReload').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(did) watchDisplays(did,true); });
     $('#manageUsers').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true); location.href = `users.html?dealer=${encodeURIComponent(did)}`; });
 
-    // Preview URL helpers — try new Displays path, fallback to legacy root
     const previewPrimary = (id)=> `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(id)}.html`;
     const previewLegacy  = (id)=> `https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html`;
     async function resolvePreviewUrl(id){
@@ -589,7 +809,7 @@
       displaysUnsub=()=>off();
       if(forceOnce){ const once=await get(qRef); render(once.val()||{}); }
 
-      // ===== Inline preview delegation (open under row) =====
+      // Inline preview: open under the row
       ul.addEventListener('click', async (e)=>{
         const btn = e.target.closest('button[data-preview]');
         if(!btn) return;
@@ -641,15 +861,82 @@
       }catch(e){ console.error(e); toast('Bulk failed',true); }
     }
 
+    /* ===== GitHub helpers (safe path + clear errors) ===== */
+    function ghCfg(){ try{ return JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}'); }catch{ return {}; } }
+    function saveGhCfg(c){ localStorage.setItem('iptv_admin_gh', JSON.stringify(c)); }
+    function ghNeedsConfig(){ const c=ghCfg(); return !(c.owner&&c.repo&&c.branch&&c.token); }
+    function ghSafePath(p){ return (p||'').split('/').map(encodeURIComponent).join('/'); }
+
+    async function ghGet(path){
+      const {owner,repo} = ghCfg();
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${ghSafePath(path)}?ref=${encodeURIComponent(ghCfg().branch||'main')}`;
+      const r = await fetch(url, { headers:{ 'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28' }});
+      if(!r.ok) return null;
+      return r.json();
+    }
+    function toBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
+
+    async function ghUpsert(path, content, message){
+      const c=ghCfg(); 
+      if(ghNeedsConfig()) throw new Error('GitHub not configured (owner/repo/branch/token)');
+      const safeContent = (content && String(content).length) ? content : '<!doctype html><meta charset="utf-8"><title>Empty</title>';
+      let sha=null; try{ sha=(await ghGet(path))?.sha||null; }catch(_){}
+      const url = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
+      const res = await fetch(url, {
+        method:'PUT',
+        headers:{
+          'Authorization':`Bearer ${c.token}`,
+          'Accept':'application/vnd.github+json',
+          'Content-Type':'application/json',
+          'X-GitHub-Api-Version':'2022-11-28'
+        },
+        body: JSON.stringify({
+          message: message || `Update ${path}`,
+          content: toBase64(safeContent),
+          branch:  c.branch,
+          ...(sha ? { sha } : {})
+        })
+      });
+      if(!res.ok){
+        let details = '';
+        try { const j = await res.json(); details = j.message || ''; }
+        catch { details = await res.text().catch(()=>String(res.status)); }
+        throw new Error(`GitHub publish failed [${res.status}] ${details}`);
+      }
+      return res.json();
+    }
+
+    async function configureGitHubInteractive(){
+      const cur=ghCfg();
+      const owner  = prompt('GitHub owner/user', cur.owner||'flaviothebfagroup'); if(!owner) return;
+      const repo   = prompt('Repo name', cur.repo||'IPTV-'); if(!repo) return;
+      const branch = prompt('Branch', cur.branch||'main') || 'main';
+      const token  = prompt('Personal Access Token (fine-grained: Contents Read/Write or classic: public_repo/repo)', cur.token||''); if(!token) return;
+      saveGhCfg({owner,repo,branch,token}); 
+      toast('GitHub saved!');
+    }
+    document.getElementById('ghSetupBtn').addEventListener('click', configureGitHubInteractive);
+
+    function buildPlayerFileHtml(displayId, dealershipPublicName){
+      const tpl = document.getElementById('playerTemplate');
+      let html  = (tpl?.innerHTML||'')
+        .replaceAll('(NEW-CODE)', displayId)
+        .replaceAll('(NEW-NAME)', dealershipPublicName);
+      return html;
+    }
+
     /* ===== Add display (fresh dealership read + GitHub create) ===== */
     document.getElementById('addDisplayBtn').addEventListener('click', async ()=>{
       const didNow = document.getElementById('dealerForDisplays').value;
       if(!didNow) return toast('Pick a dealership', true);
 
+      // get friendly/public name for the dealership (used in template)
+      const friendly = (await get(ref(db,`dealershipPublic/${didNow}`))).val()?.name || didNow;
+
+      // ID logic (auto if empty)
       let id = document.getElementById('newDisplayId').value.trim();
       if(!id){
-        const friendly=(await get(ref(db,`dealershipPublic/${didNow}`))).val()?.name||didNow;
-        const pref=initialsFromName(friendly);
+        const pref = initialsFromName(friendly);
         const existing=await collectDisplays(didNow);
         let n=nextSuffix(existing,pref);
         id=`${pref}-${String(n).padStart(3,'0')}`;
@@ -660,18 +947,18 @@
         await set(ref(db,`dealership/${didNow}/displays/${id}`), true);
         await update(ref(db,`displays/${id}`),{channel:1,volume:0,muted:true,dealership:didNow,timestamp:Date.now()});
 
-        // 2) GitHub page
+        // 2) GitHub page create/update with YOUR template, filled
         try{
           if(ghNeedsConfig()){
             toast('TV added. Run GH Setup to enable page creation.');
           }else{
-            const html = buildPlayerFileHtml(id, didNow);
-            await ghUpsert(`Displays/${id}.html`, html, `Create player for ${id} (${didNow})`);
+            const html = buildPlayerFileHtml(id, friendly);
+            await ghUpsert(`Displays/${id}.html`, html, `Create player for ${id} (${friendly})`);
             toast('TV added + page created');
           }
         }catch(ghErr){
           console.error(ghErr);
-          toast('TV added, but GitHub publish failed', true);
+          toast(`GitHub publish failed: ${ghErr.message||ghErr}`, true);
         }
 
         document.getElementById('newDisplayId').value='';
