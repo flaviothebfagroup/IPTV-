@@ -131,6 +131,12 @@
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
     .toast.show{opacity:1}
     .toast.err{background:#ff453a;color:#fff}
+
+    /* ===== Inline preview panel (like Dealerships) ===== */
+    .sub.preview{grid-column:1/-1;width:100%;background:var(--panel);
+      border:1px solid var(--border);border-radius:12px;padding:10px;margin-top:6px}
+    .sub.preview .bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+    .sub.preview iframe{width:100%;height:420px;border:1px solid var(--border);border-radius:10px;background:#000}
   </style>
 </head>
 <body>
@@ -234,8 +240,8 @@
     <!-- Displays -->
     <div id="content" class="card" style="display:none">
       <h2 style="margin:0 0 8px">Displays</h2>
-      <div class="muted small">Preview opens the actual player page:
-        <code>https://flaviothebfagroup.github.io/IPTV-/{displayId}.html</code>.
+      <div class="muted small">Preview opens the player page:
+        <code>https://flaviothebfagroup.github.io/IPTV-/Displays/{displayId}.html</code>.
         “Ping” writes <code>flashAt</code> so your player can blink if it listens for it.</div>
 
       <!-- action strip -->
@@ -267,6 +273,33 @@
   </div>
 
   <div id="toast" class="toast"></div>
+
+  <!-- ===== Player file template (replace with your real player HTML) ===== -->
+  <template id="playerTemplate">
+<!-- BEGIN PLAYER FILE -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Digital Signage — Player (DISPLAY CODE)</title>
+<style>
+  html,body{height:100%;margin:0;background:#000;color:#fff;font:14px/1.4 system-ui}
+  .wrap{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
+  .muted{opacity:.7}
+  .badge{padding:6px 10px;border:1px solid #333;border-radius:999px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="muted">Replace this template with your real player HTML.</div>
+    <div><span class="badge">Display:</span> <b>(DISPLAY CODE)</b></div>
+    <div><span class="badge">Dealer:</span> <b>(DISPLAY_ID)</b></div>
+  </div>
+</body>
+</html>
+<!-- END PLAYER FILE -->
+  </template>
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -410,13 +443,86 @@
       });
     }
 
-    /* Displays logic (unchanged) */
+    /* =========================================================
+       PREVIEW + GITHUB HELPERS
+    ========================================================= */
+
+    // Preview URL lives under /Displays/{id}.html
+    function previewUrlFor(id){ return `https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(id)}.html`; }
+
+    // Event delegation: toggle inline preview panel under the row
+    document.getElementById('displayList').addEventListener('click', (e)=>{
+      const btn = e.target.closest('button[data-preview]');
+      if(!btn) return;
+      const id  = btn.dataset.preview;
+      const row = btn.closest('.item');
+      const opened = row.querySelector('.sub.preview');
+      if(opened){ opened.remove(); return; }
+
+      const panel = document.createElement('div');
+      panel.className = 'sub preview';
+      panel.innerHTML = `
+        <div class="bar">
+          <span class="muted small">Preview — ${esc(id)}</span>
+          <button class="btn" data-open>Open tab</button>
+          <button class="btn" data-reload>Reload</button>
+        </div>
+        <iframe title="Preview ${esc(id)}" src="${previewUrlFor(id)}?embed=1"
+          allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+      row.appendChild(panel);
+
+      panel.querySelector('[data-open]').onclick   = ()=> window.open(previewUrlFor(id)+'?embed=1','_blank','noopener');
+      panel.querySelector('[data-reload]').onclick = ()=> { const f=panel.querySelector('iframe'); f.src=f.src; };
+    });
+
+    /* --- GitHub minimal helpers --- */
+    function ghCfg(){ try{ return JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}'); }catch{ return {}; } }
+    function saveGhCfg(c){ localStorage.setItem('iptv_admin_gh', JSON.stringify(c)); }
+    function ghNeedsConfig(){ const c=ghCfg(); return !(c.owner&&c.repo&&c.branch&&c.token); }
+    async function ghGet(path){
+      const {owner,repo,branch} = ghCfg();
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`;
+      const r = await fetch(url);
+      return r.ok ? r.json() : null;
+    }
+    function toBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
+    async function ghUpsert(path, content, message){
+      const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
+      let sha=null; try{ sha=(await ghGet(path))?.sha||null; }catch(_){}
+      const res = await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encodeURIComponent(path)}`,{
+        method:'PUT',
+        headers:{
+          'Authorization':`Bearer ${c.token}`,
+          'Accept':'application/vnd.github+json',
+          'Content-Type':'application/json'
+        },
+        body: JSON.stringify({ message:message||`Update ${path}`, content:toBase64(content), branch:c.branch, ...(sha?{sha}: {}) })
+      });
+      if(!res.ok) throw new Error(`GitHub ${res.status}`);
+      return res.json();
+    }
+    // Run this once (from console) to store owner/repo/branch/token in localStorage
+    window.configureGitHubInteractive = async function configureGitHubInteractive(){
+      const cur=ghCfg();
+      const owner  = prompt('GitHub owner/user', cur.owner||'flaviothebfagroup'); if(!owner) return;
+      const repo   = prompt('Repo name', cur.repo||'IPTV-'); if(!repo) return;
+      const branch = prompt('Branch', cur.branch||'main') || 'main';
+      const token  = prompt('Personal Access Token (repo:contents scope)', cur.token||''); if(!token) return;
+      saveGhCfg({owner,repo,branch,token}); alert('Saved!');
+    };
+    function buildPlayerFileHtml(displayId, dealershipId){
+      const tpl = document.getElementById('playerTemplate');
+      let html  = (tpl?.innerHTML||'').replaceAll('(DISPLAY CODE)', displayId).replaceAll('(DISPLAY_ID)', dealershipId);
+      return html;
+    }
+
+    /* =========================================================
+       DISPLAYS LIST
+    ========================================================= */
     let displaysUnsub=null;
     $('#dealerForDisplays').addEventListener('change', e=>watchDisplays(e.target.value));
     $('#displaysReload').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(did) watchDisplays(did,true); });
     $('#manageUsers').addEventListener('click', ()=>{ const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true); location.href = `users.html?dealer=${encodeURIComponent(did)}`; });
-
-    function previewUrlFor(id){ return `https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html`; }
 
     async function watchDisplays(did,forceOnce=false){
       const ul=$('#displayList'); ul.innerHTML='';
@@ -468,9 +574,7 @@
         ul.querySelectorAll('button[data-id]').forEach(el=>{
           el.addEventListener('click', async ()=>{ const id=el.dataset.id; const cur=el.getAttribute('data-muted')==='true'; await writeDisplay(id,{muted:!cur}); });
         });
-        ul.querySelectorAll('button[data-preview]').forEach(el=>{
-          el.addEventListener('click', ()=>{ const id=el.dataset.preview; window.open(previewUrlFor(id),'_blank','noopener'); });
-        });
+        // NOTE: no direct click handler for [data-preview]; event delegation above handles it
         ul.querySelectorAll('button[data-flash]').forEach(el=>{
           el.addEventListener('click', async ()=>{ const id=el.dataset.flash; await writeDisplay(id,{flashAt: Date.now()}); toast(`Pinged ${id}`); });
         });
@@ -510,7 +614,7 @@
       }catch(e){ console.error(e); toast('Bulk failed',true); }
     }
 
-    /* Add display */
+    /* ===== Add display (+ GitHub page creation) ===== */
     $('#addDisplayBtn').addEventListener('click', async ()=>{
       const did=$('#dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
       let id=$('#newDisplayId').value.trim();
@@ -522,9 +626,21 @@
         id=`${pref}-${String(n).padStart(3,'0')}`;
       }
       try{
+        // 1) your existing DB writes
         await set(ref(db,`dealership/${did}/displays/${id}`),true);
         await update(ref(db,`displays/${id}`),{channel:1,volume:0,muted:true,dealership:did,timestamp:Date.now()});
-        $('#newDisplayId').value=''; toast('Display added'); watchDisplays(did,true);
+
+        // 2) NEW: create/overwrite GitHub page
+        if(ghNeedsConfig()){
+          toast('TV added. Configure GitHub to create the page.');
+        }else{
+          const html = buildPlayerFileHtml(id, did); // uses <template>
+          await ghUpsert(`Displays/${id}.html`, html, `Create player for ${id}`);
+          toast('TV added + page created');
+        }
+
+        $('#newDisplayId').value='';
+        $('#displaysReload')?.click();
       }catch(e){ console.error(e); toast('Add failed',true); }
     });
 
