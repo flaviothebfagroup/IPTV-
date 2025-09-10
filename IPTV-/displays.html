@@ -422,12 +422,12 @@
     const auth=getAuth(app);
     const db=getDatabase(app);
 
-    const $=s=>document.querySelector(s);
+    const $q=s=>document.querySelector(s);
     const debounce=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
     function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
-    function toast(msg,err=false){const t=$('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2400);}
+    function toast(msg,err=false){const t=$q('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2400);}
 
-    $('#brandLogo').style.backgroundImage=`url("${LOGO_URL}")`; const brandLogoM=document.getElementById('brandLogoM'); if(brandLogoM){ brandLogoM.style.backgroundImage=`url("${LOGO_URL}")`; }
+    $q('#brandLogo').style.backgroundImage=`url("${LOGO_URL}")`; const brandLogoM=document.getElementById('brandLogoM'); if(brandLogoM){ brandLogoM.style.backgroundImage=`url("${LOGO_URL}")`; }
 
     const THEME_KEY='iptv_theme', themeBtn=document.getElementById('themeBtn'), themeIcon=document.getElementById('themeIcon');
     const setThemeIcon=()=>{ const dark=document.body.classList.contains('dark'); themeIcon.innerHTML= dark? `<path d="M21 12a9 9 0 1 1-9-9 6 6 0 0 0 9 9z"/>` : `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1.4-1.4M20.4 20.4 19 19M5 19l-1.4 1.4M20.4 3.6 19 5"/>`; };
@@ -451,10 +451,10 @@
     async function doLogin(){ const email=document.getElementById('email').value.trim(); const pass=document.getElementById('password').value; if(!email||!pass) return toast('Fill email & password',true); try{ await setPersistence(auth,browserLocalPersistence); await signInWithEmailAndPassword(auth,email,pass);}catch(e){console.error(e);toast('Sign-in failed',true);} }
 
     onAuthStateChanged(auth, async (user)=>{
-      if(!user){ $('#loginBox').style.display='block'; $('#content').style.display='none'; return; }
+      if(!user){ $q('#loginBox').style.display='block'; $q('#content').style.display='none'; return; }
       document.getElementById('adminEmail').textContent=user.email||user.uid;
-      try{ const snap=await get(ref(db,`user/${user.uid}`)); const u=snap.val()||{}; if(u.role!=='admin'){ $('#loginBox').style.display='none'; $('#content').style.display='none'; alert('Not authorized. Ask an admin to set your role to admin.'); return; } }catch(_){}
-      $('#loginBox').style.display='none'; $('#content').style.display='block';
+      try{ const snap=await get(ref(db,`user/${user.uid}`)); const u=snap.val()||{}; if(u.role!=='admin'){ $q('#loginBox').style.display='none'; $q('#content').style.display='none'; alert('Not authorized. Ask an admin to set your role to admin.'); return; } }catch(_){}
+      $q('#loginBox').style.display='none'; $q('#content').style.display='block';
       await refreshDealers(); const did=new URL(location.href).searchParams.get('dealer')||''; if(did){ document.getElementById('dealerForDisplays').value=did; watchDisplays(did,true); }
     });
 
@@ -471,7 +471,12 @@
     function ghNeedsConfig(){ const c=ghCfg(); return !(c.owner&&c.repo&&c.branch&&c.token); }
     function ghSafePath(p){ return (p||'').split('/').map(encodeURIComponent).join('/'); }
     function ghHeaders(token,scheme='Bearer'){ return {'Authorization':`${scheme} ${token}`,'Accept':'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'}; }
-    async function ghGet(path){ const c=ghCfg(); const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}?ref=${encodeURIComponent(c.branch||'main')}`; let r=await fetch(url,{headers:ghHeaders(c.token,'Bearer')}); if(r.status===401){ r=await fetch(url,{headers:ghHeaders(c.token,'token')}); } if(!r.ok) return null; return r.json(); }
+    async function ghGet(path){
+      const c=ghCfg(); const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}?ref=${encodeURIComponent(c.branch||'main')}`;
+      let r=await fetch(url,{headers:ghHeaders(c.token,'Bearer')});
+      if(r.status===401){ r=await fetch(url,{headers:ghHeaders(c.token,'token')}); }
+      if(!r.ok) return null; return r.json();
+    }
     function toBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
     async function ghUpsert(path,content,message){
       const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
@@ -484,12 +489,25 @@
       if(!res.ok){ let details=''; try{ const j=await res.json(); details=j.message||''; }catch{ details=await res.text().catch(()=>String(res.status)); } throw new Error(`GitHub publish failed [${res.status}] ${details}`); }
       return res.json();
     }
+    async function ghDelete(path,message){
+      const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
+      const info=await ghGet(path);
+      if(!info?.sha){ // File missing, treat as success
+        return {ok:true, skipped:true};
+      }
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
+      const body=JSON.stringify({message:message||`Delete ${path}`,sha:info.sha,branch:c.branch});
+      let res=await fetch(url,{method:'DELETE',headers:ghHeaders(c.token,'Bearer'),body});
+      if(res.status===401){ res=await fetch(url,{method:'DELETE',headers:ghHeaders(c.token,'token'),body}); }
+      if(!res.ok){ let msg=''; try{ msg=(await res.json()).message||''; }catch{} throw new Error(`GitHub delete failed [${res.status}] ${msg}`); }
+      return res.json();
+    }
     async function configureGitHubInteractive(){
       const cur=ghCfg();
       const owner=(prompt('GitHub owner/user', cur.owner||'flaviothebfagroup')||'').trim(); if(!owner) return;
       const repo=(prompt('Repo name', cur.repo||'IPTV-')||'').trim(); if(!repo) return;
       const branch=(prompt('Branch', cur.branch||'main')||'main').trim();
-      const token=(prompt('Personal Access Token (fine-grained Contents: Read & write, or classic repo/public_repo)', cur.token||'')||'').trim(); if(!token) return;
+      const token=(prompt('Personal Access Token (fine-grained: Contents read/write or classic repo/public_repo)', cur.token||'')||'').trim(); if(!token) return;
       saveGhCfg({owner,repo,branch,token}); toast('GitHub saved!');
     }
     function ghClear(){ localStorage.removeItem('iptv_admin_gh'); toast('GitHub config cleared'); }
@@ -500,7 +518,6 @@
       const tpl=document.getElementById('playerTemplate');
       return (tpl?.innerHTML||'').replaceAll('(NEW-CODE)', displayId).replaceAll('(NEW-NAME)', dealershipPublicName);
     }
-
     /* ===== Displays & preview ===== */
     let displaysUnsub=null;
     document.getElementById('dealerForDisplays').addEventListener('change', e=>watchDisplays(e.target.value));
