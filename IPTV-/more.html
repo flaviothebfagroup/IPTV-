@@ -861,69 +861,105 @@
       }catch(e){ console.error(e); toast('Bulk failed',true); }
     }
 
-    /* ===== GitHub helpers (safe path + clear errors) ===== */
-    function ghCfg(){ try{ return JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}'); }catch{ return {}; } }
-    function saveGhCfg(c){ localStorage.setItem('iptv_admin_gh', JSON.stringify(c)); }
-    function ghNeedsConfig(){ const c=ghCfg(); return !(c.owner&&c.repo&&c.branch&&c.token); }
-    function ghSafePath(p){ return (p||'').split('/').map(encodeURIComponent).join('/'); }
 
-    async function ghGet(path){
-      const {owner,repo} = ghCfg();
-      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${ghSafePath(path)}?ref=${encodeURIComponent(ghCfg().branch||'main')}`;
-      const r = await fetch(url, { headers:{ 'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28' }});
-      if(!r.ok) return null;
-      return r.json();
-    }
-    function toBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
+/* ===== GitHub helpers (401-hardened) ===== */
+function ghCfg(){ try{ return JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}'); }catch{ return {}; } }
+function saveGhCfg(c){ localStorage.setItem('iptv_admin_gh', JSON.stringify(c)); }
+function ghNeedsConfig(){ const c=ghCfg(); return !(c.owner&&c.repo&&c.branch&&c.token); }
+function ghSafePath(p){ return (p||'').split('/').map(encodeURIComponent).join('/'); }
 
-    async function ghUpsert(path, content, message){
-      const c=ghCfg(); 
-      if(ghNeedsConfig()) throw new Error('GitHub not configured (owner/repo/branch/token)');
-      const safeContent = (content && String(content).length) ? content : '<!doctype html><meta charset="utf-8"><title>Empty</title>';
-      let sha=null; try{ sha=(await ghGet(path))?.sha||null; }catch(_){}
-      const url = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
-      const res = await fetch(url, {
-        method:'PUT',
-        headers:{
-          'Authorization':`Bearer ${c.token}`,
-          'Accept':'application/vnd.github+json',
-          'Content-Type':'application/json',
-          'X-GitHub-Api-Version':'2022-11-28'
-        },
-        body: JSON.stringify({
-          message: message || `Update ${path}`,
-          content: toBase64(safeContent),
-          branch:  c.branch,
-          ...(sha ? { sha } : {})
-        })
-      });
-      if(!res.ok){
-        let details = '';
-        try { const j = await res.json(); details = j.message || ''; }
-        catch { details = await res.text().catch(()=>String(res.status)); }
-        throw new Error(`GitHub publish failed [${res.status}] ${details}`);
-      }
-      return res.json();
-    }
+function ghHeaders(token, scheme='Bearer'){
+  return {
+    'Authorization': `${scheme} ${token}`,
+    'Accept':'application/vnd.github+json',
+    'Content-Type':'application/json',
+    'X-GitHub-Api-Version':'2022-11-28'
+  };
+}
 
-    async function configureGitHubInteractive(){
-      const cur=ghCfg();
-      const owner  = prompt('GitHub owner/user', cur.owner||'flaviothebfagroup'); if(!owner) return;
-      const repo   = prompt('Repo name', cur.repo||'IPTV-'); if(!repo) return;
-      const branch = prompt('Branch', cur.branch||'main') || 'main';
-      const token  = prompt('Personal Access Token (fine-grained: Contents Read/Write or classic: public_repo/repo)', cur.token||''); if(!token) return;
-      saveGhCfg({owner,repo,branch,token}); 
-      toast('GitHub saved!');
-    }
-    document.getElementById('ghSetupBtn').addEventListener('click', configureGitHubInteractive);
+async function ghGet(path, useAuth=true){
+  const c = ghCfg();
+  const url = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}?ref=${encodeURIComponent(c.branch||'main')}`;
+  const opts = useAuth ? { headers: ghHeaders(c.token, 'Bearer') } : {};
+  // Try with auth; if 401, retry with 'token '
+  let r = await fetch(url, opts);
+  if(r.status===401 && useAuth){
+    r = await fetch(url, { headers: ghHeaders(c.token, 'token') });
+  }
+  if(!r.ok) return null;
+  return r.json();
+}
 
-    function buildPlayerFileHtml(displayId, dealershipPublicName){
-      const tpl = document.getElementById('playerTemplate');
-      let html  = (tpl?.innerHTML||'')
-        .replaceAll('(NEW-CODE)', displayId)
-        .replaceAll('(NEW-NAME)', dealershipPublicName);
-      return html;
-    }
+function toBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
+
+/* Create or update file; auto-retry Bearer -> token on 401 */
+async function ghUpsert(path, content, message){
+  const c=ghCfg();
+  if(ghNeedsConfig()) throw new Error('GitHub not configured (owner/repo/branch/token)');
+  const safeContent = (content && String(content).length) ? content : '<!doctype html><meta charset="utf-8"><title>Empty</title>';
+
+  // Check if file exists (auth’d to avoid rate limits/private cases)
+  let sha=null; try{ sha=(await ghGet(path,true))?.sha||null; }catch(_){}
+
+  const url = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
+  const body = JSON.stringify({ message: message || `Update ${path}`, content: toBase64(safeContent), branch: c.branch, ...(sha?{sha}:{}) });
+
+  // 1) Bearer try
+  let res = await fetch(url, { method:'PUT', headers: ghHeaders(c.token, 'Bearer'), body });
+  // 2) Fallback to legacy 'token' scheme if 401
+  if(res.status===401){
+    res = await fetch(url, { method:'PUT', headers: ghHeaders(c.token, 'token'), body });
+  }
+
+  if(!res.ok){
+    let details = '';
+    try { const j = await res.json(); details = j.message || ''; } catch { details = await res.text().catch(()=>String(res.status)); }
+    throw new Error(`GitHub publish failed [${res.status}] ${details}`);
+  }
+  return res.json();
+}
+
+/* One-time interactive setup (trims whitespace) */
+async function configureGitHubInteractive(){
+  const cur=ghCfg();
+  const owner  = (prompt('GitHub owner/user', cur.owner||'flaviothebfagroup')||'').trim(); if(!owner) return;
+  const repo   = (prompt('Repo name', cur.repo||'IPTV-')||'').trim(); if(!repo) return;
+  const branch = (prompt('Branch', cur.branch||'main')||'main').trim();
+  const token  = (prompt('Personal Access Token (fine-grained: Contents Read/Write; or classic: public_repo/repo)', cur.token||'')||'').trim();
+  if(!token) return;
+  saveGhCfg({owner,repo,branch,token});
+  toast('GitHub saved!');
+}
+document.getElementById('ghSetupBtn')?.addEventListener('click', configureGitHubInteractive);
+
+/* Verify helper: checks the token, repo, and branch quickly */
+async function ghVerify(){
+  try{
+    const c = ghCfg();
+    // Who am I?
+    let r = await fetch('https://api.github.com/user', { headers: ghHeaders(c.token,'Bearer') });
+    if(r.status===401){ r = await fetch('https://api.github.com/user', { headers: ghHeaders(c.token,'token') }); }
+    const me = r.ok ? await r.json() : null;
+
+    // Repo & branch
+    const repoRes = await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}`, { headers: ghHeaders(c.token,'Bearer') });
+    const repoOk = repoRes.ok;
+    const brRes = await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/branches/${encodeURIComponent(c.branch)}`, { headers: ghHeaders(c.token,'Bearer') });
+    const brOk = brRes.ok;
+
+    console.log('[GH Verify]', { me, repoOk, brOk, cfg:c });
+    toast(repoOk && brOk && me ? `Token ok: ${me.login}` : 'Token or repo/branch not accessible', ! (repoOk && brOk && me));
+  }catch(e){
+    console.error(e); toast('Verify failed: '+(e.message||e), true);
+  }
+}
+window.ghVerify = ghVerify;
+/* Optional quick probe to write a tiny file */
+window.ghProbe = async function(){
+  try{ await ghUpsert('Displays/_probe.txt', 'ok '+new Date().toISOString(), 'probe'); toast('GH probe ok'); }catch(e){ console.error(e); toast(String(e.message||e), true); }
+};
+
+
 
     /* ===== Add display (fresh dealership read + GitHub create) ===== */
     document.getElementById('addDisplayBtn').addEventListener('click', async ()=>{
