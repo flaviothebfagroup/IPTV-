@@ -360,8 +360,17 @@
     function loadChannel(n){
       const ch=CONFIG.channels.find(c=>c.id===n); if(!ch) return;
       const v=$('videoPlayer'); showLoading(true);
-      if(Hls.isSupported()){ if(hls){ try{hls.destroy();}catch(e){} hls=null; } hls=new Hls({enableWorker:true,lowLatencyMode:true}); hls.attachMedia(v); hls.loadSource(ch.url); hls.on(Hls.Events.MANIFEST_PARSED,()=>{ v.play().then(()=>{ v.volume=window.currentVolume/100; v.muted=window.isMuted; showLoading(false); }).catch(()=>{}); }); hls.on(Hls.Events.ERROR,onHlsError);
-      } else if(v.canPlayType('application/vnd.apple.mpegurl')){ v.src=ch.url; v.play().then(()=>{ v.volume=window.currentVolume/100; v.muted=window.isMuted; showLoading(false); }).catch(()=>{}); } else { showError('HLS not supported'); }
+      if(Hls.isSupported()){
+        if(hls){ try{hls.destroy();}catch(e){} hls=null; }
+        hls=new Hls({enableWorker:true,lowLatencyMode:true});
+        hls.attachMedia(v);
+        hls.loadSource(ch.url);
+        hls.on(Hls.Events.MANIFEST_PARSED,()=>{ v.play().then(()=>{ v.volume=window.currentVolume/100; v.muted=window.isMuted; showLoading(false); }).catch(()=>{}); });
+        hls.on(Hls.Events.ERROR,onHlsError);
+      } else if(v.canPlayType('application/vnd.apple.mpegurl')){
+        v.src=ch.url;
+        v.play().then(()=>{ v.volume=window.currentVolume/100; v.muted=window.isMuted; showLoading(false); }).catch(()=>{});
+      } else { showError('HLS not supported'); }
       updateChannelInfo(ch); window.currentChannel=n;
     }
     window.setStatus=setStatus;
@@ -389,7 +398,11 @@
 
       if(EMBED){
         const dref=ref(db,`displays/${displayId}`);
-        onValue(dref,(snap)=>{ const d=snap.val(); if(!d) return; if(typeof d.channel==='number'&&d.channel!==window.currentChannel) window.loadChannel(d.channel); if(d.volume!==undefined||d.muted!==undefined) window.applyVolumeSettings(d.volume,d.muted); window.setStatus(true,''); },(err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
+        onValue(dref,(snap)=>{ const d=snap.val(); if(!d) return;
+          if(typeof d.channel==='number'&&d.channel!==window.currentChannel) window.loadChannel(d.channel);
+          if(d.volume!==undefined||d.muted!==undefined) window.applyVolumeSettings(d.volume,d.muted);
+          window.setStatus(true,''); },
+          (err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
         return;
       }
 
@@ -400,7 +413,11 @@
       }catch(e){}
 
       const dref=ref(db,`displays/${displayId}`);
-      onValue(dref,(snap)=>{ const d=snap.val(); if(!d) return; if(typeof d.channel==='number'&&d.channel!==window.currentChannel) window.loadChannel(d.channel); if(d.volume!==undefined||d.muted!==undefined) window.applyVolumeSettings(d.volume,d.muted); window.setStatus(true,''); },(err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
+      onValue(dref,(snap)=>{ const d=snap.val(); if(!d) return;
+        if(typeof d.channel==='number'&&d.channel!==window.currentChannel) window.loadChannel(d.channel);
+        if(d.volume!==undefined||d.muted!==undefined) window.applyVolumeSettings(d.volume,d.muted);
+        window.setStatus(true,''); },
+        (err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
 
       try{ const hbRef=ref(db,`displays/${displayId}`); const beat=async()=>{ try{ await update(hbRef,{lastSeenAt:Date.now(),updatedAt:Date.now()}); }catch(e){} }; beat(); setInterval(beat,15000); }catch(e){}
     });
@@ -422,18 +439,19 @@
     const auth=getAuth(app);
     const db=getDatabase(app);
 
-    const $q=s=>document.querySelector(s);
+    const $=s=>document.querySelector(s);
     const debounce=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
     function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
-    function toast(msg,err=false){const t=$q('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2400);}
+    function toast(msg,err=false){const t=$('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2400);}
 
-    $q('#brandLogo').style.backgroundImage=`url("${LOGO_URL}")`; const brandLogoM=document.getElementById('brandLogoM'); if(brandLogoM){ brandLogoM.style.backgroundImage=`url("${LOGO_URL}")`; }
-
+    // logos & theme
+    $('#brandLogo').style.backgroundImage=`url("${LOGO_URL}")`; const brandLogoM=document.getElementById('brandLogoM'); if(brandLogoM){ brandLogoM.style.backgroundImage=`url("${LOGO_URL}")`; }
     const THEME_KEY='iptv_theme', themeBtn=document.getElementById('themeBtn'), themeIcon=document.getElementById('themeIcon');
     const setThemeIcon=()=>{ const dark=document.body.classList.contains('dark'); themeIcon.innerHTML= dark? `<path d="M21 12a9 9 0 1 1-9-9 6 6 0 0 0 9 9z"/>` : `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1.4-1.4M20.4 20.4 19 19M5 19l-1.4 1.4M20.4 3.6 19 5"/>`; };
     const saved=localStorage.getItem(THEME_KEY)||'light'; document.body.classList.toggle('dark',saved==='dark'); setThemeIcon();
     themeBtn.addEventListener('click',()=>{ const toDark=!document.body.classList.contains('dark'); document.body.classList.toggle('dark',toDark); localStorage.setItem(THEME_KEY,toDark?'dark':'light'); setThemeIcon(); });
 
+    // more menu & mobile sheet
     const moreBtn=document.getElementById('moreBtn'), moreMenu=document.getElementById('moreMenu');
     if(moreBtn){
       moreBtn.addEventListener('click',e=>{e.preventDefault();moreMenu.classList.toggle('open');});
@@ -444,17 +462,17 @@
     }
     (()=>{ const sheet=document.getElementById('sheet'); const open=()=>{sheet.classList.add('open');document.body.style.overflow='hidden';}; const close=()=>{sheet.classList.remove('open');document.body.style.overflow='';}; document.getElementById('hamburger').addEventListener('click',open); document.getElementById('closeSheet').addEventListener('click',close); sheet.querySelector('.back').addEventListener('click',close); const mainOut=document.getElementById('signOutBtn'); const mobOut=document.getElementById('signOutBtnM'); if(mainOut&&mobOut){mobOut.addEventListener('click',()=> mainOut.click());}})();
 
+    // auth UI
     document.getElementById('loginBtn').addEventListener('click',doLogin);
     document.getElementById('resetBtn').addEventListener('click',async()=>{ const email=document.getElementById('email').value.trim(); if(!email) return toast('Enter email',true); try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed',true);} });
     document.getElementById('signOutBtn').addEventListener('click',()=>signOut(auth));
-
     async function doLogin(){ const email=document.getElementById('email').value.trim(); const pass=document.getElementById('password').value; if(!email||!pass) return toast('Fill email & password',true); try{ await setPersistence(auth,browserLocalPersistence); await signInWithEmailAndPassword(auth,email,pass);}catch(e){console.error(e);toast('Sign-in failed',true);} }
 
     onAuthStateChanged(auth, async (user)=>{
-      if(!user){ $q('#loginBox').style.display='block'; $q('#content').style.display='none'; return; }
+      if(!user){ $('#loginBox').style.display='block'; $('#content').style.display='none'; return; }
       document.getElementById('adminEmail').textContent=user.email||user.uid;
-      try{ const snap=await get(ref(db,`user/${user.uid}`)); const u=snap.val()||{}; if(u.role!=='admin'){ $q('#loginBox').style.display='none'; $q('#content').style.display='none'; alert('Not authorized. Ask an admin to set your role to admin.'); return; } }catch(_){}
-      $q('#loginBox').style.display='none'; $q('#content').style.display='block';
+      try{ const snap=await get(ref(db,`user/${user.uid}`)); const u=snap.val()||{}; if(u.role!=='admin'){ $('#loginBox').style.display='none'; $('#content').style.display='none'; alert('Not authorized. Ask an admin to set your role to admin.'); return; } }catch(_){}
+      $('#loginBox').style.display='none'; $('#content').style.display='block';
       await refreshDealers(); const did=new URL(location.href).searchParams.get('dealer')||''; if(did){ document.getElementById('dealerForDisplays').value=did; watchDisplays(did,true); }
     });
 
@@ -492,14 +510,12 @@
     async function ghDelete(path,message){
       const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
       const info=await ghGet(path);
-      if(!info?.sha){ // File missing, treat as success
-        return {ok:true, skipped:true};
-      }
+      if(!info?.sha){ return {ok:true, skipped:true}; } // already gone
       const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
       const body=JSON.stringify({message:message||`Delete ${path}`,sha:info.sha,branch:c.branch});
       let res=await fetch(url,{method:'DELETE',headers:ghHeaders(c.token,'Bearer'),body});
       if(res.status===401){ res=await fetch(url,{method:'DELETE',headers:ghHeaders(c.token,'token'),body}); }
-      if(!res.ok){ let msg=''; try{ msg=(await res.json()).message||''; }catch{} throw new Error(`GitHub delete failed [${res.status}] ${msg}`); }
+      if(!res.ok){ let details=''; try{ const j=await res.json(); details=j.message||''; }catch{} throw new Error(`GitHub delete failed [${res.status}] ${details}`); }
       return res.json();
     }
     async function configureGitHubInteractive(){
@@ -507,7 +523,7 @@
       const owner=(prompt('GitHub owner/user', cur.owner||'flaviothebfagroup')||'').trim(); if(!owner) return;
       const repo=(prompt('Repo name', cur.repo||'IPTV-')||'').trim(); if(!repo) return;
       const branch=(prompt('Branch', cur.branch||'main')||'main').trim();
-      const token=(prompt('Personal Access Token (fine-grained: Contents read/write or classic repo/public_repo)', cur.token||'')||'').trim(); if(!token) return;
+      const token=(prompt('Personal Access Token (fine-grained Contents: Read & write, or classic repo/public_repo)', cur.token||'')||'').trim(); if(!token) return;
       saveGhCfg({owner,repo,branch,token}); toast('GitHub saved!');
     }
     function ghClear(){ localStorage.removeItem('iptv_admin_gh'); toast('GitHub config cleared'); }
@@ -518,6 +534,7 @@
       const tpl=document.getElementById('playerTemplate');
       return (tpl?.innerHTML||'').replaceAll('(NEW-CODE)', displayId).replaceAll('(NEW-NAME)', dealershipPublicName);
     }
+
     /* ===== Displays & preview ===== */
     let displaysUnsub=null;
     document.getElementById('dealerForDisplays').addEventListener('change', e=>watchDisplays(e.target.value));
@@ -526,7 +543,14 @@
 
     const previewPrimary=id=>`https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(id)}.html`;
     const previewLegacy =id=>`https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html`;
-    async function resolvePreviewUrl(id){ const q=`nocache=${Date.now()}`; try{ const r=await fetch(previewPrimary(id)+'?'+q,{method:'HEAD'}); if(r.ok) return previewPrimary(id)+`?embed=1&${q}`; }catch(_){} return previewLegacy(id)+`?embed=1&${q}`; }
+    async function resolvePreviewUrl(id){
+      const q=`nocache=${Date.now()}`;
+      try{
+        const r=await fetch(previewPrimary(id)+'?'+q,{method:'HEAD'});
+        if(r.ok) return previewPrimary(id)+`?embed=1&${q}`;
+      }catch(_){}
+      return previewLegacy(id)+`?embed=1&${q}`;
+    }
 
     async function watchDisplays(did,forceOnce=false){
       const ul=document.getElementById('displayList'); ul.innerHTML='';
@@ -562,30 +586,83 @@
               </div>
               <button class="btn" data-id="${id}" data-muted="${!!st.muted}">${st.muted?'Unmute':'Mute'}</button>
               <button class="btn" data-preview="${id}">Preview</button>
+              <button class="btn" data-edit="${id}">Edit</button>
               <button class="btn" data-flash="${id}">Ping</button>
               <button class="btn danger" data-remove="${id}">Remove</button>
             </div>`;
           ul.appendChild(li);
         });
 
+        // Channel change
         ul.querySelectorAll('.chsel').forEach(el=>{
           el.addEventListener('change', async (e)=>{ const id=e.target.dataset.id; const ch=parseInt(e.target.value,10); await writeDisplay(id,{channel:ch}); });
         });
+
+        // Volume debounce
         const debouncedWrite=debounce(async (id,val)=>{ await writeDisplay(id,{volume:val}); },160);
         ul.querySelectorAll('.vslider').forEach(el=>{
           el.addEventListener('input', e=>{ const id=e.target.dataset.id; const v=parseInt(e.target.value,10); debouncedWrite(id,v); });
         });
+
+        // Mute toggle
         ul.querySelectorAll('button[data-id]').forEach(el=>{
           el.addEventListener('click', async ()=>{ const id=el.dataset.id; const cur=el.getAttribute('data-muted')==='true'; await writeDisplay(id,{muted:!cur}); });
         });
+
+        // Ping flash
         ul.querySelectorAll('button[data-flash]').forEach(el=>{
           el.addEventListener('click', async ()=>{ const id=el.dataset.flash; await writeDisplay(id,{flashAt: Date.now()}); toast(`Pinged ${id}`); });
         });
+
+        // Remove (also delete GitHub)
         ul.querySelectorAll('button[data-remove]').forEach(el=>{
-          el.addEventListener('click', async ()=>{ const id=el.dataset.remove; if(!confirm(`Remove ${id}?`)) return;
-            await remove(ref(db,`dealership/${did}/displays/${id}`)).catch(()=>{});
-            await remove(ref(db,`displays/${id}`)).catch(()=>{});
-            toast('Display removed'); });
+          el.addEventListener('click', async ()=>{
+            const id=el.dataset.remove;
+            if(!confirm(`Remove ${id}? This also deletes its GitHub page.`)) return;
+            try{
+              await remove(ref(db,`dealership/${did}/displays/${id}`)).catch(()=>{});
+              await remove(ref(db,`displays/${id}`)).catch(()=>{});
+              if(!ghNeedsConfig()){
+                try{ await ghDelete(`Displays/${id}.html`, `Delete player for ${id}`); }
+                catch(e){ console.error(e); toast('GitHub delete failed',true); }
+              }
+              toast('Display removed');
+            }catch(e){ console.error(e); toast('Remove failed',true); }
+          });
+        });
+
+        // Edit (rename ID + change dealership public name for file content)
+        ul.querySelectorAll('button[data-edit]').forEach(el=>{
+          el.addEventListener('click', async ()=>{
+            const id=el.dataset.edit;
+            const newId=(prompt("New display ID:", id)||'').trim();
+            if(!newId || newId===id) return;
+            // Friendly dealership name just for file template content
+            const friendly=(prompt("Dealership public name to embed in the file:", did)||did).trim();
+
+            try{
+              // Copy display state
+              const s=await get(ref(db,`displays/${id}`));
+              const data=s.val()||{};
+              await set(ref(db,`displays/${newId}`),{...data,dealership:did,timestamp:Date.now()});
+              await remove(ref(db,`displays/${id}`));
+              // Update mapping under dealership
+              await remove(ref(db,`dealership/${did}/displays/${id}`)).catch(()=>{});
+              await set(ref(db,`dealership/${did}/displays/${newId}`),true);
+
+              // GitHub rename: create new file then delete old
+              if(!ghNeedsConfig()){
+                const html=buildPlayerFileHtml(newId,friendly);
+                try{
+                  await ghUpsert(`Displays/${newId}.html`, html, `Create/Rename player for ${newId} (${friendly})`);
+                  await ghDelete(`Displays/${id}.html`, `Delete old ${id}`);
+                }catch(e){ console.error(e); toast('GitHub rename failed',true); }
+              }
+
+              toast(`Renamed ${id} → ${newId}`);
+              document.getElementById('displaysReload')?.click();
+            }catch(e){ console.error(e); toast('Rename failed',true); }
+          });
         });
       };
 
@@ -594,16 +671,32 @@
       displaysUnsub=()=>off();
       if(forceOnce){ const once=await get(qRef); render(once.val()||{}); }
 
-      // inline preview handler
+      // Inline preview handler (each row manages its own preview; multiple rows supported)
       ul.addEventListener('click', async (e)=>{
         const btn=e.target.closest('button[data-preview]'); if(!btn) return;
-        const id=btn.dataset.preview; const row=btn.closest('.item'); const opened=row.querySelector('.sub.preview'); if(opened){ opened.remove(); return; }
+        const id=btn.dataset.preview;
+        const row=btn.closest('.item');
+
+        // toggle within this row only
+        const opened=row.querySelector('.sub.preview');
+        if(opened){ opened.remove(); return; }
+
         const panel=document.createElement('div'); panel.className='sub preview';
-        panel.innerHTML=`<div class="bar"><span class="muted small">Preview — ${id}</span><button class="btn" data-open>Open tab</button><button class="btn" data-reload>Reload</button></div><iframe title="Preview ${id}" src="about:blank" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+        panel.innerHTML=`
+          <div class="bar">
+            <span class="muted small">Preview — ${esc(id)}</span>
+            <button class="btn" data-open>Open tab</button>
+            <button class="btn" data-reload>Reload</button>
+          </div>
+          <iframe title="Preview ${esc(id)}" src="about:blank" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
         row.appendChild(panel);
-        const url=await resolvePreviewUrl(id); const frame=panel.querySelector('iframe'); frame.src=url;
+
+        const url=await resolvePreviewUrl(id);
+        const frame=panel.querySelector('iframe');
+        frame.src=url;
+
         panel.querySelector('[data-open]').onclick=()=>window.open(url,'_blank','noopener');
-        panel.querySelector('[data-reload]').onclick = ()=>{ frame.src=url.split('&nocache=')[0]+`&nocache=${Date.now()}`; };
+        panel.querySelector('[data-reload]').onclick=()=>{ frame.src=url.split('&nocache=')[0]+`&nocache=${Date.now()}`; };
       });
     }
 
@@ -670,7 +763,8 @@
         }
 
         if(created){ toast('TV added + page created'); } else { toast('TV added (GitHub not configured or failed)', true); if(lastErr) console.error(lastErr); }
-        document.getElementById('newDisplayId').value=''; document.getElementById('displaysReload')?.click();
+        document.getElementById('newDisplayId').value='';
+        document.getElementById('displaysReload')?.click();
       }catch(e){ console.error(e); toast((e&&e.message)||'Add failed',true); }
     });
 
@@ -684,3 +778,4 @@
   </script>
 </body>
 </html>
+
