@@ -139,7 +139,6 @@ exports.restoreFromBackup = functions.region("us-central1").https.onCall(async (
 });
 
 // ── RESTORE from uploaded JSON (client -> callable -> RTDB)
-// Note: payload limit ~10 MB. For larger, upload to Storage then call a reader.
 exports.restoreFromJson = functions.region("us-central1").https.onCall(async (data, context) => {
   assertAuth(context);
   const json = String(data?.json || "");
@@ -157,3 +156,76 @@ exports.restoreFromJson = functions.region("us-central1").https.onCall(async (da
     throw new functions.https.HttpsError("internal", `Restore failed: ${e.message || e}`);
   }
 });
+
+
+// ====================================================================
+// ADDITIONS: ping + purgeAnonymousUsers (region: us-central1)
+// ====================================================================
+
+/** Simple connectivity test */
+exports.ping = functions
+  .region("us-central1")
+  .https.onCall(async (_data, _context) => {
+    return { pong: true, at: Date.now() };
+  });
+
+/**
+ * Purge anonymous accounts older than N days.
+ * Requires an allowed email (reuses assertAuth).
+ * Returns scanned/deleted/kept/failed counts for transparency.
+ */
+exports.purgeAnonymousUsers = functions
+  .region("us-central1")
+  // .runWith({ timeoutSeconds: 540, memory: "256MB" }) // optional
+  .https.onCall(async (data, context) => {
+    try {
+      // Gate: only allowed emails (consistent with your other admin ops)
+      assertAuth(context);
+
+      const olderThanDays = Number(data?.olderThanDays ?? 30);
+      if (!Number.isFinite(olderThanDays) || olderThanDays < 0) {
+        throw new functions.https.HttpsError("invalid-argument", "olderThanDays must be a non-negative number.");
+      }
+
+      const cutoffMs = Date.now() - olderThanDays * 24 * 60 * 60 * 1000;
+
+      let scanned = 0;
+      let deleted = 0;
+      let kept = 0;
+      let failed = 0;
+      let nextPageToken = undefined;
+
+      do {
+        const list = await admin.auth().listUsers(1000, nextPageToken);
+        for (const u of list.users) {
+          scanned++;
+
+          const isAnon = !u.providerData || u.providerData.length === 0;
+          const createdMs = new Date(u.metadata.creationTime).getTime();
+
+          if (isAnon && createdMs < cutoffMs) {
+            try {
+              await admin.auth().deleteUser(u.uid);
+              deleted++;
+            } catch (err) {
+              failed++;
+              console.error("deleteUser failed", u.uid, err?.message || err);
+            }
+          } else {
+            kept++;
+          }
+        }
+        nextPageToken = list.pageToken;
+      } while (nextPageToken);
+
+      return { ok: true, olderThanDays, scanned, deleted, kept, failed };
+    } catch (err) {
+      console.error("purgeAnonymousUsers error", err);
+      if (err instanceof functions.https.HttpsError) throw err;
+      throw new functions.https.HttpsError(
+        "internal",
+        err?.message || "Internal error",
+        { name: err?.name, stack: err?.stack }
+      );
+    }
+  });
