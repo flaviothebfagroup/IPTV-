@@ -54,6 +54,7 @@
   .pill.is-active{outline:2px solid var(--accent)}
   .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
 
+  /* More (+) dropdown */
   .more{position:relative}
   #moreBtn .plus{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
   #moreMenu{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
@@ -64,6 +65,7 @@
   #moreMenu a.is-active{outline:2px solid var(--accent)}
   #moreMenu .ic{width:18px;height:18px;stroke-width:1.9}
 
+  /* Actions */
   .actions{display:flex;gap:8px;align-items:center}
   .email{max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);
     border:1.5px solid var(--borderStrong);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -72,10 +74,17 @@
   .chip:hover{border-color:var(--accent)}
   .chip .ic{width:18px;height:18px;stroke-width:2}
   .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
+  /* Hamburger (orange lines, no border, centered) */
   #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:42px;min-width:42px;padding:0;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
   #hamburger .ic{width:22px;height:22px;stroke:var(--accent);stroke-width:2.35}
-  @media (max-width:920px){ .nav{display:none} #hamburger{display:inline-flex} .email{display:none} }
 
+  @media (max-width:920px){
+    .nav{display:none}
+    #hamburger{display:inline-flex}
+    .email{display:none}
+  }
+
+  /* Mobile sheet */
   #sheet{position:fixed;inset:0;z-index:120;display:none}
   #sheet.open{display:block}
   #sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
@@ -86,7 +95,7 @@
   .panel nav a{justify-content:flex-start}
 
   /* =========================================================
-     Page UI (cards & inputs)
+     Page UI
   ========================================================= */
   .wrap{max-width:1100px;margin:0 auto;padding:18px}
   .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
@@ -99,15 +108,15 @@
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}
   @media (max-width:720px){.row2,.row3{grid-template-columns:1fr}}
-
   .stat{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--tile)}
-  .badge{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:9999px;padding:2px 8px;font-size:11px;color:var(--muted);background:transparent}
+
+  /* Toast */
   .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
   .toast.show{opacity:1}
 </style>
 </head>
 <body>
-  <!-- ===== NAVBAR (identical) ===== -->
+  <!-- ===== NAVBAR ===== -->
   <header class="topbar">
     <div class="toprow">
       <a class="brand" href="home.html"><span class="logo" id="brandLogo"></span><span class="logotxt">BFA IPTV</span></a>
@@ -187,26 +196,29 @@
     <div class="card" style="margin-bottom:12px">
       <h2 style="margin:0 0 8px">Overview</h2>
       <div class="row3">
-        <div class="stat"><b>Firebase Project:</b> <span id="ov-fb-project" class="mono" style="margin-left:6px">—</span></div>
+        <div class="stat"><b>Firebase Project:</b> <span id="ov-fb-project" class="mono" style="margin-left:6px">iptv-bfa</span></div>
         <div class="stat"><b>Auth User:</b> <span id="ov-user" class="mono" style="margin-left:6px">—</span></div>
         <div class="stat"><b>Role:</b> <span id="ov-role" class="mono" style="margin-left:6px">—</span></div>
       </div>
       <div class="row3" style="margin-top:8px">
-        <div class="stat"><b>Displays:</b> <span id="ov-displays" class="mono" style="margin-left:6px">—</span></div>
-        <div class="stat"><b>Dealers:</b> <span id="ov-dealers" class="mono" style="margin-left:6px">—</span></div>
+        <div class="stat"><b>Displays (RTDB):</b> <span id="ov-displays" class="mono" style="margin-left:6px">—</span></div>
+        <div class="stat"><b>Dealers (RTDB):</b> <span id="ov-dealers" class="mono" style="margin-left:6px">—</span></div>
         <div class="stat"><b>GitHub Account:</b> <span id="ov-gh" class="mono" style="margin-left:6px">—</span></div>
       </div>
-      <div style="margin-top:10px"><button id="btn-refresh-overview" class="btn">Refresh Overview</button></div>
-      <div class="muted" style="margin-top:6px">Counts read from Firestore collections (names configurable below).</div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button id="btn-refresh-overview" class="btn">Refresh Overview</button>
+        <button id="btn-ping" class="btn">Ping Functions</button>
+      </div>
+      <div class="muted" style="margin-top:6px">Counts read from Realtime Database.</div>
     </div>
 
     <!-- Quick preferences -->
     <div class="card" style="margin-bottom:12px">
       <h3 style="margin:0 0 8px">Quick Preferences</h3>
       <div class="row3">
-        <div><div class="label">Displays collection</div><input id="inp-displays-col" class="input" placeholder="displays"/></div>
-        <div><div class="label">Dealers collection</div><input id="inp-dealers-col" class="input" placeholder="dealers"/></div>
-        <div><div class="label">Functions region</div><input id="inp-functions-region" class="input" placeholder="us-central1"/></div>
+        <div><div class="label">Displays collection (optional)</div><input id="inp-displays-col" class="input" value="displays"/></div>
+        <div><div class="label">Dealers collection (optional)</div><input id="inp-dealers-col" class="input" value="dealers"/></div>
+        <div><div class="label">Functions region</div><input id="inp-functions-region" class="input" value="us-central1"/></div>
       </div>
       <div style="margin-top:10px"><button id="btn-save-preferences" class="btn solid">Save Preferences</button></div>
       <div class="muted" style="margin-top:6px">Stored in localStorage.</div>
@@ -216,13 +228,17 @@
     <div class="card" style="margin-bottom:12px">
       <h3 style="margin:0 0 8px">GitHub Settings</h3>
       <div class="row3">
-        <div><div class="label">Owner</div><input id="inp-gh-owner" class="input" placeholder="owner"/></div>
-        <div><div class="label">Repo</div><input id="inp-gh-repo" class="input" placeholder="repo"/></div>
-        <div><div class="label">Branch</div><input id="inp-gh-branch" class="input" placeholder="main"/></div>
+        <div><div class="label">Owner</div><input id="inp-gh-owner" class="input" value="flaviothebfagroup"/></div>
+        <div><div class="label">Repo</div><input id="inp-gh-repo" class="input" value="IPTV-"/></div>
+        <div><div class="label">Branch</div><input id="inp-gh-branch" class="input" value="main"/></div>
       </div>
       <div class="row2">
-        <div><div class="label">Config path</div><input id="inp-gh-path" class="input" placeholder="config/iptv-config.json"/></div>
-        <div><div class="label">PAT (masked)</div><input id="inp-gh-token" class="input" type="password" placeholder="ghp_••••••••"/></div>
+        <div><div class="label">Config path</div><input id="inp-gh-path" class="input" value="config/iptv-config.json"/></div>
+        <div>
+          <div class="label">PAT (masked)</div>
+          <input id="inp-gh-token" class="input" type="password" autocomplete="new-password"
+                 value="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"/>
+        </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
         <button id="btn-gh-save-session" class="btn">Use for this session</button>
@@ -245,44 +261,46 @@
     <div class="card" style="margin-bottom:12px">
       <h3 style="margin:0 0 8px">Firebase Settings</h3>
       <div class="row3">
-        <div><div class="label">apiKey</div><input id="fb-apiKey" class="input"/></div>
-        <div><div class="label">authDomain</div><input id="fb-authDomain" class="input"/></div>
-        <div><div class="label">databaseURL</div><input id="fb-databaseURL" class="input"/></div>
+        <div><div class="label">apiKey</div><input id="fb-apiKey" class="input" value="AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY"/></div>
+        <div><div class="label">authDomain</div><input id="fb-authDomain" class="input" value="iptv-bfa.firebaseapp.com"/></div>
+        <div><div class="label">databaseURL</div><input id="fb-databaseURL" class="input" value="https://iptv-bfa-default-rtdb.firebaseio.com"/></div>
       </div>
       <div class="row3">
-        <div><div class="label">projectId</div><input id="fb-projectId" class="input"/></div>
-        <div><div class="label">storageBucket</div><input id="fb-storageBucket" class="input"/></div>
-        <div><div class="label">messagingSenderId</div><input id="fb-msgId" class="input"/></div>
+        <div><div class="label">projectId</div><input id="fb-projectId" class="input" value="iptv-bfa"/></div>
+        <div><div class="label">storageBucket</div><input id="fb-storageBucket" class="input" value="iptv-bfa.firebasestorage.app"/></div>
+        <div><div class="label">messagingSenderId</div><input id="fb-msgId" class="input" value="838790935867"/></div>
       </div>
       <div class="row2">
-        <div><div class="label">appId</div><input id="fb-appId" class="input"/></div>
+        <div><div class="label">appId</div><input id="fb-appId" class="input" value="1:838790935867:web:1860eac7dbeb7159e1b31e"/></div>
         <div style="display:flex;align-items:end;gap:8px;flex-wrap:wrap">
           <button id="btn-fb-save" class="btn solid">Save & Init</button>
           <button id="btn-fb-test" class="btn">Test Firebase</button>
           <button id="btn-fb-logout" class="btn">Sign out</button>
         </div>
       </div>
-      <div class="muted">Saved in localStorage as <span class="mono">firebaseConfig</span>. Test writes/reads a small ping in RTDB.</div>
+      <div class="muted">Saved in localStorage as <span class="mono">firebaseConfig</span>. Tests write/read a small ping in RTDB.</div>
     </div>
 
     <!-- Purge anonymous -->
     <div class="card" style="margin-bottom:12px">
       <h3 style="margin:0 0 8px">Purge Anonymous Logins</h3>
       <div class="row2">
-        <div><div class="label">Delete anon users older than (days)</div><input id="inp-anon-days" class="input" placeholder="30"/></div>
-        <div style="display:flex;align-items:end"><button id="btn-purge-anon" class="btn">Run Purge</button></div>
+        <div><div class="label">Delete anon users older than (days)</div><input id="inp-anon-days" class="input" value="30"/></div>
+        <div style="display:flex;align-items:end;gap:8px;flex-wrap:wrap">
+          <button id="btn-purge-anon" class="btn">Run Purge</button>
+        </div>
       </div>
-      <div class="muted">This calls a Firebase <b>callable</b> function named <span class="mono">purgeAnonymousUsers</span> (see stub in code).</div>
+      <div class="muted">Calls callable <span class="mono">purgeAnonymousUsers</span> in region <span class="mono">us-central1</span>.</div>
     </div>
 
-    <!-- Backup / Restore -->
+    <!-- Backup / Restore of Settings -->
     <div class="card" style="margin-bottom:12px">
       <h3 style="margin:0 0 8px">Backup / Restore Settings</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button id="btn-export-settings" class="btn">Export JSON</button>
         <label class="btn" style="cursor:pointer">Import JSON<input id="inp-import-settings" type="file" accept="application/json" style="display:none"></label>
       </div>
-      <div class="muted" style="margin-top:6px">Exports GitHub prefs, encrypted token (if any), Firebase config, collection names, region, and token expiry.</div>
+      <div class="muted" style="margin-top:6px">Exports GitHub prefs, encrypted token (if any), Firebase config, region, and token expiry.</div>
     </div>
 
     <!-- Log -->
@@ -295,21 +313,19 @@
 
   <div id="toast" class="toast"></div>
 
-<!-- Firebase v10 modular (same family as Schedule) -->
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
   import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, signOut, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
   import { getDatabase, ref as rtdbRef, set as rtdbSet, get as rtdbGet } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-  import { getFirestore, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
   import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js';
 
-  /* ===== Defaults (pre-filled) ===== */
+  /* ===== Hard defaults from you ===== */
   const DEFAULTS = {
     githubOwner: 'flaviothebfagroup',
     githubRepo: 'IPTV-',
     githubBranch: 'main',
     githubPath: 'config/iptv-config.json',
-    githubToken: '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',
+    // PAT is intentionally NOT stored; we just prefill the field
     firebaseConfig: {
       apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
       authDomain: "iptv-bfa.firebaseapp.com",
@@ -319,8 +335,6 @@
       messagingSenderId: "838790935867",
       appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
     },
-    displaysCol: 'displays',
-    dealersCol: 'dealers',
     functionsRegion: 'us-central1',
     LOGO_URL: "/IPTV-/icons/icon-512.png"
   };
@@ -343,42 +357,46 @@
   function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
   const logEl = $('#log'); function log(msg){ logEl.value += (msg + '\n'); logEl.scrollTop = logEl.scrollHeight; }
 
-  /* ===== Apply defaults on first load ===== */
-  function applyDefaultsIfEmpty(){
-    if(!localStorage.getItem(SKEYS.githubOwner))  localStorage.setItem(SKEYS.githubOwner,  DEFAULTS.githubOwner);
-    if(!localStorage.getItem(SKEYS.githubRepo))   localStorage.setItem(SKEYS.githubRepo,   DEFAULTS.githubRepo);
-    if(!localStorage.getItem(SKEYS.githubBranch)) localStorage.setItem(SKEYS.githubBranch, DEFAULTS.githubBranch);
-    if(!localStorage.getItem(SKEYS.githubPath))   localStorage.setItem(SKEYS.githubPath,   DEFAULTS.githubPath);
-    if(!localStorage.getItem(SKEYS.displaysCol))  localStorage.setItem(SKEYS.displaysCol,  DEFAULTS.displaysCol);
-    if(!localStorage.getItem(SKEYS.dealersCol))   localStorage.setItem(SKEYS.dealersCol,   DEFAULTS.dealersCol);
-    if(!localStorage.getItem(SKEYS.functionsRegion)) localStorage.setItem(SKEYS.functionsRegion, DEFAULTS.functionsRegion);
-    if(!localStorage.getItem(SKEYS.fbConfig))     localStorage.setItem(SKEYS.fbConfig, JSON.stringify(DEFAULTS.firebaseConfig));
+  /* ===== Force prefill into localStorage (except PAT) ===== */
+  function prefillNow(){
+    localStorage.setItem(SKEYS.githubOwner,  DEFAULTS.githubOwner);
+    localStorage.setItem(SKEYS.githubRepo,   DEFAULTS.githubRepo);
+    localStorage.setItem(SKEYS.githubBranch, DEFAULTS.githubBranch);
+    localStorage.setItem(SKEYS.githubPath,   DEFAULTS.githubPath);
+    localStorage.setItem(SKEYS.functionsRegion, DEFAULTS.functionsRegion);
+    // Optional Firestore names (not required for RTDB)
+    if(!localStorage.getItem(SKEYS.displaysCol)) localStorage.setItem(SKEYS.displaysCol, 'displays');
+    if(!localStorage.getItem(SKEYS.dealersCol))  localStorage.setItem(SKEYS.dealersCol,  'dealers');
+    // Full Firebase config
+    localStorage.setItem(SKEYS.fbConfig, JSON.stringify(DEFAULTS.firebaseConfig));
   }
 
   /* ===== UI load/save ===== */
   function loadPrefs(){
-    $('#inp-displays-col').value = localStorage.getItem(SKEYS.displaysCol);
-    $('#inp-dealers-col').value  = localStorage.getItem(SKEYS.dealersCol);
-    $('#inp-functions-region').value = localStorage.getItem(SKEYS.functionsRegion);
+    $('#inp-displays-col').value = localStorage.getItem(SKEYS.displaysCol) || 'displays';
+    $('#inp-dealers-col').value  = localStorage.getItem(SKEYS.dealersCol)  || 'dealers';
+    $('#inp-functions-region').value = localStorage.getItem(SKEYS.functionsRegion) || 'us-central1';
 
-    $('#inp-gh-owner').value  = localStorage.getItem(SKEYS.githubOwner);
-    $('#inp-gh-repo').value   = localStorage.getItem(SKEYS.githubRepo);
-    $('#inp-gh-branch').value = localStorage.getItem(SKEYS.githubBranch);
-    $('#inp-gh-path').value   = localStorage.getItem(SKEYS.githubPath);
-    // Show PAT in field for convenience (not saved unless you encrypt/save)
-    $('#inp-gh-token').value  = DEFAULTS.githubToken;
+    $('#inp-gh-owner').value  = localStorage.getItem(SKEYS.githubOwner)  || DEFAULTS.githubOwner;
+    $('#inp-gh-repo').value   = localStorage.getItem(SKEYS.githubRepo)   || DEFAULTS.githubRepo;
+    $('#inp-gh-branch').value = localStorage.getItem(SKEYS.githubBranch) || DEFAULTS.githubBranch;
+    $('#inp-gh-path').value   = localStorage.getItem(SKEYS.githubPath)   || DEFAULTS.githubPath;
+
+    // PAT visible but not stored
+    const patField = $('#inp-gh-token');
+    patField.setAttribute('autocomplete','new-password');
+    // Keep what's in HTML value; do not overwrite
 
     // Firebase form
-    const cfg = JSON.parse(localStorage.getItem(SKEYS.fbConfig) || 'null');
-    if(cfg){
-      $('#fb-apiKey').value        = cfg.apiKey || '';
-      $('#fb-authDomain').value    = cfg.authDomain || '';
-      $('#fb-databaseURL').value   = cfg.databaseURL || '';
-      $('#fb-projectId').value     = cfg.projectId || '';
-      $('#fb-storageBucket').value = cfg.storageBucket || '';
-      $('#fb-msgId').value         = cfg.messagingSenderId || '';
-      $('#fb-appId').value         = cfg.appId || '';
-    }
+    const cfg = JSON.parse(localStorage.getItem(SKEYS.fbConfig) || 'null') || DEFAULTS.firebaseConfig;
+    $('#fb-apiKey').value        = cfg.apiKey || '';
+    $('#fb-authDomain').value    = cfg.authDomain || '';
+    $('#fb-databaseURL').value   = cfg.databaseURL || '';
+    $('#fb-projectId').value     = cfg.projectId || '';
+    $('#fb-storageBucket').value = cfg.storageBucket || '';
+    $('#fb-msgId').value         = cfg.messagingSenderId || '';
+    $('#fb-appId').value         = cfg.appId || '';
+
     updateExpiryInfo();
   }
   function savePrefs(){
@@ -423,7 +441,7 @@
   }
 
   /* ===== Firebase init (modular) ===== */
-  let app, auth, db, fs, fns;
+  let app, auth, db, fns;
 
   function readFirebaseForm(){
     return {
@@ -449,11 +467,10 @@
     app = initializeApp(cfg);
     auth = getAuth(app);
     db = getDatabase(app);
-    fs = getFirestore(app);
     const region = localStorage.getItem(SKEYS.functionsRegion) || 'us-central1';
     fns = getFunctions(app, region);
 
-    setPersistence(auth, browserLocalPersistence);
+    setPersistence(auth,browserLocalPersistence);
     onAuthStateChanged(auth, async (u)=>{
       if(!u){ await signInAnonymously(auth).catch(err=>log('Anon sign-in error: '+err.message)); }
       $('#adminEmail').textContent = (auth.currentUser?.email) || auth.currentUser?.uid || '';
@@ -463,57 +480,70 @@
   async function testFirebase(){
     if(!db){ log('Firebase not initialized.'); return; }
     try{
-      const path = 'ping';
       const ts = Date.now();
-      await rtdbSet(rtdbRef(db, path), { time: ts, by: auth.currentUser?.uid || 'unknown' });
-      const snap = await rtdbGet(rtdbRef(db, path));
+      await rtdbSet(rtdbRef(db, 'ping'), { time: ts, by: auth.currentUser?.uid || 'unknown' });
+      const snap = await rtdbGet(rtdbRef(db, 'ping'));
       log('RTDB OK: '+ JSON.stringify(snap.val()));
     }catch(e){ log('Firebase test failed: '+e.message); }
   }
   async function signOutFirebase(){ try{ await signOut(auth); log('Signed out.'); refreshOverview(); }catch(e){ log('Sign out error: '+e.message); } }
 
-  /* ===== Overview ===== */
+  /* ===== Overview (RTDB counts) ===== */
   async function refreshOverview(){
+    // Project id
     try{
       const cfg = JSON.parse(localStorage.getItem(SKEYS.fbConfig) || 'null');
       $('#ov-fb-project').textContent = (cfg && cfg.projectId) ? cfg.projectId : '—';
     }catch(e){}
-
+    // User info
     const u = auth?.currentUser;
     if(u){
       const provider = (u.providerData?.[0]?.providerId) || (u.isAnonymous ? 'anonymous' : 'password');
       $('#ov-user').textContent = (u.email || '(anon)') + ' • uid ' + u.uid + ' • ' + provider;
-      // role from RTDB user/{uid}/role (optional)
       try{
-        const snap = await rtdbGet(rtdbRef(db, `user/${u.uid}/role`));
-        $('#ov-role').textContent = snap.exists() ? snap.val() : '—';
+        const roleSnap = await rtdbGet(rtdbRef(db, `user/${u.uid}/role`));
+        $('#ov-role').textContent = roleSnap.exists() ? roleSnap.val() : '—';
       }catch(_){ $('#ov-role').textContent = '—'; }
     }else{
       $('#ov-user').textContent = '—'; $('#ov-role').textContent = '—';
     }
-
-    // Firestore counts
+    // RTDB counts
     try{
-      const displaysCol = localStorage.getItem(SKEYS.displaysCol);
-      const dealersCol  = localStorage.getItem(SKEYS.dealersCol);
-      const d1 = await getDocs(collection(fs, displaysCol));  $('#ov-displays').textContent = d1.size;
-      const d2 = await getDocs(collection(fs, dealersCol));   $('#ov-dealers').textContent  = d2.size;
+      const ds = await rtdbGet(rtdbRef(db, 'displays'));
+      const dl = await rtdbGet(rtdbRef(db, 'dealershipPublic'));
+      $('#ov-displays').textContent = ds.exists() ? Object.keys(ds.val()).length : 0;
+      $('#ov-dealers').textContent  = dl.exists() ? Object.keys(dl.val()).length : 0;
     }catch(_){
       $('#ov-displays').textContent = '—';
       $('#ov-dealers').textContent  = '—';
     }
   }
 
-  /* ===== Purge anonymous via callable ===== */
+  /* ===== Ping + Purge ===== */
+  async function pingFunctions(){
+    try{
+      const ping = httpsCallable(fns, 'ping');
+      const res = await ping({});
+      log('Ping OK: ' + JSON.stringify(res.data));
+      return true;
+    }catch(e){
+      log(`Ping error -> code: ${e.code} | message: ${e.message} | details: ${JSON.stringify(e.details)}`);
+      return false;
+    }
+  }
   async function purgeAnonymous(){
     if(!fns){ log('Functions not initialized.'); return; }
+    const ok = await pingFunctions(); if(!ok){ toast('Functions ping failed'); return; }
     const days = parseInt($('#inp-anon-days').value || '30', 10);
     try{
       const callable = httpsCallable(fns, 'purgeAnonymousUsers');
       const res = await callable({ olderThanDays: days });
       log('Purge result: '+ JSON.stringify(res.data));
       toast('Purge requested');
-    }catch(e){ log('Purge error: '+e.message); }
+    }catch(e){
+      log(`Purge error -> code: ${e.code} | message: ${e.message} | details: ${JSON.stringify(e.details)}`);
+      toast('Purge failed (see Log)');
+    }
   }
 
   /* ===== Token expiry helper ===== */
@@ -550,7 +580,7 @@
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   }
 
-  /* ===== Backup / Restore ===== */
+  /* ===== Backup / Restore (Settings JSON) ===== */
   function exportSettings(){
     const out = {
       [SKEYS.displaysCol]: localStorage.getItem(SKEYS.displaysCol),
@@ -581,13 +611,14 @@
     r.readAsText(file);
   }
 
-  /* ===== Navbar wiring (identical behaviors) ===== */
+  /* ===== Navbar / Theme behaviors (identical to Schedule) ===== */
   const LOGO_URL = DEFAULTS.LOGO_URL;
   $('#brandLogo').style.backgroundImage=`url("${LOGO_URL}")`;
-  const brandLogoM=$('#brandLogoM'); if(brandLogoM){ brandLogoM.style.backgroundImage=`url("${LOGO_URL}")`; }
+  const brandLogoM=document.getElementById('brandLogoM'); if(brandLogoM){ brandLogoM.style.backgroundImage=`url("${LOGO_URL}")`; }
 
   const THEME_KEY='iptv_theme';
-  const themeBtn=$('#themeBtn'), themeIcon=$('#themeIcon');
+  const themeBtn=document.getElementById('themeBtn');
+  const themeIcon=document.getElementById('themeIcon');
   const setThemeIcon=()=>{
     const dark=document.body.classList.contains('dark');
     themeIcon.innerHTML = dark
@@ -595,7 +626,8 @@
       : `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1.4-1.4M20.4 20.4 19 19M5 19l-1.4 1.4M20.4 3.6 19 5"/>`;
   };
   const saved=localStorage.getItem(THEME_KEY)||'light';
-  document.body.classList.toggle('dark', saved==='dark'); setThemeIcon();
+  document.body.classList.toggle('dark', saved==='dark');
+  setThemeIcon();
   themeBtn.addEventListener('click', ()=>{
     const toDark=!document.body.classList.contains('dark');
     document.body.classList.toggle('dark', toDark);
@@ -603,7 +635,8 @@
     setThemeIcon();
   });
 
-  const moreBtn=$('#moreBtn'), moreMenu=$('#moreMenu');
+  const moreBtn=document.getElementById('moreBtn');
+  const moreMenu=document.getElementById('moreMenu');
   if(moreBtn){
     moreBtn.addEventListener('click',(e)=>{ e.preventDefault(); moreMenu.classList.toggle('open');});
     document.addEventListener('click',(e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)){ moreMenu.classList.remove('open'); } },{capture:true});
@@ -613,100 +646,79 @@
   }
 
   (()=>{
-    const sheet=$('#sheet');
+    const sheet=document.getElementById('sheet');
     const open=()=>{ sheet.classList.add('open'); document.body.style.overflow='hidden'; };
     const close=()=>{ sheet.classList.remove('open'); document.body.style.overflow=''; };
-    $('#hamburger').addEventListener('click', open);
-    $('#closeSheet').addEventListener('click', close);
+    document.getElementById('hamburger').addEventListener('click', open);
+    document.getElementById('closeSheet').addEventListener('click', close);
     sheet.querySelector('.back').addEventListener('click', close);
-    const mainOut=$('#signOutBtn'); const mobOut=$('#signOutBtnM');
+    const mainOut=document.getElementById('signOutBtn');
+    const mobOut=document.getElementById('signOutBtnM');
     if(mainOut && mobOut){ mobOut.addEventListener('click', ()=> mainOut.click()); }
   })();
 
-  /* ===== App bootstrap ===== */
-  applyDefaultsIfEmpty();
+  /* ===== Buttons & bootstrap ===== */
+  prefillNow();
   loadPrefs();
-  initFirebase(); // auto init with defaults
+  initFirebase();
 
-  /* ===== Buttons ===== */
-  $('#btn-save-preferences').addEventListener('click', savePrefs);
+  document.getElementById('signOutBtn').addEventListener('click',()=>signOut(getAuth()).catch(()=>{}));
+  onAuthStateChanged(getAuth(), u=>{
+    if(!u){ /* optional redirect */ }
+    document.getElementById('adminEmail').textContent=u?.email || u?.uid || '';
+  });
 
-  // GitHub token
-  $('#btn-gh-save-session').addEventListener('click', ()=>{
-    const v = $('#inp-gh-token').value.trim(); if(!v) return toast('Enter a token first');
+  // Save prefs
+  document.getElementById('btn-save-preferences').addEventListener('click', savePrefs);
+
+  // GitHub token flow
+  document.getElementById('btn-gh-save-session').addEventListener('click', ()=>{
+    const v = document.getElementById('inp-gh-token').value.trim(); if(!v) return toast('Enter a token first');
     ghTokenSession = v; toast('Token set for session');
   });
-  $('#btn-gh-encrypted-save').addEventListener('click', async ()=>{
-    const token = $('#inp-gh-token').value.trim(); if(!token) return toast('Enter a token first');
+  document.getElementById('btn-gh-encrypted-save').addEventListener('click', async ()=>{
+    const token = document.getElementById('inp-gh-token').value.trim(); if(!token) return toast('Enter a token first');
     const pass = prompt('Set a passphrase to encrypt your token (store it safely):'); if(!pass) return;
     try{ const blob = await encryptToken(token, pass); localStorage.setItem(SKEYS.ghTokenEnc, JSON.stringify(blob)); toast('Encrypted token saved'); }
     catch(e){ toast('Encrypt failed'); }
   });
-  $('#btn-gh-clear').addEventListener('click', ()=>{ localStorage.removeItem(SKEYS.ghTokenEnc); toast('Saved token cleared'); });
-  $('#btn-gh-test').addEventListener('click', async ()=>{
+  document.getElementById('btn-gh-clear').addEventListener('click', ()=>{ localStorage.removeItem(SKEYS.ghTokenEnc); toast('Saved token cleared'); });
+  document.getElementById('btn-gh-test').addEventListener('click', async ()=>{
     if(!ghTokenSession){
       const blob = localStorage.getItem(SKEYS.ghTokenEnc);
       if(blob){
         const pass = prompt('Enter passphrase to unlock saved token:');
         if(pass){ try{ ghTokenSession = await decryptToken(JSON.parse(blob), pass); } catch(e){ log('Decrypt failed: '+e.message); return; } }
       } else {
-        const field = $('#inp-gh-token').value.trim(); if(field) ghTokenSession = field;
+        const field = document.getElementById('inp-gh-token').value.trim(); if(field) ghTokenSession = field;
       }
     }
     await testGitHubToken();
   });
 
   // Expiry
-  $('#btn-gh-expiry-save').addEventListener('click', saveExpiry);
-  $('#btn-gh-expiry-ics').addEventListener('click', downloadICS);
+  document.getElementById('btn-gh-expiry-save').addEventListener('click', saveExpiry);
+  document.getElementById('btn-gh-expiry-ics').addEventListener('click', downloadICS);
 
   // Firebase
-  $('#btn-fb-save').addEventListener('click', saveFirebaseConfig);
-  $('#btn-fb-test').addEventListener('click', testFirebase);
-  $('#btn-fb-logout').addEventListener('click', signOutFirebase);
+  document.getElementById('btn-fb-save').addEventListener('click', saveFirebaseConfig);
+  document.getElementById('btn-fb-test').addEventListener('click', testFirebase);
+  document.getElementById('btn-fb-logout').addEventListener('click', signOutFirebase);
 
-  // Purge
-  $('#btn-purge-anon').addEventListener('click', purgeAnonymous);
+  // Purge & Ping
+  document.getElementById('btn-ping').addEventListener('click', pingFunctions);
+  document.getElementById('btn-purge-anon').addEventListener('click', purgeAnonymous);
 
   // Overview + Log
-  $('#btn-refresh-overview').addEventListener('click', refreshOverview);
-  $('#btn-log-clear').addEventListener('click', ()=>{ logEl.value=''; });
+  document.getElementById('btn-refresh-overview').addEventListener('click', refreshOverview);
+  document.getElementById('btn-log-clear').addEventListener('click', ()=>{ logEl.value=''; });
 
-  // Backup / Restore
-  $('#btn-export-settings').addEventListener('click', exportSettings);
-  $('#inp-import-settings').addEventListener('change', (e)=>{ if(e.target.files && e.target.files[0]) importSettings(e.target.files[0]); });
+  // Settings backup/restore
+  document.getElementById('btn-export-settings').addEventListener('click', exportSettings);
+  document.getElementById('inp-import-settings').addEventListener('change', (e)=>{ if(e.target.files && e.target.files[0]) importSettings(e.target.files[0]); });
 
   // Keep prefs in sync on edits
-  ['inp-gh-owner','inp-gh-repo','inp-gh-branch','inp-gh-path'].forEach(id=>$('#'+id).addEventListener('change', savePrefs));
-
-  // Sign out (navbar)
-  $('#signOutBtn').addEventListener('click',()=>signOut(auth).catch(()=>{}));
-  onAuthStateChanged(getAuth(), u=>{
-    if(!u){ /* optional redirect */ }
-    $('#adminEmail').textContent = u?.email || u?.uid || '';
-  });
-
-  /* ===== Cloud Functions stub (Node 18+) =====
-  // functions/index.js
-  // import { onCall } from "firebase-functions/v2/https";
-  // import * as admin from "firebase-admin";
-  // admin.initializeApp();
-  // export const purgeAnonymousUsers = onCall(async (req) => {
-  //   const olderThanDays = Number(req.data?.olderThanDays || 30);
-  //   const cutoff = Date.now() - olderThanDays*24*60*60*1000;
-  //   let deleted = 0, nextPageToken = undefined;
-  //   do {
-  //     const list = await admin.auth().listUsers(1000, nextPageToken);
-  //     for (const u of list.users){
-  //       const isAnon = !u.providerData || u.providerData.length===0;
-  //       const created = new Date(u.metadata.creationTime).getTime();
-  //       if(isAnon && created < cutoff){ await admin.auth().deleteUser(u.uid).catch(()=>{}); deleted++; }
-  //     }
-  //     nextPageToken = list.pageToken;
-  //   } while (nextPageToken);
-  //   return { deleted, olderThanDays };
-  // });
-  */
+  ['inp-gh-owner','inp-gh-repo','inp-gh-branch','inp-gh-path'].forEach(id=>document.getElementById(id).addEventListener('change', savePrefs));
 </script>
 </body>
 </html>
