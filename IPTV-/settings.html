@@ -6,6 +6,7 @@
 <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
 <title>BFA IPTV — Settings</title>
 
+<!-- PWA (optional) -->
 <link rel="manifest" href="/IPTV-/manifest.webmanifest"/>
 <meta name="theme-color" content="#ffffff"/>
 <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png"/>
@@ -13,57 +14,94 @@
 <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png"/>
 
 <style>
-  :root{--accent:#ff9500;--fg:#111;--muted:#6e6e73;--bg:#ffffff;--panel:#fff;--tile:#f6f6f8;--tileHover:#fff7ea;--border:rgba(0,0,0,.14);--borderStrong:rgba(0,0,0,.28);--shadow:0 14px 36px rgba(0,0,0,.08)}
-  body.dark{--bg:#0b0b0c;--fg:#f7f7f8;--muted:#a1a1a8;--panel:#151517;--tile:#1a1a1d;--tileHover:#221e18;--border:rgba(255,255,255,.16);--borderStrong:rgba(255,255,255,.36);--shadow:0 18px 48px rgba(0,0,0,.45)}
-  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif} a{text-decoration:none;color:inherit}
+  :root{
+    --accent:#ff9500;
+    --fg:#111; --muted:#6e6e73; --bg:#ffffff;
+    --panel:#fff; --tile:#f6f6f8; --tileHover:#fff7ea;
+    --border:rgba(0,0,0,.14); --borderStrong:rgba(0,0,0,.28);
+    --shadow:0 14px 36px rgba(0,0,0,.08);
+  }
+  body.dark{
+    --bg:#0b0b0c; --fg:#f7f7f8; --muted:#a1a1a8;
+    --panel:#151517; --tile:#1a1a1d; --tileHover:#221e18;
+    --border:rgba(255,255,255,.16); --borderStrong:rgba(255,255,255,.36);
+    --shadow:0 18px 48px rgba(0,0,0,.45);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
+  a{color:inherit;text-decoration:none}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
 
-  /* Topbar (same as your other pages) */
-  .topbar{position:sticky;top:0;z-index:100;background:var(--panel);border-bottom:1px solid var(--border);padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
+  /* ===== Topbar (same style as other pages) ===== */
+  .topbar{position:sticky;top:0;z-index:100;background:var(--panel);
+    border-bottom:1px solid var(--border);
+    padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
   .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;position:relative}
   .brand{display:flex;align-items:center;gap:10px}
   .logo{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:#fff center/cover no-repeat}
   .logotxt{font-weight:900;letter-spacing:.2px}
   .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto}
-  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;font-weight:800;font-size:14px}
-  .pill:hover{border-color:var(--accent)} .pill.is-active{outline:2px solid var(--accent)}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;color:inherit;font-weight:800;font-size:14px}
+  .pill:hover{border-color:var(--accent)}
+  .pill.is-active{outline:2px solid var(--accent)}
   .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
-  .more{position:relative} #moreBtn .plus{width:16px;height:16px;stroke-width:2}
-  #moreMenu{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none}
-  #moreMenu.open{display:block} #moreMenu a{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px}
-  #moreMenu a:hover{background:var(--tileHover)} #moreMenu a.is-active{outline:2px solid var(--accent)} #moreMenu .ic{width:18px;height:18px;stroke-width:1.9}
+
+  .more{position:relative}
+  #moreBtn .plus{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
+  #moreMenu{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
+    border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none}
+  #moreMenu.open{display:block}
+  #moreMenu a{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px}
+  #moreMenu a:hover{background:var(--tileHover)}
+  #moreMenu a.is-active{outline:2px solid var(--accent)}
+  #moreMenu .ic{width:18px;height:18px;stroke-width:1.9}
+
   .actions{display:flex;gap:8px;align-items:center}
-  .email{max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);border:1.5px solid var(--borderStrong);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .chip{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1.5px solid var(--borderStrong);background:var(--tile);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
-  .chip:hover{border-color:var(--accent)} .chip .ic{width:18px;height:18px;stroke-width:2} .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
+  .email{max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);
+    border:1.5px solid var(--borderStrong);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .chip{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1.5px solid var(--borderStrong);
+    background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+  .chip:hover{border-color:var(--accent)}
+  .chip .ic{width:18px;height:18px;stroke-width:2}
+  .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
   #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:42px;min-width:42px;padding:0;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
   #hamburger .ic{width:22px;height:22px;stroke:var(--accent);stroke-width:2.35}
-  @media (max-width:920px){.nav{display:none}#hamburger{display:inline-flex}.email{display:none}}
-  #sheet{position:fixed;inset:0;z-index:120;display:none} #sheet.open{display:block} #sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
-  .panel{position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:var(--panel);border-left:1px solid var(--border);box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px}
-  .panel .row{display:flex;align-items:center;justify-content:space-between} .panel nav{display:grid;gap:8px} .panel nav a{justify-content:flex-start}
+  @media (max-width:920px){
+    .nav{display:none}
+    #hamburger{display:inline-flex}
+    .email{display:none}
+  }
 
-  /* Page UI */
+  /* Mobile sheet */
+  #sheet{position:fixed;inset:0;z-index:120;display:none}
+  #sheet.open{display:block}
+  #sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
+  .panel{position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:var(--panel);border-left:1px solid var(--border);
+    box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px}
+  .panel .row{display:flex;align-items:center;justify-content:space-between}
+  .panel nav{display:grid;gap:8px}
+  .panel nav a{justify-content:flex-start}
+
+  /* ===== Page UI ===== */
   .wrap{max-width:1100px;margin:0 auto;padding:18px}
   .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
   .muted{color:var(--muted);font-size:12px}
   .label{font-size:12px;color:var(--muted);margin-bottom:6px}
-  .input,textarea,select{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
+  .input,textarea{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
   textarea{min-height:120px;resize:vertical}
-  .btn{height:34px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--tile);font-weight:800;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center}
+  .btn{height:34px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center}
   .btn.solid{background:var(--accent);border-color:var(--accent);color:#000}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}
   @media (max-width:720px){.row2,.row3{grid-template-columns:1fr}}
-  .stat{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--tile)}
+
   .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
   .toast.show{opacity:1}
 </style>
 </head>
 <body>
-  <!-- shared helper so ALL pages read the same token & repo prefs -->
-  <script src="/IPTV-/scripts/bfa-auth.js"></script>
-
   <!-- ===== NAVBAR ===== -->
   <header class="topbar">
     <div class="toprow">
@@ -75,13 +113,14 @@
         <a class="pill" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
         <a class="pill" href="users.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
         <div class="more">
-          <a id="moreBtn" class="pill" href="javascript:void(0)"><svg class="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> More</a>
+          <a id="moreBtn" class="pill" href="javascript:void(0)">
+            <svg class="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> More
+          </a>
           <div id="moreMenu" role="menu" aria-label="More">
             <a href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
             <a href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
             <a href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
             <a href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
-            <a href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
             <a class="is-active" href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
           </div>
         </div>
@@ -89,9 +128,14 @@
 
       <div class="actions">
         <span id="adminEmail" class="email"></span>
-        <button id="themeBtn" class="chip" title="Light/Dark"><svg id="themeIcon" class="ic" viewBox="0 0 24 24"></svg>Theme</button>
+        <button id="themeBtn" class="chip" title="Light/Dark">
+          <svg id="themeIcon" class="ic" viewBox="0 0 24 24"></svg>
+          Theme
+        </button>
         <button id="signOutBtn" class="chip">Sign out</button>
-        <button id="hamburger" class="chip" aria-label="Menu"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+        <button id="hamburger" class="chip" aria-label="Menu">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
       </div>
     </div>
 
@@ -113,7 +157,6 @@
           <a class="pill" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
           <a class="pill" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
           <a class="pill" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
-          <a class="pill" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
           <a class="pill is-active" href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
           <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
         </nav>
@@ -121,110 +164,50 @@
     </div>
   </header>
 
-  <!-- ===================================================== -->
+  <!-- ===== CONTENT ===== -->
   <div class="wrap">
-    <!-- Overview -->
-    <div class="card" style="margin-bottom:12px">
-      <h2 style="margin:0 0 8px">Overview</h2>
-      <div class="row3">
-        <div class="stat"><b>Firebase Project:</b>&nbsp;<span id="ov-fb-project" class="mono">iptv-bfa</span></div>
-        <div class="stat"><b>Auth User:</b>&nbsp;<span id="ov-user" class="mono">—</span></div>
-        <div class="stat"><b>Role:</b>&nbsp;<span id="ov-role" class="mono">—</span></div>
+    <!-- Delete Anonymous Users -->
+    <div class="card" id="purgeCard" style="margin-bottom:12px">
+      <h3 style="margin:0 0 8px">Delete Anonymous Users (no deploy)</h3>
+      <div class="muted" style="margin-bottom:8px">
+        Generates a ready-to-run script for <b>Google Cloud Shell</b>. Click <i>Copy Cloud Shell commands</i>,
+        then <i>Open Cloud Shell</i>, paste, and press Enter.
       </div>
-      <div class="row3" style="margin-top:8px">
-        <div class="stat"><b>Displays:</b>&nbsp;<span id="ov-displays" class="mono">—</span></div>
-        <div class="stat"><b>Dealers:</b>&nbsp;<span id="ov-dealers" class="mono">—</span></div>
-        <div class="stat"><b>GitHub Access:</b>&nbsp;<span id="ov-gh" class="mono">—</span></div>
-      </div>
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-        <button id="btn-refresh-overview" class="btn">Refresh Overview</button>
-        <button id="btn-ping" class="btn">Ping (RTDB)</button>
-      </div>
-      <div class="muted" style="margin-top:6px">Counts from Realtime Database. Ping writes/reads <span class="mono">meta/ping</span>.</div>
-    </div>
 
-    <!-- Quick preferences -->
-    <div class="card" style="margin-bottom:12px">
-      <h3 style="margin:0 0 8px">Quick Preferences</h3>
       <div class="row3">
-        <div><div class="label">Displays collection</div><input id="inp-displays-col" class="input" value="displays"/></div>
-        <div><div class="label">Dealers collection</div><input id="inp-dealers-col" class="input" value="dealers"/></div>
-        <div><div class="label">Functions region (saved for later)</div><input id="inp-functions-region" class="input" value="us-central1"/></div>
-      </div>
-      <div style="margin-top:10px"><button id="btn-save-preferences" class="btn solid">Save Preferences</button></div>
-    </div>
-
-    <!-- GitHub -->
-    <div class="card" style="margin-bottom:12px">
-      <h3 style="margin:0 0 8px">GitHub Settings</h3>
-      <div class="row3">
-        <div><div class="label">Owner</div><input id="inp-gh-owner" class="input" value="flaviothebfagroup"/></div>
-        <div><div class="label">Repo</div><input id="inp-gh-repo" class="input" value="IPTV-"/></div>
-        <div><div class="label">Branch</div><input id="inp-gh-branch" class="input" value="main"/></div>
-      </div>
-      <div class="row2">
-        <div><div class="label">Config path</div><input id="inp-gh-path" class="input" value="config/iptv-config.json"/></div>
-        <div><div class="label">PAT (optional)</div><input id="inp-gh-token" class="input" type="password" autocomplete="new-password" placeholder="Leave empty for public read"/></div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-        <button id="btn-gh-save-session" class="btn">Use for this session</button>
-        <button id="btn-gh-encrypted-save" class="btn">Encrypt & save locally</button>
-        <button id="btn-gh-clear" class="btn">Clear saved</button>
-        <button id="btn-gh-test" class="btn solid">Test GitHub</button>
-      </div>
-      <div class="muted" style="margin-top:6px">Token only needed for private repos or write operations.</div>
-    </div>
-
-    <!-- Firebase -->
-    <div class="card" style="margin-bottom:12px">
-      <h3 style="margin:0 0 8px">Firebase Settings</h3>
-      <div class="row3">
-        <div><div class="label">apiKey</div><input id="fb-apiKey" class="input" value="AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY"/></div>
-        <div><div class="label">authDomain</div><input id="fb-authDomain" class="input" value="iptv-bfa.firebaseapp.com"/></div>
-        <div><div class="label">databaseURL</div><input id="fb-databaseURL" class="input" value="https://iptv-bfa-default-rtdb.firebaseio.com"/></div>
-      </div>
-      <div class="row3">
-        <div><div class="label">projectId</div><input id="fb-projectId" class="input" value="iptv-bfa"/></div>
-        <div><div class="label">storageBucket</div><input id="fb-storageBucket" class="input" value="iptv-bfa.firebasestorage.app"/></div>
-        <div><div class="label">messagingSenderId</div><input id="fb-msgId" class="input" value="838790935867"/></div>
-      </div>
-      <div class="row2">
-        <div><div class="label">appId</div><input id="fb-appId" class="input" value="1:838790935867:web:1860eac7dbeb7159e1b31e"/></div>
-        <div style="display:flex;align-items:end;gap:8px;flex-wrap:wrap">
-          <button id="btn-fb-save" class="btn solid">Save & Init</button>
-          <button id="btn-fb-test" class="btn">Test Firebase</button>
-          <button id="btn-fb-logout" class="btn">Sign out</button>
+        <div>
+          <div class="label">Keep last N days (0 = delete ALL)</div>
+          <input id="purgeDays" class="input" type="number" min="0" step="1" value="0"/>
+        </div>
+        <div>
+          <div class="label">Firebase projectId</div>
+          <input id="purgeFbProject" class="input" value="iptv-bfa"/>
+        </div>
+        <div>
+          <div class="label">GCP project ID (console header)</div>
+          <input id="purgeGcpProject" class="input" value="iptv-bfa-471617"/>
         </div>
       </div>
-    </div>
 
-    <!-- Purge anonymous (disabled until you deploy a function) -->
-    <div class="card" style="margin-bottom:12px;opacity:.68">
-      <h3 style="margin:0 0 8px">Purge Anonymous Logins</h3>
-      <div class="row2">
-        <div><div class="label">Delete anon users older than (days)</div><input id="inp-anon-days" class="input" value="30" disabled/></div>
-        <div style="display:flex;align-items:end;gap:8px;flex-wrap:wrap">
-          <button id="btn-purge-anon" class="btn" disabled title="Requires Cloud Function: purgeAnonymousUsers">Run Purge</button>
-        </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button id="btnPurgeCopy" class="btn solid">Copy Cloud Shell commands</button>
+        <a id="btnPurgeOpenShell" class="btn" target="_blank" rel="noopener">Open Cloud Shell</a>
+        <button id="btnPurgeShow" class="btn">Show commands</button>
       </div>
-      <div class="muted">Requires Cloud Function <span class="mono">purgeAnonymousUsers</span>. You can enable this later.</div>
-    </div>
 
-    <!-- Export / Import -->
-    <div class="card" style="margin-bottom:12px">
-      <h3 style="margin:0 0 8px">Backup / Restore Settings</h3>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button id="btn-export-settings" class="btn">Export JSON</button>
-        <label class="btn" style="cursor:pointer">Import JSON<input id="inp-import-settings" type="file" accept="application/json" style="display:none"></label>
+      <textarea id="purgeCmd" class="input mono" style="margin-top:10px;display:none;height:260px" spellcheck="false"></textarea>
+
+      <div class="muted" style="margin-top:8px">
+        Tip: it runs a <span class="mono">--dry-run</span> first, then the real delete.
       </div>
-      <div class="muted" style="margin-top:6px">Exports GitHub prefs (encrypted token if saved), Firebase config, and region.</div>
     </div>
 
-    <!-- Log -->
+    <!-- Log (optional info area) -->
     <div class="card">
-      <h3 style="margin:0 0 8px">Log</h3>
-      <textarea id="log" class="input mono" placeholder="Output…"></textarea>
-      <div style="margin-top:8px"><button id="btn-log-clear" class="btn">Clear Log</button></div>
+      <h3 style="margin:0 0 8px">Notes</h3>
+      <div class="muted">
+        This tool only removes <b>Authentication → anonymous users</b>. It doesn’t touch your Realtime Database or Storage.
+      </div>
     </div>
   </div>
 
@@ -233,223 +216,178 @@
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
   import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-  import { getDatabase, ref as rtdbRef, set as rtdbSet, get as rtdbGet } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-  const DEFAULTS = {
-    githubOwner:'flaviothebfagroup', githubRepo:'IPTV-', githubBranch:'main', githubPath:'config/iptv-config.json',
-    firebaseConfig:{apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"},
-    functionsRegion:'us-central1', /* saved for later use */
-    LOGO_URL:"/IPTV-/icons/icon-512.png"
+  /* Firebase (only for navbar sign-in state; purge uses Cloud Shell) */
+  const firebaseConfig = {
+    apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+    authDomain: "iptv-bfa.firebaseapp.com",
+    databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+    projectId: "iptv-bfa",
+    storageBucket: "iptv-bfa.firebasestorage.app",
+    messagingSenderId: "838790935867",
+    appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
   };
 
-  const SKEYS = {
-    displaysCol:'pref_displays_collection', dealersCol:'pref_dealers_collection',
-    functionsRegion:'pref_functions_region',
-    githubOwner:'pref_github_owner', githubRepo:'pref_github_repo', githubBranch:'pref_github_branch', githubPath:'pref_github_path',
-    ghTokenEnc:'secure_github_token',
-    fbConfig:'firebaseConfig'
-  };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
 
-  const $ = s=>document.querySelector(s);
-  const logEl=$('#log'); function log(m){ logEl.value += m + '\n'; logEl.scrollTop = logEl.scrollHeight; }
-  function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+  const $ = s => document.querySelector(s);
+  function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
 
-  // Prefill into localStorage (except PAT)
-  function prefillNow(){
-    localStorage.setItem(SKEYS.githubOwner,DEFAULTS.githubOwner);
-    localStorage.setItem(SKEYS.githubRepo,DEFAULTS.githubRepo);
-    localStorage.setItem(SKEYS.githubBranch,DEFAULTS.githubBranch);
-    localStorage.setItem(SKEYS.githubPath,DEFAULTS.githubPath);
-    localStorage.setItem(SKEYS.functionsRegion,DEFAULTS.functionsRegion);
-    localStorage.setItem(SKEYS.fbConfig, JSON.stringify(DEFAULTS.firebaseConfig));
-    if(!localStorage.getItem(SKEYS.displaysCol)) localStorage.setItem(SKEYS.displaysCol,'displays');
-    if(!localStorage.getItem(SKEYS.dealersCol))  localStorage.setItem(SKEYS.dealersCol,'dealers');
-  }
-
-  function loadPrefs(){
-    $('#inp-displays-col').value = localStorage.getItem(SKEYS.displaysCol) || 'displays';
-    $('#inp-dealers-col').value  = localStorage.getItem(SKEYS.dealersCol)  || 'dealers';
-    $('#inp-functions-region').value = localStorage.getItem(SKEYS.functionsRegion) || 'us-central1';
-    $('#inp-gh-owner').value  = localStorage.getItem(SKEYS.githubOwner)  || DEFAULTS.githubOwner;
-    $('#inp-gh-repo').value   = localStorage.getItem(SKEYS.githubRepo)   || DEFAULTS.githubRepo;
-    $('#inp-gh-branch').value = localStorage.getItem(SKEYS.githubBranch) || DEFAULTS.githubBranch;
-    $('#inp-gh-path').value   = localStorage.getItem(SKEYS.githubPath)   || DEFAULTS.githubPath;
-
-    const cfg = JSON.parse(localStorage.getItem(SKEYS.fbConfig) || 'null') || DEFAULTS.firebaseConfig;
-    $('#fb-apiKey').value=cfg.apiKey; $('#fb-authDomain').value=cfg.authDomain; $('#fb-databaseURL').value=cfg.databaseURL;
-    $('#fb-projectId').value=cfg.projectId; $('#fb-storageBucket').value=cfg.storageBucket; $('#fb-msgId').value=cfg.messagingSenderId; $('#fb-appId').value=cfg.appId;
-  }
-
-  // Firebase init (no functions required)
-  let app, auth, db;
-  function readFirebaseForm(){ return {
-    apiKey:$('#fb-apiKey').value.trim(),authDomain:$('#fb-authDomain').value.trim(),databaseURL:$('#fb-databaseURL').value.trim(),
-    projectId:$('#fb-projectId').value.trim(),storageBucket:$('#fb-storageBucket').value.trim(),
-    messagingSenderId:$('#fb-msgId').value.trim(),appId:$('#fb-appId').value.trim()
-  }; }
-  function saveFirebaseConfig(){ const cfg=readFirebaseForm(); localStorage.setItem(SKEYS.fbConfig, JSON.stringify(cfg)); initFirebase(cfg); toast('Firebase saved & initialized'); }
-  function initFirebase(cfg){
-    try{ if(!cfg) cfg = JSON.parse(localStorage.getItem(SKEYS.fbConfig) || 'null'); }catch{}
-    if(!cfg || !cfg.apiKey){ log('Firebase config missing.'); return; }
-    app = initializeApp(cfg);
-    auth = getAuth(app);
-    db = getDatabase(app);
-
-    setPersistence(auth, browserLocalPersistence);
-    onAuthStateChanged(auth, (u)=>{
-      if(!u){ location.href='./home.html'; return; }  // require sign-in like your other pages
-      document.getElementById('adminEmail').textContent = u.email || u.uid || '';
-      refreshOverview();
-    });
-  }
-
-  async function testFirebaseRTDB(){
-    if(!db){ log('Firebase not initialized.'); return; }
-    try{
-      const ts = Date.now();
-      await rtdbSet(rtdbRef(db, 'meta/ping'), { time: ts, by: (auth.currentUser?.email || auth.currentUser?.uid || 'unknown') });
-      const snap = await rtdbGet(rtdbRef(db, 'meta/ping'));
-      log('RTDB OK: ' + JSON.stringify(snap.val()));
-    }catch(e){ log('Firebase test failed: ' + e.message); }
-  }
-
-  // Overview (counts from RTDB)
-  async function refreshOverview(){
-    try{ const cfg=JSON.parse(localStorage.getItem(SKEYS.fbConfig)||'null'); $('#ov-fb-project').textContent=cfg?.projectId||'—'; }catch{}
-    const u=auth?.currentUser; if(u){ $('#ov-user').textContent=(u.email||u.uid); } else { $('#ov-user').textContent='—'; }
-    try{
-      const ds = await rtdbGet(rtdbRef(db,'displays')); $('#ov-displays').textContent = ds.exists()? Object.keys(ds.val()).length : 0;
-      const dl = await rtdbGet(rtdbRef(db,'dealershipPublic')); $('#ov-dealers').textContent = dl.exists()? Object.keys(dl.val()).length : 0;
-    }catch{ $('#ov-displays').textContent='—'; $('#ov-dealers').textContent='—'; }
-  }
-
-  // GitHub helpers via centralized BFA helper
-  function saveRepoPrefsFromForm(){
-    BFA.setRepoPrefs({
-      owner:  $('#inp-gh-owner').value.trim(),
-      repo:   $('#inp-gh-repo').value.trim(),
-      branch: $('#inp-gh-branch').value.trim(),
-      path:   $('#inp-gh-path').value.trim()
-    });
-  }
-  async function testGitHub(){
-    log('Testing GitHub…');
-    saveRepoPrefsFromForm();
-    const { owner, repo, branch, path } = BFA.getRepoPrefs();
-
-    try{
-      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`;
-      const headers = await BFA.getGithubHeadersOrNull(true); // prompts to unlock encrypted token if present
-      const res = await fetch(url, { headers });
-      const body = await res.json();
-      if(res.ok){
-        document.getElementById('ov-gh').textContent = (headers.Authorization ? 'Token OK' : 'Public OK');
-        log('Repo contents access OK');
-      }else{
-        log('Repo contents check: ' + (body?.message || res.status));
-      }
-    }catch(e){
-      log('Repo access error: ' + e.message);
-    }
-  }
-
-  // Navbar / theme / mobile sheet
-  (function(){ const LOGO_URL=DEFAULTS.LOGO_URL; document.getElementById('brandLogo').style.backgroundImage=`url("${LOGO_URL}")`; const m=document.getElementById('brandLogoM'); if(m) m.style.backgroundImage=`url("${LOGO_URL}")`;})();
+  /* Logo + Theme */
+  const LOGO_URL="/IPTV-/icons/icon-512.png";
+  document.getElementById('brandLogo').style.backgroundImage=`url("${LOGO_URL}")`;
+  const brandLogoM=document.getElementById('brandLogoM'); if(brandLogoM){ brandLogoM.style.backgroundImage=`url("${LOGO_URL}")`; }
+  const THEME_KEY='iptv_theme';
   (function(){
-    const THEME_KEY='iptv_theme'; const themeBtn=document.getElementById('themeBtn'); const themeIcon=document.getElementById('themeIcon');
-    function setThemeIcon(){ const dark=document.body.classList.contains('dark'); themeIcon.innerHTML = dark?`<path d="M21 12a9 9 0 1 1-9-9 6 6 0 0 0 9 9z"/>`:`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1.4-1.4M20.4 20.4 19 19M5 19l-1.4 1.4M20.4 3.6 19 5"/>`; }
-    document.body.classList.toggle('dark', (localStorage.getItem(THEME_KEY)||'light')==='dark'); setThemeIcon();
-    themeBtn.addEventListener('click', ()=>{ const toDark=!document.body.classList.contains('dark'); document.body.classList.toggle('dark',toDark); localStorage.setItem(THEME_KEY,toDark?'dark':'light'); setThemeIcon(); });
+    const themeBtn=document.getElementById('themeBtn');
+    const themeIcon=document.getElementById('themeIcon');
+    const saved=localStorage.getItem(THEME_KEY)||'light';
+    document.body.classList.toggle('dark', saved==='dark');
+    const setThemeIcon=()=>{
+      const dark=document.body.classList.contains('dark');
+      themeIcon.innerHTML = dark
+        ? `<path d="M21 12a9 9 0 1 1-9-9 6 6 0 0 0 9 9z"/>`
+        : `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1.4-1.4M20.4 20.4 19 19M5 19l-1.4 1.4M20.4 3.6 19 5"/>`;
+    };
+    setThemeIcon();
+    themeBtn.addEventListener('click', ()=>{ const d=!document.body.classList.contains('dark'); document.body.classList.toggle('dark', d); localStorage.setItem(THEME_KEY, d?'dark':'light'); setThemeIcon(); });
   })();
+
+  /* More dropdown + mobile sheet */
   (function(){
-    const moreBtn=document.getElementById('moreBtn'); const moreMenu=document.getElementById('moreMenu');
-    if(!moreBtn) return;
-    moreBtn.addEventListener('click',(e)=>{ e.preventDefault(); moreMenu.classList.toggle('open');});
-    document.addEventListener('click',(e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)){ moreMenu.classList.remove('open'); } },{capture:true});
-    document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') moreMenu.classList.remove('open'); });
-    const file=(location.pathname.split("/").pop()||"settings.html").toLowerCase();
-    moreMenu.querySelectorAll('a').forEach(a=>{ const h=(a.getAttribute('href')||'').toLowerCase(); if(h===file){ a.classList.add('is-active'); }});
-    const sheet=document.getElementById('sheet'); const open=()=>{ sheet.classList.add('open'); document.body.style.overflow='hidden'; };
+    const moreBtn=document.getElementById('moreBtn');
+    const moreMenu=document.getElementById('moreMenu');
+    if(moreBtn){
+      moreBtn.addEventListener('click',(e)=>{ e.preventDefault(); moreMenu.classList.toggle('open');});
+      document.addEventListener('click',(e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)){ moreMenu.classList.remove('open'); } },{capture:true});
+      document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') moreMenu.classList.remove('open'); });
+      const file=(location.pathname.split("/").pop()||"settings.html").toLowerCase();
+      moreMenu.querySelectorAll('a').forEach(a=>{ const h=(a.getAttribute('href')||'').toLowerCase(); if(h===file){ a.classList.add('is-active'); }});
+    }
+    const sheet=document.getElementById('sheet');
+    const open=()=>{ sheet.classList.add('open'); document.body.style.overflow='hidden'; };
     const close=()=>{ sheet.classList.remove('open'); document.body.style.overflow=''; };
     document.getElementById('hamburger').addEventListener('click', open);
     document.getElementById('closeSheet').addEventListener('click', close);
     sheet.querySelector('.back').addEventListener('click', close);
-    const mainOut=document.getElementById('signOutBtn'); const mobOut=document.getElementById('signOutBtnM'); if(mainOut && mobOut){ mobOut.addEventListener('click', ()=> mainOut.click()); }
+    const mainOut=document.getElementById('signOutBtn');
+    const mobOut=document.getElementById('signOutBtnM');
+    if(mainOut && mobOut){ mobOut.addEventListener('click', ()=> mainOut.click()); }
   })();
 
-  // Wire up + boot
-  prefillNow(); loadPrefs(); initFirebase();
+  /* Auth gating like your other pages */
+  setPersistence(auth, browserLocalPersistence);
+  onAuthStateChanged(auth, u=>{
+    if(!u){ location.href='./home.html'; return; }
+    document.getElementById('adminEmail').textContent=u.email||u.uid;
+  });
+  document.getElementById('signOutBtn').addEventListener('click',()=>signOut(auth));
 
-  document.getElementById('btn-save-preferences').addEventListener('click', ()=>{
-    localStorage.setItem(SKEYS.displaysCol, document.getElementById('inp-displays-col').value.trim() || 'displays');
-    localStorage.setItem(SKEYS.dealersCol,  document.getElementById('inp-dealers-col').value.trim()  || 'dealers');
-    localStorage.setItem(SKEYS.functionsRegion, document.getElementById('inp-functions-region').value.trim() || 'us-central1');
-    BFA.setRepoPrefs({
-      owner:  document.getElementById('inp-gh-owner').value.trim(),
-      repo:   document.getElementById('inp-gh-repo').value.trim(),
-      branch: document.getElementById('inp-gh-branch').value.trim(),
-      path:   document.getElementById('inp-gh-path').value.trim()
+  /* ===== Cloud Shell helper for bulk deleting anonymous users ===== */
+  (function(){
+    const daysEl = $('#purgeDays');
+    const fbEl   = $('#purgeFbProject');
+    const gcpEl  = $('#purgeGcpProject');
+    const outEl  = $('#purgeCmd');
+    const btnCopy= $('#btnPurgeCopy');
+    const btnOpen= $('#btnPurgeOpenShell');
+    const btnShow= $('#btnPurgeShow');
+
+    function buildCommands(){
+      const DAYS = Math.max(0, parseInt(daysEl.value||'0',10))||0;
+      const FB   = (fbEl.value||'iptv-bfa').trim();
+      const GCP  = (gcpEl.value||FB).trim();
+      return `gcloud config set project ${GCP}
+
+mkdir -p ~/auth-purge && cd ~/auth-purge
+npm init -y >/dev/null 2>&1
+npm i firebase-admin@12 >/dev/null 2>&1
+
+cat > purge-anon.js <<'JS'
+// Delete anonymous Firebase Auth users older than --days (0 = ALL).
+// Examples:
+//   node purge-anon.js --days 0 --dry-run   # preview
+//   node purge-anon.js --days 0             # delete ALL anonymous
+//   node purge-anon.js --days 7             # keep last 7 days
+const admin = require('firebase-admin');
+admin.initializeApp({ credential: admin.credential.applicationDefault(), projectId: '${FB}' });
+
+function tms(x){ const n=new Date(x||0).getTime(); return Number.isFinite(n)?n:0; }
+const argv = process.argv.slice(2);
+function getArg(name, def) {
+  const i = argv.findIndex(a => a === '--'+name || a.startsWith('--'+name+'='));
+  if (i < 0) return def;
+  const v = argv[i].includes('=') ? argv[i].split('=')[1] : argv[i + 1];
+  return v ?? def;
+}
+const days = Number(getArg('days', ${DAYS})) || 0;
+const dryRun = argv.includes('--dry-run');
+
+(async () => {
+  const cutoff = Date.now() - days*24*60*60*1000;
+  let scanned=0, kept=0, next;
+  const batch=[];
+  console.log('Scanning… days=' + days + ', cutoff=' + new Date(cutoff).toISOString() + ', dryRun=' + dryRun);
+  do {
+    const page = await admin.auth().listUsers(1000, next);
+    for (const u of page.users) {
+      scanned++;
+      const isAnon = !u.providerData || u.providerData.length===0;
+      if(!isAnon){ kept++; continue; }
+      const lastSeen = Math.max(tms(u.metadata.lastSignInTime), tms(u.metadata.creationTime));
+      if(lastSeen < cutoff) batch.push(u.uid); else kept++;
+    }
+    next = page.pageToken;
+    if (scanned % 5000 === 0) console.log('…scanned=' + scanned + ', candidates=' + batch.length);
+  } while (next);
+
+  console.log('Scan done. scanned=' + scanned + ', candidates=' + batch.length + ', kept=' + kept);
+  if (dryRun || !batch.length) return;
+
+  let deleted=0, errors=0;
+  for (let i=0; i<batch.length; i+=1000) {
+    const chunk = batch.slice(i, i+1000);
+    const res = await admin.auth().deleteUsers(chunk);
+    deleted += res.successCount; errors += res.failureCount;
+    console.log('Deleted ' + res.successCount + ' (chunk ' + (i+1) + '-' + Math.min(i+chunk.length, batch.length) + ')');
+    if (res.failureCount && res.errors) {
+      res.errors.forEach(e => console.warn('  failed uid:', chunk[e.index], e.error?.message || e.error));
+    }
+  }
+  console.log('Finished. Deleted=' + deleted + ', errors=' + errors);
+})();
+JS
+
+# Dry run (preview)
+node purge-anon.js --days ${DAYS} --dry-run
+
+# Then actually delete:
+node purge-anon.js --days ${DAYS}
+`;
+    }
+
+    function refreshOutput(show=false){
+      outEl.value = buildCommands();
+      if(show) outEl.style.display='block';
+    }
+
+    btnCopy.addEventListener('click', async ()=>{
+      refreshOutput(false);
+      try{ await navigator.clipboard.writeText(outEl.value); toast('Commands copied'); }
+      catch{ outEl.style.display='block'; outEl.select(); document.execCommand('copy'); toast('Commands copied'); }
     });
-    toast('Preferences saved');
-  });
 
-  // GitHub buttons
-  document.getElementById('btn-gh-save-session').addEventListener('click', ()=>{
-    const token = document.getElementById('inp-gh-token').value.trim();
-    if(!token){ toast('Enter a token first'); return; }
-    BFA.setSessionToken(token);       // centralized session for ALL pages
-    toast('Token set for this session');
-  });
-  document.getElementById('btn-gh-encrypted-save').addEventListener('click', async ()=>{
-    const token=document.getElementById('inp-gh-token').value.trim(); if(!token) return toast('Enter a token first');
-    const pass=prompt('Set a passphrase to encrypt your token (store it safely):'); if(!pass) return;
-    try{
-      const enc=new TextEncoder();
-      const keyMaterial=await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey']);
-      const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt:enc.encode('bfa-iptv-salt-v1'),iterations:120000,hash:'SHA-256'},keyMaterial,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
-      const iv=crypto.getRandomValues(new Uint8Array(12));
-      const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(token));
-      localStorage.setItem(SKEYS.ghTokenEnc, JSON.stringify({iv:Array.from(iv),data:Array.from(new Uint8Array(ct))}));
-      toast('Encrypted token saved');
-    }catch(e){ toast('Encrypt failed'); }
-  });
-  document.getElementById('btn-gh-clear').addEventListener('click', ()=>{
-    localStorage.removeItem(SKEYS.ghTokenEnc);
-    if(window.BFA) BFA.clearGithubTokenSession();
-    toast('Saved token cleared');
-  });
-  document.getElementById('btn-gh-test').addEventListener('click', testGitHub);
+    btnShow.addEventListener('click', ()=>{ refreshOutput(true); outEl.scrollTop=0; });
 
-  // Firebase buttons
-  document.getElementById('btn-fb-save').addEventListener('click', saveFirebaseConfig);
-  document.getElementById('btn-fb-test').addEventListener('click', testFirebaseRTDB);
-  document.getElementById('btn-fb-logout').addEventListener('click', async ()=>{ try{ await signOut(auth); }catch{} });
+    btnOpen.addEventListener('click', ()=>{
+      const gcp = (gcpEl.value||'iptv-bfa-471617').trim();
+      btnOpen.href = `https://shell.cloud.google.com/?project=${encodeURIComponent(gcp)}`;
+    });
 
-  // Misc
-  document.getElementById('btn-refresh-overview').addEventListener('click', refreshOverview);
-  document.getElementById('btn-log-clear').addEventListener('click', ()=>{ logEl.value=''; });
-
-  // Export/Import settings
-  document.getElementById('btn-export-settings').addEventListener('click', ()=>{
-    const out = {
-      [SKEYS.displaysCol]: localStorage.getItem(SKEYS.displaysCol),
-      [SKEYS.dealersCol]: localStorage.getItem(SKEYS.dealersCol),
-      [SKEYS.functionsRegion]: localStorage.getItem(SKEYS.functionsRegion),
-      [SKEYS.githubOwner]: localStorage.getItem(SKEYS.githubOwner),
-      [SKEYS.githubRepo]: localStorage.getItem(SKEYS.githubRepo),
-      [SKEYS.githubBranch]: localStorage.getItem(SKEYS.githubBranch),
-      [SKEYS.githubPath]: localStorage.getItem(SKEYS.githubPath),
-      [SKEYS.fbConfig]: localStorage.getItem(SKEYS.fbConfig) || ''
-    };
-    const blob = new Blob([JSON.stringify(out,null,2)], {type:'application/json'});
-    const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='bfa-iptv-settings.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-  });
-  document.getElementById('inp-import-settings').addEventListener('change', e=>{
-    const f = e.target.files?.[0]; if(!f) return;
-    const r = new FileReader();
-    r.onload = () => { try{ const json=JSON.parse(r.result); Object.keys(json).forEach(k=>localStorage.setItem(k,json[k])); loadPrefs(); initFirebase(); toast('Settings imported'); } catch{ toast('Invalid JSON'); } };
-    r.readAsText(f);
-  });
+    // Initial render
+    refreshOutput(false);
+  })();
 </script>
 </body>
 </html>
