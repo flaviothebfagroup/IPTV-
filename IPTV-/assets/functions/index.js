@@ -4,9 +4,34 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 
-// Lazy bucket accessor (prevents module-load crashes if Storage isn't ready)
+/** Lazy bucket accessor (avoid touching Storage during module load) */
 function getBucket() {
   return admin.storage().bucket();
+}
+
+/** Safe, lazy GitHub config (avoid module-load errors if config is missing) */
+function getCFG() {
+  try {
+    const cfg = functions.config && typeof functions.config === "function" ? functions.config() : {};
+    const token =
+      (cfg && cfg.backup && cfg.backup.github_token) ||
+      process.env.BACKUP_GITHUB_TOKEN || // optional env override
+      null;
+    return {
+      githubOwner: "flaviothebfagroup",
+      githubRepo: "IPTV-",
+      githubBranch: "main",
+      githubToken: token,
+    };
+  } catch (_e) {
+    // No config set? Still fine for public repos.
+    return {
+      githubOwner: "flaviothebfagroup",
+      githubRepo: "IPTV-",
+      githubBranch: "main",
+      githubToken: null,
+    };
+  }
 }
 
 // ── Limit who can run backups/restores (put your emails here)
@@ -14,14 +39,6 @@ const ALLOWED_EMAILS = new Set([
   "gorodscyflavio@gmail.com",
   // "someone@yourcompany.com",
 ]);
-
-// ── GitHub repo to zip (for code snapshot)
-const CFG = {
-  githubOwner: "flaviothebfagroup",
-  githubRepo: "IPTV-",
-  githubBranch: "main",
-  githubToken: (functions.config()?.backup?.github_token) || null, // optional for private repo
-};
 
 function assertAuth(context) {
   if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "Sign in required");
@@ -32,7 +49,9 @@ function assertAuth(context) {
   return email;
 }
 
-function tsId() { return new Date().toISOString().replace(/[:.]/g, "-"); }
+function tsId() {
+  return new Date().toISOString().replace(/[:.]/g, "-");
+}
 
 async function signedUrl(path) {
   const [url] = await getBucket().file(path).getSignedUrl({
@@ -53,6 +72,7 @@ exports.backupNow = functions.region("us-central1").https.onCall(async (_data, c
   const email = assertAuth(context);
   const id = tsId();
   const base = `backups/${id}/`;
+  const CFG = getCFG();
 
   // 1) RTDB JSON
   let rt;
@@ -79,10 +99,19 @@ exports.backupNow = functions.region("us-central1").https.onCall(async (_data, c
   }
 
   // 3) Manifest
-  const manifestObj = { id, timestamp: new Date().toISOString(), by: email,
+  const manifestObj = {
+    id,
+    timestamp: new Date().toISOString(),
+    by: email,
     github: { owner: CFG.githubOwner, repo: CFG.githubRepo, branch: CFG.githubBranch },
-    files: { realtime: rt, github: gh }, note: "Created by backupNow." };
-  await saveBuffer(base + "manifest.json", Buffer.from(JSON.stringify(manifestObj, null, 2), "utf8"), "application/json");
+    files: { realtime: rt, github: gh },
+    note: "Created by backupNow.",
+  };
+  await saveBuffer(
+    base + "manifest.json",
+    Buffer.from(JSON.stringify(manifestObj, null, 2), "utf8"),
+    "application/json"
+  );
 
   return { id, files: { realtime: rt, github: gh }, message: "Backup complete" };
 });
@@ -93,8 +122,10 @@ exports.listBackups = functions.region("us-central1").https.onCall(async (_data,
   const [files] = await getBucket().getFiles({ prefix: "backups/" });
   const map = new Map();
   for (const f of files) {
-    const m = f.name.match(/^backups\/(.+?)\//); if (!m) continue;
-    const id = m[1]; if (!map.has(id)) map.set(id, { id, files: {} });
+    const m = f.name.match(/^backups\/(.+?)\//);
+    if (!m) continue;
+    const id = m[1];
+    if (!map.has(id)) map.set(id, { id, files: {} });
     if (f.name.endsWith("realtime-db.json")) map.get(id).files.realtime = f.name;
     else if (f.name.endsWith(".zip")) map.get(id).files.github = f.name;
     else if (f.name.endsWith("manifest.json")) map.get(id).files.manifest = f.name;
@@ -104,7 +135,12 @@ exports.listBackups = functions.region("us-central1").https.onCall(async (_data,
     const filesMeta = {};
     for (const [k, path] of Object.entries(obj.files)) {
       const [meta] = await getBucket().file(path).getMetadata();
-      filesMeta[k] = { path, size: Number(meta.size || 0), contentType: meta.contentType, url: await signedUrl(path) };
+      filesMeta[k] = {
+        path,
+        size: Number(meta.size || 0),
+        contentType: meta.contentType,
+        url: await signedUrl(path),
+      };
     }
     let timestamp = new Date(id.replace(/-/g, ":")).toISOString();
     if (filesMeta.manifest) {
@@ -131,7 +167,11 @@ exports.restoreFromBackup = functions.region("us-central1").https.onCall(async (
     // Safety snapshot (current DB -> Storage)
     const now = tsId();
     const snap = await admin.database().ref("/").get();
-    await saveBuffer(`restores/safety-before-${now}.json`, Buffer.from(JSON.stringify(snap.val() ?? {}, null, 2), "utf8"), "application/json");
+    await saveBuffer(
+      `restores/safety-before-${now}.json`,
+      Buffer.from(JSON.stringify(snap.val() ?? {}, null, 2), "utf8"),
+      "application/json"
+    );
 
     const [buf] = await getBucket().file(path).download();
     const obj = JSON.parse(buf.toString("utf8"));
@@ -151,7 +191,11 @@ exports.restoreFromJson = functions.region("us-central1").https.onCall(async (da
     // Safety snapshot
     const now = tsId();
     const snap = await admin.database().ref("/").get();
-    await saveBuffer(`restores/safety-before-${now}.json`, Buffer.from(JSON.stringify(snap.val() ?? {}, null, 2), "utf8"), "application/json");
+    await saveBuffer(
+      `restores/safety-before-${now}.json`,
+      Buffer.from(JSON.stringify(snap.val() ?? {}, null, 2), "utf8"),
+      "application/json"
+    );
 
     const obj = JSON.parse(json);
     await admin.database().ref("/").set(obj);
@@ -161,17 +205,15 @@ exports.restoreFromJson = functions.region("us-central1").https.onCall(async (da
   }
 });
 
-
 // ====================================================================
 // ADDITIONS: ping + purgeAnonymousUsers (region: us-central1)
 // ====================================================================
 
-/** Simple connectivity test */
-exports.ping = functions
-  .region("us-central1")
-  .https.onCall(async (_data, _context) => {
-    return { pong: true, at: Date.now() };
-  });
+/** Simple connectivity test (callable) */
+exports.ping = functions.region("us-central1").https.onCall(async (_data, _context) => {
+  // keep it dead simple to avoid any throw
+  return { pong: true, at: Date.now() };
+});
 
 /**
  * Purge anonymous accounts older than N days.
@@ -183,12 +225,14 @@ exports.purgeAnonymousUsers = functions
   // .runWith({ timeoutSeconds: 540, memory: "256MB" }) // optional
   .https.onCall(async (data, context) => {
     try {
-      // Gate: only allowed emails (consistent with your other admin ops)
       assertAuth(context);
 
       const olderThanDays = Number(data?.olderThanDays ?? 30);
       if (!Number.isFinite(olderThanDays) || olderThanDays < 0) {
-        throw new functions.https.HttpsError("invalid-argument", "olderThanDays must be a non-negative number.");
+        throw new functions.https.HttpsError(
+          "invalid-argument",
+          "olderThanDays must be a non-negative number."
+        );
       }
 
       const cutoffMs = Date.now() - olderThanDays * 24 * 60 * 60 * 1000;
@@ -234,7 +278,7 @@ exports.purgeAnonymousUsers = functions
     }
   });
 
-/** HTTP health (optional quick URL sanity check) */
+/** HTTP health (quick URL sanity check in browser) */
 exports.health = functions.region("us-central1").https.onRequest((req, res) => {
   res.status(200).json({ ok: true, time: Date.now() });
 });
