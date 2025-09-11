@@ -1,16 +1,16 @@
-<script>
 /* BFA GitHub token helper (shared across all pages)
-   - Reads session token (set by Settings “Use for this session”)
-   - If missing, tries decrypting saved token from localStorage (encrypted in Settings)
-   - Returns proper headers for GitHub API (or just Accept for public reads)
+   - Session token: set by Settings (“Use for this session”)
+   - Encrypted token: optional, saved in localStorage (Settings handles save)
+   - Headers helper: returns proper GitHub headers (falls back to public read)
+   - Repo prefs: single place to read owner/repo/branch/path
 */
-(function(){
+(function () {
   const GH_SESSION_KEY = 'bfa_gh_pat';           // session-only plaintext token
   const GH_ENC_KEY     = 'secure_github_token';  // encrypted blob from Settings
   const PASS_SESSION   = 'bfa_gh_passphrase';    // cached passphrase (session)
   const ENC_SALT       = 'bfa-iptv-salt-v1';     // must match Settings page
 
-  // Repo prefs (set by Settings once; all pages read)
+  // Repo prefs (set once in Settings; all pages read)
   const PREF_OWNER  = 'pref_github_owner';
   const PREF_REPO   = 'pref_github_repo';
   const PREF_BRANCH = 'pref_github_branch';
@@ -20,13 +20,13 @@
     const enc = new TextEncoder();
     const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveKey']);
     return crypto.subtle.deriveKey(
-      { name:'PBKDF2', salt: enc.encode(ENC_SALT), iterations: 120000, hash: 'SHA-256' },
+      { name:'PBKDF2', salt: enc.encode(ENC_SALT), iterations:120000, hash:'SHA-256' },
       keyMaterial, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']
     );
   }
 
   async function decryptTokenBlob(blob, pass){
-    const obj = (typeof blob === 'string') ? JSON.parse(blob) : blob;
+    const obj  = (typeof blob === 'string') ? JSON.parse(blob) : blob;
     const iv   = new Uint8Array(obj.iv);
     const data = new Uint8Array(obj.data);
     const key  = await deriveKey(pass);
@@ -34,12 +34,12 @@
     return new TextDecoder().decode(pt);
   }
 
-  async function getToken(interactive=true){
-    // 1) Session token set by Settings ("Use for this session")
+  async function getToken(interactive = true){
+    // 1) Session token (set by Settings)
     let t = sessionStorage.getItem(GH_SESSION_KEY);
     if (t) return t;
 
-    // 2) Encrypted token (saved via Settings) → prompt for passphrase once
+    // 2) Encrypted token (saved by Settings) → prompt passphrase once
     const enc = localStorage.getItem(GH_ENC_KEY);
     if (!enc) return null;
 
@@ -60,18 +60,24 @@
     }
   }
 
-  async function getGithubHeadersOrNull(opts={}){
+  async function getGithubHeadersOrNull(opts = {}){
     const token = await getToken(opts.interactive !== false);
     if (token){
       return { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' };
     }
-    // Public-read fallback (still fine for public repos)
+    // Public read fallback
     return { 'Accept': 'application/vnd.github+json' };
   }
 
   function clearGithubTokenSession(){
-    sessionStorage.removeItem(GH_SESSION_KEY);
-    sessionStorage.removeItem(PASS_SESSION);
+    sessionStorage.removeItem('bfa_gh_pat');
+    sessionStorage.removeItem('bfa_gh_passphrase');
+  }
+
+  function setSessionToken(token){
+    if (typeof token === 'string' && token.trim()){
+      sessionStorage.setItem('bfa_gh_pat', token.trim());
+    }
   }
 
   function getRepoPrefs(){
@@ -83,10 +89,18 @@
     };
   }
 
-  // Expose as global helper (no import needed)
+  function setRepoPrefs({ owner, repo, branch, path }){
+    if (owner)  localStorage.setItem(PREF_OWNER,  owner);
+    if (repo)   localStorage.setItem(PREF_REPO,   repo);
+    if (branch) localStorage.setItem(PREF_BRANCH, branch);
+    if (path)   localStorage.setItem(PREF_PATH,   path);
+  }
+
+  // Expose globally
   window.BFA = window.BFA || {};
   window.BFA.getGithubHeadersOrNull = getGithubHeadersOrNull;
   window.BFA.clearGithubTokenSession = clearGithubTokenSession;
+  window.BFA.setSessionToken = setSessionToken;
   window.BFA.getRepoPrefs = getRepoPrefs;
+  window.BFA.setRepoPrefs = setRepoPrefs;
 })();
-</script>
