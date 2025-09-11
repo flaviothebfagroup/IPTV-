@@ -282,3 +282,52 @@ exports.purgeAnonymousUsers = functions
 exports.health = functions.region("us-central1").https.onRequest((req, res) => {
   res.status(200).json({ ok: true, time: Date.now() });
 });
+// Simple HTTP purge of anonymous users (secured by a secret key)
+const functions = require("firebase-functions");
+const admin = require("firebase-admin"); // already in your file
+
+exports.purgeAnonHttp = functions
+  .region("us-central1")
+  .https.onRequest(async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Headers", "content-type,x-api-key");
+    res.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    if (req.method === "OPTIONS") return res.status(204).send("");
+
+    try {
+      const key = (req.get("x-api-key") || req.query.key || "").toString();
+      const SECRET = process.env.PURGE_SECRET || (functions.config()?.admin?.purge_secret) || "";
+      if (!SECRET || key !== SECRET) return res.status(401).json({ ok:false, error:"unauthorized" });
+
+      const days = Number(req.query.days ?? req.body?.days ?? 0);
+      const olderThanDays = Number.isFinite(days) && days >= 0 ? days : 0;
+      const cutoff = Date.now() - olderThanDays * 24 * 60 * 60 * 1000;
+
+      let scanned=0, kept=0, deleted=0, errors=0, next;
+      const uids=[];
+      do{
+        const page = await admin.auth().listUsers(1000, next);
+        for (const u of page.users) {
+          scanned++;
+          const isAnon = !u.providerData || u.providerData.length===0;
+          if (!isAnon) { kept++; continue; }
+          const last = Math.max(
+            new Date(u.metadata.lastSignInTime||0).getTime(),
+            new Date(u.metadata.creationTime||0).getTime()
+          );
+          if (last < cutoff) uids.push(u.uid); else kept++;
+        }
+        next = page.pageToken;
+      } while (next);
+
+      for (let i=0;i<uids.length;i+=1000){
+        const chunk=uids.slice(i,i+1000);
+        const r=await admin.auth().deleteUsers(chunk);
+        deleted+=r.successCount; errors+=r.failureCount;
+      }
+      return res.json({ ok:true, olderThanDays, scanned, candidates: uids.length, deleted, kept, errors });
+    } catch (e) {
+      console.error("purgeAnonHttp", e);
+      return res.status(500).json({ ok:false, error: e?.message || String(e) });
+    }
+  });
