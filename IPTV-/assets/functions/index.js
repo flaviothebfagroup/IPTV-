@@ -3,7 +3,11 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 
 admin.initializeApp();
-const bucket = admin.storage().bucket();
+
+// Lazy bucket accessor (prevents module-load crashes if Storage isn't ready)
+function getBucket() {
+  return admin.storage().bucket();
+}
 
 // ── Limit who can run backups/restores (put your emails here)
 const ALLOWED_EMAILS = new Set([
@@ -31,7 +35,7 @@ function assertAuth(context) {
 function tsId() { return new Date().toISOString().replace(/[:.]/g, "-"); }
 
 async function signedUrl(path) {
-  const [url] = await bucket.file(path).getSignedUrl({
+  const [url] = await getBucket().file(path).getSignedUrl({
     action: "read",
     expires: Date.now() + 1000 * 60 * 60 * 24 * 14, // 14 days
   });
@@ -39,8 +43,8 @@ async function signedUrl(path) {
 }
 
 async function saveBuffer(path, buf, contentType) {
-  await bucket.file(path).save(buf, { contentType, resumable: false, public: false });
-  const [meta] = await bucket.file(path).getMetadata();
+  await getBucket().file(path).save(buf, { contentType, resumable: false, public: false });
+  const [meta] = await getBucket().file(path).getMetadata();
   return { path, size: Number(meta.size || 0), contentType, url: await signedUrl(path) };
 }
 
@@ -86,7 +90,7 @@ exports.backupNow = functions.region("us-central1").https.onCall(async (_data, c
 // ── LIST: enumerate backups in Storage
 exports.listBackups = functions.region("us-central1").https.onCall(async (_data, context) => {
   assertAuth(context);
-  const [files] = await bucket.getFiles({ prefix: "backups/" });
+  const [files] = await getBucket().getFiles({ prefix: "backups/" });
   const map = new Map();
   for (const f of files) {
     const m = f.name.match(/^backups\/(.+?)\//); if (!m) continue;
@@ -99,13 +103,13 @@ exports.listBackups = functions.region("us-central1").https.onCall(async (_data,
   for (const [id, obj] of map) {
     const filesMeta = {};
     for (const [k, path] of Object.entries(obj.files)) {
-      const [meta] = await bucket.file(path).getMetadata();
+      const [meta] = await getBucket().file(path).getMetadata();
       filesMeta[k] = { path, size: Number(meta.size || 0), contentType: meta.contentType, url: await signedUrl(path) };
     }
     let timestamp = new Date(id.replace(/-/g, ":")).toISOString();
     if (filesMeta.manifest) {
       try {
-        const [buf] = await bucket.file(filesMeta.manifest.path).download();
+        const [buf] = await getBucket().file(filesMeta.manifest.path).download();
         const man = JSON.parse(buf.toString("utf8"));
         timestamp = man.timestamp || timestamp;
       } catch {}
@@ -129,7 +133,7 @@ exports.restoreFromBackup = functions.region("us-central1").https.onCall(async (
     const snap = await admin.database().ref("/").get();
     await saveBuffer(`restores/safety-before-${now}.json`, Buffer.from(JSON.stringify(snap.val() ?? {}, null, 2), "utf8"), "application/json");
 
-    const [buf] = await bucket.file(path).download();
+    const [buf] = await getBucket().file(path).download();
     const obj = JSON.parse(buf.toString("utf8"));
     await admin.database().ref("/").set(obj);
     return { ok: true };
@@ -162,49 +166,75 @@ exports.restoreFromJson = functions.region("us-central1").https.onCall(async (da
 // ADDITIONS: ping + purgeAnonymousUsers (region: us-central1)
 // ====================================================================
 
-// ---- simple ping (callable) ----
-exports.ping = functions.region("us-central1").https.onCall(async () => {
-  return { pong: true, at: Date.now() };
-});
+/** Simple connectivity test */
+exports.ping = functions
+  .region("us-central1")
+  .https.onCall(async (_data, _context) => {
+    return { pong: true, at: Date.now() };
+  });
 
-// ---- anonymous purge callable (keep your existing purge if already added) ----
-exports.purgeAnonymousUsers = functions.region("us-central1").https.onCall(async (data, context) => {
-  // Only allow your allow-listed email (reuses your assertAuth):
-  assertAuth(context);
+/**
+ * Purge anonymous accounts older than N days.
+ * Requires an allowed email (reuses assertAuth).
+ * Returns scanned/deleted/kept/failed counts for transparency.
+ */
+exports.purgeAnonymousUsers = functions
+  .region("us-central1")
+  // .runWith({ timeoutSeconds: 540, memory: "256MB" }) // optional
+  .https.onCall(async (data, context) => {
+    try {
+      // Gate: only allowed emails (consistent with your other admin ops)
+      assertAuth(context);
 
-  const olderThanDays = Number(data?.olderThanDays ?? 30);
-  if (!Number.isFinite(olderThanDays) || olderThanDays < 0) {
-    throw new functions.https.HttpsError("invalid-argument","olderThanDays must be a non-negative number.");
-  }
-
-  const cutoff = Date.now() - olderThanDays * 24 * 60 * 60 * 1000;
-  let scanned=0, deleted=0, kept=0, failed=0, nextPageToken=undefined;
-
-  try {
-    do {
-      const list = await admin.auth().listUsers(1000, nextPageToken);
-      for (const u of list.users) {
-        scanned++;
-        const isAnon = !u.providerData || u.providerData.length === 0;
-        const created = new Date(u.metadata.creationTime).getTime();
-        if (isAnon && created < cutoff) {
-          try { await admin.auth().deleteUser(u.uid); deleted++; }
-          catch (e) { failed++; console.error("deleteUser failed", u.uid, e?.message || e); }
-        } else {
-          kept++;
-        }
+      const olderThanDays = Number(data?.olderThanDays ?? 30);
+      if (!Number.isFinite(olderThanDays) || olderThanDays < 0) {
+        throw new functions.https.HttpsError("invalid-argument", "olderThanDays must be a non-negative number.");
       }
-      nextPageToken = list.pageToken;
-    } while (nextPageToken);
-  } catch (err) {
-    console.error("purgeAnonymousUsers error", err);
-    throw new functions.https.HttpsError("internal", err?.message || "Internal error");
-  }
 
-  return { ok:true, olderThanDays, scanned, deleted, kept, failed };
-});
+      const cutoffMs = Date.now() - olderThanDays * 24 * 60 * 60 * 1000;
 
-// ---- http health (quick URL sanity check in browser) ----
+      let scanned = 0;
+      let deleted = 0;
+      let kept = 0;
+      let failed = 0;
+      let nextPageToken = undefined;
+
+      do {
+        const list = await admin.auth().listUsers(1000, nextPageToken);
+        for (const u of list.users) {
+          scanned++;
+
+          const isAnon = !u.providerData || u.providerData.length === 0;
+          const createdMs = new Date(u.metadata.creationTime).getTime();
+
+          if (isAnon && createdMs < cutoffMs) {
+            try {
+              await admin.auth().deleteUser(u.uid);
+              deleted++;
+            } catch (err) {
+              failed++;
+              console.error("deleteUser failed", u.uid, err?.message || err);
+            }
+          } else {
+            kept++;
+          }
+        }
+        nextPageToken = list.pageToken;
+      } while (nextPageToken);
+
+      return { ok: true, olderThanDays, scanned, deleted, kept, failed };
+    } catch (err) {
+      console.error("purgeAnonymousUsers error", err);
+      if (err instanceof functions.https.HttpsError) throw err;
+      throw new functions.https.HttpsError(
+        "internal",
+        err?.message || "Internal error",
+        { name: err?.name, stack: err?.stack }
+      );
+    }
+  });
+
+/** HTTP health (optional quick URL sanity check) */
 exports.health = functions.region("us-central1").https.onRequest((req, res) => {
   res.status(200).json({ ok: true, time: Date.now() });
 });
