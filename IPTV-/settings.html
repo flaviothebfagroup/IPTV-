@@ -57,10 +57,10 @@
 </style>
 </head>
 <body>
-  <!-- ===== include shared token helper for ALL pages ===== -->
+  <!-- shared helper so ALL pages read the same token & repo prefs -->
   <script src="/IPTV-/scripts/bfa-auth.js"></script>
 
-  <!-- ===== NAVBAR ===== -->
+  <!-- ===== NAVBAR (same as your other pages) ===== -->
   <header class="topbar">
     <div class="toprow">
       <a class="brand" href="home.html"><span class="logo" id="brandLogo"></span><span class="logotxt">BFA IPTV</span></a>
@@ -91,7 +91,6 @@
       </div>
     </div>
 
-    <!-- Mobile sheet -->
     <div id="sheet" aria-hidden="true">
       <div class="back"></div>
       <aside class="panel" role="dialog" aria-modal="true" aria-label="Menu">
@@ -119,7 +118,6 @@
 
   <!-- ===================================================== -->
   <div class="wrap">
-    <!-- Overview -->
     <div class="card" style="margin-bottom:12px">
       <h2 style="margin:0 0 8px">Overview</h2>
       <div class="row3">
@@ -139,18 +137,16 @@
       <div class="muted" style="margin-top:6px">Counts from Realtime Database.</div>
     </div>
 
-    <!-- Quick preferences -->
     <div class="card" style="margin-bottom:12px">
       <h3 style="margin:0 0 8px">Quick Preferences</h3>
       <div class="row3">
-        <div><div class="label">Displays collection (optional)</div><input id="inp-displays-col" class="input" value="displays"/></div>
-        <div><div class="label">Dealers collection (optional)</div><input id="inp-dealers-col" class="input" value="dealers"/></div>
+        <div><div class="label">Displays collection</div><input id="inp-displays-col" class="input" value="displays"/></div>
+        <div><div class="label">Dealers collection</div><input id="inp-dealers-col" class="input" value="dealers"/></div>
         <div><div class="label">Functions region</div><input id="inp-functions-region" class="input" value="us-central1"/></div>
       </div>
       <div style="margin-top:10px"><button id="btn-save-preferences" class="btn solid">Save Preferences</button></div>
     </div>
 
-    <!-- GitHub -->
     <div class="card" style="margin-bottom:12px">
       <h3 style="margin:0 0 8px">GitHub Settings</h3>
       <div class="row3">
@@ -171,7 +167,6 @@
       <div class="muted" style="margin-top:6px">Token only needed for private repos or write operations.</div>
     </div>
 
-    <!-- Firebase -->
     <div class="card" style="margin-bottom:12px">
       <h3 style="margin:0 0 8px">Firebase Settings</h3>
       <div class="row3">
@@ -194,7 +189,6 @@
       </div>
     </div>
 
-    <!-- Purge anonymous -->
     <div class="card" style="margin-bottom:12px">
       <h3 style="margin:0 0 8px">Purge Anonymous Logins</h3>
       <div class="row2">
@@ -206,7 +200,6 @@
       <div class="muted">Requires allow-listed email.</div>
     </div>
 
-    <!-- Export / Import -->
     <div class="card" style="margin-bottom:12px">
       <h3 style="margin:0 0 8px">Backup / Restore Settings</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -216,7 +209,6 @@
       <div class="muted" style="margin-top:6px">Exports GitHub prefs (encrypted token if saved), Firebase config, and region.</div>
     </div>
 
-    <!-- Log -->
     <div class="card">
       <h3 style="margin:0 0 8px">Log</h3>
       <textarea id="log" class="input mono" placeholder="Output…"></textarea>
@@ -243,15 +235,15 @@
     displaysCol:'pref_displays_collection', dealersCol:'pref_dealers_collection',
     functionsRegion:'pref_functions_region',
     githubOwner:'pref_github_owner', githubRepo:'pref_github_repo', githubBranch:'pref_github_branch', githubPath:'pref_github_path',
-    ghTokenEnc:'secure_github_token', ghTokenExp:'github_token_expiry',
+    ghTokenEnc:'secure_github_token',
     fbConfig:'firebaseConfig'
   };
 
   const $ = s=>document.querySelector(s);
-  const logEl=$('#log'); function log(m){ logEl.value += m + '\\n'; logEl.scrollTop = logEl.scrollHeight; }
+  const logEl=$('#log');
+  function log(m){ logEl.value += m + '\n'; logEl.scrollTop = logEl.scrollHeight; }
   function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
 
-  // Prefill into localStorage (except PAT)
   function prefillNow(){
     localStorage.setItem(SKEYS.githubOwner,DEFAULTS.githubOwner);
     localStorage.setItem(SKEYS.githubRepo,DEFAULTS.githubRepo);
@@ -262,7 +254,6 @@
     if(!localStorage.getItem(SKEYS.displaysCol)) localStorage.setItem(SKEYS.displaysCol,'displays');
     if(!localStorage.getItem(SKEYS.dealersCol))  localStorage.setItem(SKEYS.dealersCol,'dealers');
   }
-
   function loadPrefs(){
     $('#inp-displays-col').value = localStorage.getItem(SKEYS.displaysCol) || 'displays';
     $('#inp-dealers-col').value  = localStorage.getItem(SKEYS.dealersCol)  || 'dealers';
@@ -277,7 +268,7 @@
     $('#fb-projectId').value=cfg.projectId; $('#fb-storageBucket').value=cfg.storageBucket; $('#fb-msgId').value=cfg.messagingSenderId; $('#fb-appId').value=cfg.appId;
   }
 
-  // Firebase init (require real sign-in like other pages)
+  // Firebase
   let app, auth, db, fns;
   function readFirebaseForm(){ return {
     apiKey:$('#fb-apiKey').value.trim(),authDomain:$('#fb-authDomain').value.trim(),databaseURL:$('#fb-databaseURL').value.trim(),
@@ -296,7 +287,7 @@
 
     setPersistence(auth, browserLocalPersistence);
     onAuthStateChanged(auth, (u)=>{
-      if(!u){ location.href='./home.html'; return; }  // require real sign-in
+      if(!u){ location.href='./home.html'; return; }
       document.getElementById('adminEmail').textContent = u.email || u.uid || '';
       refreshOverview();
     });
@@ -312,7 +303,7 @@
   }
   async function signOutFirebase(){ try{ await signOut(auth); }catch{} }
 
-  // Overview (counts from RTDB)
+  // Overview
   async function refreshOverview(){
     try{ const cfg=JSON.parse(localStorage.getItem(SKEYS.fbConfig)||'null'); $('#ov-fb-project').textContent=cfg?.projectId||'—'; }catch{}
     const u=auth?.currentUser; if(u){ $('#ov-user').textContent=(u.email||u.uid); } else { $('#ov-user').textContent='—'; }
@@ -322,19 +313,54 @@
     }catch{ $('#ov-displays').textContent='—'; $('#ov-dealers').textContent='—'; }
   }
 
-  // Functions: ping + purge
+  // Callable ping + HTTP fallback
   async function pingFunctions(){
-    try{ const ping = httpsCallable(fns,'ping'); const res = await ping({}); log('Ping OK: ' + JSON.stringify(res.data)); return true; }
-    catch(e){ log(`Ping error -> code: ${e.code} | message: ${e.message} | details: ${JSON.stringify(e.details)}`); return false; }
-  }
-  async function purgeAnonymous(){
-    const ok = await pingFunctions(); if(!ok){ toast('Functions ping failed'); return; }
-    const days = parseInt(document.getElementById('inp-anon-days').value || '30', 10);
-    try{ const call = httpsCallable(fns,'purgeAnonymousUsers'); const res = await call({ olderThanDays: days }); log('Purge result: ' + JSON.stringify(res.data)); toast('Purge done'); }
-    catch(e){ log(`Purge error -> code: ${e.code} | message: ${e.message} | details: ${JSON.stringify(e.details)}`); toast('Purge failed (see Log)'); }
+    log('Pinging functions (callable)…');
+    try{
+      const ping = httpsCallable(fns,'ping');
+      const res = await ping({});
+      log('Ping OK (callable): ' + JSON.stringify(res.data));
+      return true;
+    }catch(e){
+      log(`Ping error (callable) -> code: ${e.code} | message: ${e.message}`);
+      // HTTP fallback to /health
+      try{
+        const proj = JSON.parse(localStorage.getItem(SKEYS.fbConfig)||'{}')?.projectId || 'iptv-bfa';
+        const region = localStorage.getItem(SKEYS.functionsRegion) || 'us-central1';
+        const url = `https://${region}-${proj}.cloudfunctions.net/health`;
+        log('Trying HTTP health: ' + url);
+        const res = await fetch(url, { method:'GET' });
+        const body = await res.json();
+        if(res.ok){
+          log('Ping OK (http): ' + JSON.stringify(body));
+          return true;
+        }else{
+          log('HTTP health failed: ' + res.status + ' ' + (body?.message || ''));
+          return false;
+        }
+      }catch(err){
+        log('HTTP health error: ' + (err?.message || err));
+        return false;
+      }
+    }
   }
 
-  // GitHub helpers via centralized BFA helper
+  // Purge
+  async function purgeAnonymous(){
+    const ok = await pingFunctions(); if(!ok){ toast('Functions not reachable'); return; }
+    const days = parseInt(document.getElementById('inp-anon-days').value || '30', 10);
+    try{
+      const call = httpsCallable(fns,'purgeAnonymousUsers');
+      const res = await call({ olderThanDays: days });
+      log('Purge result: ' + JSON.stringify(res.data));
+      toast('Purge done');
+    }catch(e){
+      log(`Purge error -> code: ${e.code} | message: ${e.message} | details: ${JSON.stringify(e.details)}`);
+      toast('Purge failed (see Log)');
+    }
+  }
+
+  // Centralized GitHub test
   function saveRepoPrefsFromForm(){
     BFA.setRepoPrefs({
       owner:  $('#inp-gh-owner').value.trim(),
@@ -343,15 +369,13 @@
       path:   $('#inp-gh-path').value.trim()
     });
   }
-
   async function testGitHub(){
+    log('Testing GitHub…');
     saveRepoPrefsFromForm();
     const { owner, repo, branch, path } = BFA.getRepoPrefs();
-
-    // 1) Try repo contents (works for public repos, or with token)
     try{
       const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`;
-      const headers = await BFA.getGithubHeadersOrNull(true); // allow prompt to unlock encrypted token if present
+      const headers = await BFA.getGithubHeadersOrNull(true);
       const res = await fetch(url, { headers });
       const body = await res.json();
       if(res.ok){
@@ -365,7 +389,7 @@
     }
   }
 
-  // Navbar / theme
+  // UI chrome (logo/theme/menu)
   (function(){ const LOGO_URL=DEFAULTS.LOGO_URL; document.getElementById('brandLogo').style.backgroundImage=`url("${LOGO_URL}")`; const m=document.getElementById('brandLogoM'); if(m) m.style.backgroundImage=`url("${LOGO_URL}")`;})();
   (function(){
     const THEME_KEY='iptv_theme'; const themeBtn=document.getElementById('themeBtn'); const themeIcon=document.getElementById('themeIcon');
@@ -396,7 +420,6 @@
     localStorage.setItem(SKEYS.displaysCol, document.getElementById('inp-displays-col').value.trim() || 'displays');
     localStorage.setItem(SKEYS.dealersCol,  document.getElementById('inp-dealers-col').value.trim()  || 'dealers');
     localStorage.setItem(SKEYS.functionsRegion, document.getElementById('inp-functions-region').value.trim() || 'us-central1');
-    // also save GitHub prefs globally so other pages see them
     BFA.setRepoPrefs({
       owner:  document.getElementById('inp-gh-owner').value.trim(),
       repo:   document.getElementById('inp-gh-repo').value.trim(),
@@ -406,14 +429,13 @@
     toast('Preferences saved');
   });
 
-  // ===== GitHub buttons
+  // GitHub buttons
   document.getElementById('btn-gh-save-session').addEventListener('click', ()=>{
     const token = document.getElementById('inp-gh-token').value.trim();
     if(!token){ toast('Enter a token first'); return; }
-    BFA.setSessionToken(token);       // centralized session for ALL pages
+    BFA.setSessionToken(token);
     toast('Token set for this session');
   });
-
   document.getElementById('btn-gh-encrypted-save').addEventListener('click', async ()=>{
     const token=document.getElementById('inp-gh-token').value.trim(); if(!token) return toast('Enter a token first');
     const pass=prompt('Set a passphrase to encrypt your token (store it safely):'); if(!pass) return;
@@ -427,29 +449,27 @@
       toast('Encrypted token saved');
     }catch(e){ toast('Encrypt failed'); }
   });
-
   document.getElementById('btn-gh-clear').addEventListener('click', ()=>{
     localStorage.removeItem(SKEYS.ghTokenEnc);
     if(window.BFA) BFA.clearGithubTokenSession();
     toast('Saved token cleared');
   });
-
   document.getElementById('btn-gh-test').addEventListener('click', testGitHub);
 
-  // ===== Firebase buttons
+  // Firebase buttons
   document.getElementById('btn-fb-save').addEventListener('click', saveFirebaseConfig);
   document.getElementById('btn-fb-test').addEventListener('click', testFirebase);
   document.getElementById('btn-fb-logout').addEventListener('click', signOutFirebase);
 
-  // ===== Functions
+  // Functions
   document.getElementById('btn-ping').addEventListener('click', pingFunctions);
   document.getElementById('btn-purge-anon').addEventListener('click', purgeAnonymous);
 
-  // ===== Misc
+  // Misc
   document.getElementById('btn-refresh-overview').addEventListener('click', refreshOverview);
   document.getElementById('btn-log-clear').addEventListener('click', ()=>{ logEl.value=''; });
 
-  // Export/Import settings
+  // Export/Import
   document.getElementById('btn-export-settings').addEventListener('click', ()=>{
     const out = {
       [SKEYS.displaysCol]: localStorage.getItem(SKEYS.displaysCol),
