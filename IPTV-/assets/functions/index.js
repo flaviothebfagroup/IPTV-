@@ -281,10 +281,9 @@ exports.purgeAnonymousUsers = functions
 /** HTTP health (quick URL sanity check in browser) */
 exports.health = functions.region("us-central1").https.onRequest((req, res) => {
   res.status(200).json({ ok: true, time: Date.now() });
-});
-// Simple HTTP purge of anonymous users (secured by a secret key)
+});// Simple HTTP purge of anonymous users (secured by a secret key)
 const functions = require("firebase-functions");
-const admin = require("firebase-admin"); // already in your file
+const admin = require("firebase-admin"); // already initialized above
 
 exports.purgeAnonHttp = functions
   .region("us-central1")
