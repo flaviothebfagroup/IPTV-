@@ -61,7 +61,7 @@
     .below{margin-top:16px;text-align:center;color:var(--muted);font-size:14px}
     .below a{color:var(--fg);text-decoration:none;border-bottom:1px dashed var(--border)}
     .toast{position:fixed;bottom:50px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 20px;border-radius:999px;
-           font-size:13px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none}
+           font-size:13px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;max-width:92vw;text-align:center}
     .toast.show{opacity:1}
     .toast.error{background:#ff453a;color:#fff}
 
@@ -122,11 +122,12 @@
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import {
-      getAuth, createUserWithEmailAndPassword,
-      setPersistence, browserLocalPersistence
+      getAuth, createUserWithEmailAndPassword, setPersistence, browserLocalPersistence,
+      signInAnonymously, onAuthStateChanged
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import { getDatabase, ref, set, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
+    // --- YOUR CONFIG (safe to keep public) ---
     const firebaseConfig = {
       apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
       authDomain: "iptv-bfa.firebaseapp.com",
@@ -146,7 +147,7 @@
       const t = document.getElementById('toast');
       t.textContent = message;
       t.className = 'toast show' + (type==='error' ? ' error' : '');
-      setTimeout(()=>t.classList.remove('show'), 2500);
+      setTimeout(()=>t.classList.remove('show'), 2800);
     }
     function slugify(id){
       return (id||'')
@@ -169,7 +170,7 @@
       return prefix.toUpperCase();
     }
 
-    // ---------- load dealerships (public list) ----------
+    // ---------- load dealerships (reads may require auth) ----------
     async function loadDealerships(){
       const select = document.getElementById('dealership');
       try{
@@ -185,24 +186,46 @@
             opt.textContent = name;
             select.appendChild(opt);
           }
+        } else {
+          // empty list is fine
         }
+
         // add the "new" option
         const add = document.createElement('option');
         add.value = '__new__';
         add.textContent = '➕ Add New Dealership…';
         select.appendChild(add);
       }catch(err){
-        console.error('loadDealerships', err);
-        select.innerHTML = '<option value="">Could not load dealerships</option><option value="__new__">➕ Add New Dealership…</option>';
+        console.warn('dealershipPublic read blocked by rules', err);
+        select.innerHTML = `
+          <option value="">(Ask admin to attach you later)</option>
+          <option value="__new__">➕ Add New Dealership…</option>
+        `;
       }
     }
-    window.addEventListener('DOMContentLoaded', loadDealerships);
+
+    // Ensure we are authenticated (anonymous) before reading public lists
+    async function ensureAnon(){
+      try{
+        // If already have a user (returning visitor), no need to anon sign in.
+        if (!auth.currentUser) {
+          await signInAnonymously(auth);
+        }
+      }catch(e){
+        console.warn('Anonymous sign-in failed:', e);
+      }finally{
+        loadDealerships();
+      }
+    }
+    window.addEventListener('DOMContentLoaded', ensureAnon);
 
     // toggle input when user chooses "Add New Dealership…"
-    document.getElementById('dealership').addEventListener('change', function(){
-      const isNew = this.value === '__new__';
-      document.getElementById('newDealerWrap').style.display = isNew ? 'block' : 'none';
-      if (isNew) document.getElementById('newDealership').focus();
+    document.addEventListener('change', (e)=>{
+      if (e.target && e.target.id === 'dealership'){
+        const isNew = e.target.value === '__new__';
+        document.getElementById('newDealerWrap').style.display = isNew ? 'block' : 'none';
+        if (isNew) document.getElementById('newDealership').focus();
+      }
     });
 
     // enter to submit
@@ -226,14 +249,12 @@
       // resolve dealershipId + name
       let dealershipId = sel;
       let dealershipName = '';
-      let creatingNew = (sel === '__new__');
+      const creatingNew = (sel === '__new__');
 
       if(creatingNew){
         if(!newName){ showToast('Enter the new dealership name','error'); return; }
         dealershipName = newName;
-        // try a friendly ID; if taken, append timestamp suffix
-        let candidate = slugify(newName);
-        if (!candidate) candidate = 'dealership';
+        let candidate = slugify(newName) || 'dealership';
         let idToUse = candidate;
         try {
           const exists = await get(ref(db, `dealershipPublic/${candidate}`));
@@ -253,50 +274,62 @@
         await setPersistence(auth, browserLocalPersistence);
         const { user } = await createUserWithEmailAndPassword(auth, email, password);
 
-        // If adding new dealership, create public label + dealership + a first display + seed state
+        // If adding new dealership, attempt to create; if rules forbid, we continue.
         let userDisplays = [];
         if (creatingNew){
-          // 1) public label (so the next customers see it)
-          await set(ref(db, `dealershipPublic/${dealershipId}`), { name: dealershipName });
+          try {
+            // 1) public label
+            await set(ref(db, `dealershipPublic/${dealershipId}`), { name: dealershipName });
 
-          // 2) first display id based on two-letter prefix
-          const prefix = twoLetterPrefix(dealershipName);
-          const displayId = `${prefix}-001`;
-          userDisplays = [displayId];
+            // 2) first display id based on two-letter prefix
+            const prefix = twoLetterPrefix(dealershipName);
+            const displayId = `${prefix}-001`;
+            userDisplays = [displayId];
 
-          // 3) dealership doc (singular)
-          await set(ref(db, `dealership/${dealershipId}`), {
-            name: dealershipName,
-            createdBy: email,
-            createdAt: Date.now(),
-            displays: { [displayId]: true }
-          });
+            // 3) dealership doc
+            await set(ref(db, `dealership/${dealershipId}`), {
+              name: dealershipName,
+              createdBy: email,
+              createdAt: Date.now(),
+              displays: { [displayId]: true }
+            });
 
-          // 4) global display state (needs dealership field for your rules)
-          await set(ref(db, `displays/${displayId}`), {
-            channel: 1,
-            volume: 0,
-            muted: true,
-            dealership: dealershipId,
-            timestamp: Date.now()
-          });
+            // 4) global display state
+            await set(ref(db, `displays/${displayId}`), {
+              channel: 1,
+              volume: 0,
+              muted: true,
+              dealership: dealershipId,
+              timestamp: Date.now()
+            });
+          } catch (createErr) {
+            console.warn('Dealership creation blocked by rules:', createErr);
+            showToast('Account ok. Dealer creation needs admin.', 'error');
+          }
         } else {
-          // existing → read its displays (if any)
+          // existing → try to read existing displays
           try {
             const dSnap = await get(ref(db, `dealership/${dealershipId}/displays`));
             userDisplays = dSnap.exists() ? Object.keys(dSnap.val()) : [];
-          } catch {}
+          } catch (e) {
+            console.warn('Read displays denied (rules):', e);
+          }
         }
 
-        // 5) user profile
-        await set(ref(db, `user/${user.uid}`), {
-          email, name,
-          role: 'user',
-          dealershipId,
-          dealershipName,
-          displays: userDisplays,
-          createdAt: Date.now()
-        });
+        // 5) user profile (should be allowed for self)
+        try{
+          await set(ref(db, `user/${user.uid}`), {
+            email, name,
+            role: 'user',
+            dealershipId,
+            dealershipName,
+            displays: userDisplays,
+            createdAt: Date.now()
+          });
+        }catch (upErr){
+          console.error('Write user profile denied (rules):', upErr);
+          showToast('User created, but profile write denied by rules.', 'error');
+        }
 
         showToast('Account created!');
         btn.innerHTML = 'SUCCESS — OPENING REMOTE…';
@@ -304,14 +337,22 @@
       }catch(error){
         console.error('signup', error);
         const map = {
-          'auth/email-already-in-use':'Email already registered',
-          'auth/weak-password':'Password too weak',
-          'auth/invalid-email':'Invalid email address'
+          'auth/operation-not-allowed':'Email & Password sign-in is disabled (enable in Firebase Auth).',
+          'auth/unauthorized-domain':'Domain not authorized in Firebase Auth settings.',
+          'auth/email-already-in-use':'Email already registered.',
+          'auth/weak-password':'Password too weak.',
+          'auth/invalid-email':'Invalid email address.'
         };
-        showToast(map[error.code] || ('Signup failed: ' + (error.message||'Error')), 'error');
+        const msg = map[error.code] || (`Signup failed: ${error.code || error.message || 'Unknown error'}`);
+        showToast(msg, 'error');
         btn.disabled = false; btn.textContent = 'CREATE ACCOUNT';
       }
     };
+
+    // If someone is already signed in (returning), keep going.
+    onAuthStateChanged(auth, (u) => {
+      // no-op; we just want auth to be initialized for reads
+    });
   </script>
 </body>
 </html>
