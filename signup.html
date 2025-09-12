@@ -122,12 +122,14 @@
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import {
-      getAuth, createUserWithEmailAndPassword, setPersistence, browserLocalPersistence,
-      signInAnonymously, onAuthStateChanged
+      getAuth,
+      setPersistence, browserLocalPersistence,
+      signInAnonymously, EmailAuthProvider, linkWithCredential,
+      createUserWithEmailAndPassword
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import { getDatabase, ref, set, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    // --- YOUR CONFIG (safe to keep public) ---
+    // --- Firebase config ---
     const firebaseConfig = {
       apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
       authDomain: "iptv-bfa.firebaseapp.com",
@@ -170,7 +172,7 @@
       return prefix.toUpperCase();
     }
 
-    // ---------- load dealerships (reads may require auth) ----------
+    // ---------- load dealerships (read list) ----------
     async function loadDealerships(){
       const select = document.getElementById('dealership');
       try{
@@ -186,17 +188,15 @@
             opt.textContent = name;
             select.appendChild(opt);
           }
-        } else {
-          // empty list is fine
         }
 
-        // add the "new" option
+        // Add "new" option (admin must finalize)
         const add = document.createElement('option');
         add.value = '__new__';
         add.textContent = '➕ Add New Dealership…';
         select.appendChild(add);
       }catch(err){
-        console.warn('dealershipPublic read blocked by rules', err);
+        console.warn('Could not load dealershipPublic:', err);
         select.innerHTML = `
           <option value="">(Ask admin to attach you later)</option>
           <option value="__new__">➕ Add New Dealership…</option>
@@ -204,20 +204,14 @@
       }
     }
 
-    // Ensure we are authenticated (anonymous) before reading public lists
-    async function ensureAnon(){
+    // sign-in anonymously so reads are allowed by your root .read rule
+    (async ()=>{
       try{
-        // If already have a user (returning visitor), no need to anon sign in.
-        if (!auth.currentUser) {
-          await signInAnonymously(auth);
-        }
-      }catch(e){
-        console.warn('Anonymous sign-in failed:', e);
-      }finally{
-        loadDealerships();
-      }
-    }
-    window.addEventListener('DOMContentLoaded', ensureAnon);
+        await setPersistence(auth, browserLocalPersistence);
+        if (!auth.currentUser) await signInAnonymously(auth);
+      }catch(e){ console.warn('Anonymous sign-in failed:', e); }
+      finally{ loadDealerships(); }
+    })();
 
     // toggle input when user chooses "Add New Dealership…"
     document.addEventListener('change', (e)=>{
@@ -234,7 +228,7 @@
       if(el) el.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') signUp(); });
     });
 
-    // ---------- sign up (supports add-new OR existing) ----------
+    // ---------- sign up ----------
     window.signUp = async function(){
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
@@ -255,12 +249,8 @@
         if(!newName){ showToast('Enter the new dealership name','error'); return; }
         dealershipName = newName;
         let candidate = slugify(newName) || 'dealership';
-        let idToUse = candidate;
-        try {
-          const exists = await get(ref(db, `dealershipPublic/${candidate}`));
-          if (exists.exists()) idToUse = `${candidate}-${Date.now()}`;
-        } catch {}
-        dealershipId = idToUse;
+        // Do NOT attempt to write dealershipPublic/dealership here (admin-only in your rules)
+        dealershipId = candidate;
       } else {
         dealershipId = sel;
         const opt = document.querySelector(`#dealership option[value="${sel}"]`);
@@ -271,67 +261,47 @@
       btn.disabled = true; btn.innerHTML = 'CREATING<span class="spinner"></span>';
 
       try{
-        await setPersistence(auth, browserLocalPersistence);
-        const { user } = await createUserWithEmailAndPassword(auth, email, password);
-
-        // If adding new dealership, attempt to create; if rules forbid, we continue.
-        let userDisplays = [];
-        if (creatingNew){
-          try {
-            // 1) public label
-            await set(ref(db, `dealershipPublic/${dealershipId}`), { name: dealershipName });
-
-            // 2) first display id based on two-letter prefix
-            const prefix = twoLetterPrefix(dealershipName);
-            const displayId = `${prefix}-001`;
-            userDisplays = [displayId];
-
-            // 3) dealership doc
-            await set(ref(db, `dealership/${dealershipId}`), {
-              name: dealershipName,
-              createdBy: email,
-              createdAt: Date.now(),
-              displays: { [displayId]: true }
-            });
-
-            // 4) global display state
-            await set(ref(db, `displays/${displayId}`), {
-              channel: 1,
-              volume: 0,
-              muted: true,
-              dealership: dealershipId,
-              timestamp: Date.now()
-            });
-          } catch (createErr) {
-            console.warn('Dealership creation blocked by rules:', createErr);
-            showToast('Account ok. Dealer creation needs admin.', 'error');
-          }
+        // Upgrade anon → email/pass OR create if not anon
+        let cred;
+        if (auth.currentUser && auth.currentUser.isAnonymous) {
+          const c = EmailAuthProvider.credential(email, password);
+          cred = await linkWithCredential(auth.currentUser, c);
         } else {
-          // existing → try to read existing displays
-          try {
-            const dSnap = await get(ref(db, `dealership/${dealershipId}/displays`));
-            userDisplays = dSnap.exists() ? Object.keys(dSnap.val()) : [];
-          } catch (e) {
-            console.warn('Read displays denied (rules):', e);
+          cred = await createUserWithEmailAndPassword(auth, email, password);
+        }
+        const { user } = cred;
+
+        // Try to read displays for existing dealership (allowed by your public .read at children)
+        let userDisplays = [];
+        try {
+          const dSnap = await get(ref(db, `dealership/${dealershipId}/displays`));
+          if (dSnap.exists()) {
+            // Only include displays if there are any (rules forbid empty displays object)
+            userDisplays = Object.keys(dSnap.val());
           }
+        } catch (e) {
+          console.warn('Displays read failed (ok):', e);
         }
 
-        // 5) user profile (should be allowed for self)
-        try{
-          await set(ref(db, `user/${user.uid}`), {
-            email, name,
-            role: 'user',
-            dealershipId,
-            dealershipName,
-            displays: userDisplays,
-            createdAt: Date.now()
-          });
-        }catch (upErr){
-          console.error('Write user profile denied (rules):', upErr);
-          showToast('User created, but profile write denied by rules.', 'error');
+        // Build profile WITHOUT role (your rules require this for non-admin first write)
+        const profile = {
+          email,
+          name,
+          dealershipId,
+          dealershipName,
+          createdAt: Date.now()
+        };
+        if (userDisplays.length) profile.displays = userDisplays;
+
+        // Write /user/{uid}
+        await set(ref(db, `user/${user.uid}`), profile);
+
+        if (creatingNew) {
+          showToast('Account created — ask an admin to add the new dealership.');
+        } else {
+          showToast('Account created!');
         }
 
-        showToast('Account created!');
         btn.innerHTML = 'SUCCESS — OPENING REMOTE…';
         setTimeout(()=>{ window.location.href = 'https://flaviothebfagroup.github.io/IPTV-/remote-control.html'; }, 1200);
       }catch(error){
@@ -348,11 +318,6 @@
         btn.disabled = false; btn.textContent = 'CREATE ACCOUNT';
       }
     };
-
-    // If someone is already signed in (returning), keep going.
-    onAuthStateChanged(auth, (u) => {
-      // no-op; we just want auth to be initialized for reads
-    });
   </script>
 </body>
 </html>
