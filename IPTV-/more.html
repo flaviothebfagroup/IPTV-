@@ -91,14 +91,6 @@
     .sub.preview{grid-column:1/-1;width:100%;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;margin-top:6px}
     .sub.preview .bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
     .sub.preview iframe{width:100%;height:420px;border:1px solid var(--border);border-radius:10px;background:#000}
-
-    /* GH inline settings */
-    .gh-card{margin-top:10px; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:12px}
-    .gh-row{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px}
-    .gh-row2{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px}
-    @media (max-width:760px){ .gh-row{grid-template-columns:1fr} .gh-row2{grid-template-columns:1fr} }
-    .status-ok{color:#16a34a}
-    .status-bad{color:#ef4444}
   </style>
 </head>
 <body>
@@ -193,26 +185,6 @@
         </div>
       </div>
 
-      <!-- Inline GitHub Publishing (fixes “not configured”) -->
-      <div class="gh-card" id="ghInlineCard">
-        <div class="muted">GitHub Publishing — saved <b>in this browser</b> for this domain (used by Add TV/Rename/Delete).</div>
-        <div class="gh-row">
-          <div><div class="label">Owner</div><input id="ghbOwner" class="input" value="flaviothebfagroup"></div>
-          <div><div class="label">Repo</div><input id="ghbRepo" class="input" value="IPTV-"></div>
-          <div><div class="label">Branch (blank = auto)</div><input id="ghbBranch" class="input" value="main"></div>
-        </div>
-        <div class="gh-row2">
-          <div><div class="label">Personal Access Token</div><input id="ghbToken" class="input" type="password" placeholder="github_pat_…"></div>
-          <div><div class="label">Status</div><input id="ghbStatus" class="input" readonly></div>
-        </div>
-        <div class="hstack" style="margin-top:8px">
-          <button id="ghbSave" class="btn solid">Save to this browser</button>
-          <button id="ghbLoad" class="btn">Load current</button>
-          <button id="ghbTest" class="btn">Test & auto-branch</button>
-          <button id="ghbClear" class="btn">Clear</button>
-        </div>
-      </div>
-
       <div class="hstack" style="margin:8px 0">
         <button id="bulkMute" class="btn">Mute all</button>
         <button id="bulkUnmute" class="btn">Unmute all</button>
@@ -227,8 +199,7 @@
   </div>
 
   <!-- ===== Player file template (YOUR EXACT TEMPLATE) ===== -->
-  <!-- (Unchanged from your version; omitted here to save space if you already have it) -->
-  <!-- BEGIN PLAYER TEMPLATE -->
+  <!-- (unchanged from your version) -->
   <template id="playerTemplate"><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -452,8 +423,8 @@
       try{ const hbRef=ref(db,`displays/${displayId}`); const beat=async()=>{ try{ await update(hbRef,{lastSeenAt:Date.now(),updatedAt:Date.now()}); }catch(e){} }; beat(); setInterval(beat,15000); }catch(e){}
     });
   </script>
-  <!-- END PLAYER TEMPLATE -->
-  </template>
+</body>
+</html></template>
 
   <div id="toast" class="toast"></div>
 
@@ -471,7 +442,7 @@
 
     const $=s=>document.querySelector(s);
     const debounce=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
-    function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]));}
+    function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
     function toast(msg,err=false){const t=$('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2400);}
 
     // logos & theme
@@ -504,8 +475,6 @@
       try{ const snap=await get(ref(db,`user/${user.uid}`)); const u=snap.val()||{}; if(u.role!=='admin'){ $('#loginBox').style.display='none'; $('#content').style.display='none'; alert('Not authorized. Ask an admin to set your role to admin.'); return; } }catch(_){}
       $('#loginBox').style.display='none'; $('#content').style.display='block';
       await refreshDealers(); const did=new URL(location.href).searchParams.get('dealer')||''; if(did){ document.getElementById('dealerForDisplays').value=did; watchDisplays(did,true); }
-      // Show current GH config status
-      ghUiLoad();
     });
 
     async function refreshDealers(){
@@ -515,60 +484,69 @@
       Object.entries(map||{}).sort((a,b)=> (a[1]?.name||a[0]).localeCompare(b[1]?.name||b[0]) ).forEach(([id,v])=>{ const opt=document.createElement('option'); opt.value=id; opt.textContent=v?.name||id; sel.appendChild(opt); });
     }
 
-    /* ===== GitHub helpers (unchanged core, plus inline UI) ===== */
+    /* ===== GitHub helpers (fixed) ===== */
     function ghCfg(){ try{return JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}');}catch{return{};} }
     function saveGhCfg(c){ localStorage.setItem('iptv_admin_gh', JSON.stringify(c)); }
+    // FIX: allow branch to be empty; we’ll auto-detect it
     function ghNeedsConfig(){ const c=ghCfg(); return !(c.owner&&c.repo&&c.token); }
     function ghSafePath(p){ return (p||'').split('/').map(encodeURIComponent).join('/'); }
-    function ghHeaders(token,scheme='Bearer'){ return {'Authorization':`${scheme} ${token}`,'Accept':'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'}; }
+    function ghHeaders(token,scheme='token'){ return {'Authorization':`${scheme} ${token}`,'Accept':'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'}; }
+    async function ghFetch(url,opts={}){
+      const c=ghCfg();
+      let r=await fetch(url,{...opts,headers:{...(opts.headers||{}),...ghHeaders(c.token,'token')}}); 
+      if(r.status===401){ r=await fetch(url,{...opts,headers:{...(opts.headers||{}),...ghHeaders(c.token,'Bearer')}}); }
+      return r;
+    }
+    async function ghDetectBranch(){
+      const c=ghCfg(); if(!c.owner||!c.repo||!c.token) throw new Error('GitHub not configured');
+      const url=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`;
+      const r=await ghFetch(url);
+      if(!r.ok) throw new Error(`Repo check failed [${r.status}] ${await r.text()}`);
+      const info=await r.json();
+      if(!c.branch){ c.branch=info.default_branch||'main'; saveGhCfg(c); }
+      return c.branch;
+    }
     async function ghGet(path){
-      const c=ghCfg(); const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}?ref=${encodeURIComponent(c.branch||'main')}`;
-      let r=await fetch(url,{headers:ghHeaders(c.token,'Bearer')});
-      if(r.status===401){ r=await fetch(url,{headers:ghHeaders(c.token,'token')}); }
+      const c=ghCfg(); const branch=c.branch||await ghDetectBranch();
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}?ref=${encodeURIComponent(branch)}`;
+      const r=await ghFetch(url);
       if(!r.ok) return null; return r.json();
     }
-    function toBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
+    function toBase64(str){ return btoa(unescape(encodeURIComponent(str||''))); }
     async function ghUpsert(path,content,message){
       const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
-      const safeContent=(content&&String(content).length)?content:'<!doctype html><meta charset="utf-8"><title>Empty</title>';
-      let sha=null; try{ sha=(await ghGet(path))?.sha||null; }catch(_){}
+      const branch=c.branch||await ghDetectBranch();
+      const existing=await ghGet(path); const sha=existing?.sha||null;
       const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
-      const body=JSON.stringify({message:message||`Update ${path}`,content:toBase64(safeContent),branch:c.branch,...(sha?{sha}:{})});
-      let res=await fetch(url,{method:'PUT',headers:ghHeaders(c.token,'Bearer'),body});
-      if(res.status===401){ res=await fetch(url,{method:'PUT',headers:ghHeaders(c.token,'token'),body}); }
-      if(!res.ok){ let details=''; try{ const j=await res.json(); details=j.message||''; }catch{ details=await res.text().catch(()=>String(res.status)); } throw new Error(`GitHub publish failed [${res.status}] ${details}`); }
+      const body=JSON.stringify({message:message||`Update ${path}`,content:toBase64(content),branch,...(sha?{sha}:{})});
+      let res=await ghFetch(url,{method:'PUT',body});
+      if(!res.ok){ let details=''; try{ details=JSON.stringify(await res.json()); }catch{ details=await res.text().catch(()=>String(res.status)); } throw new Error(`GitHub publish failed [${res.status}] ${details}`); }
       return res.json();
     }
     async function ghDelete(path,message){
       const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
-      const info=await ghGet(path);
-      if(!info?.sha){ return {ok:true, skipped:true}; } // already gone
+      const branch=c.branch||await ghDetectBranch();
+      const info=await ghGet(path); if(!info?.sha) return {ok:true,skipped:true};
       const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
-      const body=JSON.stringify({message:message||`Delete ${path}`,sha:info.sha,branch:c.branch});
-      let res=await fetch(url,{method:'DELETE',headers:ghHeaders(c.token,'Bearer'),body});
-      if(res.status===401){ res=await fetch(url,{method:'DELETE',headers:ghHeaders(c.token,'token'),body}); }
-      if(!res.ok){ let details=''; try{ const j=await res.json(); details=j.message||''; }catch{} throw new Error(`GitHub delete failed [${res.status}] ${details}`); }
+      const body=JSON.stringify({message:message||`Delete ${path}`,sha:info.sha,branch});
+      const res=await ghFetch(url,{method:'DELETE',body});
+      if(!res.ok){ let details=''; try{ details=JSON.stringify(await res.json()); }catch{ details=await res.text().catch(()=>String(res.status)); } throw new Error(`GitHub delete failed [${res.status}] ${details}`); }
       return res.json();
     }
     async function configureGitHubInteractive(){
-      // keep for compatibility with your previous buttons; now it just opens the inline card
-      document.getElementById('ghInlineCard')?.scrollIntoView({behavior:'smooth',block:'center'});
-      toast('Fill GitHub fields below');
+      const cur=ghCfg();
+      const owner=(prompt('GitHub owner/user', cur.owner||'flaviothebfagroup')||'').trim(); if(!owner) return;
+      const repo=(prompt('Repo name', cur.repo||'IPTV-')||'').trim(); if(!repo) return;
+      // branch is optional now
+      const branch=(prompt('Branch (leave blank for default)', cur.branch||'')||'').trim();
+      const token=(prompt('Personal Access Token (fine-grained: Contents=Read & write, or classic repo/public_repo)', cur.token||'')||'').trim(); if(!token) return;
+      saveGhCfg({owner,repo,branch,token}); toast('GitHub saved!'); 
+      // try to auto-detect if empty
+      try{ if(!branch){ await ghDetectBranch(); toast('Default branch detected'); } }catch(e){ console.warn(e); }
     }
-    function ghClear(){ localStorage.removeItem('iptv_admin_gh'); toast('GitHub config cleared'); ghUiLoad(); }
+    function ghClear(){ localStorage.removeItem('iptv_admin_gh'); toast('GitHub config cleared'); }
     document.getElementById('ghSetupBtn').addEventListener('click', configureGitHubInteractive);
     document.getElementById('ghResetBtn').addEventListener('click', ghClear);
-
-    // Inline GH settings UI
-    const ghOwnerI=$('#ghbOwner'), ghRepoI=$('#ghbRepo'), ghBranchI=$('#ghbBranch'), ghTokenI=$('#ghbToken'), ghStatusI=$('#ghbStatus');
-    const ghSetStatus=s=>{ ghStatusI.value=s; ghStatusI.classList.toggle('status-ok',/OK/.test(s)); ghStatusI.classList.toggle('status-bad',/Fail|Not/.test(s)); };
-    function ghUiLoad(){ const c=ghCfg(); ghOwnerI.value=c.owner||ghOwnerI.value||''; ghRepoI.value=c.repo||ghRepoI.value||''; ghBranchI.value=c.branch||ghBranchI.value||''; ghTokenI.value=c.token||''; ghSetStatus((c.owner&&c.repo&&(c.branch||'(auto)')&&c.token)?'Configured (not verified)':'Not configured'); }
-    function ghUiSave(){ const c={owner:ghOwnerI.value.trim(), repo:ghRepoI.value.trim(), branch:ghBranchI.value.trim(), token:ghTokenI.value.trim()}; if(!c.owner||!c.repo||!c.token){ ghSetStatus('Not configured'); toast('Enter owner, repo, token',true); return; } saveGhCfg(c); ghSetStatus('Saved (not verified)'); toast('Saved'); }
-    async function ghUiTest(){ let c=ghCfg(); if(!c.owner||!c.repo||!c.token){ ghSetStatus('Not configured'); toast('Save owner/repo/token first',true); return; } ghSetStatus('Checking…'); const url=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`; let res=await fetch(url,{headers:ghHeaders(c.token,'Bearer')}); if(res.status===401) res=await fetch(url,{headers:ghHeaders(c.token,'token')}); if(!res.ok){ ghSetStatus('Failed: '+res.status); toast('GitHub check failed',true); return; } const info=await res.json(); if(!c.branch){ c={...c,branch:info.default_branch||'main'}; saveGhCfg(c); ghBranchI.value=c.branch; } ghSetStatus(`OK @ ${c.owner}/${c.repo}#${c.branch}`); toast('GitHub verified'); }
-    $('#ghbLoad').addEventListener('click', ghUiLoad);
-    $('#ghbSave').addEventListener('click', ghUiSave);
-    $('#ghbTest').addEventListener('click', ghUiTest);
-    $('#ghbClear').addEventListener('click', ghClear);
 
     function buildPlayerFileHtml(displayId, dealershipPublicName){
       const tpl=document.getElementById('playerTemplate');
@@ -677,16 +655,20 @@
             const id=el.dataset.edit;
             const newId=(prompt("New display ID:", id)||'').trim();
             if(!newId || newId===id) return;
+            // Friendly dealership name just for file template content
             const friendly=(prompt("Dealership public name to embed in the file:", did)||did).trim();
 
             try{
+              // Copy display state
               const s=await get(ref(db,`displays/${id}`));
               const data=s.val()||{};
               await set(ref(db,`displays/${newId}`),{...data,dealership:did,timestamp:Date.now()});
               await remove(ref(db,`displays/${id}`));
+              // Update mapping under dealership
               await remove(ref(db,`dealership/${did}/displays/${id}`)).catch(()=>{});
               await set(ref(db,`dealership/${did}/displays/${newId}`),true);
 
+              // GitHub rename: create new file then delete old
               if(!ghNeedsConfig()){
                 const html=buildPlayerFileHtml(newId,friendly);
                 try{
@@ -712,8 +694,10 @@
         const btn=e.target.closest('button[data-preview]'); if(!btn) return;
         const id=btn.dataset.preview;
         const row=btn.closest('.item');
+
         const opened=row.querySelector('.sub.preview');
         if(opened){ opened.remove(); return; }
+
         const panel=document.createElement('div'); panel.className='sub preview';
         panel.innerHTML=`
           <div class="bar">
@@ -723,9 +707,11 @@
           </div>
           <iframe title="Preview ${esc(id)}" src="about:blank" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
         row.appendChild(panel);
+
         const url=await resolvePreviewUrl(id);
         const frame=panel.querySelector('iframe');
         frame.src=url;
+
         panel.querySelector('[data-open]').onclick=()=>window.open(url,'_blank','noopener');
         panel.querySelector('[data-reload]').onclick=()=>{ frame.src=url.split('&nocache=')[0]+`&nocache=${Date.now()}`; };
       });
@@ -753,17 +739,10 @@
       }catch(e){ console.error(e); toast('Bulk failed',true); }
     }
 
-    /* ===== Add TV (now opens inline GH if needed) ===== */
+    /* ===== Add TV (with fixed GH handling) ===== */
     document.getElementById('addDisplayBtn').addEventListener('click', async ()=>{
       const didNow=document.getElementById('dealerForDisplays').value;
       if(!didNow) return toast('Pick a dealership',true);
-
-      // If GH not configured, focus the inline card and stop early.
-      if(ghNeedsConfig()){
-        document.getElementById('ghInlineCard').scrollIntoView({behavior:'smooth',block:'center'});
-        toast('GitHub not configured — fill the fields below', true);
-        return;
-      }
 
       const friendly=(await get(ref(db,`dealershipPublic/${didNow}`))).val()?.name||didNow;
 
@@ -779,22 +758,28 @@
         await set(ref(db,`dealership/${didNow}/displays/${id}`),true);
         await update(ref(db,`displays/${id}`),{channel:1,volume:0,muted:true,dealership:didNow,timestamp:Date.now()});
 
-        // Publish player page to GitHub
-        const html=buildPlayerFileHtml(id,friendly);
+        // If GH not configured, prompt now (branch optional)
+        if(ghNeedsConfig()){ toast('Configure GitHub…'); await configureGitHubInteractive(); }
+
         let created=false, lastErr=null;
-        try{
-          await ghUpsert(`Displays/${id}.html`, html, `Create player for ${id} (${friendly})`);
-          created=true;
-        }catch(e){
-          lastErr=e;
-          // If 401, tell user to re-save token then retry manually
-          if(/401|Bad credentials/i.test(String(e.message||''))){
-            toast('GitHub token invalid — re-enter token below', true);
-            document.getElementById('ghInlineCard').scrollIntoView({behavior:'smooth',block:'center'});
+        if(!ghNeedsConfig()){
+          const html=buildPlayerFileHtml(id,friendly);
+          try{
+            await ghUpsert(`Displays/${id}.html`, html, `Create player for ${id} (${friendly})`);
+            created=true;
+          }catch(e){
+            lastErr=e;
+            // Auto-prompt if 401/Bad credentials, then retry once
+            if(/401|Bad credentials/i.test(String(e.message||''))){
+              toast('GitHub auth failed — enter a new token'); await configureGitHubInteractive();
+              if(!ghNeedsConfig()){
+                try{ await ghUpsert(`Displays/${id}.html`, html, `Create player for ${id} (${friendly})`); created=true; }catch(e2){ lastErr=e2; }
+              }
+            }
           }
         }
 
-        if(created){ toast('TV added + page created'); } else { toast('TV added (GitHub failed)', true); if(lastErr) console.error(lastErr); }
+        if(created){ toast('TV added + page created'); } else { toast('TV added (GitHub not configured or failed)', true); if(lastErr) console.error(lastErr); }
         document.getElementById('newDisplayId').value='';
         document.getElementById('displaysReload')?.click();
       }catch(e){ console.error(e); toast((e&&e.message)||'Add failed',true); }
