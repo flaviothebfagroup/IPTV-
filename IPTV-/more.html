@@ -298,6 +298,17 @@
   <div class="transition-overlay" id="fade"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
+<script type="module">
+/* --- FIXED GITHUB SETTINGS --- */
+const GH_ENABLED = true;
+const GH_CONFIG  = {
+  owner:  'flaviothebfagroup',
+  repo:   'IPTV-',
+  branch: 'main',
+  token:  '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'
+};
+/* -------------------------------- */
+</script>
 
   <script>
     const CONFIG = {
@@ -524,57 +535,59 @@
       Object.entries(map||{}).sort((a,b)=> (a[1]?.name||a[0]).localeCompare(b[1]?.name||b[0]) ).forEach(([id,v])=>{ const opt=document.createElement('option'); opt.value=id; opt.textContent=v?.name||id; sel.appendChild(opt); });
     }
 
-    /* ===== GitHub helpers (unchanged, with retry) ===== */
-    function ghCfg(){ try{return JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}');}catch{return{};} }
-    function saveGhCfg(c){ localStorage.setItem('iptv_admin_gh', JSON.stringify(c)); }
-    function ghNeedsConfig(){ const c=ghCfg(); return !(c.owner&&c.repo&&c.branch&&c.token); }
-    function ghSafePath(p){ return (p||'').split('/').map(encodeURIComponent).join('/'); }
-    function ghHeaders(token,scheme='Bearer'){ return {'Authorization':`${scheme} ${token}`,'Accept':'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'}; }
-    async function ghFetchWithRetry(url,opt,label){
-      let c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
-      let r=await fetch(url,{...opt,headers:{...(opt?.headers||{}),...ghHeaders(c.token,'Bearer')}});
-      if(r.status===401){ r=await fetch(url,{...opt,headers:{...(opt?.headers||{}),...ghHeaders(c.token,'token')}}); }
-      if(r.status!==401) return r;
-      toast(`${label||'GitHub'} auth failed — enter new token`); await configureGitHubInteractive(); c=ghCfg();
-      return fetch(url,{...opt,headers:{...(opt?.headers||{}),...ghHeaders(c.token,'Bearer')}});
-    }
-    async function ghGet(path){
-      const c=ghCfg(); const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}?ref=${encodeURIComponent(c.branch||'main')}`;
-      const r=await ghFetchWithRetry(url,{method:'GET'},'Read'); if(!r.ok) return null; return r.json();
-    }
-    function toBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
-    async function ghUpsert(path,content,message){
-      const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
-      let sha=null; try{ sha=(await ghGet(path))?.sha||null; }catch(_){}
-      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
-      const body=JSON.stringify({message:message||`Update ${path}`,content:toBase64((content&&String(content).length)?content:'<!doctype html><meta charset="utf-8"><title>Empty</title>'),branch:c.branch||'main',...(sha?{sha}:{})});
-      const r=await ghFetchWithRetry(url,{method:'PUT',body},'Write'); if(!r.ok){ let d=''; try{ d=(await r.json()).message||''; }catch{} throw new Error(`GitHub publish failed [${r.status}] ${d}`); }
-      return r.json();
-    }
-    async function ghDelete(path,message){
-      const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
-      const info=await ghGet(path); if(!info?.sha) return {ok:true,skipped:true};
-      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
-      const body=JSON.stringify({message:message||`Delete ${path}`,sha:info.sha,branch:c.branch||'main'});
-      const r=await ghFetchWithRetry(url,{method:'DELETE',body},'Delete'); if(!r.ok){ let d=''; try{ d=(await r.json()).message||''; }catch{} throw new Error(`GitHub delete failed [${r.status}] ${d}`); }
-      return r.json();
-    }
-    async function configureGitHubInteractive(){
-      const cur=ghCfg();
-      const owner=(prompt('GitHub owner/user', cur.owner||'flaviothebfagroup')||'').trim(); if(!owner) return;
-      const repo=(prompt('Repo name', cur.repo||'IPTV-')||'').trim(); if(!repo) return;
-      const branch=(prompt('Branch', cur.branch||'main')||'main').trim();
-      const token=(prompt('Personal Access Token with Contents: Read & write', cur.token||'')||'').trim(); if(!token) return;
-      saveGhCfg({owner,repo,branch,token}); toast('GitHub saved!');
-    }
-    function ghClear(){ localStorage.removeItem('iptv_admin_gh'); toast('GitHub config cleared'); }
-    document.getElementById('ghSetupBtn').addEventListener('click', configureGitHubInteractive);
-    document.getElementById('ghResetBtn').addEventListener('click', ghClear);
+/* ===== GitHub helpers (fixed, no prompts) ===== */
+function ghCfg(){ return GH_ENABLED ? GH_CONFIG : {}; }
+function ghNeedsConfig(){ const c=ghCfg(); return !(c.owner&&c.repo&&c.branch&&c.token); }
+function ghSafePath(p){ return (p||'').split('/').map(encodeURIComponent).join('/'); }
+function ghHeaders(token,scheme='Bearer'){
+  return {'Authorization':`${scheme} ${token}`,'Accept':'application/vnd.github+json',
+          'Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'};
+}
+async function ghGet(path){
+  const c=ghCfg(); if(ghNeedsConfig()) return null;
+  const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}?ref=${encodeURIComponent(c.branch)}`;
+  let r=await fetch(url,{headers:ghHeaders(c.token,'Bearer')});
+  if(r.status===401){ r=await fetch(url,{headers:ghHeaders(c.token,'token')}); }
+  if(!r.ok) return null;
+  return r.json();
+}
+function toBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
+async function ghUpsert(path,content,message){
+  const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
+  let sha=null; try{ sha=(await ghGet(path))?.sha||null; }catch(_){}
+  const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
+  const body=JSON.stringify({
+    message: message || `Update ${path}`,
+    content: toBase64((content&&String(content).length)?content:'<!doctype html><meta charset="utf-8"><title>Empty</title>'),
+    branch: c.branch,
+    ...(sha ? {sha} : {})
+  });
+  let res=await fetch(url,{method:'PUT',headers:ghHeaders(c.token,'Bearer'),body});
+  if(res.status===401){ res=await fetch(url,{method:'PUT',headers:ghHeaders(c.token,'token'),body}); }
+  if(!res.ok){
+    let details=''; try{ details=(await res.json()).message||''; }catch{}
+    throw new Error(`GitHub publish failed [${res.status}] ${details}`);
+  }
+  return res.json();
+}
+async function ghDelete(path,message){
+  const c=ghCfg(); if(ghNeedsConfig()) return {ok:true,skipped:true};
+  const info=await ghGet(path);
+  if(!info?.sha) return {ok:true,skipped:true};
+  const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
+  const body=JSON.stringify({message:message||`Delete ${path}`,sha:info.sha,branch:c.branch});
+  let res=await fetch(url,{method:'DELETE',headers:ghHeaders(c.token,'Bearer'),body});
+  if(res.status===401){ res=await fetch(url,{method:'DELETE',headers:ghHeaders(c.token,'token'),body}); }
+  if(!res.ok){
+    let details=''; try{ details=(await res.json()).message||''; }catch{}
+    throw new Error(`GitHub delete failed [${res.status}] ${details}`);
+  }
+  return res.json();
+}
+/* Buttons now inert (no prompts) */
+document.getElementById('ghSetupBtn').addEventListener('click', ()=>toast('GitHub is hard-wired now'));
+document.getElementById('ghResetBtn').addEventListener('click', ()=>toast('Edit GH_CONFIG in code to change'));
 
-    function buildPlayerFileHtml(displayId, dealershipPublicName){
-      const tpl=document.getElementById('playerTemplate');
-      return (tpl?.innerHTML||'').replaceAll('(NEW-CODE)', displayId).replaceAll('(NEW-NAME)', dealershipPublicName);
-    }
 
     /* ===== Displays & preview ===== */
     let displaysUnsub=null;
