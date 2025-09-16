@@ -383,11 +383,27 @@
     import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    // Load central config (no cache) and use its firebaseConfig
-const CONFIG_URL = '/IPTV-/config/iptv-config.json';
-const appConfig = await fetch(CONFIG_URL, { cache: 'no-store' }).then(r => r.json());
-const firebaseConfig = appConfig.firebaseConfig;
+    // Robust config loader — works on GitHub Pages and when embedded (CodePen, localhost)
+    async function loadFirebaseConfig() {
+      const candidates = [
+        '/IPTV-/config/iptv-config.json',                                        // same origin on GH Pages
+        'https://flaviothebfagroup.github.io/IPTV-/config/iptv-config.json'      // absolute fallback for embeds
+      ];
+      let lastErr;
+      for (const u of candidates) {
+        try {
+          const r = await fetch(u + '?v=' + Date.now(), { cache: 'no-store', mode: 'cors' });
+          if (r.ok) {
+            const j = await r.json();
+            if (j && j.firebaseConfig) return j.firebaseConfig;
+          }
+        } catch (e) { lastErr = e; }
+      }
+      console.error('Could not load iptv-config.json', lastErr);
+      throw new Error('Could not load iptv-config.json');
+    }
 
+    const firebaseConfig = await loadFirebaseConfig();
 
     const EMBED=/\bembed=1\b/i.test(location.search)||(window.top!==window.self);
     const app=initializeApp(firebaseConfig, EMBED?'embed':undefined);
@@ -426,8 +442,7 @@ const firebaseConfig = appConfig.firebaseConfig;
       try{ const hbRef=ref(db,`displays/${displayId}`); const beat=async()=>{ try{ await update(hbRef,{lastSeenAt:Date.now(),updatedAt:Date.now()}); }catch(e){} }; beat(); setInterval(beat,15000); }catch(e){}
     });
   </script>
-</body>
-</html></template>
+  </template>
 
   <div id="toast" class="toast"></div>
 
@@ -436,11 +451,27 @@ const firebaseConfig = appConfig.firebaseConfig;
     import { getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import { getDatabase, ref, get, set, update, remove, onValue, query, orderByChild, equalTo } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-   // Load central config (no cache) and use its firebaseConfig
-const CONFIG_URL = '/IPTV-/config/iptv-config.json';
-const appConfig = await fetch(CONFIG_URL, { cache: 'no-store' }).then(r => r.json());
-const firebaseConfig = appConfig.firebaseConfig;
+    /* ---------- Robust config loader (admin page) ---------- */
+    async function loadFirebaseConfig() {
+      const candidates = [
+        '/IPTV-/config/iptv-config.json',
+        'https://flaviothebfagroup.github.io/IPTV-/config/iptv-config.json'
+      ];
+      let lastErr;
+      for (const u of candidates) {
+        try {
+          const r = await fetch(u + '?v=' + Date.now(), { cache: 'no-store', mode: 'cors' });
+          if (r.ok) {
+            const j = await r.json();
+            if (j && j.firebaseConfig) return j.firebaseConfig;
+          }
+        } catch (e) { lastErr = e; }
+      }
+      console.error('Could not load iptv-config.json', lastErr);
+      throw new Error('Could not load iptv-config.json');
+    }
 
+    const firebaseConfig = await loadFirebaseConfig();
     const LOGO_URL="/IPTV-/icons/icon-512.png";
 
     const app=initializeApp(firebaseConfig);
@@ -491,48 +522,72 @@ const firebaseConfig = appConfig.firebaseConfig;
       Object.entries(map||{}).sort((a,b)=> (a[1]?.name||a[0]).localeCompare(b[1]?.name||b[0]) ).forEach(([id,v])=>{ const opt=document.createElement('option'); opt.value=id; opt.textContent=v?.name||id; sel.appendChild(opt); });
     }
 
-    /* ===== GitHub helpers ===== */
+    /* ========= GITHUB HELPERS (robust, auto-prompt on 401) ========= */
     function ghCfg(){ try{return JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}');}catch{return{};} }
     function saveGhCfg(c){ localStorage.setItem('iptv_admin_gh', JSON.stringify(c)); }
     function ghNeedsConfig(){ const c=ghCfg(); return !(c.owner&&c.repo&&c.branch&&c.token); }
     function ghSafePath(p){ return (p||'').split('/').map(encodeURIComponent).join('/'); }
-    function ghHeaders(token,scheme='Bearer'){ return {'Authorization':`${scheme} ${token}`,'Accept':'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'}; }
-    async function ghGet(path){
-      const c=ghCfg(); const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}?ref=${encodeURIComponent(c.branch||'main')}`;
-      let r=await fetch(url,{headers:ghHeaders(c.token,'Bearer')});
-      if(r.status===401){ r=await fetch(url,{headers:ghHeaders(c.token,'token')}); }
-      if(!r.ok) return null; return r.json();
-    }
-    function toBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
-    async function ghUpsert(path,content,message){
-      const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
-      const safeContent=(content&&String(content).length)?content:'<!doctype html><meta charset="utf-8"><title>Empty</title>';
-      let sha=null; try{ sha=(await ghGet(path))?.sha||null; }catch(_){}
-      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
-      const body=JSON.stringify({message:message||`Update ${path}`,content:toBase64(safeContent),branch:c.branch,...(sha?{sha}:{})});
-      let res=await fetch(url,{method:'PUT',headers:ghHeaders(c.token,'Bearer'),body});
-      if(res.status===401){ res=await fetch(url,{method:'PUT',headers:ghHeaders(c.token,'token'),body}); }
-      if(!res.ok){ let details=''; try{ const j=await res.json(); details=j.message||''; }catch{ details=await res.text().catch(()=>String(res.status)); } throw new Error(`GitHub publish failed [${res.status}] ${details}`); }
-      return res.json();
-    }
-    async function ghDelete(path,message){
-      const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
-      const info=await ghGet(path);
-      if(!info?.sha){ return {ok:true, skipped:true}; } // already gone
-      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
-      const body=JSON.stringify({message:message||`Delete ${path}`,sha:info.sha,branch:c.branch});
-      let res=await fetch(url,{method:'DELETE',headers:ghHeaders(c.token,'Bearer'),body});
-      if(res.status===401){ res=await fetch(url,{method:'DELETE',headers:ghHeaders(c.token,'token'),body}); }
-      if(!res.ok){ let details=''; try{ const j=await res.json(); details=j.message||''; }catch{} throw new Error(`GitHub delete failed [${res.status}] ${details}`); }
-      return res.json();
+    function ghHeaders(token, scheme='Bearer'){
+      return {
+        'Authorization': `${scheme} ${token}`,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+        'X-GitHub-Api-Version': '2022-11-28'
+      };
     }
     async function configureGitHubInteractive(){
       const cur=ghCfg();
       const owner=(prompt('GitHub owner/user', cur.owner||'flaviothebfagroup')||'').trim(); if(!owner) return;
       const repo=(prompt('Repo name', cur.repo||'IPTV-')||'').trim(); if(!repo) return;
       const branch=(prompt('Branch', cur.branch||'main')||'main').trim();
-      const token=(prompt('Personal Access Token (fine-grained Contents: Read & write, or classic repo/public_repo)', cur.token||'')||'').trim(); if(!token) return;
-      saveGhCfg({owner,repo,branch,token}); toast('GitHub saved!');
+      const token=(prompt('Personal Access Token with “Contents: Read & write”', cur.token||'')||'').trim(); if(!token) return;
+      saveGhCfg({owner,repo,branch,token});
+      toast('GitHub saved!');
+    }
+    async function ghFetchWithRetry(url, options, retryPromptLabel){
+      let c=ghCfg();
+      if(ghNeedsConfig()) throw new Error('GitHub not configured');
+      let res = await fetch(url, { ...options, headers: { ...(options?.headers||{}), ...ghHeaders(c.token,'Bearer') }});
+      if(res.status === 401){
+        res = await fetch(url, { ...options, headers: { ...(options?.headers||{}), ...ghHeaders(c.token,'token') }});
+      }
+      if(res.status !== 401) return res;
+      toast(`${retryPromptLabel||'GitHub auth'} failed — please enter a new token`);
+      await configureGitHubInteractive();
+      c=ghCfg(); if(ghNeedsConfig()) return res;
+      res = await fetch(url, { ...options, headers: { ...(options?.headers||{}), ...ghHeaders(c.token,'Bearer') }});
+      if(res.status === 401){
+        res = await fetch(url, { ...options, headers: { ...(options?.headers||{}), ...ghHeaders(c.token,'token') }});
+      }
+      return res;
+    }
+    async function ghGet(path){
+      const c=ghCfg();
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}?ref=${encodeURIComponent(c.branch||'main')}`;
+      const res=await ghFetchWithRetry(url,{method:'GET'},'GitHub read');
+      if(!res.ok) return null;
+      return res.json();
+    }
+    function toBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
+    async function ghUpsert(path,content,message){
+      const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
+      let sha=null; try{ sha=(await ghGet(path))?.sha||null; }catch(_){}
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
+      const safeContent=(content&&String(content).length)?content:'<!doctype html><meta charset="utf-8"><title>Empty</title>';
+      const body=JSON.stringify({message:message||`Update ${path}`,content:toBase64(safeContent),branch:c.branch||'main',...(sha?{sha}:{})});
+      let res=await ghFetchWithRetry(url,{method:'PUT',body},'GitHub write');
+      if(!res.ok){ let details=''; try{ const j=await res.json(); details=j.message||''; }catch{ details=await res.text().catch(()=>String(res.status)); } throw new Error(`GitHub publish failed [${res.status}] ${details}`); }
+      return res.json();
+    }
+    async function ghDelete(path,message){
+      const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
+      const info=await ghGet(path);
+      if(!info?.sha) return {ok:true,skipped:true};
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
+      const body=JSON.stringify({message:message||`Delete ${path}`,sha:info.sha,branch:c.branch||'main'});
+      let res=await ghFetchWithRetry(url,{method:'DELETE',body},'GitHub delete');
+      if(!res.ok){ let details=''; try{ const j=await res.json(); details=j.message||''; }catch{} throw new Error(`GitHub delete failed [${res.status}] ${details}`); }
+      return res.json();
     }
     function ghClear(){ localStorage.removeItem('iptv_admin_gh'); toast('GitHub config cleared'); }
     document.getElementById('ghSetupBtn').addEventListener('click', configureGitHubInteractive);
