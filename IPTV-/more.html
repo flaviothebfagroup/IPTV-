@@ -198,7 +198,7 @@
     </div>
   </div>
 
-  <!-- ===== Player file template (YOUR EXACT TEMPLATE) ===== -->
+  <!-- ===== Player file template (unchanged) ===== -->
   <template id="playerTemplate"><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -442,16 +442,15 @@
     const $=s=>document.querySelector(s);
     const debounce=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
     function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
-    function toast(msg,err=false){const t=$('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2400);}
-
-    // logos & theme
+    function toast(msg,err=false){const t=$('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2600);}
     $('#brandLogo').style.backgroundImage=`url("${LOGO_URL}")`; const brandLogoM=document.getElementById('brandLogoM'); if(brandLogoM){ brandLogoM.style.backgroundImage=`url("${LOGO_URL}")`; }
+
     const THEME_KEY='iptv_theme', themeBtn=document.getElementById('themeBtn'), themeIcon=document.getElementById('themeIcon');
     const setThemeIcon=()=>{ const dark=document.body.classList.contains('dark'); themeIcon.innerHTML= dark? `<path d="M21 12a9 9 0 1 1-9-9 6 6 0 0 0 9 9z"/>` : `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1.4-1.4M20.4 20.4 19 19M5 19l-1.4 1.4M20.4 3.6 19 5"/>`; };
     const saved=localStorage.getItem(THEME_KEY)||'light'; document.body.classList.toggle('dark',saved==='dark'); setThemeIcon();
     themeBtn.addEventListener('click',()=>{ const toDark=!document.body.classList.contains('dark'); document.body.classList.toggle('dark',toDark); localStorage.setItem(THEME_KEY,toDark?'dark':'light'); setThemeIcon(); });
 
-    // more menu & mobile sheet
+    // more menu & mobile sheet (unchanged)
     const moreBtn=document.getElementById('moreBtn'), moreMenu=document.getElementById('moreMenu');
     if(moreBtn){
       moreBtn.addEventListener('click',e=>{e.preventDefault();moreMenu.classList.toggle('open');});
@@ -483,142 +482,134 @@
       Object.entries(map||{}).sort((a,b)=> (a[1]?.name||a[0]).localeCompare(b[1]?.name||b[0]) ).forEach(([id,v])=>{ const opt=document.createElement('option'); opt.value=id; opt.textContent=v?.name||id; sel.appendChild(opt); });
     }
 
-    /* ===== GitHub helpers — resilient (auto-branch + PR + rich errors) ===== */
-    const GH = {
-      owner:  'flaviothebfagroup',
-      repo:   'IPTV-',
-      main:   'main',
-      token:  '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'
-    };
-    function ghHeaders() {
-      return {
-        'Authorization': `Bearer ${GH.token}`,
-        'Accept': 'application/vnd.github+json',
-        'Content-Type': 'application/json',
-        'X-GitHub-Api-Version': '2022-11-28'
-      };
-    }
-    const encPath = p => (p||'').split('/').map(encodeURIComponent).join('/');
+    /* ===== GitHub helpers (DROP-IN REPLACEMENT) ===== */
+    function ghCfg(){ try{return JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}');}catch{return{};} }
+    function saveGhCfg(c){ localStorage.setItem('iptv_admin_gh', JSON.stringify(c)); }
+    function ghNeedsConfig(){ const c=ghCfg(); return !(c.owner&&c.repo&&c.branch&&c.token); }
+    function ghSafePath(p){ return (p||'').split('/').map(encodeURIComponent).join('/'); }
+    function hdrs(scheme='Bearer',tok=ghCfg().token){ return {'Authorization':`${scheme} ${tok}`,'Accept':'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'}; }
 
-    async function ghJson(res) {
-      let bodyText=''; try{ bodyText=await res.text(); }catch{}
-      try{ return { json: JSON.parse(bodyText), raw: bodyText }; } catch { return { json: null, raw: bodyText }; }
+    async function ghFetch(url,opts={}){
+      const c=ghCfg();
+      let r=await fetch(url,{...opts,headers:hdrs('Bearer',c.token)});
+      if(r.status===401) r=await fetch(url,{...opts,headers:hdrs('token',c.token)});
+      return r;
     }
-    function b64(s){ return btoa(unescape(encodeURIComponent(s))); }
+    async function ghJson(r){ const t=await r.text().catch(()=> ''); try{ return {json:JSON.parse(t), raw:t}; }catch{ return {json:null, raw:t}; } }
+    function toBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
 
-    async function getRef(branch) {
-      const r = await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}/git/ref/heads/${encodeURIComponent(branch)}`, {headers: ghHeaders()});
-      if (!r.ok) throw new Error(`getRef ${branch} failed: ${r.status}`);
-      return (await r.json()).object.sha;
+    // Low-level helpers
+    async function gitRef(branch){
+      const c=ghCfg();
+      const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/git/ref/heads/${encodeURIComponent(branch||'main')}`);
+      if(!r.ok){ const {json,raw}=await ghJson(r); throw new Error(`getRef [${r.status}] ${json?.message||raw}`); }
+      return (await r.json()).object?.sha;
     }
-    async function createBranch(fromBranch, newBranch) {
-      const baseSha = await getRef(fromBranch);
-      const r = await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}/git/refs`, {
-        method:'POST', headers: ghHeaders(),
-        body: JSON.stringify({ ref: `refs/heads/${newBranch}`, sha: baseSha })
-      });
-      if (!r.ok && r.status !== 422) {
-        const {json, raw} = await ghJson(r);
-        throw new Error(`createBranch failed [${r.status}] ${json?.message||raw}`);
-      }
+    async function createBranch(from, newBr){
+      const c=ghCfg(); const sha=await gitRef(from||c.branch||'main');
+      const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/git/refs`, {method:'POST', body:JSON.stringify({ref:`refs/heads/${newBr}`, sha})});
+      if(!r.ok && r.status!==422){ const {json,raw}=await ghJson(r); throw new Error(`createBranch [${r.status}] ${json?.message||raw}`); }
     }
-    async function getFileSha(path, branch) {
-      const url = `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${encPath(path)}?ref=${encodeURIComponent(branch)}`;
-      const r = await fetch(url, {headers: ghHeaders()});
-      if (r.status === 404) return null;
-      if (!r.ok) {
-        const {json, raw} = await ghJson(r);
-        throw new Error(`getFileSha failed [${r.status}] ${json?.message||raw}`);
-      }
-      return (await r.json()).sha || null;
+    async function fileSha(path, branch){
+      const c=ghCfg();
+      const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}?ref=${encodeURIComponent(branch||c.branch||'main')}`);
+      if(r.status===404) return null;
+      if(!r.ok){ const {json,raw}=await ghJson(r); throw new Error(`getFileSha [${r.status}] ${json?.message||raw}`); }
+      return (await r.json()).sha||null;
     }
-    async function putFile(path, content, message, branch) {
-      const sha = await getFileSha(path, branch);
-      const r = await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${encPath(path)}`, {
-        method:'PUT', headers: ghHeaders(),
-        body: JSON.stringify({
-          message: message || `Update ${path}`,
-          content: b64(content || '<!doctype html><title>Empty</title>'),
-          branch,
-          ...(sha ? { sha } : {})
-        })
-      });
-      if (!r.ok) {
-        const {json, raw} = await ghJson(r);
-        const err = new Error(`PUT ${path} on ${branch} failed [${r.status}] ${json?.message||raw}`);
-        err.status = r.status; err.detail = json?.message||raw; throw err;
-      }
+    function shouldPR(errMsg, status){
+      const m=(String(errMsg||'').toLowerCase());
+      return status===403||status===422||m.includes('protected')||m.includes('pull request')||m.includes('required status check')||m.includes('resource not accessible');
+    }
+    async function createPR(head, title, body){
+      const c=ghCfg();
+      const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/pulls`, {method:'POST', body:JSON.stringify({title, head, base:c.branch||'main', body})});
+      if(!r.ok && r.status!==422){ const {json,raw}=await ghJson(r); throw new Error(`createPR [${r.status}] ${json?.message||raw}`); }
+    }
+
+    async function ghGet(path){
+      const c=ghCfg();
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}?ref=${encodeURIComponent(c.branch||'main')}`;
+      const r=await ghFetch(url);
+      if(!r.ok) return null;
       return r.json();
     }
-    async function deleteFile(path, message, branch) {
-      const sha = await getFileSha(path, branch);
-      if (!sha) return { skipped:true };
-      const r = await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${encPath(path)}`, {
-        method:'DELETE', headers: ghHeaders(),
-        body: JSON.stringify({ message: message || `Delete ${path}`, sha, branch })
-      });
-      if (!r.ok) {
-        const {json, raw} = await ghJson(r);
-        const err = new Error(`DELETE ${path} on ${branch} failed [${r.status}] ${json?.message||raw}`);
-        err.status = r.status; err.detail = json?.message||raw; throw err;
+
+    async function ghUpsert(path,content,message){
+      const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
+      const safe=(content&&String(content).length)?content:'<!doctype html><meta charset="utf-8"><title>Empty</title>';
+      const main=c.branch||'main';
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
+      const sha=await fileSha(path, main);
+      const body=JSON.stringify({message:message||`Update ${path}`,content:toBase64(safe),branch:main,...(sha?{sha}:{})});
+
+      let res=await ghFetch(url,{method:'PUT',body});
+      if(!res.ok){
+        const {json,raw}=await ghJson(res);
+        if(shouldPR(json?.message||raw,res.status)){
+          const br=`iptv-auto-${Date.now().toString(36)}`;
+          await createBranch(main, br);
+          const sha2=await fileSha(path, br);
+          const body2=JSON.stringify({message:message||`Update ${path}`,content:toBase64(safe),branch:br,...(sha2?{sha:sha2}:{})});
+          const res2=await ghFetch(url,{method:'PUT',body:body2});
+          if(!res2.ok){ const {json:jj,raw:rr}=await ghJson(res2); throw new Error(`PUT on PR branch [${res2.status}] ${jj?.message||rr}`); }
+          await createPR(br, `IPTV: ${message||`Update ${path}`}`, `Auto-created by Displays UI.\n\nPath: \`${path}\``);
+          window.dispatchEvent(new CustomEvent('gh:pr',{detail:{branch:br,path}}));
+          return res2.json();
+        }
+        throw new Error(`GitHub publish failed [${res.status}] ${json?.message||raw}`);
       }
-      return r.json();
+      return res.json();
     }
-    async function createPR(fromBranch, title, body) {
-      const r = await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}/pulls`, {
-        method:'POST', headers: ghHeaders(),
-        body: JSON.stringify({ title, head: fromBranch, base: GH.main, body })
-      });
-      if (!r.ok) {
-        const {json, raw} = await ghJson(r);
-        if (r.status !== 422) throw new Error(`PR create failed [${r.status}] ${json?.message||raw}`);
+
+    async function ghDelete(path,message){
+      const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
+      const main=c.branch||'main';
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
+      const info=await ghGet(path);
+      if(!info?.sha) return {ok:true,skipped:true};
+
+      const body=JSON.stringify({message:message||`Delete ${path}`,sha:info.sha,branch:main});
+      let res=await ghFetch(url,{method:'DELETE',body});
+      if(!res.ok){
+        const {json,raw}=await ghJson(res);
+        if(shouldPR(json?.message||raw,res.status)){
+          const br=`iptv-auto-del-${Date.now().toString(36)}`;
+          await createBranch(main, br);
+          const info2=await ghGet(path);
+          if(!info2?.sha) return {ok:true,skipped:true};
+          const body2=JSON.stringify({message:message||`Delete ${path}`,sha:info2.sha,branch:br});
+          const res2=await ghFetch(url,{method:'DELETE',body:body2});
+          if(!res2.ok){ const {json:jj,raw:rr}=await ghJson(res2); throw new Error(`DELETE on PR branch [${res2.status}] ${jj?.message||rr}`); }
+          await createPR(br, `IPTV: ${message||`Delete ${path}`}`, `Auto-created by Displays UI (delete).\n\nPath: \`${path}\``);
+          window.dispatchEvent(new CustomEvent('gh:pr',{detail:{branch:br,path}}));
+          return res2.json();
+        }
+        throw new Error(`GitHub delete failed [${res.status}] ${json?.message||raw}`);
       }
+      return res.json();
     }
-    function needsPR(err) {
-      const msg = (err?.detail||'').toLowerCase();
-      return err?.status===403 || err?.status===422 ||
-             msg.includes('branch') && msg.includes('protected') ||
-             msg.includes('requires pull request') ||
-             msg.includes('required status check') ||
-             msg.includes('resource not accessible by integration');
+
+    async function configureGitHubInteractive(){
+      const cur=ghCfg();
+      const owner=(prompt('GitHub owner/user', cur.owner||'flaviothebfagroup')||'').trim(); if(!owner) return;
+      const repo=(prompt('Repo name', cur.repo||'IPTV-')||'').trim(); if(!repo) return;
+      const branch=(prompt('Branch', cur.branch||'main')||'main').trim();
+      const token=(prompt('Personal Access Token (fine-grained Contents & PRs: Read/Write, or classic repo/public_repo)', cur.token||'')||'').trim(); if(!token) return;
+      saveGhCfg({owner,repo,branch,token}); toast('GitHub saved!');
     }
-    async function ghUpsert(path, content, message) {
-      try { return await putFile(path, content, message, GH.main); }
-      catch(err){
-        if (!needsPR(err)) throw err;
-        const short = `iptv-auto-${Date.now().toString(36)}`;
-        await createBranch(GH.main, short);
-        const res = await putFile(path, content, message || `Add ${path}`, short);
-        await createPR(short, `IPTV: ${message||`Update ${path}`}`, `Auto-created by Displays UI.\n\nPath: \`${path}\``);
-        window.dispatchEvent(new CustomEvent('gh:pr', { detail: { branch: short, path } }));
-        return res;
-      }
-    }
-    async function ghDelete(path, message) {
-      try { return await deleteFile(path, message, GH.main); }
-      catch(err){
-        if (!needsPR(err)) throw err;
-        const short = `iptv-auto-del-${Date.now().toString(36)}`;
-        await createBranch(GH.main, short);
-        const res = await deleteFile(path, message || `Delete ${path}`, short);
-        await createPR(short, `IPTV: ${message||`Delete ${path}`}`, `Auto-created by Displays UI (delete).\n\nPath: \`${path}\``);
-        window.dispatchEvent(new CustomEvent('gh:pr', { detail: { branch: short, path } }));
-        return res;
-      }
-    }
-    window.addEventListener('gh:pr', (e)=>{
-      const b = e.detail?.branch; const p = e.detail?.path;
-      toast(`Created PR from ${b} for ${p}. Merge to apply.`);
-    });
-    document.getElementById('ghSetupBtn')?.addEventListener('click', ()=>toast('GitHub is hard-wired in code'));
-    document.getElementById('ghResetBtn')?.addEventListener('click', ()=>toast('Edit token/owner/repo in code if needed'));
+    function ghClear(){ localStorage.removeItem('iptv_admin_gh'); toast('GitHub config cleared'); }
+
+    document.getElementById('ghSetupBtn').addEventListener('click', configureGitHubInteractive);
+    document.getElementById('ghResetBtn').addEventListener('click', ghClear);
+    window.addEventListener('gh:pr', e=>{ const b=e.detail?.branch, p=e.detail?.path; toast(`Created PR from ${b} for ${p}. Merge on GitHub.`); });
 
     function buildPlayerFileHtml(displayId, dealershipPublicName){
       const tpl=document.getElementById('playerTemplate');
       return (tpl?.innerHTML||'').replaceAll('(NEW-CODE)', displayId).replaceAll('(NEW-NAME)', dealershipPublicName);
     }
 
-    /* ===== Displays & preview ===== */
+    /* ===== Displays & preview (unchanged UI) ===== */
     let displaysUnsub=null;
     document.getElementById('dealerForDisplays').addEventListener('change', e=>watchDisplays(e.target.value));
     document.getElementById('displaysReload').addEventListener('click', ()=>{ const did=document.getElementById('dealerForDisplays').value; if(did) watchDisplays(did,true); });
@@ -676,28 +667,23 @@
           ul.appendChild(li);
         });
 
-        // Channel change
         ul.querySelectorAll('.chsel').forEach(el=>{
           el.addEventListener('change', async (e)=>{ const id=e.target.dataset.id; const ch=parseInt(e.target.value,10); await writeDisplay(id,{channel:ch}); });
         });
 
-        // Volume debounce
         const debouncedWrite=debounce(async (id,val)=>{ await writeDisplay(id,{volume:val}); },160);
         ul.querySelectorAll('.vslider').forEach(el=>{
           el.addEventListener('input', e=>{ const id=e.target.dataset.id; const v=parseInt(e.target.value,10); debouncedWrite(id,v); });
         });
 
-        // Mute toggle
         ul.querySelectorAll('button[data-id]').forEach(el=>{
           el.addEventListener('click', async ()=>{ const id=el.dataset.id; const cur=el.getAttribute('data-muted')==='true'; await writeDisplay(id,{muted:!cur}); });
         });
 
-        // Ping flash
         ul.querySelectorAll('button[data-flash]').forEach(el=>{
           el.addEventListener('click', async ()=>{ const id=el.dataset.flash; await writeDisplay(id,{flashAt: Date.now()}); toast(`Pinged ${id}`); });
         });
 
-        // Remove (also delete GitHub)
         ul.querySelectorAll('button[data-remove]').forEach(el=>{
           el.addEventListener('click', async ()=>{
             const id=el.dataset.remove;
@@ -706,38 +692,31 @@
               await remove(ref(db,`dealership/${did}/displays/${id}`)).catch(()=>{});
               await remove(ref(db,`displays/${id}`)).catch(()=>{});
               try{ await ghDelete(`Displays/${id}.html`, `Delete player for ${id}`); }
-              catch(e){ console.error(e); toast('GitHub delete failed',true); }
+              catch(e){ console.error(e); toast(`GitHub delete: ${e.message||e}`,true); }
               toast('Display removed');
             }catch(e){ console.error(e); toast('Remove failed',true); }
           });
         });
 
-        // Edit (rename ID + change dealership public name for file content)
+        // Edit / rename
         ul.querySelectorAll('button[data-edit]').forEach(el=>{
           el.addEventListener('click', async ()=>{
             const id=el.dataset.edit;
             const newId=(prompt("New display ID:", id)||'').trim();
             if(!newId || newId===id) return;
-            // Friendly dealership name just for file template content
             const friendly=(prompt("Dealership public name to embed in the file:", did)||did).trim();
-
             try{
-              // Copy display state
               const s=await get(ref(db,`displays/${id}`));
               const data=s.val()||{};
               await set(ref(db,`displays/${newId}`),{...data,dealership:did,timestamp:Date.now()});
               await remove(ref(db,`displays/${id}`));
-              // Update mapping under dealership
               await remove(ref(db,`dealership/${did}/displays/${id}`)).catch(()=>{});
               await set(ref(db,`dealership/${did}/displays/${newId}`),true);
-
-              // GitHub rename: create new file then delete old
               const html=buildPlayerFileHtml(newId,friendly);
               try{
                 await ghUpsert(`Displays/${newId}.html`, html, `Create/Rename player for ${newId} (${friendly})`);
                 await ghDelete(`Displays/${id}.html`, `Delete old ${id}`);
-              }catch(e){ console.error(e); toast('GitHub rename failed',true); }
-
+              }catch(e){ console.error(e); toast(`GitHub rename: ${e.message||e}`,true); }
               toast(`Renamed ${id} → ${newId}`);
               document.getElementById('displaysReload')?.click();
             }catch(e){ console.error(e); toast('Rename failed',true); }
@@ -750,16 +729,11 @@
       displaysUnsub=()=>off();
       if(forceOnce){ const once=await get(qRef); render(once.val()||{}); }
 
-      // Inline preview handler (each row manages its own preview; multiple rows supported)
       ul.addEventListener('click', async (e)=>{
         const btn=e.target.closest('button[data-preview]'); if(!btn) return;
         const id=btn.dataset.preview;
         const row=btn.closest('.item');
-
-        // toggle within this row only
-        const opened=row.querySelector('.sub.preview');
-        if(opened){ opened.remove(); return; }
-
+        const opened=row.querySelector('.sub.preview'); if(opened){ opened.remove(); return; }
         const panel=document.createElement('div'); panel.className='sub preview';
         panel.innerHTML=`
           <div class="bar">
@@ -769,11 +743,8 @@
           </div>
           <iframe title="Preview ${esc(id)}" src="about:blank" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
         row.appendChild(panel);
-
         const url=await resolvePreviewUrl(id);
-        const frame=panel.querySelector('iframe');
-        frame.src=url;
-
+        const frame=panel.querySelector('iframe'); frame.src=url;
         panel.querySelector('[data-open]').onclick=()=>window.open(url,'_blank','noopener');
         panel.querySelector('[data-reload]').onclick=()=>{ frame.src=url.split('&nocache=')[0]+`&nocache=${Date.now()}`; };
       });
@@ -827,10 +798,21 @@
           created=true;
         }catch(e){
           lastErr=e;
-          console.error(e);
+          // old behavior: prompt for token if explicit 401
+          if(/401|Bad credentials/i.test(String(e.message||''))){
+            toast('GitHub auth failed — enter a new token'); await configureGitHubInteractive();
+            if(!ghNeedsConfig()){
+              try{ await ghUpsert(`Displays/${id}.html`, html, `Create player for ${id} (${friendly})`); created=true; }catch(e2){ lastErr=e2; }
+            }
+          }
         }
 
-        if(created){ toast('TV added + page created'); } else { toast('TV added (GitHub failed — check token/SSO/branch)', true); if(lastErr) console.error(lastErr); }
+        if(created){ toast('TV added + page created'); }
+        else{
+          const m=(lastErr && (lastErr.message||lastErr.detail))?String(lastErr.message||lastErr.detail):'unknown error';
+          toast(`TV added (GitHub: ${m})`, true);
+          console.error('[GitHub]', lastErr);
+        }
         document.getElementById('newDisplayId').value='';
         document.getElementById('displaysReload')?.click();
       }catch(e){ console.error(e); toast((e&&e.message)||'Add failed',true); }
@@ -840,7 +822,6 @@
     function initialsFromName(name){ const raw=(name||'').trim(); if(!raw) return 'DS'; let parts=raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g)||raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g)||[]; let a=parts[0]||'', b=parts[1]||''; let p=(a? a[0]:'')+(b? b[0]:''); if(p.length<2 && a.length>=2) p=a.slice(0,2); return p.toUpperCase(); }
     function nextSuffix(list,pref){ let max=0; list.forEach(id=>{ const m=id.match(new RegExp('^'+pref+'-(\\d{3})$')); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; }}); return max+1; }
 
-    // start
     function start(){ const did=document.getElementById('dealerForDisplays').value; if(did) watchDisplays(did,true); else document.getElementById('displayEmpty').style.display='block'; }
     start();
   </script>
