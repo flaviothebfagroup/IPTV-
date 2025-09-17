@@ -32,7 +32,7 @@
   a{color:inherit;text-decoration:none}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Courier New",monospace}
 
-  /* ===== NAV (same as your other pages) ===== */
+  /* ===== NAV ===== */
   .topbar{position:sticky;top:0;z-index:100;background:var(--panel);
     border-bottom:1px solid var(--border);
     padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
@@ -61,7 +61,6 @@
     background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
   .chip:hover{border-color:var(--accent)}
   .chip .ic{width:18px;height:18px;stroke-width:2}
-  .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
   #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:42px;min-width:42px;padding:0;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
   #hamburger .ic{width:22px;height:22px;stroke:var(--accent);stroke-width:2.35}
   @media (max-width:920px){.nav{display:none} #hamburger{display:inline-flex} .email{display:none}}
@@ -77,16 +76,28 @@
 
   /* ===== Page ===== */
   .wrap{max-width:1100px;margin:0 auto;padding:18px}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow);margin-bottom:12px}
   .muted{color:var(--muted);font-size:12px}
   .label{font-size:12px;color:var(--muted);margin-bottom:6px}
   .input,textarea{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
   textarea{min-height:120px;resize:vertical}
   .btn{height:34px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center}
   .btn.solid{background:var(--accent);border-color:var(--accent);color:#000}
+  .btn.danger{border-color:#ff6b6b;color:#ff6b6b;background:transparent}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}
   @media (max-width:720px){.row2,.row3{grid-template-columns:1fr}}
+
+  /* Explorer table */
+  .table{width:100%;border-collapse:separate;border-spacing:0 8px}
+  .tr{display:grid;grid-template-columns:28px 1fr auto auto auto;gap:8px;align-items:center;background:var(--tile);border:1px solid var(--border);border-radius:12px;padding:8px}
+  .tr .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .badge{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:transparent;font-size:12px;color:var(--muted)}
+  .crumbs{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .crumbs a{padding:6px 10px;border:1px solid var(--border);border-radius:9999px}
+  .crumbs a.active{border-color:var(--accent)}
+
+  /* Tabs + toast (for Delete Users card) */
   .tabs{display:flex;gap:8px;margin-top:10px;margin-bottom:8px}
   .tab{padding:6px 10px;border:1px solid var(--border);border-radius:9999px;cursor:pointer;font-weight:800}
   .tab.active{border-color:var(--accent)}
@@ -147,60 +158,50 @@
 </header>
 
 <div class="wrap">
-  <!-- ===== Central Config Source (read once for all pages) ===== -->
-  <div class="card" style="margin-bottom:12px">
-    <h3 style="margin:0 0 8px">Central Config Source</h3>
-    <div class="muted" style="margin-bottom:8px">
-      Point <b>all pages</b> to 1 JSON file in your repo. Update it once, all pages use it.
-      (Never store your GitHub token in the browser — keep secrets out of this JSON.)
-    </div>
+
+  <!-- ===== GitHub Connection ===== -->
+  <div class="card">
+    <h3 style="margin:0 0 8px">GitHub Connection</h3>
     <div class="row3">
-      <div><div class="label">Owner</div><input id="ghOwner" class="input" value="flaviothebfagroup"/></div>
-      <div><div class="label">Repo</div><input id="ghRepo" class="input" value="IPTV-"/></div>
-      <div><div class="label">Branch</div><input id="ghBranch" class="input" value="main"/></div>
+      <div><div class="label">Owner</div><input id="ghcOwner" class="input" value="flaviothebfagroup"/></div>
+      <div><div class="label">Repo</div><input id="ghcRepo" class="input" value="IPTV-"/></div>
+      <div><div class="label">Branch</div><input id="ghcBranch" class="input" value="main"/></div>
     </div>
     <div class="row2">
-      <div><div class="label">Path (in repo)</div><input id="ghPath" class="input" value="config/iptv-config.json"/></div>
-      <div><div class="label">Raw URL (auto)</div><input id="rawUrl" class="input mono" readonly/></div>
+      <div><div class="label">Token</div><input id="ghcToken" class="input" placeholder="••••••••" type="password"/></div>
+      <div style="display:flex;gap:8px;align-items:end">
+        <button id="ghSave" class="btn solid">Save</button>
+        <button id="ghClear" class="btn">Clear</button>
+        <button id="ghTest" class="btn">Test</button>
+      </div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-      <button id="btnOpenFile" class="btn">Open in GitHub</button>
-      <button id="btnOpenEditor" class="btn">Open GitHub Editor</button>
-      <button id="btnLoadConfig" class="btn">View current JSON</button>
-      <button id="btnCopyLoader" class="btn solid">Copy loader snippet (use on all pages)</button>
-    </div>
-    <textarea id="cfgView" class="input mono" style="margin-top:10px;display:none;height:240px" spellcheck="false"></textarea>
-
-    <div class="muted" style="margin-top:10px">Suggested JSON (copy into <span class="mono">config/iptv-config.json</span>):</div>
-    <textarea class="input mono" readonly style="margin-top:6px;height:180px" spellcheck="false">
-{
-  "firebaseConfig": {
-    "apiKey": "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
-    "authDomain": "iptv-bfa.firebaseapp.com",
-    "databaseURL": "https://iptv-bfa-default-rtdb.firebaseio.com",
-    "projectId": "iptv-bfa",
-    "storageBucket": "iptv-bfa.firebasestorage.app",
-    "messagingSenderId": "838790935867",
-    "appId": "1:838790935867:web:1860eac7dbeb7159e1b31e"
-  },
-  "github": {
-    "owner": "flaviothebfagroup",
-    "repo": "IPTV-",
-    "branch": "main",
-    "configPath": "config/iptv-config.json"
-  }
-}
-    </textarea>
+    <div class="muted">Token is stored locally in this browser only.</div>
+    <div id="ghStatus" class="small mono muted" style="margin-top:6px"></div>
   </div>
 
-  <!-- ===== Firebase Overview ===== -->
-  <div class="card" style="margin-bottom:12px">
-    <h3 style="margin:0 0 8px">Firebase Overview</h3>
-    <div class="row3">
-      <div><div class="label">Project ID</div><input class="input mono" value="iptv-bfa" readonly/></div>
-      <div><div class="label">Realtime DB</div><input class="input mono" value="https://iptv-bfa-default-rtdb.firebaseio.com" readonly/></div>
-      <div><div class="label">Auth user (signed-in)</div><input id="whoami" class="input mono" readonly/></div>
+  <!-- ===== GitHub Explorer (ALL FILES) ===== -->
+  <div class="card">
+    <h3 style="margin:0 0 8px">GitHub Explorer (All Files)</h3>
+    <div class="crumbs" id="breadcrumbs" style="margin-bottom:8px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <button id="exUp" class="btn">Up</button>
+      <button id="exRefresh" class="btn">Refresh</button>
+      <button id="exDeleteSel" class="btn danger">Delete selected</button>
+      <button id="exNewFile" class="btn">New file…</button>
+      <button id="exNewFolder" class="btn">New folder…</button>
+      <label class="btn"><input id="exUpload" type="file" style="display:none">Upload…</label>
+      <span class="muted">Tip: Folder rename isn’t supported directly. Open the folder and rename/move files inside.</span>
     </div>
+    <div id="exTable"></div>
+  </div>
+
+  <!-- ===== Pull Requests ===== -->
+  <div class="card">
+    <h3 style="margin:0 0 8px">Open Pull Requests</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <button id="prRefresh" class="btn">Refresh PRs</button>
+    </div>
+    <div id="prList"></div>
   </div>
 
   <!-- ===== Delete Anonymous Users ===== -->
@@ -228,7 +229,7 @@
       <textarea id="purgeCmd" class="input mono" style="margin-top:10px;display:none;height:260px" spellcheck="false"></textarea>
     </div>
 
-    <!-- Direct tab (optional, needs function) -->
+    <!-- Direct tab -->
     <div id="tab-direct" class="hide">
       <div class="row3">
         <div><div class="label">Function URL (https…/purgeAnonHttp)</div><input id="purgeUrl" class="input" placeholder="https://us-central1-iptv-bfa.cloudfunctions.net/purgeAnonHttp"></div>
@@ -243,6 +244,28 @@
       <div class="muted" style="margin-top:6px">URL/key are saved only in this browser (localStorage).</div>
     </div>
   </div>
+
+  <!-- ===== Central Config (helper) ===== -->
+  <div class="card">
+    <h3 style="margin:0 0 8px">Central Config Source</h3>
+    <div class="row3">
+      <div><div class="label">Owner</div><input id="ghOwner" class="input" value="flaviothebfagroup"/></div>
+      <div><div class="label">Repo</div><input id="ghRepo" class="input" value="IPTV-"/></div>
+      <div><div class="label">Branch</div><input id="ghBranch" class="input" value="main"/></div>
+    </div>
+    <div class="row2">
+      <div><div class="label">Path (in repo)</div><input id="ghPath" class="input" value="config/iptv-config.json"/></div>
+      <div><div class="label">Raw URL (auto)</div><input id="rawUrl" class="input mono" readonly/></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button id="btnOpenFile" class="btn">Open in GitHub</button>
+      <button id="btnOpenEditor" class="btn">Open GitHub Editor</button>
+      <button id="btnLoadConfig" class="btn">View current JSON</button>
+      <button id="btnCopyLoader" class="btn solid">Copy loader snippet</button>
+    </div>
+    <textarea id="cfgView" class="input mono" style="margin-top:10px;display:none;height:220px" spellcheck="false"></textarea>
+  </div>
+
 </div>
 
 <div id="toast" class="toast"></div>
@@ -251,13 +274,24 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
   import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
-  const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
+  /* ==== FIREBASE (auth for this page) ==== */
+  const firebaseConfig = {
+    apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+    authDomain: "iptv-bfa.firebaseapp.com",
+    databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+    projectId: "iptv-bfa",
+    storageBucket: "iptv-bfa.firebasestorage.app",
+    messagingSenderId: "838790935867",
+    appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+  };
+
   const LOGO_URL="/IPTV-/icons/icon-512.png";
   const app=initializeApp(firebaseConfig);
   const auth=getAuth(app);
 
   const $=s=>document.querySelector(s);
-  function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+  function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+  const mono = s => `<span class="mono">${s}</span>`;
 
   // Logo + Theme
   $('#brandLogo').style.backgroundImage=`url("${LOGO_URL}")`;
@@ -298,54 +332,317 @@
   onAuthStateChanged(auth,u=>{
     if(!u){ location.href='./home.html'; return; }
     $('#adminEmail').textContent=u.email||u.uid;
-    $('#whoami').value = u.email || u.uid || '(anonymous)';
   });
   $('#signOutBtn').addEventListener('click',()=>signOut(auth));
 
-  /* ===== Central Config helpers ===== */
+  /* ===== Central Config helper (read only) ===== */
   const ghOwner=$('#ghOwner'), ghRepo=$('#ghRepo'), ghBranch=$('#ghBranch'), ghPath=$('#ghPath'), rawUrl=$('#rawUrl');
   function computeRaw(){ return `https://raw.githubusercontent.com/${ghOwner.value.trim()}/${ghRepo.value.trim()}/${ghBranch.value.trim()}/${ghPath.value.trim()}`; }
   function refreshRaw(){ rawUrl.value = computeRaw(); }
   [ghOwner,ghRepo,ghBranch,ghPath].forEach(el=>el.addEventListener('input', refreshRaw));
   refreshRaw();
-
-  $('#btnOpenFile').addEventListener('click',()=>{
-    const url=`https://github.com/${ghOwner.value.trim()}/${ghRepo.value.trim()}/blob/${ghBranch.value.trim()}/${ghPath.value.trim()}`;
-    window.open(url,'_blank','noopener');
-  });
-  $('#btnOpenEditor').addEventListener('click',()=>{
-    const url=`https://github.com/${ghOwner.value.trim()}/${ghRepo.value.trim()}/edit/${ghBranch.value.trim()}/${ghPath.value.trim()}`;
-    window.open(url,'_blank','noopener');
-  });
-  $('#btnLoadConfig').addEventListener('click', async ()=>{
-    const out=$('#cfgView'); out.style.display='block'; out.value='Loading…';
-    try{
-      const resp=await fetch(computeRaw(),{cache:'no-store'});
-      out.value = await resp.text();
-    }catch(e){ out.value='Error loading: '+(e?.message||String(e)); }
-  });
-  $('#btnCopyLoader').addEventListener('click', async ()=>{
+  $('#btnOpenFile').onclick=()=> window.open(`https://github.com/${ghOwner.value.trim()}/${ghRepo.value.trim()}/blob/${ghBranch.value.trim()}/${ghPath.value.trim()}`,'_blank','noopener');
+  $('#btnOpenEditor').onclick=()=> window.open(`https://github.com/${ghOwner.value.trim()}/${ghRepo.value.trim()}/edit/${ghBranch.value.trim()}/${ghPath.value.trim()}`,'_blank','noopener');
+  $('#btnLoadConfig').onclick=async()=>{ const out=$('#cfgView'); out.style.display='block'; out.value='Loading…'; try{ const resp=await fetch(computeRaw(),{cache:'no-store'}); out.value=await resp.text(); }catch(e){ out.value='Error: '+(e?.message||String(e)); } };
+  $('#btnCopyLoader').onclick=async()=>{
     const url=computeRaw();
-    const snippet =
-`// Load central config once on page load:
-const CONFIG_URL = '${url}';
-const appConfig = await fetch(CONFIG_URL, {cache:'no-store'}).then(r=>r.json());
+    const snip = `// Central loader
+const CONFIG_URL='${url}';
+const appConfig=await fetch(CONFIG_URL,{cache:'no-store'}).then(r=>r.json());
+const firebaseConfig=appConfig.firebaseConfig;`;
+    try{await navigator.clipboard.writeText(snip); toast('Loader snippet copied');}
+    catch{const ta=document.createElement('textarea'); ta.value=snip; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('Loader snippet copied');}
+  };
 
-// Use across pages:
-const firebaseConfig = appConfig.firebaseConfig;
-// initializeApp(firebaseConfig);
+  /* ===== GITHUB API HELPERS ===== */
+  function ghCfg(){ try{return JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}');}catch{return{};} }
+  function saveGhCfg(c){ localStorage.setItem('iptv_admin_gh', JSON.stringify(c)); }
+  const ghcOwner=$('#ghcOwner'), ghcRepo=$('#ghcRepo'), ghcBranch=$('#ghcBranch'), ghcToken=$('#ghcToken');
+  // prefill
+  (()=>{
+    const c=ghCfg();
+    if(c.owner) ghcOwner.value=c.owner;
+    if(c.repo)  ghcRepo.value=c.repo;
+    if(c.branch)ghcBranch.value=c.branch;
+    if(c.token) ghcToken.value=c.token;
+  })();
 
-// Example: get a custom value
-// const owner = appConfig.github.owner;`;
+  $('#ghSave').onclick=()=>{ const c={owner:ghcOwner.value.trim(),repo:ghcRepo.value.trim(),branch:ghcBranch.value.trim()||'main',token:ghcToken.value.trim()}; if(!c.owner||!c.repo||!c.token){toast('Fill owner/repo/token');return;} saveGhCfg(c); toast('GitHub saved'); };
+  $('#ghClear').onclick=()=>{ localStorage.removeItem('iptv_admin_gh'); toast('Cleared'); location.reload(); };
 
-    try{ await navigator.clipboard.writeText(snippet); toast('Loader snippet copied'); }
-    catch{ const ta=document.createElement('textarea'); ta.value=snippet; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('Loader snippet copied'); }
+  function headers(scheme='Bearer', tok=ghCfg().token){
+    return {'Authorization':`${scheme} ${tok}`,'Accept':'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'};
+  }
+  async function ghFetch(url,opts={}){
+    let r=await fetch(url,{...opts,headers:headers('Bearer')});
+    if(r.status===401) r=await fetch(url,{...opts,headers:headers('token')});
+    return r;
+  }
+  async function ghText(r){ const t=await r.text().catch(()=> ''); try{ return {json:JSON.parse(t), raw:t}; }catch{ return {json:null, raw:t}; } }
+  function encPath(p){ return (p||'').split('/').map(encodeURIComponent).join('/'); }
+  function needPR(msg,status){ const m=String(msg||'').toLowerCase(); return status===403||status===422||m.includes('protected')||m.includes('status check')||m.includes('resource not accessible'); }
+
+  async function whoami(){
+    const r=await ghFetch('https://api.github.com/user');
+    if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`user [${r.status}] ${json?.message||raw}`); }
+    return r.json();
+  }
+  async function getRef(branch){
+    const c=ghCfg(); const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/git/ref/heads/${encodeURIComponent(branch)}`);
+    if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`ref [${r.status}] ${json?.message||raw}`); }
+    return (await r.json()).object.sha;
+  }
+  async function createBranch(from,to){
+    const sha=await getRef(from);
+    const c=ghCfg(); const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/git/refs`,{method:'POST',body:JSON.stringify({ref:`refs/heads/${to}`,sha})});
+    if(!r.ok && r.status!==422){ const {json,raw}=await ghText(r); throw new Error(`branch [${r.status}] ${json?.message||raw}`); }
+  }
+  async function fileSha(path,branch){
+    const c=ghCfg(); const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encPath(path)}?ref=${encodeURIComponent(branch)}`);
+    if(r.status===404) return null;
+    if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`sha [${r.status}] ${json?.message||raw}`); }
+    return (await r.json()).sha||null;
+  }
+  async function fetchFile(path,branch){
+    const c=ghCfg();
+    const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encPath(path)}?ref=${encodeURIComponent(branch)}`;
+    const r=await ghFetch(url);
+    if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`get [${r.status}] ${json?.message||raw}`); }
+    return r.json(); // has base64 content for files
+  }
+  async function listDir(path,branch){
+    const c=ghCfg();
+    const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encPath(path)}?ref=${encodeURIComponent(branch)}`);
+    if(r.status===404) return [];
+    if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`ls [${r.status}] ${json?.message||raw}`); }
+    const arr=await r.json();
+    return Array.isArray(arr)?arr:[]; // directory listing only
+  }
+  async function openPR(head,base,title,body){
+    const c=ghCfg();
+    const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/pulls`,{method:'POST',body:JSON.stringify({title,head,base,body})});
+    if(!r.ok && r.status!==422){ const {json,raw}=await ghText(r); throw new Error(`PR [${r.status}] ${json?.message||raw}`); }
+    return r.json?.();
+  }
+  async function upsertFile(path,{contentBase64=null,text=null,message,branch}={}){
+    const c=ghCfg(); const br=branch||c.branch||'main';
+    const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encPath(path)}`;
+    const sha=await fileSha(path,br);
+    const content = contentBase64 ?? btoa(unescape(encodeURIComponent(text||'')));
+    let res=await ghFetch(url,{method:'PUT',body:JSON.stringify({message:message||`Update ${path}`,content,branch:br,...(sha?{sha}:{})})});
+    if(!res.ok){
+      const {json,raw}=await ghText(res);
+      if(needPR(json?.message||raw,res.status)){
+        const tmp=`iptv-admin-${Date.now().toString(36)}`;
+        await createBranch(br,tmp);
+        const sha2=await fileSha(path,tmp);
+        const res2=await ghFetch(url,{method:'PUT',body:JSON.stringify({message:message||`Update ${path}`,content,branch:tmp,...(sha2?{sha:sha2}:{})})});
+        if(!res2.ok){ const {json:jj,raw:rr}=await ghText(res2); throw new Error(`PUT@PR [${res2.status}] ${jj?.message||rr}`); }
+        await openPR(tmp, br, message||`Update ${path}`, `Auto-created by Settings page\n\nPath: \`${path}\``);
+        return res2.json();
+      }
+      throw new Error(`put [${res.status}] ${json?.message||raw}`);
+    }
+    return res.json();
+  }
+  async function deleteFile(path,{message,branch}={}){
+    const c=ghCfg(); const br=branch||c.branch||'main';
+    const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encPath(path)}`;
+    const sha=await fileSha(path,br);
+    if(!sha) return {ok:true,skipped:true};
+    let res=await ghFetch(url,{method:'DELETE',body:JSON.stringify({message:message||`Delete ${path}`,sha,branch:br})});
+    if(!res.ok){
+      const {json,raw}=await ghText(res);
+      if(needPR(json?.message||raw,res.status)){
+        const tmp=`iptv-delete-${Date.now().toString(36)}`;
+        await createBranch(br,tmp);
+        const sha2=await fileSha(path,tmp);
+        if(!sha2) return {ok:true,skipped:true};
+        const res2=await ghFetch(url,{method:'DELETE',body:JSON.stringify({message:message||`Delete ${path}`,sha:sha2,branch:tmp})});
+        if(!res2.ok){ const {json:jj,raw:rr}=await ghText(res2); throw new Error(`del@PR [${res2.status}] ${jj?.message||rr}`); }
+        await openPR(tmp, br, message||`Delete ${path}`, `Auto-created by Settings page (delete)\n\nPath: \`${path}\``);
+        return res2.json();
+      }
+      throw new Error(`del [${res.status}] ${json?.message||raw}`);
+    }
+    return res.json();
+  }
+
+  // GitHub Test
+  $('#ghTest').onclick=async()=>{
+    const c=ghCfg(); if(!c.token){ toast('Set token first'); return; }
+    try{
+      const me=await whoami();
+      const ref=await getRef(c.branch||'main');
+      $('#ghStatus').innerHTML=`OK as ${mono(me.login)} — branch ${mono((c.branch||'main'))} @ ${mono(ref.slice(0,7))}`;
+      toast('GitHub OK');
+    }catch(e){ $('#ghStatus').textContent=String(e.message||e); toast('GitHub failed'); }
+  };
+
+  /* ====== EXPLORER (ALL FILES) ====== */
+  let currentPath = ''; // '' = repo root
+
+  function setCrumbs(){
+    const bc=$('#breadcrumbs');
+    const parts=currentPath?currentPath.split('/'):[];
+    const acc=[];
+    let html = `<a href="javascript:void(0)" data-path="" class="active">/${ghcRepo.value}</a>`;
+    parts.forEach((p)=>{
+      acc.push(p);
+      html += `<span class="muted">›</span><a href="javascript:void(0)" data-path="${acc.join('/')}">${p}</a>`;
+    });
+    bc.innerHTML = html;
+    bc.querySelectorAll('a').forEach(a=>{
+      a.onclick=()=>{ currentPath=a.dataset.path||''; refreshExplorer(); };
+    });
+  }
+
+  function icon(type){ return type==='dir' ? '📁' : '📄'; }
+
+  async function refreshExplorer(){
+    const table=$('#exTable'); table.innerHTML='Loading…';
+    setCrumbs();
+    try{
+      const c=ghCfg(); if(!c.owner||!c.repo||!c.branch||!c.token){ table.innerHTML='<div class="muted">Set GitHub connection first.</div>'; return; }
+      let items = await listDir(currentPath, c.branch||'main');
+      items = (items||[]).sort((a,b)=>{
+        if(a.type!==b.type) return a.type==='dir'?-1:1;
+        return a.name.localeCompare(b.name);
+      });
+      const rows = items.map(it=>{
+        const size = it.type==='file' ? `<span class="badge">${(it.size||0)} bytes</span>` : '';
+        const rawUrl = it.type==='file'
+          ? `https://raw.githubusercontent.com/${c.owner}/${c.repo}/${encodeURIComponent(c.branch||'main')}/${encPath((currentPath?currentPath+'/':'')+it.name)}`
+          : '#';
+        return `
+          <div class="tr" data-name="${it.name}" data-type="${it.type}">
+            <input type="checkbox" class="chk">
+            <div class="name mono">${icon(it.type)} ${(it.name)}</div>
+            <div>${size}</div>
+            <div style="display:flex;gap:6px">
+              ${it.type==='dir'
+                ? `<button class="btn" data-open>Open</button>`
+                : `<a class="btn" href="${rawUrl}" target="_blank" rel="noopener">Raw</a>`}
+              <button class="btn" data-rename>Rename</button>
+              ${it.type==='file'?`<button class="btn danger" data-delete>Delete</button>`:''}
+            </div>
+            <a class="btn" target="_blank" rel="noopener" href="https://github.com/${c.owner}/${c.repo}/${it.type==='dir'?'tree':'blob'}/${encodeURIComponent(c.branch||'main')}/${encPath((currentPath?currentPath+'/':'')+it.name)}">GitHub</a>
+          </div>`;
+      }).join('') || '<div class="muted">Empty folder.</div>';
+      table.innerHTML = `<div style="margin-bottom:6px"><label class="badge"><input id="exAll" type="checkbox"> Select all</label></div><div class="table">${rows}</div>`;
+      $('#exAll')?.addEventListener('change',()=>{ table.querySelectorAll('.chk').forEach(x=>x.checked=$('#exAll').checked); });
+
+      // open dir
+      table.querySelectorAll('[data-open]').forEach(btn=>{
+        btn.onclick=()=>{ const row=btn.closest('.tr'); const name=row.dataset.name; const next = currentPath?`${currentPath}/${name}`:name; currentPath = next; refreshExplorer(); };
+      });
+      // delete file
+      table.querySelectorAll('[data-delete]').forEach(btn=>{
+        btn.onclick=async()=>{
+          const row=btn.closest('.tr'); const name=row.dataset.name;
+          const full=(currentPath?currentPath+'/':'')+name;
+          if(!confirm(`Delete ${full}?`)) return;
+          try{ await deleteFile(full,{message:`Delete ${full}`}); toast('Deleted (PR if needed)'); refreshExplorer(); }catch(e){ toast(`Delete failed: ${e.message||e}`); }
+        };
+      });
+      // rename (files only)
+      table.querySelectorAll('[data-rename]').forEach(btn=>{
+        btn.onclick=async()=>{
+          const row=btn.closest('.tr'); const name=row.dataset.name; const type=row.dataset.type;
+          const full=(currentPath?currentPath+'/':'')+name;
+          const newName=(prompt(`Rename ${name} to:`, name)||'').trim();
+          if(!newName || newName===name) return;
+          const target=(currentPath?currentPath+'/':'')+newName;
+          try{
+            if(type==='dir'){ alert('Folder rename not supported. Open the folder and rename files inside.'); return; }
+            const meta=await fetchFile(full, ghCfg().branch||'main'); // has content base64
+            await upsertFile(target,{contentBase64:meta.content.replace(/\n/g,''),message:`Rename ${full} → ${target}`});
+            await deleteFile(full,{message:`Remove old ${full}`});
+            toast('Renamed (PR if needed)');
+            refreshExplorer();
+          }catch(e){ toast(`Rename failed: ${e.message||e}`); }
+        };
+      });
+
+    }catch(e){
+      console.error(e);
+      table.innerHTML=`<div class="small mono" style="color:#ef4444">${String(e.message||e)}</div>`;
+    }
+  }
+
+  $('#exRefresh').onclick=refreshExplorer;
+  $('#exUp').onclick=()=>{ if(!currentPath) return; currentPath=currentPath.split('/').slice(0,-1).join('/'); refreshExplorer(); };
+  $('#exDeleteSel').onclick=async()=>{
+    const tbl=$('#exTable'); const picks=[...tbl.querySelectorAll('.tr')].filter(r=>r.querySelector('.chk')?.checked);
+    const files = picks.filter(r=>r.dataset.type==='file').map(r=>(currentPath?currentPath+'/':'')+r.dataset.name);
+    if(files.length===0){ toast('Pick file(s)'); return; }
+    if(!confirm(`Delete ${files.length} file(s)?`)) return;
+    try{
+      for(const f of files){ await deleteFile(f,{message:`Delete ${f}`}); }
+      toast('Delete done (PR if needed)'); refreshExplorer();
+    }catch(e){ toast(`Delete failed: ${e.message||e}`); }
+  };
+  $('#exNewFile').onclick=async()=>{
+    const name=(prompt('New file path (relative to current folder):','new.txt')||'').trim();
+    if(!name) return;
+    const full=(currentPath?currentPath+'/':'')+name;
+    const text=prompt('Initial content (optional):','')||'';
+    try{ await upsertFile(full,{text,message:`Create ${full}`}); toast('File created (PR if needed)'); refreshExplorer(); }catch(e){ toast(`Create failed: ${e.message||e}`); }
+  };
+  $('#exNewFolder').onclick=async()=>{
+    const name=(prompt('New folder name:','NewFolder')||'').trim();
+    if(!name) return;
+    const full=(currentPath?currentPath+'/':'')+name+'/.gitkeep';
+    try{ await upsertFile(full,{text:'',message:`Create folder ${(currentPath?currentPath+'/':'')+name}`}); toast('Folder created'); refreshExplorer(); }catch(e){ toast(`Create failed: ${e.message||e}`); }
+  };
+  $('#exUpload').addEventListener('change', async (ev)=>{
+    const f=ev.target.files?.[0]; if(!f) return;
+    const path=(prompt('Upload to (file name):', (currentPath?currentPath+'/':'')+f.name)||'').trim();
+    if(!path) return;
+    try{
+      const buf=await f.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+      await upsertFile(path,{contentBase64:base64,message:`Upload ${path}`});
+      toast('Uploaded'); refreshExplorer();
+    }catch(e){ toast(`Upload failed: ${e.message||e}`); }
+    ev.target.value='';
   });
 
-  /* ===== Purge: tabs ===== */
-  document.querySelectorAll('.tab').forEach(btn=>{
+  /* ===== PR LIST ===== */
+  async function listPRs(){
+    const c=ghCfg();
+    const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/pulls?state=open`);
+    if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`prs [${r.status}] ${json?.message||raw}`); }
+    return r.json();
+  }
+  async function mergePR(num){
+    const c=ghCfg();
+    const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/pulls/${num}/merge`,{method:'PUT',body:JSON.stringify({merge_method:'squash'})});
+    if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`merge [${r.status}] ${json?.message||raw}`); }
+    return r.json();
+  }
+  async function refreshPRs(){
+    const list=$('#prList'); list.innerHTML='Loading…';
+    try{
+      const prs=await listPRs();
+      if(!prs||prs.length===0){ list.innerHTML='<div class="muted">No open PRs.</div>'; return; }
+      list.innerHTML=prs.map(p=>`
+        <div class="tr" style="grid-template-columns:1fr auto auto;">
+          <div><b>#${p.number}</b> — ${p.title} <span class="badge">from ${mono(p.head.ref)}</span></div>
+          <a class="btn" target="_blank" rel="noopener" href="${p.html_url}">Open</a>
+          <button class="btn" data-merge="${p.number}">Merge</button>
+        </div>`).join('');
+      list.querySelectorAll('[data-merge]').forEach(b=>{
+        b.onclick=async()=>{ try{ await mergePR(b.dataset.merge); toast('Merged'); refreshExplorer(); refreshPRs(); }catch(e){ toast(`Merge failed: ${e.message||e}`); } };
+      });
+    }catch(e){ list.innerHTML=`<div class="small mono" style="color:#ef4444">${String(e.message||e)}</div>`; }
+  }
+  $('#prRefresh').onclick=refreshPRs;
+
+  /* ===== Delete Users: tabs ===== */
+  document.querySelectorAll('#purgeCard .tab').forEach(btn=>{
     btn.addEventListener('click',()=>{
-      document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('#purgeCard .tab').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       const which=btn.dataset.tab;
       $('#tab-shell').classList.toggle('hide', which!=='shell');
@@ -353,7 +650,7 @@ const firebaseConfig = appConfig.firebaseConfig;
     });
   });
 
-  /* ===== Purge: Cloud Shell helper ===== */
+  /* ===== Delete Users: Cloud Shell helper ===== */
   (function(){
     const daysEl=$('#purgeDays'), fbEl=$('#purgeFbProject'), gcpEl=$('#purgeGcpProject');
     const outEl=$('#purgeCmd'), btnCopy=$('#btnPurgeCopy'), btnOpen=$('#btnPurgeOpenShell'), btnShow=$('#btnPurgeShow');
@@ -400,7 +697,7 @@ node purge-anon.js --days ${DAYS}
     refresh(false);
   })();
 
-  /* ===== Purge: Direct call (optional function) ===== */
+  /* ===== Delete Users: Direct function call ===== */
   (function(){
     const urlEl=$('#purgeUrl'), keyEl=$('#purgeKey'), daysEl=$('#purgeDays2'), out=$('#purgeOut');
     urlEl.value = localStorage.getItem('purge_url') || '';
@@ -424,6 +721,10 @@ node purge-anon.js --days ${DAYS}
     $('#btnDirectDry').addEventListener('click',()=>call(true));
     $('#btnDirectGo').addEventListener('click',()=>call(false));
   })();
+
+  // Initial loads
+  refreshExplorer();
+  refreshPRs();
 </script>
 </body>
 </html>
