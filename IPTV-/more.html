@@ -13,7 +13,7 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png"/>
   <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png"/>
 
-  <!-- Video.js for admin preview in the Change popup -->
+  <!-- Video.js for the “Change Channel” modal preview -->
   <link rel="stylesheet" href="https://vjs.zencdn.net/8.10.0/video-js.css">
   <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
 
@@ -91,17 +91,19 @@
     .toast.show{opacity:1}
     .toast.err{background:#ff453a;color:#fff}
 
-    /* Inline preview (global picker test mini-player) */
+    /* Inline preview (global picker) */
     .sub.preview{grid-column:1/-1;width:100%;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;margin-top:6px}
     .sub.preview .bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
-    .sub.preview iframe{width:100%;height:420px;border:1px solid var(--border);border-radius:10px;background:#000}
+    .sub.preview video{width:100%;height:260px;background:#000;border:1px solid var(--border);border-radius:10px}
 
-    /* Channels subpanel (per display row) */
+    /* Channels subpanel (per row) */
     .sub.channels{grid-column:1/-1;width:100%;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:6px}
     .chgrid{display:grid;grid-template-columns:56px 1fr auto auto;gap:8px;align-items:center}
     .chcell{font-size:12px;color:var(--muted);word-break:break-all}
     .chname{font-weight:800;color:var(--fg);font-size:13px}
     .badge{font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:999px;color:var(--muted)}
+    .rowPreview{margin-top:10px}
+    .rowPreview video{width:100%;height:260px;background:#000;border:1px solid var(--border);border-radius:10px}
 
     /* Channel picker (global) */
     #chPicker .grid{display:grid;grid-template-columns:1fr;gap:8px}
@@ -267,7 +269,7 @@
     </div>
   </div>
 
-  <!-- ===== Player file template (YOUR EXACT TEMPLATE + Volume HUD) ===== -->
+  <!-- ===== Player file template (YOUR ORIGINAL + Volume HUD) ===== -->
   <template id="playerTemplate"><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -516,6 +518,9 @@
     const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
     const LOGO_URL="/IPTV-/icons/icon-512.png";
 
+    const DEFAULT_SHEET_ID='1Oh69mDuOCuy27YDYpInoVfcw3o4TlFutQEGYamBXSHE';
+    const DEFAULT_SHEET_GID='824459168';
+
     const app=initializeApp(firebaseConfig);
     const auth=getAuth(app);
     const db=getDatabase(app);
@@ -577,29 +582,32 @@
     function saveChCfg(c){ localStorage.setItem(CH_KEY, JSON.stringify(c)); }
     function chNeedsConfig(){ const c=chCfg(); return !(c.url); }
 
-    // Accepts any Google Sheets link; converts to a robust CSV endpoint
+    // Accepts any Google Sheets link; converts to a robust CSV endpoint (B2:C)
     function normalizeSheetUrl(u){
       if(!u) return '';
       try{
-        const url=new URL(u);
-        if(url.hostname.includes('docs.google.com') && url.pathname.includes('/spreadsheets/')){
-          const id = url.pathname.split('/').filter(Boolean)[3] || url.pathname.split('/d/')[1]?.split('/')[0];
-          const gid = url.searchParams.get('gid') || '0';
-          // prefer gviz CSV limited to B2:C, falls back fine
-          return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&gid=${encodeURIComponent(gid)}&range=${encodeURIComponent('B2:C')}`;
-        }
-        return u;
-      }catch{ return u; }
+        // If already an export/gviz link, keep it
+        if(/docs\.google\.com\/spreadsheets\/.*(export|gviz)/i.test(u)) return u;
+        const m = u.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+        const id = m ? m[1] : DEFAULT_SHEET_ID;
+        const url = new URL(u);
+        const gid = url.searchParams.get('gid') || DEFAULT_SHEET_GID;
+        return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&gid=${encodeURIComponent(gid)}&range=${encodeURIComponent('B2:C')}`;
+      }catch{
+        return `https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${encodeURIComponent(DEFAULT_SHEET_GID)}&range=${encodeURIComponent('B2:C')}`;
+      }
     }
 
     async function fetchChannelSheet(){
-      const c=chCfg();
-      if(!c.url) throw new Error('No channel source configured');
-      const url=normalizeSheetUrl(c.url);
-      const r=await fetch(url,{cache:'no-store'});
+      // use configured URL or fall back to defaults from your reference
+      const srcUrl = normalizeSheetUrl((chCfg().url||'').trim() ||
+        `https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${encodeURIComponent(DEFAULT_SHEET_GID)}&range=${encodeURIComponent('B2:C')}`
+      );
+      const r=await fetch(srcUrl,{cache:'no-store'});
       if(!r.ok) throw new Error(`Fetch failed [${r.status}]`);
       const txt=await r.text();
-      // crude CSV parser -> rows[][]
+
+      // tiny CSV -> rows
       const rows=[]; let row=[],cur="",q=false;
       for(let i=0;i<txt.length;i++){
         const ch=txt[i],n=txt[i+1];
@@ -666,21 +674,23 @@
       try{ chSource = await fetchChannelSheet(); renderChannelList(); toast(`Loaded ${chSource.length} channels`); }
       catch(e){ console.error(e); toast('Load failed',true); }
     }
+    // Global picker mini preview
     function testPlay(url){
       const wrap=document.getElementById('testWrap'); const el=document.getElementById('testVideo'); wrap.style.display='block';
+      if(wrap._h){ try{wrap._h.destroy();}catch{} wrap._h=null; }
       if(Hls.isSupported()){ const hls=new Hls({enableWorker:true}); hls.loadSource(url); hls.attachMedia(el); el.play().catch(()=>{}); wrap._h=hls; }
       else { el.src=url; el.play().catch(()=>{}); }
     }
     function testStop(){ const wrap=document.getElementById('testWrap'); const el=document.getElementById('testVideo'); if(wrap._h){ try{wrap._h.destroy();}catch{} wrap._h=null; } el.pause(); el.removeAttribute('src'); el.load(); wrap.style.display='none'; }
+    document.getElementById('testStop').addEventListener('click',testStop);
 
     document.getElementById('chSetupBtn').addEventListener('click',()=>{
-      const cur=chCfg().url||'';
+      const cur=chCfg().url||`https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/edit#gid=${DEFAULT_SHEET_GID}`;
       const val=prompt('Paste your Google Sheet link (B=URL, C=Name, from row 2). You can paste any Sheets URL.', cur);
       if(!val) return;
       saveChCfg({url:val.trim()}); toast('Channel source saved'); 
     });
     document.getElementById('chPickBtn').addEventListener('click',async()=>{
-      if(chNeedsConfig()){ return toast('Click CH Setup first',true); }
       openPicker(); await reloadPicker();
     });
     document.getElementById('chClose').addEventListener('click',closePicker);
@@ -691,9 +701,8 @@
       closePicker();
     });
     document.getElementById('chSearch').addEventListener('input',debounce(renderChannelList,150));
-    document.getElementById('testStop').addEventListener('click',testStop);
 
-    // ====== GitHub integration (create/edit player files) ======
+    // ====== GitHub integration (create/edit/delete player files) ======
     const GH_KEY='iptv_admin_gh';
     function ghCfg(){ try{return JSON.parse(localStorage.getItem(GH_KEY)||'{}');}catch{return{};} }
     function saveGhCfg(c){ localStorage.setItem(GH_KEY, JSON.stringify(c)); }
@@ -731,6 +740,14 @@
       if(!r.ok) throw new Error('GH put failed');
       return await r.json();
     }
+    async function ghDel(path,sha,message){
+      const c=ghCfg(); if(!c.token) throw new Error('GH not configured');
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encodeURIComponent(path)}`;
+      const body={message,branch:c.branch,sha};
+      const r=await fetch(url,{method:'DELETE',headers:{Authorization:`Bearer ${c.token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify(body)});
+      if(!r.ok) throw new Error('GH delete failed');
+      return await r.json();
+    }
 
     function buildPlayerHtml(displayId, dealerName, channels){
       const tpl=document.getElementById('playerTemplate').innerHTML;
@@ -744,7 +761,6 @@
       const arr=[]; const re=/\{\s*id\s*:\s*(\d+)\s*,\s*name\s*:\s*'([^']*)'\s*,\s*url\s*:\s*'([^']*)'[\s\S]*?\}/g;
       let m; while((m=re.exec(html))){ arr.push({id:parseInt(m[1],10),name:m[2],url:m[3],type:'hls'}); }
       if(arr.length>=5) return arr.slice(0,5);
-      // fallback to defaults if parsing failed
       return [
         {id:1,name:'News',url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8',type:'hls'},
         {id:2,name:'Sports',url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8',type:'hls'},
@@ -788,7 +804,7 @@
       showEmpty(false);
       ids.forEach(id=>{
         const d=map[id]||{};
-        const li=document.createElement('li'); li.className='item';
+        const li=document.createElement('li'); li.className='item'; li.dataset.displayId=id;
         li.innerHTML=`
           <div class="col">
             <div class="hstack">
@@ -803,6 +819,7 @@
             <button class="btn" data-act="open">Open</button>
             <button class="btn" data-act="embed">Embed</button>
             <button class="btn" data-act="chpanel">Channels</button>
+            <button class="btn danger" data-act="delete">Delete</button>
             <div class="vol"><input type="range" min="0" max="100" value="${d.volume??0}" /><button class="btn" data-act="mute">Mute</button><button class="btn" data-act="unmute">Unmute</button></div>
             <div class="hstack">
               <button class="btn" data-act="ch" data-n="1">CH1</button>
@@ -820,6 +837,13 @@
               <div class="chcell">CH4</div><div class="chcell name4">—</div><button class="btn small" data-prev="4">Preview</button><button class="btn small solid" data-change="4">Change</button>
               <div class="chcell">CH5</div><div class="chcell name5">—</div><button class="btn small" data-prev="5">Preview</button><button class="btn small solid" data-change="5">Change</button>
             </div>
+            <div class="rowPreview" style="display:none">
+              <div class="hstack" style="justify-content:space-between;align-items:center;margin-bottom:6px">
+                <div class="small muted">Channel preview</div>
+                <button class="btn small" data-stoprow="1">Stop</button>
+              </div>
+              <video playsinline controls></video>
+            </div>
           </div>`;
         ul.appendChild(li);
 
@@ -833,21 +857,31 @@
             else if(act==='mute'){ await update(ref(db,`displays/${id}`),{muted:true,updatedAt:Date.now()}); }
             else if(act==='unmute'){ await update(ref(db,`displays/${id}`),{muted:false,updatedAt:Date.now()}); }
             else if(act==='ch'){ const n=parseInt(b.dataset.n,10); await update(ref(db,`displays/${id}`),{channel:n,updatedAt:Date.now()}); }
+            else if(act==='delete'){ await deleteDisplayFlow(id); }
           });
         });
         li.querySelector('.vol input').addEventListener('input',debounce(async (e)=>{
           await update(ref(db,`displays/${id}`),{volume:parseInt(e.target.value,10),updatedAt:Date.now()});
         },200));
 
-        // previews/change hookups
+        // per-row inline preview hookups
+        const rowPrev=li.querySelector('.rowPreview'); const rowVideo=rowPrev.querySelector('video');
+        let rowHls=null;
+        li.querySelector('[data-stoprow]').addEventListener('click',()=>{
+          if(rowHls){ try{rowHls.destroy();}catch{} rowHls=null; }
+          rowVideo.pause(); rowVideo.removeAttribute('src'); rowVideo.load(); rowPrev.style.display='none';
+        });
         li.querySelectorAll('[data-prev]').forEach(btn=>{
           btn.addEventListener('click', async ()=>{
             const n=parseInt(btn.dataset.prev,10);
             const info=await fetchChannelInfoFromPlayer(id);
             const ch=info.channels[n-1];
             if(!ch||!ch.url) return toast('No URL for this slot',true);
-            // use the global tiny tester
-            openPicker(); testPlay(ch.url);
+            // play inline in this row
+            if(rowHls){ try{rowHls.destroy();}catch{} rowHls=null; }
+            if(Hls.isSupported()){ rowHls=new Hls({enableWorker:true}); rowHls.loadSource(ch.url); rowHls.attachMedia(rowVideo); rowVideo.play().catch(()=>{}); }
+            else { rowVideo.src=ch.url; rowVideo.play().catch(()=>{}); }
+            rowPrev.style.display='block';
           });
         });
         li.querySelectorAll('[data-change]').forEach(btn=>{
@@ -879,6 +913,24 @@
           const ch=info.channels[i-1]; el.textContent = ch ? `${ch.name} — ${ch.url}` : '—';
         }
       }catch(e){ console.error(e); toast('Failed to read player file (GH setup?)',true); }
+    }
+
+    // ====== Delete display ======
+    async function deleteDisplayFlow(displayId){
+      if(!confirm(`Delete display ${displayId} from Firebase?`)) return;
+      try{
+        await remove(ref(db,`displays/${displayId}`));
+        toast('Display removed from Firebase');
+      }catch(e){ console.error(e); toast('Failed to remove from Firebase',true); }
+      const gh=ghCfg();
+      if(gh.token && confirm('Also delete the player file from GitHub?')){
+        try{
+          const path = `${gh.basePath||'Displays'}/${displayId}.html`;
+          const cur=await ghGet(path);
+          await ghDel(path, cur?.sha, `[IPTV] Delete ${displayId} player`);
+          toast('GitHub file deleted');
+        }catch(e){ console.error(e); toast('GitHub delete failed',true); }
+      }
     }
 
     // ====== Change Channel Modal ======
@@ -917,7 +969,7 @@
       document.getElementById('chgSelect').addEventListener('change',()=> previewSelected());
       document.getElementById('chgApply').addEventListener('click',applyChannelChange);
 
-      modalPlayer=videojs('chgPlayer',{html5:{vhs:{overrideNative:true}}});
+      modalPlayer=videojs('chgPlayer',{html5:{vhs:{overrideNative:true}},controlBar:{volumePanel:{inline:false}}});
     }
     function openChangeModal(displayId, dealerId, idx){
       ensureModal();
@@ -972,7 +1024,7 @@
         }catch{}
         closeChangeModal();
         // refresh the visible names if panel is open
-        const li=[...document.querySelectorAll('.item')].find(x=> x.querySelector('.tag')?.textContent.includes(modalTargetDisplay));
+        const li=[...document.querySelectorAll('.item')].find(x=> x.dataset.displayId===modalTargetDisplay);
         if(li) loadChannelNamesIntoPanel(li, modalTargetDisplay);
       }catch(e){ console.error(e); toast('Update failed (check GH setup)',true); }
     }
