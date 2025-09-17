@@ -13,6 +13,10 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png"/>
   <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png"/>
 
+  <!-- Video.js for the “Change Channel” modal preview -->
+  <link rel="stylesheet" href="https://vjs.zencdn.net/8.10.0/video-js.css">
+  <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+
   <style>
     :root{ --accent:#ff9500; --fg:#111; --muted:#6e6e73; --bg:#ffffff; --panel:#fff; --tile:#f6f6f8; --tileHover:#fff7ea; --border:rgba(0,0,0,.14); --borderStrong:rgba(0,0,0,.28); --shadow:0 14px 36px rgba(0,0,0,.08); --ok:#22c55e; --err:#ef4444; }
     body.dark{ --bg:#0b0b0c; --fg:#f7f7f8; --muted:#a1a1a8; --panel:#151517; --tile:#1a1a1d; --tileHover:#221e18; --border:rgba(255,255,255,.16); --borderStrong:rgba(255,255,255,.36); --shadow:0 18px 48px rgba(0,0,0,.45); }
@@ -87,10 +91,19 @@
     .toast.show{opacity:1}
     .toast.err{background:#ff453a;color:#fff}
 
-    /* Inline preview */
-    .sub.preview{grid-column:1/-1;width:100%;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;margin-top:6px;display:none}
+    /* Inline preview (global picker) */
+    .sub.preview{grid-column:1/-1;width:100%;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;margin-top:6px}
     .sub.preview .bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
-    .sub.preview iframe{width:100%;height:420px;border:1px solid var(--border);border-radius:10px;background:#000}
+    .sub.preview video{width:100%;height:260px;background:#000;border:1px solid var(--border);border-radius:10px}
+
+    /* Channels subpanel (per row) */
+    .sub.channels{grid-column:1/-1;width:100%;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:6px}
+    .chgrid{display:grid;grid-template-columns:56px 1fr auto auto;gap:8px;align-items:center}
+    .chcell{font-size:12px;color:var(--muted);word-break:break-all}
+    .chname{font-weight:800;color:var(--fg);font-size:13px}
+    .badge{font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:999px;color:var(--muted)}
+    .rowPreview{margin-top:10px}
+    .rowPreview video{width:100%;height:260px;background:#000;border:1px solid var(--border);border-radius:10px}
 
     /* Channel picker (global) */
     #chPicker .grid{display:grid;grid-template-columns:1fr;gap:8px}
@@ -102,6 +115,21 @@
     /* Global test player (picker) */
     #testWrap{display:none;margin-top:8px;border:1px dashed var(--border);border-radius:12px;padding:8px}
     #testWrap video{width:100%;height:260px;background:#000;border-radius:10px;border:1px solid var(--border)}
+
+    /* ===== Change Channel Modal (Video.js) ===== */
+    #chgModal{position:fixed;inset:0;display:none;z-index:150}
+    #chgModal.open{display:block}
+    #chgModal .back{position:absolute;inset:0;background:rgba(0,0,0,.42)}
+    #chgModal .dlg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,880px);background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:12px}
+    #chgHead{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:8px}
+    #chgBody{display:grid;gap:10px}
+    .igroup{display:grid;gap:0;grid-template-columns:220px 1fr 120px;align-items:center;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+    .igroup>*{height:34px;border:0;border-radius:0}
+    .igroup>*+*{border-left:1px solid var(--border)}
+    #chgPlayerShell{position:relative;aspect-ratio:16/9;background:#000;border-radius:12px;border:1px solid var(--border);overflow:hidden}
+    .video-js{position:absolute!important;inset:0;width:100%!important;height:100%!important}
+    .video-js .vjs-control-bar{background:rgba(0,0,0,.33)}
+    .video-js .vjs-big-play-button{background:var(--accent);border:none;border-radius:10px}
   </style>
 </head>
 <body>
@@ -190,7 +218,7 @@
           <input id="newDisplayId" class="input" placeholder="Auto if empty (e.g., GW-002)"/>
         </div>
         <div style="display:flex;align-items:end;gap:8px;flex-wrap:wrap">
-          <button id="addDisplayBtn" class="btn solid" title="Create a player file for this dealership">Add TV</button>
+          <button id="addDisplayBtn" class="btn solid">Add TV</button>
           <button id="ghSetupBtn" class="btn" title="Configure GitHub (owner/repo/branch/token)">GH Setup</button>
           <button id="ghResetBtn" class="btn" title="Clear saved GitHub config">GH Reset</button>
           <!-- Channels setup & picker -->
@@ -200,7 +228,7 @@
         </div>
       </div>
 
-      <!-- Channel picker panel -->
+      <!-- Channel picker panel (global) -->
       <div id="chPicker" class="card" style="display:none; margin-top:8px">
         <div class="grid">
           <div class="hstack" style="justify-content:space-between">
@@ -215,7 +243,7 @@
           </div>
           <div id="chList"></div>
 
-          <!-- inline test player (picker) -->
+          <!-- tiny test player -->
           <div id="testWrap">
             <div class="hstack" style="justify-content:space-between;align-items:center;margin-bottom:6px">
               <div class="small muted">Channel preview</div>
@@ -241,7 +269,7 @@
     </div>
   </div>
 
-  <!-- ===== Player file template (YOUR EXACT TEMPLATE + Volume HUD already installed) ===== -->
+  <!-- ===== Player file template (YOUR ORIGINAL + Volume HUD) ===== -->
   <template id="playerTemplate"><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -478,28 +506,27 @@
 
   <div id="toast" class="toast"></div>
 
-  <!-- Hls.js for admin-side channel previews -->
+  <!-- Hls.js for admin-side tiny preview -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
 
   <!-- ===== Admin page logic ===== -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import { getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import { getDatabase, ref, get, set, update, remove, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    import { getDatabase, ref, get, set, update, remove, onValue, query, orderByChild, equalTo } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    /* ================== CONFIG / HELPERS ================== */
     const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
     const LOGO_URL="/IPTV-/icons/icon-512.png";
-    const GH_KEY='iptv_admin_gh';
-    const CH_KEY='iptv_admin_ch'; // { url: 'published CSV or JSON endpoint' }
-    const CH_SEL_KEY='iptv_admin_ch_sel'; // array of {name,url,type?}
+
+    const DEFAULT_SHEET_ID='1Oh69mDuOCuy27YDYpInoVfcw3o4TlFutQEGYamBXSHE';
+    const DEFAULT_SHEET_GID='824459168';
 
     const app=initializeApp(firebaseConfig);
     const auth=getAuth(app);
     const db=getDatabase(app);
 
     const $=s=>document.querySelector(s);
-    const $$=(s,sc=document)=>Array.from(sc.querySelectorAll(s));
+    const $$=(s)=>Array.from(document.querySelectorAll(s));
     const debounce=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
     function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
     function toast(msg,err=false){const t=$('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2400);}
@@ -511,7 +538,7 @@
     const saved=localStorage.getItem(THEME_KEY)||'light'; document.body.classList.toggle('dark',saved==='dark'); setThemeIcon();
     themeBtn.addEventListener('click',()=>{ const toDark=!document.body.classList.contains('dark'); document.body.classList.toggle('dark',toDark); localStorage.setItem(THEME_KEY,toDark?'dark':'light'); setThemeIcon(); });
 
-    // menu + sheet
+    // more menu & mobile sheet
     const moreBtn=document.getElementById('moreBtn'), moreMenu=document.getElementById('moreMenu');
     if(moreBtn){
       moreBtn.addEventListener('click',e=>{e.preventDefault();moreMenu.classList.toggle('open');});
@@ -522,7 +549,7 @@
     }
     (()=>{ const sheet=document.getElementById('sheet'); const open=()=>{sheet.classList.add('open');document.body.style.overflow='hidden';}; const close=()=>{sheet.classList.remove('open');document.body.style.overflow='';}; document.getElementById('hamburger').addEventListener('click',open); document.getElementById('closeSheet').addEventListener('click',close); sheet.querySelector('.back').addEventListener('click',close); const mainOut=document.getElementById('signOutBtn'); const mobOut=document.getElementById('signOutBtnM'); if(mainOut&&mobOut){mobOut.addEventListener('click',()=> mainOut.click());}})();
 
-    /* ================== AUTH ================== */
+    // auth UI
     document.getElementById('loginBtn').addEventListener('click',doLogin);
     document.getElementById('resetBtn').addEventListener('click',async()=>{ const email=document.getElementById('email').value.trim(); if(!email) return toast('Enter email',true); try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed',true);} });
     document.getElementById('signOutBtn').addEventListener('click',()=>signOut(auth));
@@ -533,492 +560,524 @@
       document.getElementById('adminEmail').textContent=user.email||user.uid;
       try{ const snap=await get(ref(db,`user/${user.uid}`)); const u=snap.val()||{}; if(u.role!=='admin'){ $('#loginBox').style.display='none'; $('#content').style.display='none'; alert('Not authorized. Ask an admin to set your role to admin.'); return; } }catch(_){}
       $('#loginBox').style.display='none'; $('#content').style.display='block';
-      await refreshDealers();
-
-      const did=new URL(location.href).searchParams.get('dealer')||'';
-      if(did){ document.getElementById('dealerForDisplays').value=did; }
-      handleDealerChange();
+      await refreshDealers(); const did=new URL(location.href).searchParams.get('dealer')||''; if(did){ document.getElementById('dealerForDisplays').value=did; watchDisplays(did,true); }
     });
 
-    /* ================== DEALERS & DISPLAYS ================== */
-    let dealersMap={}; // id -> {name}
     async function refreshDealers(){
       const sel=document.getElementById('dealerForDisplays'); sel.innerHTML='<option value="">Select dealership…</option>';
-      dealersMap={};
-      try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) dealersMap=pub.val()||{}; }catch(e){}
-      if(!dealersMap || Object.keys(dealersMap).length===0){
-        try{ const d=await get(ref(db,'dealership')); if(d.exists()){ const raw=d.val(); for(const id of Object.keys(raw||{})) dealersMap[id]={name:raw[id]?.name||id}; } }catch(e){}
-      }
-      Object.entries(dealersMap||{}).sort((a,b)=> (a[1]?.name||a[0]).localeCompare(b[1]?.name||b[0]) ).forEach(([id,v])=>{
+      let map={}; try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=pub.val(); }catch(e){}
+      if(!map||Object.keys(map).length===0){ try{ const d=await get(ref(db,'dealership')); if(d.exists()){ const raw=d.val(); for(const id of Object.keys(raw)) map[id]={name:raw[id]?.name||id}; } }catch(e){} }
+      Object.entries(map||{}).sort((a,b)=> (a[1]?.name||a[0]).localeCompare(b[1]?.name||b[0]) ).forEach(([id,v])=>{
         const opt=document.createElement('option');
         opt.value=id; opt.textContent=v?.name||id;
         sel.appendChild(opt);
       });
     }
 
-    document.getElementById('dealerForDisplays').addEventListener('change',handleDealerChange);
-    document.getElementById('displaysReload').addEventListener('click',handleDealerChange);
-    document.getElementById('manageUsers').addEventListener('click',()=>{
-      const did=document.getElementById('dealerForDisplays').value;
-      if(!did) return toast('Pick a dealership',true);
-      location.href='users.html?dealer='+encodeURIComponent(did);
-    });
+    /* ========= Channel source (Google Sheet / JSON) =========
+       Your sheet: B = m3u8 URL, C = name (starting at row 2).
+    */
+    const CH_KEY='iptv_admin_ch';
+    function chCfg(){ try{return JSON.parse(localStorage.getItem(CH_KEY)||'{}');}catch{return{};} }
+    function saveChCfg(c){ localStorage.setItem(CH_KEY, JSON.stringify(c)); }
+    function chNeedsConfig(){ const c=chCfg(); return !(c.url); }
 
-    let displaysUnsub=null;
-    function handleDealerChange(){
-      const did=document.getElementById('dealerForDisplays').value;
-      if(displaysUnsub){ displaysUnsub(); displaysUnsub=null; }
-      if(!did){ $('#displayEmpty').style.display='block'; $('#displayList').innerHTML=''; return; }
-      const name=(dealersMap[did]?.name)||did;
-
-      // watch all displays and filter client-side by name or id (handles old data that saved dealership name only)
-      const dref=ref(db,'displays');
-      const off = onValue(dref,(snap)=>{
-        const all=snap.val()||{};
-        const rows=Object.entries(all).filter(([id,v])=>{
-          const d=v?.dealership||v?.dealershipId||'';
-          return d===did || d===name;
-        });
-        renderDisplays(did, name, rows);
-      });
-      displaysUnsub=()=> off();
-    }
-
-    function renderDisplays(did, name, entries){
-      const list=document.getElementById('displayList');
-      list.innerHTML='';
-      document.getElementById('displayEmpty').style.display = entries.length? 'none':'block';
-
-      entries.forEach(([id, d])=>{
-        const li=document.createElement('li');
-        li.className='item';
-        li.dataset.id=id;
-
-        const online= (Date.now() - (d.lastSeenAt||0)) < 60000;
-        const ch = Number(d.channel||1);
-
-        li.innerHTML = `
-          <div class="col">
-            <div class="split">
-              <span class="online"><span class="dot ${online?'ok':'err'}"></span>${online?'Online':'Offline'}</span>
-              <span class="tag">CH ${ch}</span>
-              <span class="tag">${esc(d.muted?'Muted':'Sound')}</span>
-            </div>
-            <div class="split">
-              <div class="chname">Display <b class="display-id">${esc(id)}</b></div>
-              <span class="tag">${esc(name)}</span>
-            </div>
-          </div>
-
-          <div class="split">
-            <div class="vol">
-              <input type="range" min="0" max="100" step="5" value="${Number(d.volume??50)}" data-action="vol" />
-              <button class="btn" data-action="mute">${d.muted?'Unmute':'Mute'}</button>
-            </div>
-          </div>
-
-          <div class="split">
-            <button class="btn" data-action="channel" data-val="1">CH1</button>
-            <button class="btn" data-action="channel" data-val="2">CH2</button>
-            <button class="btn" data-action="channel" data-val="3">CH3</button>
-            <button class="btn" data-action="channel" data-val="4">CH4</button>
-            <button class="btn" data-action="channel" data-val="5">CH5</button>
-          </div>
-
-          <div class="split">
-            <button class="btn" data-action="preview" title="Inline preview">Preview</button>
-            <button class="btn" data-action="open" title="Open in new tab">Open</button>
-            <button class="btn danger" data-action="delete" title="Delete this display">Delete</button>
-          </div>
-        `;
-
-        list.appendChild(li);
-      });
-    }
-
-    // bulk actions
-    document.getElementById('bulkMute').addEventListener('click',()=>bulkMute(true));
-    document.getElementById('bulkUnmute').addEventListener('click',()=>bulkMute(false));
-    document.getElementById('bulkCh1').addEventListener('click',()=>bulkChannel(1));
-    async function bulkMute(muted){
-      const did=document.getElementById('dealerForDisplays').value; if(!did) return;
-      const name=(dealersMap[did]?.name)||did;
-      const snap=await get(ref(db,'displays')); const all=snap.val()||{};
-      const tasks=[];
-      for(const [id,v] of Object.entries(all)){
-        const d=v?.dealership||v?.dealershipId||'';
-        if(d===did||d===name){ tasks.push(update(ref(db,`displays/${id}`),{muted})); }
-      }
-      await Promise.allSettled(tasks); toast(muted?'Muted all':'Unmuted all');
-    }
-    async function bulkChannel(n){
-      const did=document.getElementById('dealerForDisplays').value; if(!did) return;
-      const name=(dealersMap[did]?.name)||did;
-      const snap=await get(ref(db,'displays')); const all=snap.val()||{};
-      const tasks=[];
-      for(const [id,v] of Object.entries(all)){
-        const d=v?.dealership||v?.dealershipId||'';
-        if(d===did||d===name){ tasks.push(update(ref(db,`displays/${id}`),{channel:n})); }
-      }
-      await Promise.allSettled(tasks); toast(`All → CH${n}`);
-    }
-
-    /* ================== GH PUBLISH ================== */
-    const ghCfg=()=>{ try{return JSON.parse(localStorage.getItem(GH_KEY)||'{}');}catch{return{}} };
-    const saveGhCfg=(c)=>localStorage.setItem(GH_KEY,JSON.stringify(c));
-    document.getElementById('ghSetupBtn').addEventListener('click',()=>{
-      const c=ghCfg();
-      const owner=prompt('GitHub owner/org', c.owner||'flaviothebfagroup'); if(owner===null) return;
-      const repo =prompt('Repo name', c.repo||'IPTV-'); if(repo===null) return;
-      const branch=prompt('Branch', c.branch||'main'); if(branch===null) return;
-      const token =prompt('Personal access token (contents:write)', c.token||''); if(token===null) return;
-      saveGhCfg({owner,repo,branch,token}); toast('GitHub config saved');
-    });
-    document.getElementById('ghResetBtn').addEventListener('click',()=>{ localStorage.removeItem(GH_KEY); toast('GitHub config cleared'); });
-
-    async function ghCommit(path, content, message){
-      const c=ghCfg(); if(!c.owner||!c.repo||!c.branch||!c.token) throw new Error('GH not configured');
-      // fetch sha if exists
-      let sha=null;
+    // Accepts any Google Sheets link; converts to a robust CSV endpoint (B2:C)
+    function normalizeSheetUrl(u){
+      if(!u) return '';
       try{
-        const r=await fetch(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(c.branch)}`, {headers:{Authorization:`Bearer ${c.token}`,Accept:'application/vnd.github+json'}});
-        if(r.ok){ const j=await r.json(); sha=j.sha; }
-      }catch{}
-      const body={
-        message: message||`Update ${path}`,
-        content: btoa(unescape(encodeURIComponent(content))),
-        branch: c.branch
-      };
-      if(sha) body.sha=sha;
-      const r=await fetch(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${encodeURIComponent(path)}`, {
-        method:'PUT',
-        headers:{Authorization:`Bearer ${c.token}`,Accept:'application/vnd.github+json'},
-        body:JSON.stringify(body)
-      });
-      if(!r.ok){ const t=await r.text(); throw new Error('GH commit failed: '+t); }
-      return true;
-    }
-
-    function buildPlayerFile(displayId, dealerName, channels){
-      const tpl=document.getElementById('playerTemplate').innerHTML;
-      const ch = (channels && channels.length ? channels : [
-        { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
-        { id:2, name:'Sports', url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8', type:'hls' },
-        { id:3, name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
-        { id:4, name:'Nature', url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8', type:'hls' },
-        { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
-      ]).slice(0,5).map((x,i)=>({id:i+1,name:x.name||`CH ${i+1}`,url:x.url,type:x.type||'hls'}));
-
-      return tpl
-        .replace("displayId: '(NEW-CODE)'", `displayId: '${displayId}'`)
-        .replace("dealershipName: '(NEW-NAME)'", `dealershipName: '${dealerName}'`)
-        .replace(/channels:\s*\[[\s\S]*?\]\s*}/, `channels: ${JSON.stringify(ch, null, 2)}\n    }`);
-    }
-
-    document.getElementById('addDisplayBtn').addEventListener('click', async ()=>{
-      const sel=document.getElementById('dealerForDisplays'); const did=sel.value; if(!did) return toast('Pick a dealership',true);
-      const dealerName=sel.options[sel.selectedIndex].textContent.trim()||did;
-      let id=document.getElementById('newDisplayId').value.trim();
-      if(!id){ id = dealerName.replace(/\s+/g,'-').slice(0,3).toUpperCase() + '-' + String(Math.floor(Math.random()*900)+100); }
-
-      // use selected channels (if any)
-      const chosen = chSelectedList.length ? chSelectedList.slice(0,5) : [];
-      const file = buildPlayerFile(id, dealerName, chosen);
-
-      try{
-        await ghCommit(`Displays/${id}.html`, file, `Create/Update player ${id}`);
-        await update(ref(db,`displays/${id}`), { dealership: dealerName, channel:1, volume:50, muted:true, createdAt:Date.now(), updatedAt:Date.now() });
-        toast(`TV ${id} published`);
-        document.getElementById('newDisplayId').value='';
-        handleDealerChange();
-      }catch(e){ console.error(e); toast('Publish failed',true); }
-    });
-
-    /* ================== CHANNEL PICKER (Sheet) ================== */
-    const chPickerEl = document.getElementById('chPicker');
-    const chListEl   = document.getElementById('chList');
-    const chBadge    = document.getElementById('chSelBadge');
-    const chCfg      = ()=>{ try{return JSON.parse(localStorage.getItem(CH_KEY)||'{}');}catch{return{}} };
-    const saveChCfg  = (c)=> localStorage.setItem(CH_KEY, JSON.stringify(c));
-    let chSource=[], chSelectedCodes=new Set(), chSelectedList=[];
-
-    function updateSelBadge(){
-      if(!chSelectedList.length){ chBadge.style.display='none'; chBadge.textContent=''; return; }
-      chBadge.style.display='inline-block'; chBadge.textContent=`${chSelectedList.length} selected`;
-    }
-    (function restoreSel(){
-      try{ const arr=JSON.parse(localStorage.getItem(CH_SEL_KEY)||'[]'); if(Array.isArray(arr)&&arr.length){ chSelectedList=arr.slice(0,20); chSelectedCodes=new Set(chSelectedList.map(x=>x.code||x.url)); updateSelBadge(); } }catch{}
-    })();
-
-    document.getElementById('chSetupBtn').addEventListener('click',()=>{
-      const c=chCfg();
-      const url=prompt('Channel source URL (Published CSV or JSON/Apps Script endpoint)\n- For Google Sheet CSV: File → Share → Publish to web → CSV\n- B=URL, C=Name starting from row 2', c.url||'');
-      if(url===null) return;
-      saveChCfg({url:url.trim()});
-      toast('Channel source saved');
-    });
-
-    document.getElementById('chPickBtn').addEventListener('click', async ()=>{
-      if(!chCfg().url){ return toast('Click CH Setup first',true); }
-      await loadChannelSheet();
-      chPickerEl.style.display='block';
-    });
-    document.getElementById('chClose').addEventListener('click', ()=> chPickerEl.style.display='none');
-    document.getElementById('chClearSel').addEventListener('click', ()=>{ chSelectedCodes.clear(); chSelectedList.length=0; renderChannelList(); updateSelBadge(); localStorage.removeItem(CH_SEL_KEY); });
-    document.getElementById('chApply').addEventListener('click', ()=>{ if(!chSelectedList.length) return toast('Pick some first',true); localStorage.setItem(CH_SEL_KEY, JSON.stringify(chSelectedList)); updateSelBadge(); toast('Selection saved'); });
-    document.getElementById('chReload').addEventListener('click', loadChannelSheet);
-    document.getElementById('chSearch').addEventListener('input', debounce(renderChannelList, 120));
-
-    async function loadChannelSheet(){
-      const url=(chCfg().url||'').trim(); if(!url) return;
-      try{
-        const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw 0;
-        const ct=(r.headers.get('content-type')||'').toLowerCase();
-        const txt=await r.text();
-        if(/json/.test(ct) || /\.json(\?|$)/i.test(url)){
-          chSource = normalizeChannelRows(JSON.parse(txt));
-        }else{
-          const rows = parseCSVRows(txt);
-          chSource = normalizeChannelRows(rows);
-        }
-        renderChannelList();
-        toast(`Loaded ${chSource.length} channels`);
-      }catch(e){ console.error(e); toast('Failed loading channel list',true); }
-    }
-
-    // CSV minimal parser
-    function parseCSVRows(s){
-      const sep = /\t/.test(s) && !/,/.test(s.split('\n',1)[0]) ? '\t' : ',';
-      const rows=[]; let i=0, field='', row=[], inQ=false;
-      function pushField(){ row.push(field); field=''; }
-      function pushRow(){ rows.push(row); row=[]; }
-      while(i<s.length){
-        const ch=s[i++];
-        if(inQ){
-          if(ch==='"'){ if(s[i]==='"'){ field+='"'; i++; } else inQ=false; }
-          else field+=ch;
-        }else{
-          if(ch==='"') inQ=true;
-          else if(ch===sep){ pushField(); }
-          else if(ch==='\r'){ }
-          else if(ch==='\n'){ pushField(); pushRow(); }
-          else field+=ch;
-        }
+        // If already an export/gviz link, keep it
+        if(/docs\.google\.com\/spreadsheets\/.*(export|gviz)/i.test(u)) return u;
+        const m = u.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+        const id = m ? m[1] : DEFAULT_SHEET_ID;
+        const url = new URL(u);
+        const gid = url.searchParams.get('gid') || DEFAULT_SHEET_GID;
+        return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&gid=${encodeURIComponent(gid)}&range=${encodeURIComponent('B2:C')}`;
+      }catch{
+        return `https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${encodeURIComponent(DEFAULT_SHEET_GID)}&range=${encodeURIComponent('B2:C')}`;
       }
-      if(field!=='' || row.length){ pushField(); pushRow(); }
-      return rows;
     }
 
-    function normalizeChannelRows(rows){
+    async function fetchChannelSheet(){
+      // use configured URL or fall back to defaults from your reference
+      const srcUrl = normalizeSheetUrl((chCfg().url||'').trim() ||
+        `https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${encodeURIComponent(DEFAULT_SHEET_GID)}&range=${encodeURIComponent('B2:C')}`
+      );
+      const r=await fetch(srcUrl,{cache:'no-store'});
+      if(!r.ok) throw new Error(`Fetch failed [${r.status}]`);
+      const txt=await r.text();
+
+      // tiny CSV -> rows
+      const rows=[]; let row=[],cur="",q=false;
+      for(let i=0;i<txt.length;i++){
+        const ch=txt[i],n=txt[i+1];
+        if(q){ if(ch=='"'&&n=='"'){cur+='"';i++;} else if(ch=='"'){q=false;} else cur+=ch; }
+        else { if(ch=='"'){q=true;} else if(ch==','){row.push(cur);cur="";} else if(ch=='\n'){row.push(cur);rows.push(row);row=[];cur="";} else if(ch!='\r'){cur+=ch;} }
+      }
+      if(cur.length||row.length){row.push(cur);rows.push(row);}
       const out=[];
-      if(!Array.isArray(rows)) return out;
-
-      // objects?
-      if(rows.length && !Array.isArray(rows[0]) && typeof rows[0]==='object'){
-        for(const r of rows){
-          const name = r.name || r.title || r.channel || r.Channel || r.Name || '';
-          const url  = r.url  || r.link  || r.stream  || r.URL || r.Link || '';
-          const type = r.type || 'hls';
-          const code = r.id || r.code || r.Code || name || url;
-          if(String(url).trim()){
-            out.push({ code:String(code).trim(), name:String(name||'Channel').trim(), url:String(url).trim(), type:String(type||'hls').trim() });
-          }
-        }
-        return out;
-      }
-
-      // arrays (Google Sheet CSV)
-      let startIdx=0;
-      if(rows.length){
-        const hdr=rows[0].map(x=>String(x||'').toLowerCase());
-        if(hdr.some(x=>/name|channel/.test(x)) || hdr.some(x=>/url|m3u|link|stream/.test(x))){
-          startIdx=1;
-        }
-      }
-      for(let r=startIdx;r<rows.length;r++){
-        const row=rows[r]||[];
-        const url = (row[1]||'').trim(); // B
-        const name= (row[2]||'').trim(); // C
-        if(url){
-          out.push({ code:name||url, name:name||'Channel', url, type:'hls' });
-        }
+      for(const r of rows){
+        const url=(r[0]||'').trim(), name=(r[1]||'').trim();
+        if(/^https?:\/\//i.test(url)) out.push({code:name||url,name:name||'Channel',url,type:'hls'});
       }
       return out;
     }
+
+    // Global Picker (used for Add TV defaults)
+    let chSource=[], chSelectedCodes=new Set(), chSelectedList=[];
+    const chPickerEl = document.getElementById('chPicker');
+    const chListEl   = document.getElementById('chList');
+    const chBadge    = document.getElementById('chSelBadge');
+
+    function openPicker(){ chPickerEl.style.display='block'; }
+    function closePicker(){ chPickerEl.style.display='none'; }
 
     function renderChannelList(){
       const q=(document.getElementById('chSearch').value||'').trim().toLowerCase();
       chListEl.innerHTML='';
       const frag=document.createDocumentFragment();
-
       const list = chSource.filter(r=>{
         if(!q) return true;
         return (r.name||'').toLowerCase().includes(q) || (r.url||'').toLowerCase().includes(q) || (r.code||'').toLowerCase().includes(q);
       });
-
       if(!list.length){
-        const div=document.createElement('div');
-        div.className='muted small'; div.style.padding='8px 4px';
-        div.textContent='No channels found. Reload or change your search.';
-        frag.appendChild(div);
+        const div=document.createElement('div'); div.className='muted small'; div.style.padding='8px 4px';
+        div.textContent='No channels found. Reload or change your search.'; frag.appendChild(div);
       }else{
         list.forEach((r)=>{
           const row=document.createElement('div');
           row.className='chrow';
-
-          const checked = chSelectedCodes.has(r.code||r.url);
-          row.innerHTML = `
-            <input type="checkbox" ${checked?'checked':''} data-sel />
-            <div style="flex:1;min-width:0">
-              <div class="chname">${esc(r.name||'Channel')}</div>
-              <div class="churl">${esc(r.url)}</div>
-            </div>
-            <button class="btn" data-preview>Preview</button>
-          `;
-
-          // select toggle
-          row.querySelector('[data-sel]').addEventListener('change',(e)=>{
-            if(e.target.checked){
-              chSelectedCodes.add(r.code||r.url);
-              chSelectedList.push(r);
-            }else{
-              chSelectedCodes.delete(r.code||r.url);
-              const i=chSelectedList.findIndex(x=>(x.code||x.url)===(r.code||r.url));
-              if(i>-1) chSelectedList.splice(i,1);
-            }
-            updateSelBadge();
+          row.innerHTML=`<input type="checkbox" class="chk" ${chSelectedCodes.has(r.code)?'checked':''} />
+                         <div class="col" style="min-width:0">
+                           <div class="chname">${esc(r.name||'Channel')}</div>
+                           <div class="churl">${esc(r.url)}</div>
+                         </div>
+                         <button class="btn small prev">Preview</button>`;
+          const chk=row.querySelector('.chk');
+          chk.addEventListener('change',()=>{
+            if(chk.checked) chSelectedCodes.add(r.code); else chSelectedCodes.delete(r.code);
+            recomputeSelection();
           });
-
-          // preview
-          row.querySelector('[data-preview]').addEventListener('click',()=> playTest(r.url));
-
+          row.querySelector('.prev').addEventListener('click',()=> testPlay(r.url));
           frag.appendChild(row);
         });
       }
       chListEl.appendChild(frag);
+      recomputeSelection();
+    }
+    function recomputeSelection(){
+      chSelectedList = Array.from(chSelectedCodes).map(code=> chSource.find(x=>x.code===code)).filter(Boolean);
+      const n=chSelectedList.length;
+      if(n>0){ chBadge.style.display='inline-block'; chBadge.textContent=`${n} selected`; } else { chBadge.style.display='none'; }
+    }
+    async function reloadPicker(){
+      try{ chSource = await fetchChannelSheet(); renderChannelList(); toast(`Loaded ${chSource.length} channels`); }
+      catch(e){ console.error(e); toast('Load failed',true); }
+    }
+    // Global picker mini preview
+    function testPlay(url){
+      const wrap=document.getElementById('testWrap'); const el=document.getElementById('testVideo'); wrap.style.display='block';
+      if(wrap._h){ try{wrap._h.destroy();}catch{} wrap._h=null; }
+      if(Hls.isSupported()){ const hls=new Hls({enableWorker:true}); hls.loadSource(url); hls.attachMedia(el); el.play().catch(()=>{}); wrap._h=hls; }
+      else { el.src=url; el.play().catch(()=>{}); }
+    }
+    function testStop(){ const wrap=document.getElementById('testWrap'); const el=document.getElementById('testVideo'); if(wrap._h){ try{wrap._h.destroy();}catch{} wrap._h=null; } el.pause(); el.removeAttribute('src'); el.load(); wrap.style.display='none'; }
+    document.getElementById('testStop').addEventListener('click',testStop);
+
+    document.getElementById('chSetupBtn').addEventListener('click',()=>{
+      const cur=chCfg().url||`https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/edit#gid=${DEFAULT_SHEET_GID}`;
+      const val=prompt('Paste your Google Sheet link (B=URL, C=Name, from row 2). You can paste any Sheets URL.', cur);
+      if(!val) return;
+      saveChCfg({url:val.trim()}); toast('Channel source saved'); 
+    });
+    document.getElementById('chPickBtn').addEventListener('click',async()=>{
+      openPicker(); await reloadPicker();
+    });
+    document.getElementById('chClose').addEventListener('click',closePicker);
+    document.getElementById('chReload').addEventListener('click',reloadPicker);
+    document.getElementById('chClearSel').addEventListener('click',()=>{ chSelectedCodes.clear(); recomputeSelection(); renderChannelList(); });
+    document.getElementById('chApply').addEventListener('click',()=>{
+      if(chSelectedList.length){ toast(`Will use ${chSelectedList.length} selected channels for NEW TVs.`); }
+      closePicker();
+    });
+    document.getElementById('chSearch').addEventListener('input',debounce(renderChannelList,150));
+
+    // ====== GitHub integration (create/edit/delete player files) ======
+    const GH_KEY='iptv_admin_gh';
+    function ghCfg(){ try{return JSON.parse(localStorage.getItem(GH_KEY)||'{}');}catch{return{};} }
+    function saveGhCfg(c){ localStorage.setItem(GH_KEY, JSON.stringify(c)); }
+    document.getElementById('ghSetupBtn').addEventListener('click',()=>{
+      const cur=ghCfg();
+      const owner=prompt('GitHub owner/org:', cur.owner||'');
+      if(!owner) return;
+      const repo =prompt('Repo name:', cur.repo||'');
+      if(!repo) return;
+      const branch=prompt('Branch (default main):', cur.branch||'main')||'main';
+      const basePath=prompt('Folder to save players (default Displays):', cur.basePath||'Displays')||'Displays';
+      const token=prompt('Personal Access Token (contents:read/write):', cur.token||'');
+      if(!token) return;
+      saveGhCfg({owner,repo,branch,basePath,token});
+      toast('GitHub saved');
+    });
+    document.getElementById('ghResetBtn').addEventListener('click',()=>{ localStorage.removeItem(GH_KEY); toast('GitHub config cleared'); });
+
+    const b64=(s)=> btoa(unescape(encodeURIComponent(s)));
+    const unb64=(s)=> decodeURIComponent(escape(atob(s)));
+
+    async function ghGet(path){
+      const c=ghCfg(); if(!c.token) throw new Error('GH not configured');
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(c.branch)}`;
+      const r=await fetch(url,{headers:{Authorization:`Bearer ${c.token}`,'Accept':'application/vnd.github+json'}});
+      if(r.status===404) return null;
+      if(!r.ok) throw new Error('GH get failed');
+      return await r.json();
+    }
+    async function ghPut(path,content,message,sha){
+      const c=ghCfg(); if(!c.token) throw new Error('GH not configured');
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encodeURIComponent(path)}`;
+      const body={message,branch:c.branch,content:b64(content)}; if(sha) body.sha=sha;
+      const r=await fetch(url,{method:'PUT',headers:{Authorization:`Bearer ${c.token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify(body)});
+      if(!r.ok) throw new Error('GH put failed');
+      return await r.json();
+    }
+    async function ghDel(path,sha,message){
+      const c=ghCfg(); if(!c.token) throw new Error('GH not configured');
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encodeURIComponent(path)}`;
+      const body={message,branch:c.branch,sha};
+      const r=await fetch(url,{method:'DELETE',headers:{Authorization:`Bearer ${c.token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify(body)});
+      if(!r.ok) throw new Error('GH delete failed');
+      return await r.json();
     }
 
-    // Inline test player (HLS)
-    let testHls=null;
-    const testWrap=document.getElementById('testWrap');
-    const testVideo=document.getElementById('testVideo');
-    function playTest(url){
-      try{ if(testHls){ testHls.destroy(); testHls=null; } }catch{}
-      testWrap.style.display='block';
-      if(Hls.isSupported()){
-        testHls=new Hls({enableWorker:true,lowLatencyMode:true});
-        testHls.attachMedia(testVideo);
-        testHls.loadSource(url);
-      }else if(testVideo.canPlayType('application/vnd.apple.mpegurl')){ testVideo.src=url; }
-      testVideo.play().catch(()=>{});
+    function buildPlayerHtml(displayId, dealerName, channels){
+      const tpl=document.getElementById('playerTemplate').innerHTML;
+      const chanStr=channels.map((c,i)=>`        { id:${i+1}, name:'${(c.name||'Channel').replace(/'/g,"\\'")}',   url:'${(c.url||'').replace(/'/g,"\\'")}', type:'hls' }`).join(',\n');
+      return tpl.replace("displayId: '(NEW-CODE)'", `displayId: '${displayId}'`)
+                .replace("dealershipName: '(NEW-NAME)'", `dealershipName: '${dealerName}'`)
+                .replace(/channels:\s*\[[\s\S]*?\]/, `channels: [\n${chanStr}\n      ]`);
     }
-    document.getElementById('testStop').addEventListener('click',()=>{
-      try{ if(testHls){ testHls.destroy(); testHls=null; } }catch{}
-      testVideo.pause(); testVideo.removeAttribute('src'); testVideo.load(); testWrap.style.display='none';
-    });
 
-    /* ================== DISPLAY ROW ACTIONS ================== */
-    const listEl=document.getElementById('displayList');
+    function parseChannelsFromPlayer(html){
+      const arr=[]; const re=/\{\s*id\s*:\s*(\d+)\s*,\s*name\s*:\s*'([^']*)'\s*,\s*url\s*:\s*'([^']*)'[\s\S]*?\}/g;
+      let m; while((m=re.exec(html))){ arr.push({id:parseInt(m[1],10),name:m[2],url:m[3],type:'hls'}); }
+      if(arr.length>=5) return arr.slice(0,5);
+      return [
+        {id:1,name:'News',url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8',type:'hls'},
+        {id:2,name:'Sports',url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8',type:'hls'},
+        {id:3,name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8',type:'hls'},
+        {id:4,name:'Nature',url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8',type:'hls'},
+        {id:5,name:'Kids',url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8',type:'hls'}
+      ];
+    }
 
-    listEl.addEventListener('input', async (e)=>{
-      const r=e.target.closest('.item'); if(!r) return;
-      const id=r.dataset.id;
-      if(e.target.matches('input[type="range"][data-action="vol"]')){
-        const vol=Number(e.target.value||50);
-        await update(ref(db,`displays/${id}`),{volume:vol,updatedAt:Date.now()});
-      }
-    });
+    async function createOrUpdatePlayer(displayId, dealerName, channels){
+      const gh=ghCfg(); if(!gh.token) throw new Error('GitHub not configured');
+      const path = `${gh.basePath||'Displays'}/${displayId}.html`;
+      const cur=await ghGet(path);
+      const html=buildPlayerHtml(displayId,dealerName,channels);
+      await ghPut(path, html, `[IPTV] ${cur?'Update':'Add'} ${displayId} player`, cur?.sha);
+      return `/${gh.basePath||'Displays'}/${displayId}.html`;
+    }
 
-    listEl.addEventListener('click', async (e)=>{
-      const btn=e.target.closest('button.btn,[data-action]'); if(!btn) return;
-      const row=btn.closest('.item'); const id=row?.dataset?.id||'';
-      const action=btn.dataset.action;
+    // ===== Displays list =====
+    const selDealer=document.getElementById('dealerForDisplays');
+    selDealer.addEventListener('change',()=>{ const v=selDealer.value||''; if(!v){ showEmpty(true); return; } watchDisplays(v,true); });
 
-      if(!id) return;
+    function showEmpty(f){ document.getElementById('displayEmpty').style.display=f?'block':'none'; }
 
-      if(action==='mute'){
-        const isUnmute = btn.textContent.trim().toLowerCase()==='unmute';
-        await update(ref(db,`displays/${id}`),{muted:!isUnmute,updatedAt:Date.now()});
-        btn.textContent = isUnmute? 'Mute':'Unmute';
-        return;
-      }
+    let unSub=null;
+    function watchDisplays(dealerId, first=false){
+      if(unSub) { unSub(); unSub=null; }
+      const qy=query(ref(db,'displays'), orderByChild('dealership'), equalTo(dealerId));
+      const off=onValue(qy,(snap)=>{
+        const list=snap.exists()?snap.val():{};
+        renderDisplayList(list, dealerId);
+      });
+      unSub=off;
+      showEmpty(false);
+    }
 
-      if(action==='channel'){
-        const n=Number(btn.dataset.val||1);
-        await update(ref(db,`displays/${id}`),{channel:n,updatedAt:Date.now()});
-        toast(`Set ${id} → CH${n}`);
-        return;
-      }
-
-      if(action==='delete'){
-        if(!confirm(`Delete display ${id}?`)) return;
-        await remove(ref(db,`displays/${id}`));
-        row.remove();
-        toast(`Deleted ${id}`);
-        return;
-      }
-
-      if(action==='open'){
-        const url = `https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html`;
-        window.open(url,'_blank');
-        return;
-      }
-
-      if(action==='preview'){
-        toggleInlinePreview(row, id);
-        return;
-      }
-    });
-
-    // inline preview (one open at a time)
-    let openPreview=null;
-    function toggleInlinePreview(item, id){
-      let sub=item.querySelector('.sub.preview');
-      if(!sub){
-        sub=document.createElement('div');
-        sub.className='sub preview';
-        sub.innerHTML=`
-          <div class="bar">
-            <span class="small muted">Preview — <b>${esc(id)}</b></span>
-            <span style="margin-left:auto;display:flex;gap:6px;align-items:center">
-              <a class="btn" target="_blank" data-open-link>Open</a>
-              <button class="btn" data-close>Close</button>
-            </span>
+    function renderDisplayList(map, dealerId){
+      const ul=document.getElementById('displayList'); ul.innerHTML='';
+      const ids=Object.keys(map||{}).sort();
+      if(ids.length===0){ showEmpty(true); return; }
+      showEmpty(false);
+      ids.forEach(id=>{
+        const d=map[id]||{};
+        const li=document.createElement('li'); li.className='item'; li.dataset.displayId=id;
+        li.innerHTML=`
+          <div class="col">
+            <div class="hstack">
+              <span class="tag">ID: ${esc(id)}</span>
+              <span class="tag ${d.lastSeenAt&&Date.now()-d.lastSeenAt<30000?'ok':''}">${d.lastSeenAt&&Date.now()-d.lastSeenAt<30000?'Online':'Offline'}</span>
+              <span class="tag">CH ${d.channel||1}</span>
+              <span class="tag">Vol ${d.volume??0}</span>
+            </div>
+            <div class="small muted">Updated ${new Date(d.updatedAt||d.timestamp||Date.now()).toLocaleString()}</div>
           </div>
-          <iframe loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"></iframe>
-        `;
-        item.appendChild(sub);
-        sub.querySelector('[data-open-link]').href=`https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html`;
-        sub.querySelector('[data-close]').addEventListener('click',()=>{ const f=sub.querySelector('iframe'); if(f) f.src=''; sub.style.display='none'; if(openPreview===sub) openPreview=null; });
-      }
+          <div class="split">
+            <button class="btn" data-act="open">Open</button>
+            <button class="btn" data-act="embed">Embed</button>
+            <button class="btn" data-act="chpanel">Channels</button>
+            <button class="btn danger" data-act="delete">Delete</button>
+            <div class="vol"><input type="range" min="0" max="100" value="${d.volume??0}" /><button class="btn" data-act="mute">Mute</button><button class="btn" data-act="unmute">Unmute</button></div>
+            <div class="hstack">
+              <button class="btn" data-act="ch" data-n="1">CH1</button>
+              <button class="btn" data-act="ch" data-n="2">CH2</button>
+              <button class="btn" data-act="ch" data-n="3">CH3</button>
+              <button class="btn" data-act="ch" data-n="4">CH4</button>
+              <button class="btn" data-act="ch" data-n="5">CH5</button>
+            </div>
+          </div>
+          <div class="sub channels" style="display:none">
+            <div class="chgrid">
+              <div class="chcell">CH1</div><div class="chcell name1">—</div><button class="btn small" data-prev="1">Preview</button><button class="btn small solid" data-change="1">Change</button>
+              <div class="chcell">CH2</div><div class="chcell name2">—</div><button class="btn small" data-prev="2">Preview</button><button class="btn small solid" data-change="2">Change</button>
+              <div class="chcell">CH3</div><div class="chcell name3">—</div><button class="btn small" data-prev="3">Preview</button><button class="btn small solid" data-change="3">Change</button>
+              <div class="chcell">CH4</div><div class="chcell name4">—</div><button class="btn small" data-prev="4">Preview</button><button class="btn small solid" data-change="4">Change</button>
+              <div class="chcell">CH5</div><div class="chcell name5">—</div><button class="btn small" data-prev="5">Preview</button><button class="btn small solid" data-change="5">Change</button>
+            </div>
+            <div class="rowPreview" style="display:none">
+              <div class="hstack" style="justify-content:space-between;align-items:center;margin-bottom:6px">
+                <div class="small muted">Channel preview</div>
+                <button class="btn small" data-stoprow="1">Stop</button>
+              </div>
+              <video playsinline controls></video>
+            </div>
+          </div>`;
+        ul.appendChild(li);
 
-      const iframe=sub.querySelector('iframe');
-      const url=`https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html?embed=1`;
+        // wire actions
+        li.querySelectorAll('button').forEach(b=>{
+          b.addEventListener('click', async ()=>{
+            const act=b.dataset.act;
+            if(act==='open'){ openPlayer(id); }
+            else if(act==='embed'){ openPlayer(id,true); }
+            else if(act==='chpanel'){ await loadChannelNamesIntoPanel(li,id); const p=li.querySelector('.sub.channels'); p.style.display=p.style.display==='none'?'block':'none'; }
+            else if(act==='mute'){ await update(ref(db,`displays/${id}`),{muted:true,updatedAt:Date.now()}); }
+            else if(act==='unmute'){ await update(ref(db,`displays/${id}`),{muted:false,updatedAt:Date.now()}); }
+            else if(act==='ch'){ const n=parseInt(b.dataset.n,10); await update(ref(db,`displays/${id}`),{channel:n,updatedAt:Date.now()}); }
+            else if(act==='delete'){ await deleteDisplayFlow(id); }
+          });
+        });
+        li.querySelector('.vol input').addEventListener('input',debounce(async (e)=>{
+          await update(ref(db,`displays/${id}`),{volume:parseInt(e.target.value,10),updatedAt:Date.now()});
+        },200));
 
-      if(openPreview && openPreview!==sub){
-        const prev=openPreview.querySelector('iframe'); if(prev) prev.src='';
-        openPreview.style.display='none';
-        openPreview=null;
-      }
-
-      const isOpen=sub.style.display==='block';
-      if(isOpen){ sub.style.display='none'; if(iframe) iframe.src=''; openPreview=null; }
-      else{ sub.style.display='block'; if(iframe && iframe.src!==url) iframe.src=url; openPreview=sub; }
+        // per-row inline preview hookups
+        const rowPrev=li.querySelector('.rowPreview'); const rowVideo=rowPrev.querySelector('video');
+        let rowHls=null;
+        li.querySelector('[data-stoprow]').addEventListener('click',()=>{
+          if(rowHls){ try{rowHls.destroy();}catch{} rowHls=null; }
+          rowVideo.pause(); rowVideo.removeAttribute('src'); rowVideo.load(); rowPrev.style.display='none';
+        });
+        li.querySelectorAll('[data-prev]').forEach(btn=>{
+          btn.addEventListener('click', async ()=>{
+            const n=parseInt(btn.dataset.prev,10);
+            const info=await fetchChannelInfoFromPlayer(id);
+            const ch=info.channels[n-1];
+            if(!ch||!ch.url) return toast('No URL for this slot',true);
+            // play inline in this row
+            if(rowHls){ try{rowHls.destroy();}catch{} rowHls=null; }
+            if(Hls.isSupported()){ rowHls=new Hls({enableWorker:true}); rowHls.loadSource(ch.url); rowHls.attachMedia(rowVideo); rowVideo.play().catch(()=>{}); }
+            else { rowVideo.src=ch.url; rowVideo.play().catch(()=>{}); }
+            rowPrev.style.display='block';
+          });
+        });
+        li.querySelectorAll('[data-change]').forEach(btn=>{
+          btn.addEventListener('click', ()=> openChangeModal(id, dealerId, parseInt(btn.dataset.change,10)));
+        });
+      });
     }
 
-    /* ================== CHOOSE CHANNELS → REBUILD PLAYER (optional) ================== */
-    // If you want to push selected channels into an existing display file:
-    // call rebuildChannelsForDisplay(displayId)
-    async function rebuildChannelsForDisplay(displayId){
-      if(!chSelectedList.length) return toast('Pick channels in CH picker first',true);
-      const sel=document.getElementById('dealerForDisplays'); const dealerName=sel.options[sel.selectedIndex].textContent.trim()||sel.value;
-      const file=buildPlayerFile(displayId, dealerName, chSelectedList.slice(0,5));
+    function openPlayer(id, embed=false){
+      const gh=ghCfg();
+      const path=`/${gh.basePath||'Displays'}/${id}.html${embed?'?embed=1':''}`;
+      window.open(path,'_blank');
+    }
+
+    async function fetchChannelInfoFromPlayer(displayId){
+      const gh=ghCfg(); if(!gh.token) throw new Error('GitHub not configured');
+      const path = `${gh.basePath||'Displays'}/${displayId}.html`;
+      const file=await ghGet(path);
+      let html=''; if(file && file.content){ html=unb64(file.content); }
+      const channels=parseChannelsFromPlayer(html);
+      return {path,html,channels,sha:file?.sha||null};
+    }
+
+    async function loadChannelNamesIntoPanel(li, displayId){
       try{
-        await ghCommit(`Displays/${displayId}.html`, file, `Update channels for ${displayId}`);
-        toast('Channels updated in file');
-      }catch(e){ console.error(e); toast('Update failed',true); }
+        const info=await fetchChannelInfoFromPlayer(displayId);
+        for(let i=1;i<=5;i++){
+          const el=li.querySelector(`.name${i}`);
+          const ch=info.channels[i-1]; el.textContent = ch ? `${ch.name} — ${ch.url}` : '—';
+        }
+      }catch(e){ console.error(e); toast('Failed to read player file (GH setup?)',true); }
     }
 
+    // ====== Delete display ======
+    async function deleteDisplayFlow(displayId){
+      if(!confirm(`Delete display ${displayId} from Firebase?`)) return;
+      try{
+        await remove(ref(db,`displays/${displayId}`));
+        toast('Display removed from Firebase');
+      }catch(e){ console.error(e); toast('Failed to remove from Firebase',true); }
+      const gh=ghCfg();
+      if(gh.token && confirm('Also delete the player file from GitHub?')){
+        try{
+          const path = `${gh.basePath||'Displays'}/${displayId}.html`;
+          const cur=await ghGet(path);
+          await ghDel(path, cur?.sha, `[IPTV] Delete ${displayId} player`);
+          toast('GitHub file deleted');
+        }catch(e){ console.error(e); toast('GitHub delete failed',true); }
+      }
+    }
+
+    // ====== Change Channel Modal ======
+    let modal = null, modalPlayer=null, modalTargetDisplay='', modalTargetDealer='', modalTargetIndex=1, modalList=[];
+    function ensureModal(){
+      if(modal) return modal;
+      modal=document.createElement('div');
+      modal.id='chgModal';
+      modal.innerHTML=`
+        <div class="back"></div>
+        <div class="dlg">
+          <div id="chgHead">
+            <div class="label" id="chgTitle">Change channel</div>
+            <div class="hstack">
+              <button id="chgReload" class="btn">Reload</button>
+              <button id="chgClose" class="btn">Close</button>
+            </div>
+          </div>
+          <div id="chgBody">
+            <div class="igroup">
+              <input id="chgSearch" class="input" placeholder="Search…">
+              <select id="chgSelect"></select>
+              <button id="chgApply" class="btn solid">Replace</button>
+            </div>
+            <div id="chgPlayerShell">
+              <video id="chgPlayer" class="video-js vjs-default-skin" playsinline controls preload="auto"></video>
+            </div>
+            <div class="small muted" id="chgMeta"></div>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+      modal.querySelector('.back').addEventListener('click',closeChangeModal);
+      document.getElementById('chgClose').addEventListener('click',closeChangeModal);
+      document.getElementById('chgReload').addEventListener('click',loadModalList);
+      document.getElementById('chgSearch').addEventListener('input',debounce(()=>populateModalSelect(),150));
+      document.getElementById('chgSelect').addEventListener('change',()=> previewSelected());
+      document.getElementById('chgApply').addEventListener('click',applyChannelChange);
+
+      modalPlayer=videojs('chgPlayer',{html5:{vhs:{overrideNative:true}},controlBar:{volumePanel:{inline:false}}});
+    }
+    function openChangeModal(displayId, dealerId, idx){
+      ensureModal();
+      modalTargetDisplay=displayId; modalTargetDealer=dealerId; modalTargetIndex=idx;
+      document.getElementById('chgTitle').textContent=`Change channel CH${idx} — ${displayId}`;
+      modal.classList.add('open');
+      loadModalList();
+    }
+    function closeChangeModal(){
+      modal.classList.remove('open'); try{ modalPlayer.pause(); }catch{}
+    }
+    async function loadModalList(){
+      try{
+        modalList=await fetchChannelSheet();
+        populateModalSelect();
+        toast(`Loaded ${modalList.length} channels`);
+      }catch(e){ console.error(e); toast('Load failed',true); }
+    }
+    function populateModalSelect(){
+      const sel=document.getElementById('chgSelect'); const q=(document.getElementById('chgSearch').value||'').toLowerCase();
+      sel.innerHTML='';
+      const opt0=document.createElement('option'); opt0.value=''; opt0.textContent='Choose Channel'; sel.appendChild(opt0);
+      modalList.filter(c=> !q || (c.name||'').toLowerCase().includes(q) || (c.url||'').toLowerCase().includes(q)).forEach((c,i)=>{
+        const o=document.createElement('option'); o.value=String(i); o.textContent=`${i+1}. ${c.name||'Channel'}`; sel.appendChild(o);
+      });
+      document.getElementById('chgMeta').textContent='';
+    }
+    function previewSelected(){
+      const sel=document.getElementById('chgSelect'); const i=parseInt(sel.value,10);
+      if(isNaN(i)) return;
+      const c=modalList[i]; document.getElementById('chgMeta').textContent=c.url;
+      try{ modalPlayer.src({type:'application/x-mpegURL',src:c.url}); modalPlayer.play().catch(()=>{}); }catch{}
+    }
+    async function applyChannelChange(){
+      const sel=document.getElementById('chgSelect'); const i=parseInt(sel.value,10);
+      if(isNaN(i)) return toast('Pick a channel',true);
+      const chosen=modalList[i];
+      try{
+        // read current channels
+        const info=await fetchChannelInfoFromPlayer(modalTargetDisplay);
+        const arr=info.channels;
+        arr[modalTargetIndex-1] = {id:modalTargetIndex, name:chosen.name||'Channel', url:chosen.url, type:'hls'};
+        await createOrUpdatePlayer(modalTargetDisplay, modalTargetDealer, arr);
+        toast(`CH${modalTargetIndex} updated`);
+        // live nudge if currently on that channel
+        try{
+          const snap=await get(ref(db,`displays/${modalTargetDisplay}`));
+          const cur=snap.val()||{}; if(cur.channel===modalTargetIndex){
+            await update(ref(db,`displays/${modalTargetDisplay}`),{channel:1,updatedAt:Date.now()});
+            setTimeout(()=> update(ref(db,`displays/${modalTargetDisplay}`),{channel:modalTargetIndex,updatedAt:Date.now()}),800);
+          }
+        }catch{}
+        closeChangeModal();
+        // refresh the visible names if panel is open
+        const li=[...document.querySelectorAll('.item')].find(x=> x.dataset.displayId===modalTargetDisplay);
+        if(li) loadChannelNamesIntoPanel(li, modalTargetDisplay);
+      }catch(e){ console.error(e); toast('Update failed (check GH setup)',true); }
+    }
+
+    // ====== Bulk controls ======
+    document.getElementById('bulkMute').addEventListener('click',()=> bulkForDealer(async (id)=> update(ref(db,`displays/${id}`),{muted:true,updatedAt:Date.now()})));
+    document.getElementById('bulkUnmute').addEventListener('click',()=> bulkForDealer(async (id)=> update(ref(db,`displays/${id}`),{muted:false,updatedAt:Date.now()})));
+    document.getElementById('bulkCh1').addEventListener('click',()=> bulkForDealer(async (id)=> update(ref(db,`displays/${id}`),{channel:1,updatedAt:Date.now()})));
+    document.getElementById('displaysReload').addEventListener('click',()=>{ const v=selDealer.value||''; if(v) watchDisplays(v,true); });
+    document.getElementById('manageUsers').addEventListener('click',()=>{ const v=selDealer.value||''; if(v) location.href='users.html?dealer='+encodeURIComponent(v); });
+
+    async function bulkForDealer(fn){
+      const dealer=selDealer.value||''; if(!dealer) return;
+      const qy=query(ref(db,'displays'), orderByChild('dealership'), equalTo(dealer));
+      const snap=await get(qy); const map=snap.exists()?snap.val():{};
+      await Promise.all(Object.keys(map).map(id=> fn(id)));
+      toast('Applied');
+    }
+
+    // ===== Add TV =====
+    document.getElementById('addDisplayBtn').addEventListener('click',addDisplayFlow);
+    function pickSelectedOrDefault(){
+      const list=(chSelectedList.length? chSelectedList.slice(0,5) : [
+        {name:'News',url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8'},
+        {name:'Sports',url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8'},
+        {name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8'},
+        {name:'Nature',url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8'},
+        {name:'Kids',url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8'},
+      ]);
+      return list.map((c,i)=>({id:i+1,name:c.name||'Channel',url:c.url,type:'hls'}));
+    }
+    async function addDisplayFlow(){
+      const dealer=selDealer.value||''; if(!dealer) return toast('Choose a dealership',true);
+      const idInput=(document.getElementById('newDisplayId').value||'').trim();
+      let displayId=idInput||await autoDisplayId(dealer);
+      const gh=ghCfg(); if(!gh.token) return toast('Do GH Setup first',true);
+
+      try{
+        const channels=pickSelectedOrDefault();
+        await createOrUpdatePlayer(displayId, dealer, channels);
+        await update(ref(db,`displays/${displayId}`),{dealership:dealer,channel:1,volume:50,muted:true,createdAt:Date.now(),updatedAt:Date.now()});
+        toast(`TV ${displayId} added`);
+        watchDisplays(dealer,true);
+      }catch(e){ console.error(e); toast('Add failed',true); }
+    }
+    async function autoDisplayId(dealer){
+      // Simple auto: <dealer-prefix>-NNN
+      const pref = dealer.replace(/[^A-Za-z0-9]/g,'').slice(0,2).toUpperCase()||'TV';
+      const qy=query(ref(db,'displays'), orderByChild('dealership'), equalTo(dealer));
+      const snap=await get(qy); const ids=snap.exists()?Object.keys(snap.val()):[];
+      let max=0; ids.forEach(id=>{ const m=id.match(/-(\d+)$/); if(m) max=Math.max(max,parseInt(m[1],10)); });
+      return `${pref}-${String(max+1).padStart(3,'0')}`;
+    }
   </script>
 </body>
 </html>
