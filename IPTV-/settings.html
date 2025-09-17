@@ -97,13 +97,18 @@
   .crumbs a{padding:6px 10px;border:1px solid var(--border);border-radius:9999px}
   .crumbs a.active{border-color:var(--accent)}
 
-  /* Tabs + toast (for Delete Users card) */
-  .tabs{display:flex;gap:8px;margin-top:10px;margin-bottom:8px}
-  .tab{padding:6px 10px;border:1px solid var(--border);border-radius:9999px;cursor:pointer;font-weight:800}
-  .tab.active{border-color:var(--accent)}
-  .hide{display:none}
+  /* ==== Inline editor modal ==== */
+  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.35);z-index:300}
+  .modal.open{display:flex}
+  .modal-panel{width:min(920px,92vw);background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:12px}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+
   .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
   .toast.show{opacity:1}
+  .hide{display:none}
+  .tabs{display:flex;gap:8px;margin-top:8px}
+  .tab{padding:6px 10px;border:1px solid var(--border);border-radius:9999px;cursor:pointer;font-weight:800}
+  .tab.active{border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -190,9 +195,23 @@
       <button id="exNewFile" class="btn">New file…</button>
       <button id="exNewFolder" class="btn">New folder…</button>
       <label class="btn"><input id="exUpload" type="file" style="display:none">Upload…</label>
-      <span class="muted">Tip: Folder rename isn’t supported directly. Open the folder and rename/move files inside.</span>
+      <span class="muted">Tip: Folder rename isn’t supported directly by Git—use Move to copy and delete.</span>
     </div>
     <div id="exTable"></div>
+
+    <!-- Inline text editor -->
+    <div id="editor" class="modal" aria-hidden="true">
+      <div class="modal-panel">
+        <div class="modal-head">
+          <div class="mono" id="editPath">/path</div>
+          <div style="display:flex;gap:8px">
+            <button id="editCancel" class="btn">Cancel</button>
+            <button id="editSave" class="btn solid">Save</button>
+          </div>
+        </div>
+        <textarea id="editText" class="input mono" style="height:58vh" spellcheck="false"></textarea>
+      </div>
+    </div>
   </div>
 
   <!-- ===== Pull Requests ===== -->
@@ -202,6 +221,27 @@
       <button id="prRefresh" class="btn">Refresh PRs</button>
     </div>
     <div id="prList"></div>
+  </div>
+
+  <!-- ===== Central Config (read-only helper) ===== -->
+  <div class="card">
+    <h3 style="margin:0 0 8px">Central Config Source</h3>
+    <div class="row3">
+      <div><div class="label">Owner</div><input id="ghOwner" class="input" value="flaviothebfagroup"/></div>
+      <div><div class="label">Repo</div><input id="ghRepo" class="input" value="IPTV-"/></div>
+      <div><div class="label">Branch</div><input id="ghBranch" class="input" value="main"/></div>
+    </div>
+    <div class="row2">
+      <div><div class="label">Path (in repo)</div><input id="ghPath" class="input" value="config/iptv-config.json"/></div>
+      <div><div class="label">Raw URL (auto)</div><input id="rawUrl" class="input mono" readonly/></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button id="btnOpenFile" class="btn">Open in GitHub</button>
+      <button id="btnOpenEditor" class="btn">Open GitHub Editor</button>
+      <button id="btnLoadConfig" class="btn">View current JSON</button>
+      <button id="btnCopyLoader" class="btn solid">Copy loader snippet</button>
+    </div>
+    <textarea id="cfgView" class="input mono" style="margin-top:10px;display:none;height:220px" spellcheck="false"></textarea>
   </div>
 
   <!-- ===== Delete Anonymous Users ===== -->
@@ -229,7 +269,7 @@
       <textarea id="purgeCmd" class="input mono" style="margin-top:10px;display:none;height:260px" spellcheck="false"></textarea>
     </div>
 
-    <!-- Direct tab -->
+    <!-- Direct tab (optional, needs function) -->
     <div id="tab-direct" class="hide">
       <div class="row3">
         <div><div class="label">Function URL (https…/purgeAnonHttp)</div><input id="purgeUrl" class="input" placeholder="https://us-central1-iptv-bfa.cloudfunctions.net/purgeAnonHttp"></div>
@@ -245,27 +285,6 @@
     </div>
   </div>
 
-  <!-- ===== Central Config (helper) ===== -->
-  <div class="card">
-    <h3 style="margin:0 0 8px">Central Config Source</h3>
-    <div class="row3">
-      <div><div class="label">Owner</div><input id="ghOwner" class="input" value="flaviothebfagroup"/></div>
-      <div><div class="label">Repo</div><input id="ghRepo" class="input" value="IPTV-"/></div>
-      <div><div class="label">Branch</div><input id="ghBranch" class="input" value="main"/></div>
-    </div>
-    <div class="row2">
-      <div><div class="label">Path (in repo)</div><input id="ghPath" class="input" value="config/iptv-config.json"/></div>
-      <div><div class="label">Raw URL (auto)</div><input id="rawUrl" class="input mono" readonly/></div>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-      <button id="btnOpenFile" class="btn">Open in GitHub</button>
-      <button id="btnOpenEditor" class="btn">Open GitHub Editor</button>
-      <button id="btnLoadConfig" class="btn">View current JSON</button>
-      <button id="btnCopyLoader" class="btn solid">Copy loader snippet</button>
-    </div>
-    <textarea id="cfgView" class="input mono" style="margin-top:10px;display:none;height:220px" spellcheck="false"></textarea>
-  </div>
-
 </div>
 
 <div id="toast" class="toast"></div>
@@ -274,7 +293,7 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
   import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
-  /* ==== FIREBASE (auth for this page) ==== */
+  /* ==== FIREBASE (auth only on this page) ==== */
   const firebaseConfig = {
     apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
     authDomain: "iptv-bfa.firebaseapp.com",
@@ -351,7 +370,7 @@ const CONFIG_URL='${url}';
 const appConfig=await fetch(CONFIG_URL,{cache:'no-store'}).then(r=>r.json());
 const firebaseConfig=appConfig.firebaseConfig;`;
     try{await navigator.clipboard.writeText(snip); toast('Loader snippet copied');}
-    catch{const ta=document.createElement('textarea'); ta.value=snip; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('Loader snippet copied');}
+    catch{const ta=document.createElement('textarea'); ta.value=snip; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('Loader snippet copied');}
   };
 
   /* ===== GITHUB API HELPERS ===== */
@@ -408,7 +427,7 @@ const firebaseConfig=appConfig.firebaseConfig;`;
     const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encPath(path)}?ref=${encodeURIComponent(branch)}`;
     const r=await ghFetch(url);
     if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`get [${r.status}] ${json?.message||raw}`); }
-    return r.json(); // has base64 content for files
+    return r.json(); // has content (base64) for files
   }
   async function listDir(path,branch){
     const c=ghCfg();
@@ -428,15 +447,15 @@ const firebaseConfig=appConfig.firebaseConfig;`;
     const c=ghCfg(); const br=branch||c.branch||'main';
     const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encPath(path)}`;
     const sha=await fileSha(path,br);
-    const content = contentBase64 ?? btoa(unescape(encodeURIComponent(text||'')));
-    let res=await ghFetch(url,{method:'PUT',body:JSON.stringify({message:message||`Update ${path}`,content,branch:br,...(sha?{sha}:{})})});
+    let payloadContent = contentBase64 ?? btoa(unescape(encodeURIComponent(text||'')));
+    let res=await ghFetch(url,{method:'PUT',body:JSON.stringify({message:message||`Update ${path}`,content:payloadContent,branch:br,...(sha?{sha}:{})})});
     if(!res.ok){
       const {json,raw}=await ghText(res);
       if(needPR(json?.message||raw,res.status)){
         const tmp=`iptv-admin-${Date.now().toString(36)}`;
         await createBranch(br,tmp);
         const sha2=await fileSha(path,tmp);
-        const res2=await ghFetch(url,{method:'PUT',body:JSON.stringify({message:message||`Update ${path}`,content,branch:tmp,...(sha2?{sha:sha2}:{})})});
+        let res2=await ghFetch(url,{method:'PUT',body:JSON.stringify({message:message||`Update ${path}`,content:payloadContent,branch:tmp,...(sha2?{sha:sha2}:{})})});
         if(!res2.ok){ const {json:jj,raw:rr}=await ghText(res2); throw new Error(`PUT@PR [${res2.status}] ${jj?.message||rr}`); }
         await openPR(tmp, br, message||`Update ${path}`, `Auto-created by Settings page\n\nPath: \`${path}\``);
         return res2.json();
@@ -482,6 +501,34 @@ const firebaseConfig=appConfig.firebaseConfig;`;
   /* ====== EXPLORER (ALL FILES) ====== */
   let currentPath = ''; // '' = repo root
 
+  // ----- editor helpers -----
+  const editorEl = document.getElementById('editor');
+  const editPathEl = document.getElementById('editPath');
+  const editTextEl = document.getElementById('editText');
+  const utf8ToB64 = (s)=> btoa(unescape(encodeURIComponent(s)));
+  const b64ToUtf8 = (b)=> decodeURIComponent(escape(atob(b.replace(/\n/g,''))));
+  function openEditor(path, initialText){
+    editPathEl.textContent = path;
+    editTextEl.value = initialText ?? '';
+    editorEl.classList.add('open');
+    editorEl.setAttribute('aria-hidden','false');
+  }
+  function closeEditor(){
+    editorEl.classList.remove('open');
+    editorEl.setAttribute('aria-hidden','true');
+  }
+  document.getElementById('editCancel').onclick = closeEditor;
+  document.getElementById('editSave').onclick = async ()=>{
+    const p = editPathEl.textContent;
+    const txt = editTextEl.value ?? '';
+    try{
+      await upsertFile(p,{text:txt,message:`Edit ${p}`});
+      toast('Saved'); closeEditor(); refreshExplorer();
+    }catch(e){ toast(`Save failed: ${e.message||e}`); }
+  };
+  editorEl.addEventListener('click', (e)=>{ if(e.target===editorEl) closeEditor(); });
+
+  // ----- path + crumbs -----
   function setCrumbs(){
     const bc=$('#breadcrumbs');
     const parts=currentPath?currentPath.split('/'):[];
@@ -496,9 +543,45 @@ const firebaseConfig=appConfig.firebaseConfig;`;
       a.onclick=()=>{ currentPath=a.dataset.path||''; refreshExplorer(); };
     });
   }
+  const icon = (t)=> t==='dir'?'📁':'📄';
 
-  function icon(type){ return type==='dir' ? '📁' : '📄'; }
+  // ----- tree utilities (for folders) -----
+  async function listTree(path, branch){
+    // returns array of file paths under "path" (including nested)
+    const br = branch || (ghCfg().branch||'main');
+    const prefix = path ? path + '/' : '';
+    let out = [];
+    const items = await listDir(path, br);
+    for(const it of (items||[])){
+      if(it.type==='file'){
+        out.push(prefix + it.name);
+      }else if(it.type==='dir'){
+        const sub = await listTree(prefix + it.name, br);
+        out = out.concat(sub);
+      }
+    }
+    return out;
+  }
+  async function deleteFolder(path){
+    const files = await listTree(path, ghCfg().branch||'main');
+    for(const f of files){
+      await deleteFile(f, {message:`Delete ${f}`});
+    }
+  }
+  async function moveFile(oldPath, newPath){
+    const meta = await fetchFile(oldPath, ghCfg().branch||'main');
+    await upsertFile(newPath, {contentBase64: meta.content.replace(/\n/g,''), message:`Move ${oldPath} → ${newPath}`});
+    await deleteFile(oldPath, {message:`Remove ${oldPath}`});
+  }
+  async function moveFolder(oldDir, newDir){
+    const files = await listTree(oldDir, ghCfg().branch||'main');
+    for(const f of files){
+      const rel = f.slice(oldDir.length + 1); // keep substructure
+      await moveFile(f, `${newDir}/${rel}`);
+    }
+  }
 
+  // ----- main render -----
   async function refreshExplorer(){
     const table=$('#exTable'); table.innerHTML='Loading…';
     setCrumbs();
@@ -514,18 +597,21 @@ const firebaseConfig=appConfig.firebaseConfig;`;
         const rawUrl = it.type==='file'
           ? `https://raw.githubusercontent.com/${c.owner}/${c.repo}/${encodeURIComponent(c.branch||'main')}/${encPath((currentPath?currentPath+'/':'')+it.name)}`
           : '#';
+        const controls = it.type==='dir'
+          ? `<button class="btn" data-open>Open</button>
+             <button class="btn" data-move>Move</button>
+             <button class="btn danger" data-del-dir>Delete</button>`
+          : `<a class="btn" href="${rawUrl}" target="_blank" rel="noopener">Raw</a>
+             <button class="btn" data-edit>Edit</button>
+             <button class="btn" data-move>Move</button>
+             <button class="btn" data-rename>Rename</button>
+             <button class="btn danger" data-delete>Delete</button>`;
         return `
           <div class="tr" data-name="${it.name}" data-type="${it.type}">
             <input type="checkbox" class="chk">
-            <div class="name mono">${icon(it.type)} ${(it.name)}</div>
+            <div class="name mono">${icon(it.type)} ${it.name}</div>
             <div>${size}</div>
-            <div style="display:flex;gap:6px">
-              ${it.type==='dir'
-                ? `<button class="btn" data-open>Open</button>`
-                : `<a class="btn" href="${rawUrl}" target="_blank" rel="noopener">Raw</a>`}
-              <button class="btn" data-rename>Rename</button>
-              ${it.type==='file'?`<button class="btn danger" data-delete>Delete</button>`:''}
-            </div>
+            <div style="display:flex;gap:6px">${controls}</div>
             <a class="btn" target="_blank" rel="noopener" href="https://github.com/${c.owner}/${c.repo}/${it.type==='dir'?'tree':'blob'}/${encodeURIComponent(c.branch||'main')}/${encPath((currentPath?currentPath+'/':'')+it.name)}">GitHub</a>
           </div>`;
       }).join('') || '<div class="muted">Empty folder.</div>';
@@ -534,33 +620,73 @@ const firebaseConfig=appConfig.firebaseConfig;`;
 
       // open dir
       table.querySelectorAll('[data-open]').forEach(btn=>{
-        btn.onclick=()=>{ const row=btn.closest('.tr'); const name=row.dataset.name; const next = currentPath?`${currentPath}/${name}`:name; currentPath = next; refreshExplorer(); };
+        btn.onclick=()=>{ const row=btn.closest('.tr'); const name=row.dataset.name; currentPath = currentPath?`${currentPath}/${name}`:name; refreshExplorer(); };
       });
-      // delete file
+
+      // file delete
       table.querySelectorAll('[data-delete]').forEach(btn=>{
         btn.onclick=async()=>{
           const row=btn.closest('.tr'); const name=row.dataset.name;
           const full=(currentPath?currentPath+'/':'')+name;
-          if(!confirm(`Delete ${full}?`)) return;
+          if(!confirm(`Delete file ${full}?`)) return;
           try{ await deleteFile(full,{message:`Delete ${full}`}); toast('Deleted (PR if needed)'); refreshExplorer(); }catch(e){ toast(`Delete failed: ${e.message||e}`); }
         };
       });
+
+      // folder delete (recursive)
+      table.querySelectorAll('[data-del-dir]').forEach(btn=>{
+        btn.onclick=async()=>{
+          const row=btn.closest('.tr'); const name=row.dataset.name;
+          const full=(currentPath?currentPath+'/':'')+name;
+          if(!confirm(`Delete folder ${full} and all its files?`)) return;
+          try{ await deleteFolder(full); toast('Folder deleted (PR if needed)'); refreshExplorer(); }catch(e){ toast(`Delete failed: ${e.message||e}`); }
+        };
+      });
+
       // rename (files only)
       table.querySelectorAll('[data-rename]').forEach(btn=>{
         btn.onclick=async()=>{
-          const row=btn.closest('.tr'); const name=row.dataset.name; const type=row.dataset.type;
+          const row=btn.closest('.tr'); const name=row.dataset.name;
           const full=(currentPath?currentPath+'/':'')+name;
           const newName=(prompt(`Rename ${name} to:`, name)||'').trim();
           if(!newName || newName===name) return;
           const target=(currentPath?currentPath+'/':'')+newName;
           try{
-            if(type==='dir'){ alert('Folder rename not supported. Open the folder and rename files inside.'); return; }
-            const meta=await fetchFile(full, ghCfg().branch||'main'); // has content base64
+            const meta=await fetchFile(full, ghCfg().branch||'main'); // base64
             await upsertFile(target,{contentBase64:meta.content.replace(/\n/g,''),message:`Rename ${full} → ${target}`});
             await deleteFile(full,{message:`Remove old ${full}`});
-            toast('Renamed (PR if needed)');
-            refreshExplorer();
+            toast('Renamed (PR if needed)'); refreshExplorer();
           }catch(e){ toast(`Rename failed: ${e.message||e}`); }
+        };
+      });
+
+      // move (file or folder)
+      table.querySelectorAll('[data-move]').forEach(btn=>{
+        btn.onclick=async()=>{
+          const row=btn.closest('.tr'); const name=row.dataset.name; const type=row.dataset.type;
+          const full=(currentPath?currentPath+'/':'')+name;
+          const dest=(prompt(type==='dir'
+            ? `Move folder "${full}" to folder path (new parent/name):`
+            : `Move file "${full}" to (new path + filename):`, full)||'').trim();
+          if(!dest || dest===full) return;
+          try{
+            if(type==='dir'){ await moveFolder(full, dest); }
+            else{ await moveFile(full, dest); }
+            toast('Moved (PR if needed)'); refreshExplorer();
+          }catch(e){ toast(`Move failed: ${e.message||e}`); }
+        };
+      });
+
+      // edit (files only)
+      table.querySelectorAll('[data-edit]').forEach(btn=>{
+        btn.onclick=async()=>{
+          const row=btn.closest('.tr'); const name=row.dataset.name;
+          const full=(currentPath?currentPath+'/':'')+name;
+          try{
+            const meta=await fetchFile(full, ghCfg().branch||'main');
+            const text=b64ToUtf8(meta.content||'');
+            openEditor(full, text);
+          }catch(e){ toast(`Open editor failed: ${e.message||e}`); }
         };
       });
 
@@ -570,15 +696,19 @@ const firebaseConfig=appConfig.firebaseConfig;`;
     }
   }
 
+  // toolbar actions
   $('#exRefresh').onclick=refreshExplorer;
   $('#exUp').onclick=()=>{ if(!currentPath) return; currentPath=currentPath.split('/').slice(0,-1).join('/'); refreshExplorer(); };
   $('#exDeleteSel').onclick=async()=>{
     const tbl=$('#exTable'); const picks=[...tbl.querySelectorAll('.tr')].filter(r=>r.querySelector('.chk')?.checked);
-    const files = picks.filter(r=>r.dataset.type==='file').map(r=>(currentPath?currentPath+'/':'')+r.dataset.name);
-    if(files.length===0){ toast('Pick file(s)'); return; }
-    if(!confirm(`Delete ${files.length} file(s)?`)) return;
+    if(picks.length===0){ toast('Pick item(s)'); return; }
+    if(!confirm(`Delete ${picks.length} selected item(s)?`)) return;
     try{
-      for(const f of files){ await deleteFile(f,{message:`Delete ${f}`}); }
+      for(const r of picks){
+        const p=(currentPath?currentPath+'/':'')+r.dataset.name;
+        if(r.dataset.type==='dir') await deleteFolder(p);
+        else await deleteFile(p,{message:`Delete ${p}`});
+      }
       toast('Delete done (PR if needed)'); refreshExplorer();
     }catch(e){ toast(`Delete failed: ${e.message||e}`); }
   };
@@ -639,10 +769,14 @@ const firebaseConfig=appConfig.firebaseConfig;`;
   }
   $('#prRefresh').onclick=refreshPRs;
 
-  /* ===== Delete Users: tabs ===== */
-  document.querySelectorAll('#purgeCard .tab').forEach(btn=>{
+  // Initial loads
+  refreshExplorer();
+  refreshPRs();
+
+  /* ===== Purge tabs ===== */
+  document.querySelectorAll('.tab').forEach(btn=>{
     btn.addEventListener('click',()=>{
-      document.querySelectorAll('#purgeCard .tab').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       const which=btn.dataset.tab;
       $('#tab-shell').classList.toggle('hide', which!=='shell');
@@ -650,7 +784,7 @@ const firebaseConfig=appConfig.firebaseConfig;`;
     });
   });
 
-  /* ===== Delete Users: Cloud Shell helper ===== */
+  /* ===== Purge: Cloud Shell helper ===== */
   (function(){
     const daysEl=$('#purgeDays'), fbEl=$('#purgeFbProject'), gcpEl=$('#purgeGcpProject');
     const outEl=$('#purgeCmd'), btnCopy=$('#btnPurgeCopy'), btnOpen=$('#btnPurgeOpenShell'), btnShow=$('#btnPurgeShow');
@@ -680,7 +814,7 @@ const days=Number(arg('days', ${DAYS}))||0;const dryRun=argv.includes('--dry-run
   }while(next);
   console.log('Scan done. scanned='+scanned+', candidates='+batch.length+', kept='+kept);
   if(dryRun||!batch.length)return; let deleted=0,errors=0;
-  for(let i=0;i<batch.length;i+=1000){const chunk=batch.slice(i,i+1000);const r=await admin.auth().deleteUsers(chunk);deleted+=r.successCount;errors+=r.failureCount;console.log('Deleted '+r.successCount+' (chunk '+(i+1)+'-'+Math.min(i+chunk.length,batch.length)+')');}
+  for(let i=0;i+0<batch.length;i+=1000){const chunk=batch.slice(i,i+1000);const r=await admin.auth().deleteUsers(chunk);deleted+=r.successCount;errors+=r.failureCount;console.log('Deleted '+r.successCount+' (chunk '+(i+1)+'-'+Math.min(i+chunk.length,batch.length)+')');}
   console.log('Finished. Deleted='+deleted+', errors='+errors);
 })(); 
 JS
@@ -697,7 +831,7 @@ node purge-anon.js --days ${DAYS}
     refresh(false);
   })();
 
-  /* ===== Delete Users: Direct function call ===== */
+  /* ===== Purge: Direct call (optional) ===== */
   (function(){
     const urlEl=$('#purgeUrl'), keyEl=$('#purgeKey'), daysEl=$('#purgeDays2'), out=$('#purgeOut');
     urlEl.value = localStorage.getItem('purge_url') || '';
@@ -712,8 +846,10 @@ node purge-anon.js --days ${DAYS}
       try{
         const qp = new URL(url); qp.searchParams.set('days', String(days)); if (dry) qp.searchParams.set('dry','1');
         const resp = await fetch(qp.toString(), { headers: { 'x-api-key': key }});
-        const j = await resp.json();
-        out.textContent = JSON.stringify(j, null, 2);
+        const text = await resp.text();
+        // Try JSON, else raw text
+        try{ out.textContent = JSON.stringify(JSON.parse(text), null, 2); }
+        catch{ out.textContent = text; }
       }catch(e){
         out.textContent = 'Error: '+(e?.message||String(e));
       }
@@ -721,10 +857,6 @@ node purge-anon.js --days ${DAYS}
     $('#btnDirectDry').addEventListener('click',()=>call(true));
     $('#btnDirectGo').addEventListener('click',()=>call(false));
   })();
-
-  // Initial loads
-  refreshExplorer();
-  refreshPRs();
 </script>
 </body>
 </html>
