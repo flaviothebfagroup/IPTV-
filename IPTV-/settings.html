@@ -944,5 +944,96 @@ node purge-anon.js --days ${DAYS}
     window.addEventListener('offline', refreshOnline);
     refreshOnline();
   </script>
+ <!-- Firebase (module) for the player: connects to RTDB and listens for channel/volume/muted -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+      authDomain: "iptv-bfa.firebaseapp.com",
+      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+      projectId: "iptv-bfa",
+      storageBucket: "iptv-bfa.firebasestorage.app",
+      messagingSenderId: "838790935867",
+      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    };
+
+    // If embedded in your admin preview (?embed=1) use in-memory auth so it doesn't affect normal sessions
+    const EMBED = /\bembed=1\b/i.test(location.search) || (window.top !== window.self);
+
+    const app = initializeApp(firebaseConfig, EMBED ? 'embed' : undefined);
+    const auth = getAuth(app);
+    if (EMBED) { await setPersistence(auth, inMemoryPersistence); }
+    const db = getDatabase(app);
+
+    // Anonymous sign-in for devices
+    signInAnonymously(auth).catch(e => {
+      console.error('[auth]', e);
+      window.setStatus(false, 'anon auth failed');
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+
+      const displayId = CONFIG.displayId;
+      const dealershipName = CONFIG.dealershipName;
+
+      if (EMBED) {
+        // Preview mode: just listen to /displays/{id}
+        const dref = ref(db, `displays/${displayId}`);
+        onValue(dref, (snap) => {
+          const d = snap.val(); if (!d) return;
+          if (typeof d.channel === 'number' && d.channel !== window.currentChannel) window.loadChannel(d.channel);
+          if (d.volume !== undefined || d.muted !== undefined) window.applyVolumeSettings(d.volume, d.muted);
+          window.setStatus(true, '');
+        }, (err) => {
+          console.error('[listener]', err);
+          window.setStatus(false, 'listener error');
+        });
+        return;
+      }
+
+      // Device mode: register device + ensure defaults exist
+      try {
+        await update(ref(db, `user/${user.uid}`), {
+          role: 'device',
+          name: displayId,
+          dealershipId: dealershipName,
+          updatedAt: Date.now(),
+          createdAt: Date.now()
+        });
+      } catch (e) {}
+
+      try {
+        const dRef = ref(db, `displays/${displayId}`);
+        const snap = await get(dRef);
+        if (!snap.exists()) {
+          await update(dRef, { channel: 1, volume: 50, muted: true, dealership: dealershipName, timestamp: Date.now() });
+        }
+      } catch (e) {}
+
+      // Live control listener
+      const dref = ref(db, `displays/${displayId}`);
+      onValue(dref, (snap) => {
+        const d = snap.val(); if (!d) return;
+        if (typeof d.channel === 'number' && d.channel !== window.currentChannel) window.loadChannel(d.channel);
+        if (d.volume !== undefined || d.muted !== undefined) window.applyVolumeSettings(d.volume, d.muted);
+        window.setStatus(true, '');
+      }, (err) => {
+        console.error('[listener]', err);
+        window.setStatus(false, 'listener error');
+      });
+
+      // Heartbeat
+      try {
+        const hbRef = ref(db, `displays/${displayId}`);
+        const beat = async () => { try { await update(hbRef, { lastSeenAt: Date.now(), updatedAt: Date.now() }); } catch (e) {} };
+        beat();
+        setInterval(beat, 15000);
+      } catch (e) {}
+    });
+  </script>
 </body>
 </html></template>
