@@ -88,9 +88,20 @@
     .toast.err{background:#ff453a;color:#fff}
 
     /* Inline preview */
-    .sub.preview{grid-column:1/-1;width:100%;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;margin-top:6px}
+    .sub.preview{grid-column:1/-1;width:100%;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;margin-top:6px;display:none}
     .sub.preview .bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
     .sub.preview iframe{width:100%;height:420px;border:1px solid var(--border);border-radius:10px;background:#000}
+
+    /* Channel picker (global) */
+    #chPicker .grid{display:grid;grid-template-columns:1fr;gap:8px}
+    #chList{max-height:320px;overflow:auto;border:1px solid var(--border);border-radius:12px;padding:6px;background:var(--tile)}
+    .chrow{display:flex;gap:8px;align-items:flex-start;padding:8px;border-radius:10px}
+    .chrow:hover{background:var(--tileHover)}
+    .churl{font-size:12px;color:var(--muted);word-break:break-all}
+
+    /* Global test player (picker) */
+    #testWrap{display:none;margin-top:8px;border:1px dashed var(--border);border-radius:12px;padding:8px}
+    #testWrap video{width:100%;height:260px;background:#000;border-radius:10px;border:1px solid var(--border)}
   </style>
 </head>
 <body>
@@ -179,9 +190,41 @@
           <input id="newDisplayId" class="input" placeholder="Auto if empty (e.g., GW-002)"/>
         </div>
         <div style="display:flex;align-items:end;gap:8px;flex-wrap:wrap">
-          <button id="addDisplayBtn" class="btn solid">Add TV</button>
+          <button id="addDisplayBtn" class="btn solid" title="Create a player file for this dealership">Add TV</button>
           <button id="ghSetupBtn" class="btn" title="Configure GitHub (owner/repo/branch/token)">GH Setup</button>
           <button id="ghResetBtn" class="btn" title="Clear saved GitHub config">GH Reset</button>
+          <!-- Channels setup & picker -->
+          <button id="chSetupBtn" class="btn" title="Configure Google Sheet for channels">CH Setup</button>
+          <button id="chPickBtn" class="btn" title="Pick channels from the sheet">Pick Channels</button>
+          <span id="chSelBadge" class="badge" style="display:none"></span>
+        </div>
+      </div>
+
+      <!-- Channel picker panel -->
+      <div id="chPicker" class="card" style="display:none; margin-top:8px">
+        <div class="grid">
+          <div class="hstack" style="justify-content:space-between">
+            <div class="label">Pick channels to embed</div>
+            <button id="chClose" class="btn">Close</button>
+          </div>
+          <div class="hstack">
+            <input id="chSearch" class="input" placeholder="Search name or URL…"/>
+            <button id="chReload" class="btn">Reload</button>
+            <button id="chClearSel" class="btn">Clear</button>
+            <button id="chApply" class="btn solid">Use Selected</button>
+          </div>
+          <div id="chList"></div>
+
+          <!-- inline test player (picker) -->
+          <div id="testWrap">
+            <div class="hstack" style="justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div class="small muted">Channel preview</div>
+              <button id="testStop" class="btn">Stop</button>
+            </div>
+            <video id="testVideo" controls playsinline></video>
+          </div>
+
+          <div class="muted small">Tip: Select any; order is preserved. If you skip this, the default 5 stay.</div>
         </div>
       </div>
 
@@ -198,7 +241,7 @@
     </div>
   </div>
 
-  <!-- ===== Player file template (YOUR EXACT TEMPLATE) ===== -->
+  <!-- ===== Player file template (YOUR EXACT TEMPLATE + Volume HUD already installed) ===== -->
   <template id="playerTemplate"><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -315,6 +358,7 @@
     let hls=null;
     window.currentChannel=1; window.currentVolume=0; window.isMuted=true; let lastVolume=50;
     const $ = (id)=>document.getElementById(id);
+    let _hudTimer=null;
 
     document.addEventListener('DOMContentLoaded', ()=>{
       $('displayId').textContent = CONFIG.displayId;
@@ -343,12 +387,19 @@
       const cls=window.isMuted||pct===0?'icon-muted':pct<30?'icon-level-1':pct<70?'icon-level-2':'icon-level-3';
       $('volSvg').className.baseVal='vol-icon '+cls;
     }
+    function showVolumeHudBubble(text){
+      const b=document.createElement('div'); b.className='volume-float'; b.textContent=text; document.body.appendChild(b);
+      setTimeout(()=>{ b.remove(); }, 1800);
+    }
+    function flashVolumeHud(){ const hud=$('volumeHud'); hud.classList.add('show'); clearTimeout(_hudTimer); _hudTimer=setTimeout(()=>hud.classList.remove('show'), 1500); }
+
     function toggleMute(){ window.isMuted?mute():unmute(); }
-    function mute(){ const v=$('videoPlayer'); window.isMuted=true; v.muted=true; localStorage.setItem('displayMuted','true'); renderVolumeUI(); }
-    function unmute(){ const v=$('videoPlayer'); if(window.currentVolume===0){ window.currentVolume=lastVolume||50; v.volume=window.currentVolume/100; } window.isMuted=false; v.muted=false; v.play().catch(()=>{}); localStorage.setItem('displayMuted','false'); renderVolumeUI(); }
-    function setVolume(vol){ vol=Math.max(0,Math.min(100,vol|0)); const v=$('videoPlayer'); window.currentVolume=vol; if(vol>0) lastVolume=vol; v.volume=vol/100; if(vol===0){ window.isMuted=true; v.muted=true; localStorage.setItem('displayMuted','true'); } localStorage.setItem('displayVolume',String(vol)); renderVolumeUI(); }
+    function mute(){ const v=$('videoPlayer'); window.isMuted=true; v.muted=true; localStorage.setItem('displayMuted','true'); renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble('MUTED'); }
+    function unmute(){ const v=$('videoPlayer'); if(window.currentVolume===0){ window.currentVolume=lastVolume||50; v.volume=window.currentVolume/100; } window.isMuted=false; v.muted=false; v.play().catch(()=>{}); localStorage.setItem('displayMuted','false'); renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble(`${window.currentVolume|0}%`); }
+    function setVolume(vol){ vol=Math.max(0,Math.min(100,vol|0)); const v=$('videoPlayer'); window.currentVolume=vol; if(vol>0) lastVolume=vol; v.volume=vol/100; if(vol===0){ window.isMuted=true; v.muted=true; localStorage.setItem('displayMuted','true'); } localStorage.setItem('displayVolume',String(vol)); renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble(window.isMuted?'MUTED':`${vol}%`); }
     function volumeUp(){ if(window.isMuted) unmute(); setVolume(window.currentVolume+10); }
     function volumeDown(){ setVolume(window.currentVolume-10); }
+
     function showError(msg){ $('errText').textContent=msg; $('errToast').classList.add('show'); }
     function hideError(){ $('errToast').classList.remove('show'); }
     function showLoading(f){ const el=$('loading'); if(f){ el.classList.add('active'); } else { el.classList.remove('active'); hideError(); } }
@@ -427,19 +478,28 @@
 
   <div id="toast" class="toast"></div>
 
+  <!-- Hls.js for admin-side channel previews -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
+
+  <!-- ===== Admin page logic ===== -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import { getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import { getDatabase, ref, get, set, update, remove, onValue, query, orderByChild, equalTo } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    import { getDatabase, ref, get, set, update, remove, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
+    /* ================== CONFIG / HELPERS ================== */
     const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
     const LOGO_URL="/IPTV-/icons/icon-512.png";
+    const GH_KEY='iptv_admin_gh';
+    const CH_KEY='iptv_admin_ch'; // { url: 'published CSV or JSON endpoint' }
+    const CH_SEL_KEY='iptv_admin_ch_sel'; // array of {name,url,type?}
 
     const app=initializeApp(firebaseConfig);
     const auth=getAuth(app);
     const db=getDatabase(app);
 
     const $=s=>document.querySelector(s);
+    const $$=(s,sc=document)=>Array.from(sc.querySelectorAll(s));
     const debounce=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
     function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
     function toast(msg,err=false){const t=$('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2400);}
@@ -451,7 +511,7 @@
     const saved=localStorage.getItem(THEME_KEY)||'light'; document.body.classList.toggle('dark',saved==='dark'); setThemeIcon();
     themeBtn.addEventListener('click',()=>{ const toDark=!document.body.classList.contains('dark'); document.body.classList.toggle('dark',toDark); localStorage.setItem(THEME_KEY,toDark?'dark':'light'); setThemeIcon(); });
 
-    // more menu & mobile sheet
+    // menu + sheet
     const moreBtn=document.getElementById('moreBtn'), moreMenu=document.getElementById('moreMenu');
     if(moreBtn){
       moreBtn.addEventListener('click',e=>{e.preventDefault();moreMenu.classList.toggle('open');});
@@ -462,7 +522,7 @@
     }
     (()=>{ const sheet=document.getElementById('sheet'); const open=()=>{sheet.classList.add('open');document.body.style.overflow='hidden';}; const close=()=>{sheet.classList.remove('open');document.body.style.overflow='';}; document.getElementById('hamburger').addEventListener('click',open); document.getElementById('closeSheet').addEventListener('click',close); sheet.querySelector('.back').addEventListener('click',close); const mainOut=document.getElementById('signOutBtn'); const mobOut=document.getElementById('signOutBtnM'); if(mainOut&&mobOut){mobOut.addEventListener('click',()=> mainOut.click());}})();
 
-    // auth UI
+    /* ================== AUTH ================== */
     document.getElementById('loginBtn').addEventListener('click',doLogin);
     document.getElementById('resetBtn').addEventListener('click',async()=>{ const email=document.getElementById('email').value.trim(); if(!email) return toast('Enter email',true); try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed',true);} });
     document.getElementById('signOutBtn').addEventListener('click',()=>signOut(auth));
@@ -473,309 +533,492 @@
       document.getElementById('adminEmail').textContent=user.email||user.uid;
       try{ const snap=await get(ref(db,`user/${user.uid}`)); const u=snap.val()||{}; if(u.role!=='admin'){ $('#loginBox').style.display='none'; $('#content').style.display='none'; alert('Not authorized. Ask an admin to set your role to admin.'); return; } }catch(_){}
       $('#loginBox').style.display='none'; $('#content').style.display='block';
-      await refreshDealers(); const did=new URL(location.href).searchParams.get('dealer')||''; if(did){ document.getElementById('dealerForDisplays').value=did; watchDisplays(did,true); }
+      await refreshDealers();
+
+      const did=new URL(location.href).searchParams.get('dealer')||'';
+      if(did){ document.getElementById('dealerForDisplays').value=did; }
+      handleDealerChange();
     });
 
+    /* ================== DEALERS & DISPLAYS ================== */
+    let dealersMap={}; // id -> {name}
     async function refreshDealers(){
       const sel=document.getElementById('dealerForDisplays'); sel.innerHTML='<option value="">Select dealership…</option>';
-      let map={}; try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=pub.val(); }catch(e){}
-      if(!map||Object.keys(map).length===0){ try{ const d=await get(ref(db,'dealership')); if(d.exists()){ const raw=d.val(); for(const id of Object.keys(raw)) map[id]={name:raw[id]?.name||id}; } }catch(e){} }
-      Object.entries(map||{}).sort((a,b)=> (a[1]?.name||a[0]).localeCompare(b[1]?.name||b[0]) ).forEach(([id,v])=>{ const opt=document.createElement('option'); opt.value=id; opt.textContent=v?.name||id; sel.appendChild(opt); });
-    }
-
-    /* ===== GitHub helpers ===== */
-    function ghCfg(){ try{return JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}');}catch{return{};} }
-    function saveGhCfg(c){ localStorage.setItem('iptv_admin_gh', JSON.stringify(c)); }
-    function ghNeedsConfig(){ const c=ghCfg(); return !(c.owner&&c.repo&&c.branch&&c.token); }
-    function ghSafePath(p){ return (p||'').split('/').map(encodeURIComponent).join('/'); }
-    function ghHeaders(token,scheme='Bearer'){ return {'Authorization':`${scheme} ${token}`,'Accept':'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'}; }
-    async function ghGet(path){
-      const c=ghCfg(); const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}?ref=${encodeURIComponent(c.branch||'main')}`;
-      let r=await fetch(url,{headers:ghHeaders(c.token,'Bearer')});
-      if(r.status===401){ r=await fetch(url,{headers:ghHeaders(c.token,'token')}); }
-      if(!r.ok) return null; return r.json();
-    }
-    function toBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
-    async function ghUpsert(path,content,message){
-      const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
-      const safeContent=(content&&String(content).length)?content:'<!doctype html><meta charset="utf-8"><title>Empty</title>';
-      let sha=null; try{ sha=(await ghGet(path))?.sha||null; }catch(_){}
-      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
-      const body=JSON.stringify({message:message||`Update ${path}`,content:toBase64(safeContent),branch:c.branch,...(sha?{sha}:{})});
-      let res=await fetch(url,{method:'PUT',headers:ghHeaders(c.token,'Bearer'),body});
-      if(res.status===401){ res=await fetch(url,{method:'PUT',headers:ghHeaders(c.token,'token'),body}); }
-      if(!res.ok){ let details=''; try{ const j=await res.json(); details=j.message||''; }catch{ details=await res.text().catch(()=>String(res.status)); } throw new Error(`GitHub publish failed [${res.status}] ${details}`); }
-      return res.json();
-    }
-    async function ghDelete(path,message){
-      const c=ghCfg(); if(ghNeedsConfig()) throw new Error('GitHub not configured');
-      const info=await ghGet(path);
-      if(!info?.sha){ return {ok:true, skipped:true}; } // already gone
-      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${ghSafePath(path)}`;
-      const body=JSON.stringify({message:message||`Delete ${path}`,sha:info.sha,branch:c.branch});
-      let res=await fetch(url,{method:'DELETE',headers:ghHeaders(c.token,'Bearer'),body});
-      if(res.status===401){ res=await fetch(url,{method:'DELETE',headers:ghHeaders(c.token,'token'),body}); }
-      if(!res.ok){ let details=''; try{ const j=await res.json(); details=j.message||''; }catch{} throw new Error(`GitHub delete failed [${res.status}] ${details}`); }
-      return res.json();
-    }
-    async function configureGitHubInteractive(){
-      const cur=ghCfg();
-      const owner=(prompt('GitHub owner/user', cur.owner||'flaviothebfagroup')||'').trim(); if(!owner) return;
-      const repo=(prompt('Repo name', cur.repo||'IPTV-')||'').trim(); if(!repo) return;
-      const branch=(prompt('Branch', cur.branch||'main')||'main').trim();
-      const token=(prompt('Personal Access Token (fine-grained Contents: Read & write, or classic repo/public_repo)', cur.token||'')||'').trim(); if(!token) return;
-      saveGhCfg({owner,repo,branch,token}); toast('GitHub saved!');
-    }
-    function ghClear(){ localStorage.removeItem('iptv_admin_gh'); toast('GitHub config cleared'); }
-    document.getElementById('ghSetupBtn').addEventListener('click', configureGitHubInteractive);
-    document.getElementById('ghResetBtn').addEventListener('click', ghClear);
-
-    function buildPlayerFileHtml(displayId, dealershipPublicName){
-      const tpl=document.getElementById('playerTemplate');
-      return (tpl?.innerHTML||'').replaceAll('(NEW-CODE)', displayId).replaceAll('(NEW-NAME)', dealershipPublicName);
-    }
-
-    /* ===== Displays & preview ===== */
-    let displaysUnsub=null;
-    document.getElementById('dealerForDisplays').addEventListener('change', e=>watchDisplays(e.target.value));
-    document.getElementById('displaysReload').addEventListener('click', ()=>{ const did=document.getElementById('dealerForDisplays').value; if(did) watchDisplays(did,true); });
-    document.getElementById('manageUsers').addEventListener('click', ()=>{ const did=document.getElementById('dealerForDisplays').value; if(!did) return toast('Pick a dealership',true); location.href=`users.html?dealer=${encodeURIComponent(did)}`; });
-
-    const previewPrimary=id=>`https://flaviothebfagroup.github.io/IPTV-/Displays/${encodeURIComponent(id)}.html`;
-    const previewLegacy =id=>`https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html`;
-    async function resolvePreviewUrl(id){
-      const q=`nocache=${Date.now()}`;
-      try{
-        const r=await fetch(previewPrimary(id)+'?'+q,{method:'HEAD'});
-        if(r.ok) return previewPrimary(id)+`?embed=1&${q}`;
-      }catch(_){}
-      return previewLegacy(id)+`?embed=1&${q}`;
-    }
-
-    async function watchDisplays(did,forceOnce=false){
-      const ul=document.getElementById('displayList'); ul.innerHTML='';
-      if(!did){ document.getElementById('displayEmpty').style.display='block'; if(displaysUnsub) displaysUnsub(); displaysUnsub=null; return; }
-      document.getElementById('displayEmpty').style.display='none';
-      if(displaysUnsub){ displaysUnsub(); displaysUnsub=null; }
-
-      const render=(map)=>{
-        ul.innerHTML='';
-        const ids=Object.keys(map||{}).sort();
-        if(ids.length===0){ document.getElementById('displayEmpty').style.display='block'; return; }
-        const now=Date.now();
-        ids.forEach(id=>{
-          const st=map[id]||{};
-          const online=(st.lastSeenAt && (now-st.lastSeenAt)<60000) || (st.timestamp && (now-st.timestamp)<120000);
-          const li=document.createElement('li'); li.className='item';
-          li.innerHTML=`
-            <div class="col">
-              <div class="split">
-                <b>${esc(id)}</b>
-                <span class="tag">${esc(did)}</span>
-                <span class="online"><i class="dot ${online?'ok':'err'}"></i>${online?'Online':'Offline'}</span>
-              </div>
-              <span class="muted small">CH ${st.channel ?? 1} • VOL ${st.volume ?? 0} • ${st.muted ? 'Muted' : 'Unmuted'}</span>
-            </div>
-            <div class="split">
-              <select data-id="${id}" class="select small chsel">
-                ${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===(st.channel||1)?'selected':''}>CH ${n}</option>`).join('')}
-              </select>
-              <div class="vol">
-                <span class="muted small">VOL</span>
-                <input type="range" min="0" max="100" value="${st.volume ?? 0}" data-id="${id}" class="vslider"/>
-              </div>
-              <button class="btn" data-id="${id}" data-muted="${!!st.muted}">${st.muted?'Unmute':'Mute'}</button>
-              <button class="btn" data-preview="${id}">Preview</button>
-              <button class="btn" data-edit="${id}">Edit</button>
-              <button class="btn" data-flash="${id}">Ping</button>
-              <button class="btn danger" data-remove="${id}">Remove</button>
-            </div>`;
-          ul.appendChild(li);
-        });
-
-        // Channel change
-        ul.querySelectorAll('.chsel').forEach(el=>{
-          el.addEventListener('change', async (e)=>{ const id=e.target.dataset.id; const ch=parseInt(e.target.value,10); await writeDisplay(id,{channel:ch}); });
-        });
-
-        // Volume debounce
-        const debouncedWrite=debounce(async (id,val)=>{ await writeDisplay(id,{volume:val}); },160);
-        ul.querySelectorAll('.vslider').forEach(el=>{
-          el.addEventListener('input', e=>{ const id=e.target.dataset.id; const v=parseInt(e.target.value,10); debouncedWrite(id,v); });
-        });
-
-        // Mute toggle
-        ul.querySelectorAll('button[data-id]').forEach(el=>{
-          el.addEventListener('click', async ()=>{ const id=el.dataset.id; const cur=el.getAttribute('data-muted')==='true'; await writeDisplay(id,{muted:!cur}); });
-        });
-
-        // Ping flash
-        ul.querySelectorAll('button[data-flash]').forEach(el=>{
-          el.addEventListener('click', async ()=>{ const id=el.dataset.flash; await writeDisplay(id,{flashAt: Date.now()}); toast(`Pinged ${id}`); });
-        });
-
-        // Remove (also delete GitHub)
-        ul.querySelectorAll('button[data-remove]').forEach(el=>{
-          el.addEventListener('click', async ()=>{
-            const id=el.dataset.remove;
-            if(!confirm(`Remove ${id}? This also deletes its GitHub page.`)) return;
-            try{
-              await remove(ref(db,`dealership/${did}/displays/${id}`)).catch(()=>{});
-              await remove(ref(db,`displays/${id}`)).catch(()=>{});
-              if(!ghNeedsConfig()){
-                try{ await ghDelete(`Displays/${id}.html`, `Delete player for ${id}`); }
-                catch(e){ console.error(e); toast('GitHub delete failed',true); }
-              }
-              toast('Display removed');
-            }catch(e){ console.error(e); toast('Remove failed',true); }
-          });
-        });
-
-        // Edit (rename ID + change dealership public name for file content)
-        ul.querySelectorAll('button[data-edit]').forEach(el=>{
-          el.addEventListener('click', async ()=>{
-            const id=el.dataset.edit;
-            const newId=(prompt("New display ID:", id)||'').trim();
-            if(!newId || newId===id) return;
-            // Friendly dealership name just for file template content
-            const friendly=(prompt("Dealership public name to embed in the file:", did)||did).trim();
-
-            try{
-              // Copy display state
-              const s=await get(ref(db,`displays/${id}`));
-              const data=s.val()||{};
-              await set(ref(db,`displays/${newId}`),{...data,dealership:did,timestamp:Date.now()});
-              await remove(ref(db,`displays/${id}`));
-              // Update mapping under dealership
-              await remove(ref(db,`dealership/${did}/displays/${id}`)).catch(()=>{});
-              await set(ref(db,`dealership/${did}/displays/${newId}`),true);
-
-              // GitHub rename: create new file then delete old
-              if(!ghNeedsConfig()){
-                const html=buildPlayerFileHtml(newId,friendly);
-                try{
-                  await ghUpsert(`Displays/${newId}.html`, html, `Create/Rename player for ${newId} (${friendly})`);
-                  await ghDelete(`Displays/${id}.html`, `Delete old ${id}`);
-                }catch(e){ console.error(e); toast('GitHub rename failed',true); }
-              }
-
-              toast(`Renamed ${id} → ${newId}`);
-              document.getElementById('displaysReload')?.click();
-            }catch(e){ console.error(e); toast('Rename failed',true); }
-          });
-        });
-      };
-
-      const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
-      const off=onValue(qRef,snap=>render(snap.val()||{}),err=>console.warn(err));
-      displaysUnsub=()=>off();
-      if(forceOnce){ const once=await get(qRef); render(once.val()||{}); }
-
-      // Inline preview handler (each row manages its own preview; multiple rows supported)
-      ul.addEventListener('click', async (e)=>{
-        const btn=e.target.closest('button[data-preview]'); if(!btn) return;
-        const id=btn.dataset.preview;
-        const row=btn.closest('.item');
-
-        // toggle within this row only
-        const opened=row.querySelector('.sub.preview');
-        if(opened){ opened.remove(); return; }
-
-        const panel=document.createElement('div'); panel.className='sub preview';
-        panel.innerHTML=`
-          <div class="bar">
-            <span class="muted small">Preview — ${esc(id)}</span>
-            <button class="btn" data-open>Open tab</button>
-            <button class="btn" data-reload>Reload</button>
-          </div>
-          <iframe title="Preview ${esc(id)}" src="about:blank" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
-        row.appendChild(panel);
-
-        const url=await resolvePreviewUrl(id);
-        const frame=panel.querySelector('iframe');
-        frame.src=url;
-
-        panel.querySelector('[data-open]').onclick=()=>window.open(url,'_blank','noopener');
-        panel.querySelector('[data-reload]').onclick=()=>{ frame.src=url.split('&nocache=')[0]+`&nocache=${Date.now()}`; };
+      dealersMap={};
+      try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) dealersMap=pub.val()||{}; }catch(e){}
+      if(!dealersMap || Object.keys(dealersMap).length===0){
+        try{ const d=await get(ref(db,'dealership')); if(d.exists()){ const raw=d.val(); for(const id of Object.keys(raw||{})) dealersMap[id]={name:raw[id]?.name||id}; } }catch(e){}
+      }
+      Object.entries(dealersMap||{}).sort((a,b)=> (a[1]?.name||a[0]).localeCompare(b[1]?.name||b[0]) ).forEach(([id,v])=>{
+        const opt=document.createElement('option');
+        opt.value=id; opt.textContent=v?.name||id;
+        sel.appendChild(opt);
       });
     }
 
-    async function writeDisplay(id,patch){
-      try{
-        const did=document.getElementById('dealerForDisplays').value;
-        const snap=await get(ref(db,`displays/${id}`)); const cur=snap.val()||{};
-        await update(ref(db,`displays/${id}`),{...patch,dealership:cur.dealership||did||null,timestamp:Date.now()});
-        toast(`${id}: updated`);
-      }catch(e){ console.error(e); toast('Write denied', true); }
-    }
-
-    document.getElementById('bulkMute').addEventListener('click', ()=>bulkWrite({muted:true}));
-    document.getElementById('bulkUnmute').addEventListener('click', ()=>bulkWrite({muted:false}));
-    document.getElementById('bulkCh1').addEventListener('click', ()=>bulkWrite({channel:1}));
-    async function bulkWrite(patch){
-      const did=document.getElementById('dealerForDisplays').value; if(!did) return toast('Pick a dealership',true);
-      try{
-        const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did));
-        const s=await get(qRef); const map=s.val()||{}; const ids=Object.keys(map);
-        for(const id of ids){ await writeDisplay(id,patch); }
-        toast('Applied to all TVs');
-      }catch(e){ console.error(e); toast('Bulk failed',true); }
-    }
-
-    /* ===== Add TV (with auto GH prompt on 401) ===== */
-    document.getElementById('addDisplayBtn').addEventListener('click', async ()=>{
-      const didNow=document.getElementById('dealerForDisplays').value;
-      if(!didNow) return toast('Pick a dealership',true);
-
-      const friendly=(await get(ref(db,`dealershipPublic/${didNow}`))).val()?.name||didNow;
-
-      let id=document.getElementById('newDisplayId').value.trim();
-      if(!id){
-        const pref=initialsFromName(friendly);
-        const existing=await collectDisplays(didNow);
-        let n=nextSuffix(existing,pref);
-        id=`${pref}-${String(n).padStart(3,'0')}`;
-      }
-
-      try{
-        await set(ref(db,`dealership/${didNow}/displays/${id}`),true);
-        await update(ref(db,`displays/${id}`),{channel:1,volume:0,muted:true,dealership:didNow,timestamp:Date.now()});
-
-        // If GH not configured, prompt now
-        if(ghNeedsConfig()){ toast('Configure GitHub…'); await configureGitHubInteractive(); }
-
-        let created=false, lastErr=null;
-        if(!ghNeedsConfig()){
-          const html=buildPlayerFileHtml(id,friendly);
-          try{
-            await ghUpsert(`Displays/${id}.html`, html, `Create player for ${id} (${friendly})`);
-            created=true;
-          }catch(e){
-            lastErr=e;
-            // Auto-prompt if 401/Bad credentials, then retry once
-            if(/401|Bad credentials/i.test(String(e.message||''))){
-              toast('GitHub auth failed — enter a new token'); await configureGitHubInteractive();
-              if(!ghNeedsConfig()){
-                try{ await ghUpsert(`Displays/${id}.html`, html, `Create player for ${id} (${friendly})`); created=true; }catch(e2){ lastErr=e2; }
-              }
-            }
-          }
-        }
-
-        if(created){ toast('TV added + page created'); } else { toast('TV added (GitHub not configured or failed)', true); if(lastErr) console.error(lastErr); }
-        document.getElementById('newDisplayId').value='';
-        document.getElementById('displaysReload')?.click();
-      }catch(e){ console.error(e); toast((e&&e.message)||'Add failed',true); }
+    document.getElementById('dealerForDisplays').addEventListener('change',handleDealerChange);
+    document.getElementById('displaysReload').addEventListener('click',handleDealerChange);
+    document.getElementById('manageUsers').addEventListener('click',()=>{
+      const did=document.getElementById('dealerForDisplays').value;
+      if(!did) return toast('Pick a dealership',true);
+      location.href='users.html?dealer='+encodeURIComponent(did);
     });
 
-    async function collectDisplays(did){ const qRef=query(ref(db,'displays'),orderByChild('dealership'),equalTo(did)); const s=await get(qRef); return Object.keys(s.val()||{}); }
-    function initialsFromName(name){ const raw=(name||'').trim(); if(!raw) return 'DS'; let parts=raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g)||raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g)||[]; let a=parts[0]||'', b=parts[1]||''; let p=(a? a[0]:'')+(b? b[0]:''); if(p.length<2 && a.length>=2) p=a.slice(0,2); return p.toUpperCase(); }
-    function nextSuffix(list,pref){ let max=0; list.forEach(id=>{ const m=id.match(new RegExp('^'+pref+'-(\\d{3})$')); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; }}); return max+1; }
+    let displaysUnsub=null;
+    function handleDealerChange(){
+      const did=document.getElementById('dealerForDisplays').value;
+      if(displaysUnsub){ displaysUnsub(); displaysUnsub=null; }
+      if(!did){ $('#displayEmpty').style.display='block'; $('#displayList').innerHTML=''; return; }
+      const name=(dealersMap[did]?.name)||did;
 
-    // start
-    function start(){ const did=document.getElementById('dealerForDisplays').value; if(did) watchDisplays(did,true); else document.getElementById('displayEmpty').style.display='block'; }
-    start();
+      // watch all displays and filter client-side by name or id (handles old data that saved dealership name only)
+      const dref=ref(db,'displays');
+      const off = onValue(dref,(snap)=>{
+        const all=snap.val()||{};
+        const rows=Object.entries(all).filter(([id,v])=>{
+          const d=v?.dealership||v?.dealershipId||'';
+          return d===did || d===name;
+        });
+        renderDisplays(did, name, rows);
+      });
+      displaysUnsub=()=> off();
+    }
+
+    function renderDisplays(did, name, entries){
+      const list=document.getElementById('displayList');
+      list.innerHTML='';
+      document.getElementById('displayEmpty').style.display = entries.length? 'none':'block';
+
+      entries.forEach(([id, d])=>{
+        const li=document.createElement('li');
+        li.className='item';
+        li.dataset.id=id;
+
+        const online= (Date.now() - (d.lastSeenAt||0)) < 60000;
+        const ch = Number(d.channel||1);
+
+        li.innerHTML = `
+          <div class="col">
+            <div class="split">
+              <span class="online"><span class="dot ${online?'ok':'err'}"></span>${online?'Online':'Offline'}</span>
+              <span class="tag">CH ${ch}</span>
+              <span class="tag">${esc(d.muted?'Muted':'Sound')}</span>
+            </div>
+            <div class="split">
+              <div class="chname">Display <b class="display-id">${esc(id)}</b></div>
+              <span class="tag">${esc(name)}</span>
+            </div>
+          </div>
+
+          <div class="split">
+            <div class="vol">
+              <input type="range" min="0" max="100" step="5" value="${Number(d.volume??50)}" data-action="vol" />
+              <button class="btn" data-action="mute">${d.muted?'Unmute':'Mute'}</button>
+            </div>
+          </div>
+
+          <div class="split">
+            <button class="btn" data-action="channel" data-val="1">CH1</button>
+            <button class="btn" data-action="channel" data-val="2">CH2</button>
+            <button class="btn" data-action="channel" data-val="3">CH3</button>
+            <button class="btn" data-action="channel" data-val="4">CH4</button>
+            <button class="btn" data-action="channel" data-val="5">CH5</button>
+          </div>
+
+          <div class="split">
+            <button class="btn" data-action="preview" title="Inline preview">Preview</button>
+            <button class="btn" data-action="open" title="Open in new tab">Open</button>
+            <button class="btn danger" data-action="delete" title="Delete this display">Delete</button>
+          </div>
+        `;
+
+        list.appendChild(li);
+      });
+    }
+
+    // bulk actions
+    document.getElementById('bulkMute').addEventListener('click',()=>bulkMute(true));
+    document.getElementById('bulkUnmute').addEventListener('click',()=>bulkMute(false));
+    document.getElementById('bulkCh1').addEventListener('click',()=>bulkChannel(1));
+    async function bulkMute(muted){
+      const did=document.getElementById('dealerForDisplays').value; if(!did) return;
+      const name=(dealersMap[did]?.name)||did;
+      const snap=await get(ref(db,'displays')); const all=snap.val()||{};
+      const tasks=[];
+      for(const [id,v] of Object.entries(all)){
+        const d=v?.dealership||v?.dealershipId||'';
+        if(d===did||d===name){ tasks.push(update(ref(db,`displays/${id}`),{muted})); }
+      }
+      await Promise.allSettled(tasks); toast(muted?'Muted all':'Unmuted all');
+    }
+    async function bulkChannel(n){
+      const did=document.getElementById('dealerForDisplays').value; if(!did) return;
+      const name=(dealersMap[did]?.name)||did;
+      const snap=await get(ref(db,'displays')); const all=snap.val()||{};
+      const tasks=[];
+      for(const [id,v] of Object.entries(all)){
+        const d=v?.dealership||v?.dealershipId||'';
+        if(d===did||d===name){ tasks.push(update(ref(db,`displays/${id}`),{channel:n})); }
+      }
+      await Promise.allSettled(tasks); toast(`All → CH${n}`);
+    }
+
+    /* ================== GH PUBLISH ================== */
+    const ghCfg=()=>{ try{return JSON.parse(localStorage.getItem(GH_KEY)||'{}');}catch{return{}} };
+    const saveGhCfg=(c)=>localStorage.setItem(GH_KEY,JSON.stringify(c));
+    document.getElementById('ghSetupBtn').addEventListener('click',()=>{
+      const c=ghCfg();
+      const owner=prompt('GitHub owner/org', c.owner||'flaviothebfagroup'); if(owner===null) return;
+      const repo =prompt('Repo name', c.repo||'IPTV-'); if(repo===null) return;
+      const branch=prompt('Branch', c.branch||'main'); if(branch===null) return;
+      const token =prompt('Personal access token (contents:write)', c.token||''); if(token===null) return;
+      saveGhCfg({owner,repo,branch,token}); toast('GitHub config saved');
+    });
+    document.getElementById('ghResetBtn').addEventListener('click',()=>{ localStorage.removeItem(GH_KEY); toast('GitHub config cleared'); });
+
+    async function ghCommit(path, content, message){
+      const c=ghCfg(); if(!c.owner||!c.repo||!c.branch||!c.token) throw new Error('GH not configured');
+      // fetch sha if exists
+      let sha=null;
+      try{
+        const r=await fetch(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(c.branch)}`, {headers:{Authorization:`Bearer ${c.token}`,Accept:'application/vnd.github+json'}});
+        if(r.ok){ const j=await r.json(); sha=j.sha; }
+      }catch{}
+      const body={
+        message: message||`Update ${path}`,
+        content: btoa(unescape(encodeURIComponent(content))),
+        branch: c.branch
+      };
+      if(sha) body.sha=sha;
+      const r=await fetch(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${encodeURIComponent(path)}`, {
+        method:'PUT',
+        headers:{Authorization:`Bearer ${c.token}`,Accept:'application/vnd.github+json'},
+        body:JSON.stringify(body)
+      });
+      if(!r.ok){ const t=await r.text(); throw new Error('GH commit failed: '+t); }
+      return true;
+    }
+
+    function buildPlayerFile(displayId, dealerName, channels){
+      const tpl=document.getElementById('playerTemplate').innerHTML;
+      const ch = (channels && channels.length ? channels : [
+        { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
+        { id:2, name:'Sports', url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8', type:'hls' },
+        { id:3, name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
+        { id:4, name:'Nature', url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8', type:'hls' },
+        { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
+      ]).slice(0,5).map((x,i)=>({id:i+1,name:x.name||`CH ${i+1}`,url:x.url,type:x.type||'hls'}));
+
+      return tpl
+        .replace("displayId: '(NEW-CODE)'", `displayId: '${displayId}'`)
+        .replace("dealershipName: '(NEW-NAME)'", `dealershipName: '${dealerName}'`)
+        .replace(/channels:\s*\[[\s\S]*?\]\s*}/, `channels: ${JSON.stringify(ch, null, 2)}\n    }`);
+    }
+
+    document.getElementById('addDisplayBtn').addEventListener('click', async ()=>{
+      const sel=document.getElementById('dealerForDisplays'); const did=sel.value; if(!did) return toast('Pick a dealership',true);
+      const dealerName=sel.options[sel.selectedIndex].textContent.trim()||did;
+      let id=document.getElementById('newDisplayId').value.trim();
+      if(!id){ id = dealerName.replace(/\s+/g,'-').slice(0,3).toUpperCase() + '-' + String(Math.floor(Math.random()*900)+100); }
+
+      // use selected channels (if any)
+      const chosen = chSelectedList.length ? chSelectedList.slice(0,5) : [];
+      const file = buildPlayerFile(id, dealerName, chosen);
+
+      try{
+        await ghCommit(`Displays/${id}.html`, file, `Create/Update player ${id}`);
+        await update(ref(db,`displays/${id}`), { dealership: dealerName, channel:1, volume:50, muted:true, createdAt:Date.now(), updatedAt:Date.now() });
+        toast(`TV ${id} published`);
+        document.getElementById('newDisplayId').value='';
+        handleDealerChange();
+      }catch(e){ console.error(e); toast('Publish failed',true); }
+    });
+
+    /* ================== CHANNEL PICKER (Sheet) ================== */
+    const chPickerEl = document.getElementById('chPicker');
+    const chListEl   = document.getElementById('chList');
+    const chBadge    = document.getElementById('chSelBadge');
+    const chCfg      = ()=>{ try{return JSON.parse(localStorage.getItem(CH_KEY)||'{}');}catch{return{}} };
+    const saveChCfg  = (c)=> localStorage.setItem(CH_KEY, JSON.stringify(c));
+    let chSource=[], chSelectedCodes=new Set(), chSelectedList=[];
+
+    function updateSelBadge(){
+      if(!chSelectedList.length){ chBadge.style.display='none'; chBadge.textContent=''; return; }
+      chBadge.style.display='inline-block'; chBadge.textContent=`${chSelectedList.length} selected`;
+    }
+    (function restoreSel(){
+      try{ const arr=JSON.parse(localStorage.getItem(CH_SEL_KEY)||'[]'); if(Array.isArray(arr)&&arr.length){ chSelectedList=arr.slice(0,20); chSelectedCodes=new Set(chSelectedList.map(x=>x.code||x.url)); updateSelBadge(); } }catch{}
+    })();
+
+    document.getElementById('chSetupBtn').addEventListener('click',()=>{
+      const c=chCfg();
+      const url=prompt('Channel source URL (Published CSV or JSON/Apps Script endpoint)\n- For Google Sheet CSV: File → Share → Publish to web → CSV\n- B=URL, C=Name starting from row 2', c.url||'');
+      if(url===null) return;
+      saveChCfg({url:url.trim()});
+      toast('Channel source saved');
+    });
+
+    document.getElementById('chPickBtn').addEventListener('click', async ()=>{
+      if(!chCfg().url){ return toast('Click CH Setup first',true); }
+      await loadChannelSheet();
+      chPickerEl.style.display='block';
+    });
+    document.getElementById('chClose').addEventListener('click', ()=> chPickerEl.style.display='none');
+    document.getElementById('chClearSel').addEventListener('click', ()=>{ chSelectedCodes.clear(); chSelectedList.length=0; renderChannelList(); updateSelBadge(); localStorage.removeItem(CH_SEL_KEY); });
+    document.getElementById('chApply').addEventListener('click', ()=>{ if(!chSelectedList.length) return toast('Pick some first',true); localStorage.setItem(CH_SEL_KEY, JSON.stringify(chSelectedList)); updateSelBadge(); toast('Selection saved'); });
+    document.getElementById('chReload').addEventListener('click', loadChannelSheet);
+    document.getElementById('chSearch').addEventListener('input', debounce(renderChannelList, 120));
+
+    async function loadChannelSheet(){
+      const url=(chCfg().url||'').trim(); if(!url) return;
+      try{
+        const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw 0;
+        const ct=(r.headers.get('content-type')||'').toLowerCase();
+        const txt=await r.text();
+        if(/json/.test(ct) || /\.json(\?|$)/i.test(url)){
+          chSource = normalizeChannelRows(JSON.parse(txt));
+        }else{
+          const rows = parseCSVRows(txt);
+          chSource = normalizeChannelRows(rows);
+        }
+        renderChannelList();
+        toast(`Loaded ${chSource.length} channels`);
+      }catch(e){ console.error(e); toast('Failed loading channel list',true); }
+    }
+
+    // CSV minimal parser
+    function parseCSVRows(s){
+      const sep = /\t/.test(s) && !/,/.test(s.split('\n',1)[0]) ? '\t' : ',';
+      const rows=[]; let i=0, field='', row=[], inQ=false;
+      function pushField(){ row.push(field); field=''; }
+      function pushRow(){ rows.push(row); row=[]; }
+      while(i<s.length){
+        const ch=s[i++];
+        if(inQ){
+          if(ch==='"'){ if(s[i]==='"'){ field+='"'; i++; } else inQ=false; }
+          else field+=ch;
+        }else{
+          if(ch==='"') inQ=true;
+          else if(ch===sep){ pushField(); }
+          else if(ch==='\r'){ }
+          else if(ch==='\n'){ pushField(); pushRow(); }
+          else field+=ch;
+        }
+      }
+      if(field!=='' || row.length){ pushField(); pushRow(); }
+      return rows;
+    }
+
+    function normalizeChannelRows(rows){
+      const out=[];
+      if(!Array.isArray(rows)) return out;
+
+      // objects?
+      if(rows.length && !Array.isArray(rows[0]) && typeof rows[0]==='object'){
+        for(const r of rows){
+          const name = r.name || r.title || r.channel || r.Channel || r.Name || '';
+          const url  = r.url  || r.link  || r.stream  || r.URL || r.Link || '';
+          const type = r.type || 'hls';
+          const code = r.id || r.code || r.Code || name || url;
+          if(String(url).trim()){
+            out.push({ code:String(code).trim(), name:String(name||'Channel').trim(), url:String(url).trim(), type:String(type||'hls').trim() });
+          }
+        }
+        return out;
+      }
+
+      // arrays (Google Sheet CSV)
+      let startIdx=0;
+      if(rows.length){
+        const hdr=rows[0].map(x=>String(x||'').toLowerCase());
+        if(hdr.some(x=>/name|channel/.test(x)) || hdr.some(x=>/url|m3u|link|stream/.test(x))){
+          startIdx=1;
+        }
+      }
+      for(let r=startIdx;r<rows.length;r++){
+        const row=rows[r]||[];
+        const url = (row[1]||'').trim(); // B
+        const name= (row[2]||'').trim(); // C
+        if(url){
+          out.push({ code:name||url, name:name||'Channel', url, type:'hls' });
+        }
+      }
+      return out;
+    }
+
+    function renderChannelList(){
+      const q=(document.getElementById('chSearch').value||'').trim().toLowerCase();
+      chListEl.innerHTML='';
+      const frag=document.createDocumentFragment();
+
+      const list = chSource.filter(r=>{
+        if(!q) return true;
+        return (r.name||'').toLowerCase().includes(q) || (r.url||'').toLowerCase().includes(q) || (r.code||'').toLowerCase().includes(q);
+      });
+
+      if(!list.length){
+        const div=document.createElement('div');
+        div.className='muted small'; div.style.padding='8px 4px';
+        div.textContent='No channels found. Reload or change your search.';
+        frag.appendChild(div);
+      }else{
+        list.forEach((r)=>{
+          const row=document.createElement('div');
+          row.className='chrow';
+
+          const checked = chSelectedCodes.has(r.code||r.url);
+          row.innerHTML = `
+            <input type="checkbox" ${checked?'checked':''} data-sel />
+            <div style="flex:1;min-width:0">
+              <div class="chname">${esc(r.name||'Channel')}</div>
+              <div class="churl">${esc(r.url)}</div>
+            </div>
+            <button class="btn" data-preview>Preview</button>
+          `;
+
+          // select toggle
+          row.querySelector('[data-sel]').addEventListener('change',(e)=>{
+            if(e.target.checked){
+              chSelectedCodes.add(r.code||r.url);
+              chSelectedList.push(r);
+            }else{
+              chSelectedCodes.delete(r.code||r.url);
+              const i=chSelectedList.findIndex(x=>(x.code||x.url)===(r.code||r.url));
+              if(i>-1) chSelectedList.splice(i,1);
+            }
+            updateSelBadge();
+          });
+
+          // preview
+          row.querySelector('[data-preview]').addEventListener('click',()=> playTest(r.url));
+
+          frag.appendChild(row);
+        });
+      }
+      chListEl.appendChild(frag);
+    }
+
+    // Inline test player (HLS)
+    let testHls=null;
+    const testWrap=document.getElementById('testWrap');
+    const testVideo=document.getElementById('testVideo');
+    function playTest(url){
+      try{ if(testHls){ testHls.destroy(); testHls=null; } }catch{}
+      testWrap.style.display='block';
+      if(Hls.isSupported()){
+        testHls=new Hls({enableWorker:true,lowLatencyMode:true});
+        testHls.attachMedia(testVideo);
+        testHls.loadSource(url);
+      }else if(testVideo.canPlayType('application/vnd.apple.mpegurl')){ testVideo.src=url; }
+      testVideo.play().catch(()=>{});
+    }
+    document.getElementById('testStop').addEventListener('click',()=>{
+      try{ if(testHls){ testHls.destroy(); testHls=null; } }catch{}
+      testVideo.pause(); testVideo.removeAttribute('src'); testVideo.load(); testWrap.style.display='none';
+    });
+
+    /* ================== DISPLAY ROW ACTIONS ================== */
+    const listEl=document.getElementById('displayList');
+
+    listEl.addEventListener('input', async (e)=>{
+      const r=e.target.closest('.item'); if(!r) return;
+      const id=r.dataset.id;
+      if(e.target.matches('input[type="range"][data-action="vol"]')){
+        const vol=Number(e.target.value||50);
+        await update(ref(db,`displays/${id}`),{volume:vol,updatedAt:Date.now()});
+      }
+    });
+
+    listEl.addEventListener('click', async (e)=>{
+      const btn=e.target.closest('button.btn,[data-action]'); if(!btn) return;
+      const row=btn.closest('.item'); const id=row?.dataset?.id||'';
+      const action=btn.dataset.action;
+
+      if(!id) return;
+
+      if(action==='mute'){
+        const isUnmute = btn.textContent.trim().toLowerCase()==='unmute';
+        await update(ref(db,`displays/${id}`),{muted:!isUnmute,updatedAt:Date.now()});
+        btn.textContent = isUnmute? 'Mute':'Unmute';
+        return;
+      }
+
+      if(action==='channel'){
+        const n=Number(btn.dataset.val||1);
+        await update(ref(db,`displays/${id}`),{channel:n,updatedAt:Date.now()});
+        toast(`Set ${id} → CH${n}`);
+        return;
+      }
+
+      if(action==='delete'){
+        if(!confirm(`Delete display ${id}?`)) return;
+        await remove(ref(db,`displays/${id}`));
+        row.remove();
+        toast(`Deleted ${id}`);
+        return;
+      }
+
+      if(action==='open'){
+        const url = `https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html`;
+        window.open(url,'_blank');
+        return;
+      }
+
+      if(action==='preview'){
+        toggleInlinePreview(row, id);
+        return;
+      }
+    });
+
+    // inline preview (one open at a time)
+    let openPreview=null;
+    function toggleInlinePreview(item, id){
+      let sub=item.querySelector('.sub.preview');
+      if(!sub){
+        sub=document.createElement('div');
+        sub.className='sub preview';
+        sub.innerHTML=`
+          <div class="bar">
+            <span class="small muted">Preview — <b>${esc(id)}</b></span>
+            <span style="margin-left:auto;display:flex;gap:6px;align-items:center">
+              <a class="btn" target="_blank" data-open-link>Open</a>
+              <button class="btn" data-close>Close</button>
+            </span>
+          </div>
+          <iframe loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"></iframe>
+        `;
+        item.appendChild(sub);
+        sub.querySelector('[data-open-link]').href=`https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html`;
+        sub.querySelector('[data-close]').addEventListener('click',()=>{ const f=sub.querySelector('iframe'); if(f) f.src=''; sub.style.display='none'; if(openPreview===sub) openPreview=null; });
+      }
+
+      const iframe=sub.querySelector('iframe');
+      const url=`https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html?embed=1`;
+
+      if(openPreview && openPreview!==sub){
+        const prev=openPreview.querySelector('iframe'); if(prev) prev.src='';
+        openPreview.style.display='none';
+        openPreview=null;
+      }
+
+      const isOpen=sub.style.display==='block';
+      if(isOpen){ sub.style.display='none'; if(iframe) iframe.src=''; openPreview=null; }
+      else{ sub.style.display='block'; if(iframe && iframe.src!==url) iframe.src=url; openPreview=sub; }
+    }
+
+    /* ================== CHOOSE CHANNELS → REBUILD PLAYER (optional) ================== */
+    // If you want to push selected channels into an existing display file:
+    // call rebuildChannelsForDisplay(displayId)
+    async function rebuildChannelsForDisplay(displayId){
+      if(!chSelectedList.length) return toast('Pick channels in CH picker first',true);
+      const sel=document.getElementById('dealerForDisplays'); const dealerName=sel.options[sel.selectedIndex].textContent.trim()||sel.value;
+      const file=buildPlayerFile(displayId, dealerName, chSelectedList.slice(0,5));
+      try{
+        await ghCommit(`Displays/${displayId}.html`, file, `Update channels for ${displayId}`);
+        toast('Channels updated in file');
+      }catch(e){ console.error(e); toast('Update failed',true); }
+    }
+
   </script>
 </body>
 </html>
-
