@@ -89,7 +89,7 @@
     .toast.show{opacity:1}
     .toast.err{background:#ff453a;color:#fff}
 
-    /* Shared per-row preview (used by Live and CH1..CH5) */
+    /* Shared per-row preview */
     .rowPreview{margin-top:10px; width:100%;}
     .preview-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
     .preview-shell{position:relative; width:100%; aspect-ratio:16/9; background:#000; border:1px solid var(--border); border-radius:12px; overflow:hidden;}
@@ -262,7 +262,7 @@
     </div>
   </div>
 
-  <!-- ===== Player file template (works in embed + full mode) ===== -->
+  <!-- ===== Player file template (HTTPS-only demo channels + errors surfaced) ===== -->
   <template id="playerTemplate"><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -272,9 +272,11 @@
   <style>
     html,body{height:100%;margin:0;background:#000}
     video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+    .err{position:fixed;left:50%;top:24px;transform:translateX(-50%);background:#ef4444;color:#fff;border:1px solid rgba(255,255,255,.3);padding:8px 12px;border-radius:12px;font:600 12px system-ui}
   </style>
 </head>
 <body>
+  <div id="err" class="err" style="display:none"></div>
   <video id="v" playsinline autoplay muted controls></video>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
@@ -287,27 +289,33 @@
       displayId: '(NEW-CODE)',
       dealershipName: '(NEW-NAME)',
       channels: [
-        { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
-        { id:2, name:'Sports', url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8', type:'hls' },
-        { id:3, name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
-        { id:4, name:'Nature', url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8', type:'hls' },
-        { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
+        { id:1, name:'Demo A (Mux)',  url:'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', type:'hls' },
+        { id:2, name:'Demo B (Tears)',url:'https://test-streams.mux.dev/tears-of-steel/playlist.m3u8', type:'hls' },
+        { id:3, name:'Demo C (Sint)', url:'https://test-streams.mux.dev/sintel/master.m3u8', type:'hls' },
+        { id:4, name:'Demo D (BBB)',  url:'https://test-streams.mux.dev/bbb-abr/bbb.m3u8', type:'hls' },
+        { id:5, name:'Demo E (SA)',   url:'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8', type:'hls' }
       ]
     };
 
     const v = document.getElementById('v');
+    const errBox = document.getElementById('err');
+    const showErr = (m)=>{ try{ errBox.textContent=m; errBox.style.display='block'; setTimeout(()=>errBox.style.display='none', 4000);}catch{} };
+
     let hls = null;
     function play(url){
       try{ if(hls){ hls.destroy(); hls=null; } }catch{}
+      v.src=''; v.load();
       if (window.Hls && Hls.isSupported()){
         hls = new Hls({ enableWorker:true });
+        hls.on(Hls.Events.ERROR, (_,data)=>{ console.error('HLS error', data); showErr('HLS: '+(data?.details||data?.type||'error')); });
         hls.loadSource(url);
         hls.attachMedia(v);
-        v.play().catch(()=>{});
+        v.play().catch(()=> showErr('Autoplay blocked? (muted)'));
       } else {
-        v.src = url;
-        v.play().catch(()=>{});
+        v.src=url;
+        v.play().catch(e=> showErr('Play failed: '+e.message));
       }
+      v.addEventListener('error', ()=> showErr('Media error (check URL / CORS / HTTPS).'), {once:true});
     }
 
     const params = new URLSearchParams(location.search);
@@ -319,7 +327,7 @@
       const auth = getAuth(app);
       const db   = getDatabase(app);
 
-      signInAnonymously(auth).catch(()=>{});
+      signInAnonymously(auth).catch(err=>{ console.error(err); showErr('Auth error (anon)'); });
       onAuthStateChanged(auth, (u)=>{
         if(!u) return;
         const dref = ref(db, 'displays/' + (cfg.displayId||''));
@@ -330,8 +338,8 @@
           if (ch?.url) play(ch.url);
           if (typeof st.volume === 'number') v.volume = Math.max(0, Math.min(1, st.volume/100));
           if (typeof st.muted  === 'boolean') v.muted  = !!st.muted;
-          try{ update(dref, { lastSeenAt: Date.now() }); }catch{}
-        });
+          try{ update(dref, { lastSeenAt: Date.now() }); }catch(e){ console.warn('lastSeenAt', e); }
+        }, (e)=> showErr('DB error: '+e?.message));
       });
     }
   </script>
@@ -343,14 +351,28 @@
   <!-- Hls.js for admin-side inline preview -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
 
-  <!-- ===== Admin page logic (FULL) ===== -->
+  <!-- ===== Admin page logic ===== -->
   <script type="module">
+    /* Polyfills + global error toasts */
+    if (!window.CSS || !CSS.escape) {
+      window.CSS = window.CSS || {};
+      CSS.escape = function(v){
+        return String(v).replace(/[^a-zA-Z0-9_-]/g, s => '\\' + s.charCodeAt(0).toString(16) + ' ');
+      };
+    }
+    window.addEventListener('error', e => {
+      try { const t=document.getElementById('toast'); t.textContent = 'Error: ' + (e.error?.message || e.message || 'Unknown'); t.className='toast show err'; setTimeout(()=>t.classList.remove('show'), 4000);} catch(_) {}
+      console.error('Uncaught error:', e.error || e);
+    });
+
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import { getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import { getDatabase, ref, get, update, remove, onValue, query, orderByChild, equalTo } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
     const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
     const LOGO_URL="/IPTV-/icons/icon-512.png";
+    /* >>> important: prefix fix for subfolder hosting <<< */
+    const SITE_PREFIX = LOGO_URL.replace(/\/icons\/.*$/, ''); // e.g. "/IPTV-"
 
     const DEFAULT_SHEET_ID='1Oh69mDuOCuy27YDYpInoVfcw3o4TlFutQEGYamBXSHE';
     const DEFAULT_SHEET_GID='824459168';
@@ -359,26 +381,20 @@
     const auth=getAuth(app);
     const db=getDatabase(app);
 
-    // Base path for GitHub Pages (/IPTV-/displays.html => /IPTV-/)
-    const BASE = (() => {
-      const parts = location.pathname.split('/').filter(Boolean);
-      return parts.length ? ('/' + parts[0] + '/') : '/';
-    })();
-
     const $=s=>document.querySelector(s);
     const $$=(s)=>Array.from(document.querySelectorAll(s));
     const debounce=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
-    function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
-    function toast(msg,err=false){const t=$('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2400);}
+    const esc=(s)=> String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    const toast=(msg,err=false)=>{const t=$('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2400);};
 
-    // Logos & theme
+    /* logos & theme */
     $('#brandLogo').style.backgroundImage=`url("${LOGO_URL}")`; const brandLogoM=document.getElementById('brandLogoM'); if(brandLogoM){ brandLogoM.style.backgroundImage=`url("${LOGO_URL}")`; }
     const THEME_KEY='iptv_theme', themeBtn=document.getElementById('themeBtn'), themeIcon=document.getElementById('themeIcon');
     const setThemeIcon=()=>{ const dark=document.body.classList.contains('dark'); themeIcon.innerHTML= dark? `<path d="M21 12a9 9 0 1 1-9-9 6 6 0 0 0 9 9z"/>` : `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1.4-1.4M20.4 20.4 19 19M5 19l-1.4 1.4M20.4 3.6 19 5"/>`; };
     const saved=localStorage.getItem(THEME_KEY)||'light'; document.body.classList.toggle('dark',saved==='dark'); setThemeIcon();
     themeBtn.addEventListener('click',()=>{ const toDark=!document.body.classList.contains('dark'); document.body.classList.toggle('dark',toDark); localStorage.setItem(THEME_KEY,toDark?'dark':'light'); setThemeIcon(); });
 
-    // More menu & mobile sheet
+    /* more menu & mobile sheet */
     const moreBtn=document.getElementById('moreBtn'), moreMenu=document.getElementById('moreMenu');
     if(moreBtn){
       moreBtn.addEventListener('click',e=>{e.preventDefault();moreMenu.classList.toggle('open');});
@@ -389,7 +405,7 @@
     }
     (()=>{ const sheet=document.getElementById('sheet'); const open=()=>{sheet.classList.add('open');document.body.style.overflow='hidden';}; const close=()=>{sheet.classList.remove('open');document.body.style.overflow='';}; document.getElementById('hamburger').addEventListener('click',open); document.getElementById('closeSheet').addEventListener('click',close); sheet.querySelector('.back').addEventListener('click',close); const mainOut=document.getElementById('signOutBtn'); const mobOut=document.getElementById('signOutBtnM'); if(mainOut&&mobOut){mobOut.addEventListener('click',()=> mainOut.click());}})();
 
-    // Auth UI
+    /* auth UI */
     document.getElementById('loginBtn').addEventListener('click',doLogin);
     document.getElementById('resetBtn').addEventListener('click',async()=>{ const email=document.getElementById('email').value.trim(); if(!email) return toast('Enter email',true); try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed',true);} });
     document.getElementById('signOutBtn').addEventListener('click',()=>signOut(auth));
@@ -416,8 +432,8 @@
 
     /* ========= Channel source (Google Sheet / JSON) ========= */
     const CH_KEY='iptv_admin_ch';
-    function chCfg(){ try{return JSON.parse(localStorage.getItem(CH_KEY)||'{}');}catch{return{};} }
-    function saveChCfg(c){ localStorage.setItem(CH_KEY, JSON.stringify(c)); }
+    const chCfg=()=>{ try{return JSON.parse(localStorage.getItem(CH_KEY)||'{}');}catch{return{};} }
+    const saveChCfg=(c)=> localStorage.setItem(CH_KEY, JSON.stringify(c));
     function normalizeSheetUrl(u){
       if(!u) return '';
       try{
@@ -449,19 +465,19 @@
       const out=[];
       for(const r0 of rows){
         const url=(r0[0]||'').trim(), name=(r0[1]||'').trim();
-        if(/^https?:\/\//i.test(url)) out.push({code:name||url,name:name||'Channel',url,type:'hls'});
+        if(/^https:\/\//i.test(url)) out.push({code:name||url,name:name||'Channel',url,type:'hls'}); // HTTPS only!
       }
       return out;
     }
 
-    // Global Picker
+    /* Global Picker */
     let chSource=[], chSelectedCodes=new Set(), chSelectedList=[];
     const chPickerEl = document.getElementById('chPicker');
     const chListEl   = document.getElementById('chList');
     const chBadge    = document.getElementById('chSelBadge');
 
-    function openPicker(){ chPickerEl.style.display='block'; }
-    function closePicker(){ chPickerEl.style.display='none'; }
+    const openPicker=()=> chPickerEl.style.display='block';
+    const closePicker=()=> chPickerEl.style.display='none';
 
     function renderChannelList(){
       const q=(document.getElementById('chSearch').value||'').trim().toLowerCase();
@@ -473,7 +489,7 @@
       });
       if(!list.length){
         const div=document.createElement('div'); div.className='muted small'; div.style.padding='8px 4px';
-        div.textContent='No channels found. Reload or change your search.'; frag.appendChild(div);
+        div.textContent='No channels found (HTTPS only).'; frag.appendChild(div);
       }else{
         list.forEach((r)=>{
           const row=document.createElement('div');
@@ -517,7 +533,7 @@
 
     document.getElementById('chSetupBtn').addEventListener('click',()=>{
       const cur=chCfg().url||`https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/edit#gid=${DEFAULT_SHEET_GID}`;
-      const val=prompt('Paste your Google Sheet link (B=URL, C=Name, from row 2). You can paste any Sheets URL.', cur);
+      const val=prompt('Paste your Google Sheet link (B=URL, C=Name, from row 2). HTTPS-only URLs are allowed.', cur);
       if(!val) return;
       saveChCfg({url:val.trim()}); toast('Channel source saved'); 
     });
@@ -533,10 +549,10 @@
     });
     document.getElementById('chSearch').addEventListener('input',debounce(renderChannelList,150));
 
-    // ====== GitHub integration ======
+    /* ====== GitHub integration (create/edit/delete player files) ====== */
     const GH_KEY='iptv_admin_gh';
-    function ghCfg(){ try{return JSON.parse(localStorage.getItem(GH_KEY)||'{}');}catch{return{};} }
-    function saveGhCfg(c){ localStorage.setItem(GH_KEY, JSON.stringify(c)); }
+    const ghCfg=()=>{ try{return JSON.parse(localStorage.getItem(GH_KEY)||'{}');}catch{return{};} }
+    const saveGhCfg=(c)=> localStorage.setItem(GH_KEY, JSON.stringify(c));
     document.getElementById('ghSetupBtn').addEventListener('click',()=>{
       const cur=ghCfg();
       const owner=prompt('GitHub owner/org:', cur.owner||'');
@@ -593,36 +609,35 @@
       let m; while((m=re.exec(html))){ arr.push({id:parseInt(m[1],10),name:m[2],url:m[3],type:'hls'}); }
       if(arr.length>=5) return arr.slice(0,5);
       return [
-        {id:1,name:'News',url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8',type:'hls'},
-        {id:2,name:'Sports',url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8',type:'hls'},
-        {id:3,name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8',type:'hls'},
-        {id:4,name:'Nature',url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8',type:'hls'},
-        {id:5,name:'Kids',url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8',type:'hls'}
+        {id:1,name:'Demo A (Mux)',url:'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',type:'hls'},
+        {id:2,name:'Demo B (Tears)',url:'https://test-streams.mux.dev/tears-of-steel/playlist.m3u8',type:'hls'},
+        {id:3,name:'Demo C (Sint)',url:'https://test-streams.mux.dev/sintel/master.m3u8',type:'hls'},
+        {id:4,name:'Demo D (BBB)',url:'https://test-streams.mux.dev/bbb-abr/bbb.m3u8',type:'hls'},
+        {id:5,name:'Demo E (SA)',url:'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8',type:'hls'}
       ];
     }
 
     async function createOrUpdatePlayer(displayId, dealerName, channels){
       const gh=ghCfg(); if(!gh.token) throw new Error('GitHub not configured');
-      const path = `${gh.basePath||'Displays'}/${displayId}.html`;
-      const cur=await ghGet(path);
+      const pathRel = `${gh.basePath||'Displays'}/${displayId}.html`;
+      const cur=await ghGet(pathRel);
       const html=buildPlayerHtml(displayId,dealerName,channels);
-      await ghPut(path, html, `[IPTV] ${cur?'Update':'Add'} ${displayId} player`, cur?.sha);
-      return `${BASE}${gh.basePath||'Displays'}/${displayId}.html`;
+      await ghPut(pathRel, html, `[IPTV] ${cur?'Update':'Add'} ${displayId} player`, cur?.sha);
+      return pathRel;
     }
 
-    // ===== Displays list & Inline preview management =====
+    /* ===== Displays list & Inline preview management ===== */
     const selDealer=document.getElementById('dealerForDisplays');
     selDealer.addEventListener('change',()=>{ const v=selDealer.value||''; if(!v){ showEmpty(true); return; } watchDisplays(v,true); });
-    function showEmpty(f){ document.getElementById('displayEmpty').style.display=f?'block':'none'; }
+    const showEmpty=(f)=> document.getElementById('displayEmpty').style.display=f?'block':'none';
 
-    // Buttons: Reload / Manage Users
+    /* Reload + Manage Users */
     document.getElementById('displaysReload').addEventListener('click', () => {
       const dealer = selDealer.value || '';
       if (!dealer) return toast('Choose a dealership', true);
       watchDisplays(dealer);
       toast('Displays reloaded');
     });
-
     document.getElementById('manageUsers').addEventListener('click', () => {
       const dealer = selDealer.value || '';
       if (!dealer) return toast('Choose a dealership', true);
@@ -630,31 +645,25 @@
     });
 
     let unSub=null;
-    const previewState = Object.create(null);   // { [displayId]: { type:'live'|'slot', url?:string } }
-    const previewPlayers = Object.create(null); // { [displayId]: { hls?, videoEl?, iframeEl? } }
+    const previewState = Object.create(null);
+    const previewPlayers = Object.create(null);
 
     function destroyPreview(displayId){
-      const p = previewPlayers[displayId];
-      if (p) {
-        try { if (p.hls) p.hls.destroy(); } catch {}
-        try {
-          if (p.videoEl) {
-            p.videoEl.pause();
-            p.videoEl.removeAttribute('src');
-            p.videoEl.load();
-          }
-        } catch {}
+      const p=previewPlayers[displayId];
+      if(p){
+        try{ if(p.hls){ p.hls.destroy(); } }catch{}
+        try{ if(p.videoEl){ p.videoEl.pause(); p.videoEl.removeAttribute('src'); p.videoEl.load(); } }catch{}
       }
-      const li = document.querySelector(`.item[data-display-id="${CSS.escape(displayId)}"]`);
-      if (li) {
-        const wrap = li.querySelector('.rowPreview');
-        if (wrap) wrap.remove(); // remove whole UI block
+      const li=document.querySelector(`.item[data-display-id="${CSS.escape(displayId)}"]`);
+      if(li){
+        const wrap=li.querySelector('.rowPreview');
+        if(wrap) wrap.remove();
       }
       delete previewPlayers[displayId];
     }
 
     function ensureRowPreviewUI(li, displayId){
-      if (li.querySelector('.rowPreview')) return;
+      if(li.querySelector('.rowPreview')) return;
       const wrap=document.createElement('div');
       wrap.className='rowPreview';
       wrap.innerHTML=`
@@ -668,24 +677,30 @@
       li.appendChild(wrap);
       wrap.querySelector('[data-stoprow]').addEventListener('click',()=>{
         delete previewState[displayId];
-        destroyPreview(displayId); // removes block
+        destroyPreview(displayId);
       });
     }
 
     function showLivePreview(displayId){
-      const gh=ghCfg(); if(!gh.token){ toast('Do GH Setup first', true); return; }
-      const path = `${BASE}${gh.basePath||'Displays'}/${displayId}.html?embed=1&nocache=${Date.now()}`;
-      previewState[displayId] = { type:'live' };
+      const gh=ghCfg(); 
+      if(!gh.token){ toast('Do GH Setup first', true); return; }
       const li=document.querySelector(`.item[data-display-id="${CSS.escape(displayId)}"]`);
       if(!li) return;
       ensureRowPreviewUI(li, displayId);
       const shell=li.querySelector('.preview-shell'); if(!shell) return;
       destroyPreview(displayId);
+
+      /* IMPORTANT: build correct URL under /IPTV- using SITE_PREFIX */
+      const relPath = `${gh.basePath||'Displays'}/${displayId}.html`;
+      const url = `${SITE_PREFIX}/${relPath}?embed=1&nocache=${Date.now()}`;
+
       const iframe=document.createElement('iframe');
       iframe.setAttribute('allow','autoplay; encrypted-media; picture-in-picture');
-      iframe.src=path;
+      iframe.src=url;
       shell.appendChild(iframe);
+
       previewPlayers[displayId]={ iframeEl:iframe };
+      previewState[displayId] = { type:'live' };
     }
 
     async function showSlotPreview(displayId, url){
@@ -699,11 +714,12 @@
       const video=document.createElement('video');
       video.setAttribute('playsinline','');
       video.setAttribute('controls','');
-      video.muted = true; // autoplay
+      video.muted = true;
       shell.appendChild(video);
 
       if(window.Hls && Hls.isSupported()){
         const hls=new Hls({enableWorker:true});
+        hls.on(Hls.Events.ERROR, (_,data)=>{ console.error('HLS row error', data); toast('HLS error (slot preview)', true); });
         hls.loadSource(url);
         hls.attachMedia(video);
         video.play().catch(()=>{});
@@ -715,7 +731,7 @@
       }
     }
 
-    function restorePreview(displayId){
+    const restorePreview=(displayId)=>{
       const st=previewState[displayId];
       if(!st) return;
       if(st.type==='live') showLivePreview(displayId);
@@ -784,7 +800,7 @@
           </div>`;
         ul.appendChild(li);
 
-        // Actions
+        /* Actions */
         li.querySelectorAll('button').forEach(b=>{
           b.addEventListener('click', async ()=>{
             const act=b.dataset.act;
@@ -800,7 +816,7 @@
           await update(ref(db,`displays/${id}`),{volume:parseInt(e.target.value,10),updatedAt:Date.now()});
         },200));
 
-        // per-row CH preview buttons -> use shared preview
+        /* per-row CH preview buttons -> use shared preview */
         li.querySelectorAll('[data-prev]').forEach(btn=>{
           btn.addEventListener('click', async ()=>{
             const n=parseInt(btn.dataset.prev,10);
@@ -808,6 +824,7 @@
               const info=await fetchChannelInfoFromPlayer(id);
               const ch=info.channels[n-1];
               if(!ch||!ch.url) return toast('No URL for this slot',true);
+              if(!/^https:\/\//i.test(ch.url)) return toast('Blocked: HTTP stream on HTTPS page', true);
               showSlotPreview(id, ch.url);
             }catch(e){ console.error(e); toast('Read player file failed',true); }
           });
@@ -816,7 +833,7 @@
           btn.addEventListener('click', ()=> openChangeModal(id, dealerId, parseInt(btn.dataset.change,10)));
         });
 
-        // If there was an active preview for this display, restore it after re-render
+        /* Restore previous preview state */
         restorePreview(id);
       });
     }
@@ -827,7 +844,7 @@
       const file=await ghGet(path);
       let html=''; if(file && file.content){ html=unb64(file.content); }
       const channels=parseChannelsFromPlayer(html);
-      return {path,html,channels,sha=file?.sha||null};
+      return {path,html,channels,sha:file?.sha||null};
     }
 
     async function loadChannelNamesIntoPanel(li, displayId){
@@ -840,7 +857,7 @@
       }catch(e){ console.error(e); toast('Failed to read player file (GH setup?)',true); }
     }
 
-    // ====== Delete display ======
+    /* ====== Delete display ====== */
     async function deleteDisplayFlow(displayId){
       if(!confirm(`Delete display ${displayId} from Firebase?`)) return;
       try{
@@ -856,12 +873,11 @@
           toast('GitHub file deleted');
         }catch(e){ console.error(e); toast('GitHub delete failed',true); }
       }
-      // clear any preview state
       delete previewState[displayId];
       destroyPreview(displayId);
     }
 
-    // ====== Change Channel Modal (Video.js) ======
+    /* ====== Change Channel Modal (Video.js) ====== */
     let modal = null, modalPlayer=null, modalTargetDisplay='', modalTargetDealer='', modalTargetIndex=1, modalList=[];
     function ensureModal(){
       if(modal) return modal;
@@ -954,15 +970,15 @@
       }catch(e){ console.error(e); toast('Update failed (check GH setup)',true); }
     }
 
-    // ===== Add TV =====
+    /* ===== Add TV ===== */
     document.getElementById('addDisplayBtn').addEventListener('click',addDisplayFlow);
     function pickSelectedOrDefault(){
       const list=(chSelectedList.length? chSelectedList.slice(0,5) : [
-        {name:'News',url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8'},
-        {name:'Sports',url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8'},
-        {name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8'},
-        {name:'Nature',url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8'},
-        {name:'Kids',url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8'},
+        {name:'Demo A (Mux)',url:'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'},
+        {name:'Demo B (Tears)',url:'https://test-streams.mux.dev/tears-of-steel/playlist.m3u8'},
+        {name:'Demo C (Sint)',url:'https://test-streams.mux.dev/sintel/master.m3u8'},
+        {name:'Demo D (BBB)',url:'https://test-streams.mux.dev/bbb-abr/bbb.m3u8'},
+        {name:'Demo E (SA)',url:'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8'},
       ]);
       return list.map((c,i)=>({id:i+1,name:c.name||'Channel',url:c.url,type:'hls'}));
     }
