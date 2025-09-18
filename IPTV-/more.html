@@ -95,6 +95,8 @@
     .sub.preview{grid-column:1/-1;width:100%;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;margin-top:6px}
     .sub.preview .bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
     .sub.preview video{width:100%;height:260px;background:#000;border:1px solid var(--border);border-radius:10px}
+    /* iframe (Live embed) */
+    .sub.preview iframe{width:100%;height:420px;background:#000;border:1px solid var(--border);border-radius:10px}
 
     /* Channels subpanel (per row) */
     .sub.channels{grid-column:1/-1;width:100%;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:6px}
@@ -586,7 +588,6 @@
     function normalizeSheetUrl(u){
       if(!u) return '';
       try{
-        // If already an export/gviz link, keep it
         if(/docs\.google\.com\/spreadsheets\/.*(export|gviz)/i.test(u)) return u;
         const m = u.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
         const id = m ? m[1] : DEFAULT_SHEET_ID;
@@ -599,7 +600,6 @@
     }
 
     async function fetchChannelSheet(){
-      // use configured URL or fall back to defaults from your reference
       const srcUrl = normalizeSheetUrl((chCfg().url||'').trim() ||
         `https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${encodeURIComponent(DEFAULT_SHEET_GID)}&range=${encodeURIComponent('B2:C')}`
       );
@@ -797,6 +797,72 @@
       showEmpty(false);
     }
 
+    // Build the Live embed URL (defaults to your public GH Pages)
+    function liveEmbedUrl(displayId){
+      const gh = ghCfg();
+      const owner = (gh.owner || 'flaviothebfagroup').trim();
+      const repo  = (gh.repo  || 'IPTV-').trim();
+      const folder = (gh.basePath && gh.basePath.trim())
+        ? `/${gh.basePath.trim().replace(/^\/|\/$/g,'')}`
+        : '/Displays';
+      const root  = `https://${owner}.github.io/${repo}`;
+      const ts    = Date.now();
+      return `${root}${folder}/${encodeURIComponent(displayId)}.html?embed=1&nocache=${ts}`;
+    }
+
+    // Inline iframe preview (Live)
+    let _openPreview = null;
+    function toggleInlinePreview(rowEl, displayId){
+      let panel = rowEl.querySelector('.sub.preview');
+      if(!panel){
+        panel = document.createElement('div');
+        panel.className = 'sub preview';
+        panel.innerHTML = `
+          <div class="bar">
+            <span class="small muted">Live — <b>${esc(displayId)}</b></span>
+            <span style="margin-left:auto;display:flex;gap:6px;align-items:center">
+              <button class="btn" data-refresh>Refresh</button>
+              <button class="btn" data-close>Close</button>
+            </span>
+          </div>
+          <iframe loading="lazy"
+                  referrerpolicy="no-referrer"
+                  sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+                  allow="autoplay; fullscreen; picture-in-picture"></iframe>
+        `;
+        rowEl.appendChild(panel);
+
+        panel.querySelector('[data-refresh]').addEventListener('click',()=>{
+          const f = panel.querySelector('iframe');
+          if(f) f.src = liveEmbedUrl(displayId);
+        });
+        panel.querySelector('[data-close]').addEventListener('click',()=>{
+          const f = panel.querySelector('iframe'); if(f){ f.src='about:blank'; }
+          panel.style.display='none';
+          if(_openPreview===panel) _openPreview=null;
+        });
+      }
+
+      if(_openPreview && _openPreview!==panel){
+        const f = _openPreview.querySelector('iframe');
+        if(f){ f.src='about:blank'; }
+        _openPreview.style.display='none';
+        _openPreview = null;
+      }
+
+      const iframe = panel.querySelector('iframe');
+      const isOpen = panel.style.display==='block';
+      if(isOpen){
+        if(iframe) iframe.src='about:blank';
+        panel.style.display='none';
+        _openPreview=null;
+      }else{
+        panel.style.display='block';
+        if(iframe) iframe.src = liveEmbedUrl(displayId);
+        _openPreview=panel;
+      }
+    }
+
     function renderDisplayList(map, dealerId){
       const ul=document.getElementById('displayList'); ul.innerHTML='';
       const ids=Object.keys(map||{}).sort();
@@ -816,8 +882,7 @@
             <div class="small muted">Updated ${new Date(d.updatedAt||d.timestamp||Date.now()).toLocaleString()}</div>
           </div>
           <div class="split">
-            <button class="btn" data-act="open">Open</button>
-            <button class="btn" data-act="embed">Embed</button>
+            <button class="btn" data-act="live">Live</button>
             <button class="btn" data-act="chpanel">Channels</button>
             <button class="btn danger" data-act="delete">Delete</button>
             <div class="vol"><input type="range" min="0" max="100" value="${d.volume??0}" /><button class="btn" data-act="mute">Mute</button><button class="btn" data-act="unmute">Unmute</button></div>
@@ -851,8 +916,7 @@
         li.querySelectorAll('button').forEach(b=>{
           b.addEventListener('click', async ()=>{
             const act=b.dataset.act;
-            if(act==='open'){ openPlayer(id); }
-            else if(act==='embed'){ openPlayer(id,true); }
+            if(act==='live'){ toggleInlinePreview(li,id); }
             else if(act==='chpanel'){ await loadChannelNamesIntoPanel(li,id); const p=li.querySelector('.sub.channels'); p.style.display=p.style.display==='none'?'block':'none'; }
             else if(act==='mute'){ await update(ref(db,`displays/${id}`),{muted:true,updatedAt:Date.now()}); }
             else if(act==='unmute'){ await update(ref(db,`displays/${id}`),{muted:false,updatedAt:Date.now()}); }
@@ -864,7 +928,7 @@
           await update(ref(db,`displays/${id}`),{volume:parseInt(e.target.value,10),updatedAt:Date.now()});
         },200));
 
-        // per-row inline preview hookups
+        // per-row inline HLS preview (slot)
         const rowPrev=li.querySelector('.rowPreview'); const rowVideo=rowPrev.querySelector('video');
         let rowHls=null;
         li.querySelector('[data-stoprow]').addEventListener('click',()=>{
@@ -877,7 +941,6 @@
             const info=await fetchChannelInfoFromPlayer(id);
             const ch=info.channels[n-1];
             if(!ch||!ch.url) return toast('No URL for this slot',true);
-            // play inline in this row
             if(rowHls){ try{rowHls.destroy();}catch{} rowHls=null; }
             if(Hls.isSupported()){ rowHls=new Hls({enableWorker:true}); rowHls.loadSource(ch.url); rowHls.attachMedia(rowVideo); rowVideo.play().catch(()=>{}); }
             else { rowVideo.src=ch.url; rowVideo.play().catch(()=>{}); }
@@ -888,12 +951,6 @@
           btn.addEventListener('click', ()=> openChangeModal(id, dealerId, parseInt(btn.dataset.change,10)));
         });
       });
-    }
-
-    function openPlayer(id, embed=false){
-      const gh=ghCfg();
-      const path=`/${gh.basePath||'Displays'}/${id}.html${embed?'?embed=1':''}`;
-      window.open(path,'_blank');
     }
 
     async function fetchChannelInfoFromPlayer(displayId){
@@ -1008,13 +1065,11 @@
       if(isNaN(i)) return toast('Pick a channel',true);
       const chosen=modalList[i];
       try{
-        // read current channels
         const info=await fetchChannelInfoFromPlayer(modalTargetDisplay);
         const arr=info.channels;
         arr[modalTargetIndex-1] = {id:modalTargetIndex, name:chosen.name||'Channel', url:chosen.url, type:'hls'};
         await createOrUpdatePlayer(modalTargetDisplay, modalTargetDealer, arr);
         toast(`CH${modalTargetIndex} updated`);
-        // live nudge if currently on that channel
         try{
           const snap=await get(ref(db,`displays/${modalTargetDisplay}`));
           const cur=snap.val()||{}; if(cur.channel===modalTargetIndex){
@@ -1023,7 +1078,6 @@
           }
         }catch{}
         closeChangeModal();
-        // refresh the visible names if panel is open
         const li=[...document.querySelectorAll('.item')].find(x=> x.dataset.displayId===modalTargetDisplay);
         if(li) loadChannelNamesIntoPanel(li, modalTargetDisplay);
       }catch(e){ console.error(e); toast('Update failed (check GH setup)',true); }
@@ -1071,7 +1125,6 @@
       }catch(e){ console.error(e); toast('Add failed',true); }
     }
     async function autoDisplayId(dealer){
-      // Simple auto: <dealer-prefix>-NNN
       const pref = dealer.replace(/[^A-Za-z0-9]/g,'').slice(0,2).toUpperCase()||'TV';
       const qy=query(ref(db,'displays'), orderByChild('dealership'), equalTo(dealer));
       const snap=await get(qy); const ids=snap.exists()?Object.keys(snap.val()):[];
