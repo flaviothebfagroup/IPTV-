@@ -81,9 +81,6 @@
     .split{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .col{display:flex;flex-direction:column;gap:6px;min-width:220px}
     .tag{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:transparent;font-size:12px;color:var(--muted)}
-    .online{display:inline-flex;align-items:center;gap:6px;font-size:12px}
-    .dot{width:8px;height:8px;border-radius:999px;background:#999}
-    .dot.ok{background:var(--ok)} .dot.err{background:var(--err)}
     .vol{display:flex;align-items:center;gap:8px}
     .vol input[type="range"]{width:140px;accent-color:var(--accent)}
     @media (max-width:560px){ .vol input[type="range"]{width:100%} }
@@ -268,8 +265,7 @@
     </div>
   </div>
 
-  <!-- ===== Player file template (YOUR ORIGINAL + Volume HUD) ===== -->
-  <!-- (unchanged from your working version) -->
+  <!-- ===== Player file template (YOUR ORIGINAL kept as-is) ===== -->
   <template id="playerTemplate"><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -324,7 +320,7 @@
   </style>
 </head>
 <body>
-  <!-- (kept as-is; omitted here just to keep this template compact) -->
+  <!-- (your original player content + scripts remain unchanged) -->
 </body>
 </html></template>
 
@@ -354,6 +350,20 @@
     const debounce=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
     function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
     function toast(msg,err=false){const t=$('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2400);}
+
+    // Preview state (keeps Live/CH preview open across re-renders)
+    const previewState = {}; // { [displayId]: { mode:'live'|'ch', ch?:number } }
+    const rememberPreview=(id,mode,ch)=>{ previewState[id]={mode, ch}; };
+    const forgetPreview=(id)=>{ delete previewState[id]; };
+
+    // URLs: try to auto-upgrade http->https when page is HTTPS
+    const isHttpsPage = location.protocol === 'https:';
+    function prepareUrlForSecureContext(url){
+      if(isHttpsPage && /^http:\/\//i.test(url)){
+        return { url:url.replace(/^http:/i,'https:'), upgraded:true, wasHttp:true };
+      }
+      return { url, upgraded:false, wasHttp:false };
+    }
 
     // logos & theme
     $('#brandLogo').style.backgroundImage=`url("${LOGO_URL}")`; const brandLogoM=document.getElementById('brandLogoM'); if(brandLogoM){ brandLogoM.style.backgroundImage=`url("${LOGO_URL}")`; }
@@ -485,20 +495,15 @@
       const n=chSelectedList.length;
       if(n>0){ chBadge.style.display='inline-block'; chBadge.textContent=`${n} selected`; } else { chBadge.style.display='none'; }
     }
-    async function reloadPicker(){
-      try{ chSource = await fetchChannelSheet(); renderChannelList(); toast(`Loaded ${chSource.length} channels`); }
-      catch(e){ console.error(e); toast('Load failed',true); }
-    }
-    // Global picker tiny preview (with HTTPS guard)
+    // Picker tiny preview (with HTTPS auto-upgrade)
     function testPlay(url){
-      if (location.protocol === 'https:' && /^http:\/\//i.test(url)) {
-        toast('Blocked: HTTP stream on HTTPS page. Use an HTTPS channel URL.', true);
-        return;
-      }
+      let {url:tryUrl, upgraded, wasHttp} = prepareUrlForSecureContext(url);
+      if (wasHttp && !upgraded) { toast('Blocked: HTTP stream on HTTPS page. Use an HTTPS channel URL.', true); return; }
+      if (wasHttp && upgraded) { toast('Tried HTTPS version of this HTTP stream…', false); }
       const wrap=document.getElementById('testWrap'); const el=document.getElementById('testVideo'); wrap.style.display='block';
       if(wrap._h){ try{wrap._h.destroy();}catch{} wrap._h=null; }
-      if(Hls.isSupported()){ const hls=new Hls({enableWorker:true}); hls.loadSource(url); hls.attachMedia(el); el.play().catch(()=>{}); wrap._h=hls; }
-      else { el.src=url; el.play().catch(()=>{}); }
+      if(Hls.isSupported()){ const hls=new Hls({enableWorker:true}); hls.loadSource(tryUrl); hls.attachMedia(el); el.play().catch(()=>{}); wrap._h=hls; }
+      else { el.src=tryUrl; el.play().catch(()=>{}); }
     }
     function testStop(){ const wrap=document.getElementById('testWrap'); const el=document.getElementById('testVideo'); if(wrap._h){ try{wrap._h.destroy();}catch{} wrap._h=null; } el.pause(); el.removeAttribute('src'); el.load(); wrap.style.display='none'; }
     document.getElementById('testStop').addEventListener('click',testStop);
@@ -520,6 +525,10 @@
       closePicker();
     });
     document.getElementById('chSearch').addEventListener('input',debounce(renderChannelList,150));
+    async function reloadPicker(){
+      try{ chSource = await fetchChannelSheet(); renderChannelList(); toast(`Loaded ${chSource.length} channels`); }
+      catch(e){ console.error(e); toast('Load failed',true); }
+    }
 
     // ====== GitHub integration (create/edit/delete player files) ======
     const GH_KEY='iptv_admin_gh';
@@ -575,7 +584,6 @@
                 .replace("dealershipName: '(NEW-NAME)'", `dealershipName: '${dealerName}'`)
                 .replace(/channels:\s*\[[\s\S]*?\]/, `channels: [\n${chanStr}\n      ]`);
     }
-
     function parseChannelsFromPlayer(html){
       const arr=[]; const re=/\{\s*id\s*:\s*(\d+)\s*,\s*name\s*:\s*'([^']*)'\s*,\s*url\s*:\s*'([^']*)'[\s\S]*?\}/g;
       let m; while((m=re.exec(html))){ arr.push({id:parseInt(m[1],10),name:m[2],url:m[3],type:'hls'}); }
@@ -588,7 +596,6 @@
         {id:5,name:'Kids',url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8',type:'hls'}
       ];
     }
-
     async function createOrUpdatePlayer(displayId, dealerName, channels){
       const gh=ghCfg(); if(!gh.token) throw new Error('GitHub not configured');
       const path = `${gh.basePath||'Displays'}/${displayId}.html`;
@@ -628,19 +635,21 @@
       return `${root}${folder}/${encodeURIComponent(displayId)}.html?embed=1&nocache=${ts}`;
     }
 
-    /* ===== Unified 16:9 preview per row (LIVE + CH) ===== */
+    /* ===== Unified 16:9 preview helpers (LIVE + CH) ===== */
     function getRowPreviewBits(rowEl){
       const area = rowEl.querySelector('.previewArea');
       const shell = area.querySelector('[data-shell]');
       const modeLabel = area.querySelector('[data-mode]');
-      return { area, shell, modeLabel };
+      const refreshBtn = area.querySelector('[data-refresh]');
+      const closeBtn   = area.querySelector('[data-close]');
+      return { area, shell, modeLabel, refreshBtn, closeBtn };
     }
     function clearShell(shell){
       if (shell._hls) { try{ shell._hls.destroy(); }catch{} shell._hls = null; }
       shell.innerHTML = '';
     }
     function playLiveInRow(rowEl, displayId){
-      const { area, shell, modeLabel } = getRowPreviewBits(rowEl);
+      const { area, shell, modeLabel, refreshBtn, closeBtn } = getRowPreviewBits(rowEl);
       area.style.display = 'block';
       modeLabel.textContent = '• Live';
       clearShell(shell);
@@ -651,14 +660,52 @@
       iframe.setAttribute('allow','autoplay; fullscreen; picture-in-picture');
       iframe.src = liveEmbedUrl(displayId);
       shell.appendChild(iframe);
-      const refreshBtn = rowEl.querySelector('.previewArea [data-refresh]');
-      const closeBtn   = rowEl.querySelector('.previewArea [data-close]');
       refreshBtn.onclick = ()=>{ iframe.src = liveEmbedUrl(displayId); };
       closeBtn.onclick   = ()=>{
         iframe.src='about:blank';
         clearShell(shell);
         rowEl.querySelector('.previewArea').style.display='none';
+        forgetPreview(displayId);
       };
+      rememberPreview(displayId,'live');
+    }
+    async function openChannelPreview(rowEl, displayId, n){
+      try{
+        const info=await fetchChannelInfoFromPlayer(displayId);
+        const ch=info.channels[n-1];
+        if(!ch||!ch.url) return toast('No URL for this slot',true);
+
+        const { area, shell, modeLabel, refreshBtn, closeBtn } = getRowPreviewBits(rowEl);
+        area.style.display='block';
+        modeLabel.textContent = `• CH${n}`;
+        clearShell(shell);
+
+        // video element
+        const v=document.createElement('video');
+        v.setAttribute('playsinline','');
+        v.setAttribute('controls','');
+        shell.appendChild(v);
+
+        let {url:playUrl, upgraded, wasHttp} = prepareUrlForSecureContext(ch.url);
+        if (wasHttp && upgraded) toast('Tried HTTPS version of this HTTP stream…', false);
+        if (wasHttp && !upgraded) { toast('Blocked: HTTP stream on HTTPS page. Use an HTTPS URL.', true); return; }
+
+        if (window.Hls && Hls.isSupported()){
+          const hls=new Hls({enableWorker:true});
+          hls.loadSource(playUrl);
+          hls.attachMedia(v);
+          shell._hls = hls;
+          v.play().catch(()=>{});
+        } else { v.src=playUrl; v.play().catch(()=>{}); }
+
+        refreshBtn.onclick = ()=> openChannelPreview(rowEl, displayId, n);
+        closeBtn.onclick = ()=>{
+          clearShell(shell);
+          area.style.display='none';
+          forgetPreview(displayId);
+        };
+        rememberPreview(displayId,'ch',n);
+      }catch(e){ console.error(e); toast('Read player file failed',true); }
     }
     function toggleInlinePreview(rowEl, displayId){
       const area = rowEl.querySelector('.previewArea');
@@ -666,6 +713,7 @@
         const { shell } = getRowPreviewBits(rowEl);
         clearShell(shell);
         area.style.display='none';
+        forgetPreview(displayId);
       } else {
         playLiveInRow(rowEl, displayId);
       }
@@ -762,76 +810,20 @@
           await update(ref(db,`displays/${id}`),{volume:parseInt(e.target.value,10),updatedAt:Date.now()});
         },200));
 
-        // per-slot channel preview -> unified area, with HTTPS guard
-        const rowArea = li.querySelector('.previewArea');
-        const rowShell = rowArea.querySelector('[data-shell]');
-        let rowHls = null;
-
+        // per-slot channel preview -> unified area (open with helper)
         li.querySelectorAll('[data-prev]').forEach(btn=>{
-          btn.addEventListener('click', async ()=>{
-            const n=parseInt(btn.dataset.prev,10);
-            try{
-              const info=await fetchChannelInfoFromPlayer(id);
-              const ch=info.channels[n-1];
-              if(!ch||!ch.url) return toast('No URL for this slot',true);
-
-              if (location.protocol === 'https:' && /^http:\/\//i.test(ch.url)) {
-                toast('Blocked: HTTP stream on HTTPS page. Switch this channel to HTTPS.', true);
-                return;
-              }
-
-              rowArea.style.display='block';
-              rowArea.querySelector('[data-mode]').textContent = `• CH${n}`;
-
-              if (rowHls){ try{rowHls.destroy();}catch{} rowHls=null; }
-              rowShell._hls = null;
-              rowShell.innerHTML='';
-
-              const v=document.createElement('video');
-              v.setAttribute('playsinline','');
-              v.setAttribute('controls','');
-              rowShell.appendChild(v);
-
-              if (window.Hls && Hls.isSupported()){
-                rowHls=new Hls({enableWorker:true});
-                rowHls.loadSource(ch.url);
-                rowHls.attachMedia(v);
-                rowShell._hls = rowHls;
-                v.play().catch(()=>{});
-              } else {
-                v.src=ch.url;
-                v.play().catch(()=>{});
-              }
-
-              const refreshBtn = rowArea.querySelector('[data-refresh]');
-              const closeBtn   = rowArea.querySelector('[data-close]');
-              refreshBtn.onclick = ()=>{
-                if (rowHls){ try{rowHls.destroy();}catch{} rowHls=null; }
-                rowShell._hls = null;
-                rowShell.innerHTML='';
-                const v2=document.createElement('video'); v2.setAttribute('playsinline',''); v2.setAttribute('controls',''); rowShell.appendChild(v2);
-                if (window.Hls && Hls.isSupported()){
-                  rowHls=new Hls({enableWorker:true});
-                  rowHls.loadSource(ch.url);
-                  rowHls.attachMedia(v2);
-                  rowShell._hls = rowHls;
-                  v2.play().catch(()=>{});
-                } else { v2.src=ch.url; v2.play().catch(()=>{}); }
-              };
-              closeBtn.onclick = ()=>{
-                if (rowHls){ try{rowHls.destroy();}catch{} rowHls=null; }
-                rowShell._hls = null;
-                rowShell.innerHTML='';
-                rowArea.style.display='none';
-              };
-
-            }catch(e){ console.error(e); toast('Read player file failed',true); }
-          });
+          btn.addEventListener('click', ()=> openChannelPreview(li, id, parseInt(btn.dataset.prev,10)));
         });
-
         li.querySelectorAll('[data-change]').forEach(btn=>{
           btn.addEventListener('click', ()=> openChangeModal(id, dealerId, parseInt(btn.dataset.change,10)));
         });
+
+        // If this row had an open preview before re-render -> reopen it
+        const st = previewState[id];
+        if(st){
+          if(st.mode==='live') playLiveInRow(li, id);
+          else if(st.mode==='ch' && st.ch) openChannelPreview(li, id, st.ch);
+        }
       });
     }
 
@@ -849,7 +841,18 @@
         const info=await fetchChannelInfoFromPlayer(displayId);
         for(let i=1;i<=5;i++){
           const el=li.querySelector(`.name${i}`);
-          const ch=info.channels[i-1]; el.textContent = ch ? `${ch.name} — ${ch.url}` : '—';
+          const ch=info.channels[i-1];
+          if(ch){
+            el.textContent = `${ch.name} — `;
+            const s=document.createElement('span');
+            s.textContent='(see URL)';
+            s.style.textDecoration='underline';
+            s.style.cursor='help';
+            s.title=ch.url; // reveal only on hover
+            el.appendChild(s);
+          }else{
+            el.textContent='—';
+          }
         }
       }catch(e){ console.error(e); toast('Failed to read player file (GH setup?)',true); }
     }
@@ -897,7 +900,7 @@
             <div id="chgPlayerShell">
               <video id="chgPlayer" class="video-js vjs-default-skin" playsinline controls preload="auto"></video>
             </div>
-            <div class="small muted" id="chgMeta"></div>
+            <div class="small muted" id="chgMeta" title=""></div>
           </div>
         </div>`;
       document.body.appendChild(modal);
@@ -909,11 +912,19 @@
       document.getElementById('chgApply').addEventListener('click',applyChannelChange);
 
       modalPlayer=videojs('chgPlayer',{html5:{vhs:{overrideNative:true}},controlBar:{volumePanel:{inline:false}}});
+      // click-to-copy on hidden URL label
+      document.getElementById('chgMeta').addEventListener('click',async (e)=>{
+        const txt=e.currentTarget.getAttribute('title')||'';
+        if(!txt) return;
+        try{ await navigator.clipboard.writeText(txt); toast('URL copied'); }catch{}
+      });
     }
     function openChangeModal(displayId, dealerId, idx){
       ensureModal();
       modalTargetDisplay=displayId; modalTargetDealer=dealerId; modalTargetIndex=idx;
       document.getElementById('chgTitle').textContent=`Change channel CH${idx} — ${displayId}`;
+      document.getElementById('chgMeta').textContent='';
+      document.getElementById('chgMeta').title='';
       modal.classList.add('open');
       loadModalList();
     }
@@ -935,11 +946,16 @@
         const o=document.createElement('option'); o.value=String(i); o.textContent=`${i+1}. ${c.name||'Channel'}`; sel.appendChild(o);
       });
       document.getElementById('chgMeta').textContent='';
+      document.getElementById('chgMeta').title='';
     }
     function previewSelected(){
       const sel=document.getElementById('chgSelect'); const i=parseInt(sel.value,10);
       if(isNaN(i)) return;
-      const c=modalList[i]; document.getElementById('chgMeta').textContent=c.url;
+      const c=modalList[i];
+      // Hide URL visually, keep in title for hover + click-to-copy
+      const meta=document.getElementById('chgMeta');
+      meta.textContent='(see URL) — click to copy';
+      meta.title=c.url||'';
       try{ modalPlayer.src({type:'application/x-mpegURL',src:c.url}); modalPlayer.play().catch(()=>{}); }catch{}
     }
     async function applyChannelChange(){
@@ -952,16 +968,31 @@
         arr[modalTargetIndex-1] = {id:modalTargetIndex, name:chosen.name||'Channel', url:chosen.url, type:'hls'};
         await createOrUpdatePlayer(modalTargetDisplay, modalTargetDealer, arr);
         toast(`CH${modalTargetIndex} updated`);
+
+        // If device is currently on that channel, nudge to refresh and keep preview open
         try{
           const snap=await get(ref(db,`displays/${modalTargetDisplay}`));
-          const cur=snap.val()||{}; if(cur.channel===modalTargetIndex){
+          const cur=snap.val()||{};
+          if(cur.channel===modalTargetIndex){
             await update(ref(db,`displays/${modalTargetDisplay}`),{channel:1,updatedAt:Date.now()});
             setTimeout(()=> update(ref(db,`displays/${modalTargetDisplay}`),{channel:modalTargetIndex,updatedAt:Date.now()}),800);
           }
         }catch{}
+
+        // Close only the modal, keep the inline preview open (state persists)
         closeChangeModal();
-        const li=[...document.querySelectorAll('.item')].find(x=> x.dataset.displayId===modalTargetDisplay);
-        if(li) loadChannelNamesIntoPanel(li, modalTargetDisplay);
+
+        // Reopen the CH preview immediately if it was open on this row
+        const st=previewState[modalTargetDisplay];
+        if(st && st.mode==='ch' && st.ch===modalTargetIndex){
+          const li=[...document.querySelectorAll('.item')].find(x=> x.dataset.displayId===modalTargetDisplay);
+          if(li) openChannelPreview(li, modalTargetDisplay, modalTargetIndex);
+        }
+
+        // Refresh channel names in that row
+        const li2=[...document.querySelectorAll('.item')].find(x=> x.dataset.displayId===modalTargetDisplay);
+        if(li2) loadChannelNamesIntoPanel(li2, modalTargetDisplay);
+
       }catch(e){ console.error(e); toast('Update failed (check GH setup)',true); }
     }
 
