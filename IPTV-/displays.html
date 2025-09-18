@@ -270,56 +270,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
   <title>Digital Signage — Player</title>
   <style>
-    :root{ --bg:#000; --fg:#fff; --muted:#b3b3b3; --panel:rgba(255,255,255,.06); --border:rgba(255,255,255,.15); --accent:#ff9500; --ok:#22c55e; --err:#ef4444; }
-    *{margin:0;padding:0;box-sizing:border-box}
-    html,body{height:100%}
-    body{ background:var(--bg); color:var(--fg); font-family: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; overflow:hidden; position:relative; }
-    .video-container{position:absolute; inset:0; background:#000}
-    video{width:100%; height:100%; object-fit:cover; background:#000}
-    .loading-overlay{ position:absolute; inset:0; background:rgba(0,0,0,.85); display:flex; align-items:center; justify-content:center; z-index:100; opacity:0; pointer-events:none; transition:opacity .25s; }
-    .loading-overlay.active{opacity:1; pointer-events:auto}
-    .spinner{ width:54px; height:54px; border-radius:50%; border:3px solid rgba(255,255,255,.15); border-top-color:#fff; animation:spin 1s linear infinite; }
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .channel-info{ position:absolute; top:18px; left:18px; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:10px 14px; z-index:50; opacity:0; transform:translateY(-8px); transition:opacity .25s, transform .25s; }
-    .channel-info.show{opacity:1; transform:translateY(0)}
-    .channel-name{font-weight:800}
-    .channel-sub{font-size:12px; color:var(--muted); display:flex; gap:10px; align-items:center}
-    .live-dot{width:8px;height:8px;border-radius:50%; background:var(--accent); box-shadow:0 0 0 0 rgba(255,149,0,.7); animation:pulse 2s infinite}
-    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,149,0,.7)} 70%{box-shadow:0 0 0 8px rgba(255,149,0,0)} 100%{box-shadow:0 0 0 0 rgba(255,149,0,0)}}
-    .status-bar{ position:absolute; right:18px; bottom:18px; display:flex; gap:10px; align-items:center; background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:8px 12px; font-size:12px; z-index:50; }
-    .status-dot{width:10px;height:10px;border-radius:50%; background:var(--ok)}
-    .status-dot.disconnected{background:var(--err)}
-    .divider{opacity:.45}
-    .display-id{ position:absolute; left:18px; bottom:18px; z-index:50; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:8px 12px; font-size:12px; color:#fff; }
-    .error-message{ position:absolute; inset:auto 50% 50% auto; transform:translate(50%,-50%); background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.4); color:#fff; padding:14px 18px; border-radius:14px; display:none; z-index:80; text-align:center; }
-    .error-message.show{display:block}
-    .error-title{font-weight:800; margin-bottom:4px; color:var(--err)}
-    .error-text{font-size:12px; color:#fff}
-    .transition-overlay{position:absolute; inset:0; background:#000; z-index:40; opacity:0; pointer-events:none; transition:opacity .25s}
-    .transition-overlay.active{opacity:1}
-    .volume-control{ position:absolute; left:50%; bottom:100px; transform:translateX(-50%); display:flex; align-items:center; gap:12px; z-index:70; background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:10px 12px; opacity:0; pointer-events:none; transition:opacity .2s; }
-    .volume-control.show{opacity:1; pointer-events:auto}
-    .vol-btn{ width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:transparent; color:#fff; font-size:18px; cursor:pointer; }
-    .vol-track{width:160px; height:8px; border-radius:6px; background:rgba(255,255,255,.12); position:relative; overflow:hidden; border:1px solid var(--border)}
-    .vol-fill{position:absolute; left:0; top:0; bottom:0; width:0%; background:var(--accent)}
-    .vol-percent{font-weight:800; min-width:46px; text-align:right}
-    .vol-icon{width:22px;height:22px; display:block}
-    .bar{opacity:0; transition:opacity .15s}
-    .icon-muted .bar, .icon-level-0 .bar{opacity:0}
-    .icon-level-1 #bar1{opacity:1}
-    .icon-level-2 #bar1, .icon-level-2 #bar2{opacity:1}
-    .icon-level-3 #bar1, .icon-level-3 #bar2, #bar3{opacity:1}
-    .icon-muted #x1, .icon-muted #x2{opacity:1}
-    #x1,#x2{opacity:0; stroke:var(--err); stroke-width:2; stroke-linecap:round}
-    .volume-float{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,.92); border:1px solid var(--border); color:#fff; padding:26px 36px; border-radius:18px; font-weight:900; font-size:40px; z-index:90; animation:fadeHud 1.8s ease forwards; }
-    @keyframes fadeHud{0%{opacity:0; transform:translate(-50%,-50%) scale(.96)} 15%{opacity:1; transform:translate(-50%,-50%) scale(1)} 85%{opacity:1} 100%{opacity:0}}
-    @media (prefers-reduced-motion:reduce){ .transition-overlay,.channel-info,.loading-overlay{transition:none} }
+    html,body{height:100%;margin:0;background:#000}
+    video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
   </style>
 </head>
 <body>
-  <!-- (player body omitted for brevity in template; your original logic remains unchanged) -->
+  <video id="v" playsinline autoplay muted controls></video>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getDatabase, ref, onValue, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+    // Replaced by admin code when file is created/updated
+    const cfg = {
+      displayId: '(NEW-CODE)',
+      dealershipName: '(NEW-NAME)',
+      channels: [
+        { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
+        { id:2, name:'Sports', url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8',                                            type:'hls' },
+        { id:3, name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8',                                             type:'hls' },
+        { id:4, name:'Nature', url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8', type:'hls' },
+        { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
+      ]
+    };
+
+    const v = document.getElementById('v');
+    let hls = null;
+    function play(url){
+      try{ if(hls){ hls.destroy(); hls=null; } }catch{}
+      if (window.Hls && Hls.isSupported()){
+        hls = new Hls({ enableWorker:true });
+        hls.loadSource(url);
+        hls.attachMedia(v);
+        v.play().catch(()=>{});
+      } else {
+        v.src = url;
+        v.play().catch(()=>{});
+      }
+    }
+
+    const params = new URLSearchParams(location.search);
+    if (params.has('embed')) {
+      // Admin iframe preview: no auth, just play CH1
+      if (cfg.channels[0]?.url) play(cfg.channels[0].url);
+    } else {
+      // Real device mode: follow Firebase state
+      const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db   = getDatabase(app);
+
+      signInAnonymously(auth).catch(()=>{});
+      onAuthStateChanged(auth, (u)=>{
+        if(!u) return;
+        const dref = ref(db, 'displays/' + (cfg.displayId||''));
+        onValue(dref, (snap)=>{
+          const st = snap.val() || {};
+          const idx = Math.max(1, Math.min(5, st.channel || 1)) - 1;
+          const ch  = cfg.channels[idx];
+          if (ch?.url) play(ch.url);
+          if (typeof st.volume === 'number') v.volume = Math.max(0, Math.min(1, st.volume/100));
+          if (typeof st.muted  === 'boolean') v.muted  = !!st.muted;
+          try{ update(dref, { lastSeenAt: Date.now() }); }catch{}
+        });
+      });
+    }
+  </script>
 </body>
 </html></template>
+
 
   <div id="toast" class="toast"></div>
 
@@ -347,6 +368,14 @@
     const debounce=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
     function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
     function toast(msg,err=false){const t=$('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2400);}
+
+// ----- GitHub Pages base path helper -----
+const BASE = (() => {
+  const parts = location.pathname.split('/').filter(Boolean);
+  return parts.length ? ('/' + parts[0] + '/') : '/';
+})();
+
+
 
     // logos & theme
     $('#brandLogo').style.backgroundImage=`url("${LOGO_URL}")`; const brandLogoM=document.getElementById('brandLogoM'); if(brandLogoM){ brandLogoM.style.backgroundImage=`url("${LOGO_URL}")`; }
