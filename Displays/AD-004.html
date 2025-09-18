@@ -1,0 +1,76 @@
+
+
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Digital Signage — Player</title>
+  <style>
+    html,body{height:100%;margin:0;background:#000}
+    video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+  </style>
+
+
+  <video id="v" playsinline="" autoplay="" muted="" controls=""></video>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getDatabase, ref, onValue, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+    // Replaced by admin code when file is created/updated
+    const cfg = {
+      displayId: 'AD-004',
+      dealershipName: 'admin',
+      channels: [
+        { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
+        { id:2, name:'Sports',   url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8', type:'hls' },
+        { id:3, name:'Cooking',   url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
+        { id:4, name:'Nature',   url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8', type:'hls' },
+        { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
+      ]
+    };
+
+    const v = document.getElementById('v');
+    let hls = null;
+    function play(url){
+      try{ if(hls){ hls.destroy(); hls=null; } }catch{}
+      if (window.Hls && Hls.isSupported()){
+        hls = new Hls({ enableWorker:true });
+        hls.loadSource(url);
+        hls.attachMedia(v);
+        v.play().catch(()=>{});
+      } else {
+        v.src = url;
+        v.play().catch(()=>{});
+      }
+    }
+
+    const params = new URLSearchParams(location.search);
+    if (params.has('embed')) {
+      // Admin iframe preview: no auth, just play CH1
+      if (cfg.channels[0]?.url) play(cfg.channels[0].url);
+    } else {
+      // Real device mode: follow Firebase state
+      const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db   = getDatabase(app);
+
+      signInAnonymously(auth).catch(()=>{});
+      onAuthStateChanged(auth, (u)=>{
+        if(!u) return;
+        const dref = ref(db, 'displays/' + (cfg.displayId||''));
+        onValue(dref, (snap)=>{
+          const st = snap.val() || {};
+          const idx = Math.max(1, Math.min(5, st.channel || 1)) - 1;
+          const ch  = cfg.channels[idx];
+          if (ch?.url) play(ch.url);
+          if (typeof st.volume === 'number') v.volume = Math.max(0, Math.min(1, st.volume/100));
+          if (typeof st.muted  === 'boolean') v.muted  = !!st.muted;
+          try{ update(dref, { lastSeenAt: Date.now() }); }catch{}
+        });
+      });
+    }
+  </script>
+
