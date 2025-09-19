@@ -1,4 +1,935 @@
-gcloud config set project iptv-bfa-471617
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
+  <title>BFA IPTV — Settings</title>
+
+  <style>
+    /* =========================================================
+       Tokens
+    ========================================================= */
+    :root{
+      --accent:#ff9500;
+      --fg:#111; --muted:#6e6e73; --bg:#ffffff;
+      --panel:#fff; --tile:#f6f6f8; --tileHover:#fff7ea;
+      --border:rgba(0,0,0,.14); --borderStrong:rgba(0,0,0,.28);
+      --shadow:0 14px 36px rgba(0,0,0,.08);
+    }
+    body.dark{
+      --bg:#0b0b0c; --fg:#f7f7f8; --muted:#a1a1a8;
+      --panel:#151517; --tile:#1a1a1d; --tileHover:#221e18;
+      --border:rgba(255,255,255,.16); --borderStrong:rgba(255,255,255,.36);
+      --shadow:0 18px 48px rgba(0,0,0,.45);
+    }
+
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--fg);
+      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
+    a{color:inherit;text-decoration:none}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Courier New",monospace}
+
+    /* =========================================================
+       Topbar (copy of Dealerships)
+    ========================================================= */
+    .topbar{position:sticky;top:0;z-index:100;background:var(--panel);
+      border-bottom:1px solid var(--border);
+      padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
+    .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;position:relative}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:#fff center/cover no-repeat}
+    .logotxt{font-weight:900;letter-spacing:.2px}
+
+    .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;color:inherit;font-weight:800;font-size:14px;line-height:1;white-space:nowrap}
+    .pill:hover{border-color:var(--accent)}
+    .pill.is-active{outline:2px solid var(--accent)}
+    .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
+
+    /* More (+) dropdown */
+    .more{position:relative}
+    #moreBtn .plus{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
+    #moreMenu{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
+      border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none}
+    #moreMenu.open{display:block}
+    #moreMenu a{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px}
+    #moreMenu a:hover{background:var(--tileHover)}
+    #moreMenu a.is-active{outline:2px solid var(--accent)}
+    #moreMenu .ic{width:18px;height:18px;stroke-width:1.9}
+
+    .actions{display:flex;gap:8px;align-items:center}
+    .email{max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);
+      border:1px solid var(--border);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .chip{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1.5px solid var(--borderStrong);
+      background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+    .chip:hover{border-color:var(--accent)}
+    .chip .ic{width:18px;height:18px;stroke-width:2}
+    .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
+
+    /* Hamburger */
+    #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:42px;min-width:42px;padding:0;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
+    #hamburger .ic{width:22px;height:22px;stroke:var(--accent);stroke-width:2.35}
+
+    @media (max-width:920px){
+      .nav{display:none}
+      #hamburger{display:inline-flex}
+      .email{display:none}
+    }
+
+    /* Mobile sheet */
+    #sheet{position:fixed;inset:0;z-index:120;display:none}
+    #sheet.open{display:block}
+    #sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
+    .panel{position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:var(--panel);border-left:1px solid var(--border);
+      box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px}
+    .panel .row{display:flex;align-items:center;justify-content:space-between}
+    .panel nav{display:grid;gap:8px}
+    .panel nav a{justify-content:flex-start}
+
+    /* =========================================================
+       Page styles (Settings UI)
+    ========================================================= */
+    :root{ --tileBorder: var(--border); --danger:#e11d48; }
+    .wrap{max-width:1100px;margin:0 auto;padding:18px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow);margin-bottom:12px}
+    .muted{color:var(--muted);font-size:12px}
+    .label{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .input,textarea{width:100%;padding:12px;background:transparent;border:1px solid var(--tileBorder);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
+    textarea{min-height:120px;resize:vertical}
+    .btn{height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--tileBorder);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:8px}
+    .btn.solid{background:var(--accent);border-color:var(--accent);color:#000}
+    .btn.danger{border-color:rgba(225,29,72,.35);color:var(--danger);background:transparent}
+    .btn[disabled]{opacity:.6;cursor:not-allowed}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}
+    @media (max-width:720px){.row2,.row3{grid-template-columns:1fr}}
+
+    /* Explorer list */
+    .crumbs{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+    .crumbs a{padding:6px 10px;border:1px solid var(--tileBorder);border-radius:9999px}
+    .crumbs a.active{border-color:var(--accent)}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+    .table{width:100%;border-collapse:separate;border-spacing:0 8px}
+    .tr{display:grid;grid-template-columns:28px 1fr auto auto auto;gap:8px;align-items:center;background:var(--tile);border:1px solid var(--tileBorder);border-radius:12px;padding:8px}
+    .tr .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .badge{padding:2px 8px;border:1px solid var(--tileBorder);border-radius:999px;background:transparent;font-size:12px;color:var(--muted)}
+
+    /* Collapsible Legend (copy of Dealerships) */
+    details.legend{margin:8px 0} details.legend summary{cursor:pointer;font-weight:800}
+    .legend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:8px}
+    .legend-item{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border:1px solid var(--tileBorder);border-radius:12px;padding:10px}
+    .legend-item .iconbtn{flex:0 0 36px}
+    .iconbtn{height:36px;width:36px;padding:0;border-radius:10px;border:1px solid var(--tileBorder);background:transparent;display:inline-flex;align-items:center;justify-content:center}
+    .icon{stroke:currentColor;stroke-width:1.9;fill:none}
+    .iconbtn.danger{color:var(--danger);border-color:rgba(225,29,72,.35)}
+
+    .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;z-index:999}
+    .toast.show{opacity:1}
+
+    /* Move dialog */
+    .modal{position:fixed;inset:0;display:none;z-index:140}
+    .modal.open{display:block}
+    .modal .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
+    .modal .box{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,560px);max-height:80vh;overflow:auto;background:var(--panel);border:1px solid var(--tileBorder);border-radius:14px;box-shadow:var(--shadow);padding:12px}
+    .modal h4{margin:4px 0 8px}
+    .dirrow{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--tileBorder);background:var(--tile);padding:8px;border-radius:10px;margin:6px 0}
+    .dircrumbs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+    .dircrumbs a{padding:6px 10px;border:1px solid var(--tileBorder);border-radius:9999px}
+    .dircrumbs a.active{border-color:var(--accent)}
+
+    /* =============================
+       In-page EDITOR modal (NEW)
+    ==============================*/
+    .editor{position:fixed;inset:0;display:none;z-index:160}
+    .editor.open{display:block}
+    .editor .back{position:absolute;inset:0;background:rgba(0,0,0,.4)}
+    .editor .box{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(96vw,1100px);height:min(92vh,840px);
+      background:var(--panel);border:1px solid var(--tileBorder);border-radius:16px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+    .editor .head{display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid var(--tileBorder)}
+    .editor .path{font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .editor .grow{flex:1}
+    .editor .body{flex:1;display:flex;flex-direction:column;padding:10px;gap:8px}
+    .editor .status{font-size:12px;color:var(--muted)}
+    .editor textarea{flex:1;width:100%;height:100%;resize:none;border-radius:12px;white-space:pre; /* toggled to soft via JS */}
+    .editor .preview{display:none;border:1px solid var(--tileBorder);border-radius:12px;overflow:hidden;height:48%}
+    .editor .preview iframe{width:100%;height:100%;border:0;background:#fff}
+  </style>
+</head>
+<body>
+  <!-- NAVBAR (Dealerships style) -->
+  <header class="topbar">
+    <div class="toprow">
+      <a class="brand" href="home.html"><span class="logo" id="brandLogo"></span><span class="logotxt">BFA IPTV</span></a>
+
+      <nav class="nav" aria-label="Primary">
+        <a class="pill" href="home.html" data-page="home">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home
+        </a>
+        <a class="pill" href="dealerships.html" data-page="dealerships">
+          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships
+        </a>
+        <a class="pill" href="displays.html" data-page="displays">
+          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays
+        </a>
+        <a class="pill" href="users.html" data-page="users">
+          <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users
+        </a>
+        <div class="more">
+          <a id="moreBtn" class="pill" href="javascript:void(0)">
+            <svg class="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> More
+          </a>
+          <div id="moreMenu" role="menu" aria-label="More">
+            <a href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
+            <a href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
+            <a href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
+            <a href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
+            <a href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
+            <a class="is-active" href="settings.html">
+              <svg class="ic" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"/>
+              </svg>
+              Settings
+            </a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="actions">
+        <span id="adminEmail" class="email"></span>
+        <button id="themeBtn" class="chip" title="Light/Dark">
+          <svg id="themeIcon" class="ic" viewBox="0 0 24 24"></svg>
+          Theme
+        </button>
+        <button id="signOutBtn" class="chip">Sign out</button>
+        <button id="hamburger" class="chip" aria-label="Menu">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div id="sheet" aria-hidden="true">
+      <div class="back"></div>
+      <aside class="panel" role="dialog" aria-modal="true" aria-label="Menu">
+        <div class="row">
+          <div class="brand"><span class="logo" id="brandLogoM"></span><span class="logotxt">BFA IPTV</span></div>
+          <button id="closeSheet" class="chip" aria-label="Close"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+        <nav>
+          <a class="pill" href="home.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
+          <a class="pill" href="dealerships.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
+          <a class="pill" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
+          <a class="pill" href="users.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
+          <div class="muted" style="padding:8px 2px 0">More</div>
+          <a class="pill" href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
+          <a class="pill" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
+          <a class="pill" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
+          <a class="pill" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
+          <a class="pill" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
+          <a class="pill is-active" href="settings.html">
+            <svg class="ic" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"/>
+            </svg>
+            Settings
+          </a>
+          <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
+        </nav>
+      </aside>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- ===== GitHub Connection ===== -->
+    <div class="card">
+      <h2 style="margin:0">Settings</h2>
+      <div class="muted">Manage GitHub repo files, PRs, and utilities.</div>
+      <h3 style="margin:10px 0 8px">GitHub Connection</h3>
+      <div class="row3">
+        <div><div class="label">Owner</div><input id="ghcOwner" class="input" value="flaviothebfagroup"/></div>
+        <div><div class="label">Repo</div><input id="ghcRepo" class="input" value="IPTV-"/></div>
+        <div><div class="label">Branch</div><input id="ghcBranch" class="input" value="main"/></div>
+      </div>
+      <div class="row2">
+        <div><div class="label">Token</div><input id="ghcToken" class="input" placeholder="••••••••" type="password"/></div>
+        <div class="toolbar">
+          <button id="ghSave" class="btn solid">Save</button>
+          <button id="ghClear" class="btn">Clear</button>
+          <button id="ghTest" class="btn">Test</button>
+        </div>
+      </div>
+      <div class="muted">Token is stored locally in this browser only.</div>
+      <div id="ghStatus" class="small mono muted" style="margin-top:6px"></div>
+    </div>
+
+    <!-- ===== GitHub Explorer ===== -->
+    <div class="card">
+      <h3 style="margin:0 0 8px">GitHub Explorer</h3>
+
+      <div class="crumbs" id="breadcrumbs" style="margin-bottom:8px"></div>
+
+      <div class="toolbar">
+        <button id="exUp" class="btn">Up</button>
+        <button id="exRefresh" class="btn">Refresh</button>
+        <button id="exDeleteSel" class="btn danger">Delete selected</button>
+        <button id="exMoveSel" class="btn">Move</button>
+        <button id="exNewFile" class="btn">New file…</button>
+        <button id="exNewFolder" class="btn">New folder…</button>
+        <label class="btn"><input id="exUpload" type="file" style="display:none">Upload…</label>
+      </div>
+
+      <!-- Icon legend (Dealerships style) -->
+      <details class="legend">
+        <summary>Icon legend</summary>
+        <div id="legendGrid" class="legend-grid"></div>
+      </details>
+
+      <div id="exTable"></div>
+    </div>
+
+    <!-- ===== Pull Requests ===== -->
+    <div class="card">
+      <h3 style="margin:0 0 8px">Open Pull Requests</h3>
+      <div class="toolbar">
+        <button id="prRefresh" class="btn">Refresh PRs</button>
+      </div>
+      <div id="prList"></div>
+    </div>
+
+    <!-- ===== Central Config helper (read only) ===== -->
+    <div class="card">
+      <h3 style="margin:0 0 8px">Central Config Source</h3>
+      <div class="row3">
+        <div><div class="label">Owner</div><input id="ghOwner" class="input" value="flaviothebfagroup"/></div>
+        <div><div class="label">Repo</div><input id="ghRepo" class="input" value="IPTV-"/></div>
+        <div><div class="label">Branch</div><input id="ghBranch" class="input" value="main"/></div>
+      </div>
+      <div class="row2">
+        <div><div class="label">Path (in repo)</div><input id="ghPath" class="input" value="config/iptv-config.json"/></div>
+        <div><div class="label">Raw URL (auto)</div><input id="rawUrl" class="input mono" readonly/></div>
+      </div>
+      <div class="toolbar" style="margin-top:8px">
+        <button id="btnOpenFile" class="btn">Open in GitHub</button>
+        <button id="btnOpenEditor" class="btn">Open GitHub Editor</button>
+        <button id="btnLoadConfig" class="btn">View current JSON</button>
+        <button id="btnCopyLoader" class="btn solid">Copy loader snippet</button>
+      </div>
+      <textarea id="cfgView" class="input mono" style="margin-top:10px;display:none;height:220px" spellcheck="false"></textarea>
+    </div>
+
+    <!-- ===== Delete Anonymous Users ===== -->
+    <div class="card" id="purgeCard">
+      <h3 style="margin:0 0 8px">Delete Anonymous Users</h3>
+      <div class="muted">Two ways: <b>Cloud Shell (no deploy)</b> or <b>Direct (optional)</b>.</div>
+
+      <div class="toolbar" style="margin-top:10px">
+        <button class="btn tab active" data-tab="shell">Cloud Shell</button>
+        <button class="btn tab" data-tab="direct">Direct</button>
+      </div>
+
+      <!-- Cloud Shell tab -->
+      <div id="tab-shell">
+        <div class="row3">
+          <div><div class="label">Keep last N days (0 = ALL)</div><input id="purgeDays" class="input" type="number" min="0" step="1" value="0"/></div>
+          <div><div class="label">Firebase projectId</div><input id="purgeFbProject" class="input" value="iptv-bfa"/></div>
+          <div><div class="label">GCP project ID (console header)</div><input id="purgeGcpProject" class="input" value="iptv-bfa-471617"/></div>
+        </div>
+        <div class="toolbar">
+          <button id="btnPurgeCopy" class="btn solid">Copy</button>
+          <a id="btnPurgeOpenShell" class="btn" target="_blank" rel="noopener">Open Cloud Shell</a>
+          <button id="btnPurgeShow" class="btn">Show</button>
+        </div>
+        <textarea id="purgeCmd" class="input mono" style="margin-top:10px;display:none;height:260px" spellcheck="false"></textarea>
+      </div>
+
+      <!-- Direct tab -->
+      <div id="tab-direct" style="display:none">
+        <div class="row3">
+          <div><div class="label">Function URL (https…/purgeAnonHttp)</div><input id="purgeUrl" class="input" placeholder="https://us-central1-iptv-bfa.cloudfunctions.net/purgeAnonHttp"></div>
+          <div><div class="label">Secret key</div><input id="purgeKey" class="input" placeholder="Only stored in this browser"></div>
+          <div><div class="label">Keep last N days (0 = ALL)</div><input id="purgeDays2" class="input" type="number" min="0" step="1" value="0"></div>
+        </div>
+        <div class="toolbar">
+          <button id="btnDirectDry" class="btn">Dry run</button>
+          <button id="btnDirectGo" class="btn solid">Run purge</button>
+        </div>
+        <pre id="purgeOut" class="mono" style="margin-top:10px;background:var(--tile);border:1px solid var(--tileBorder);border-radius:12px;padding:12px;white-space:pre-wrap"></pre>
+        <div class="muted" style="margin-top:6px">URL/key are saved only in this browser (localStorage).</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MOVE dialog -->
+  <div id="moveModal" class="modal" aria-hidden="true">
+    <div class="back"></div>
+    <div class="box" role="dialog" aria-modal="true" aria-label="Move to folder">
+      <h4>Move to folder</h4>
+      <div class="dircrumbs" id="mvCrumbs"></div>
+      <div class="toolbar">
+        <button class="btn" id="mvRoot">Root</button>
+        <button class="btn" id="mvUp">Up</button>
+        <button class="btn" id="mvNew">Create folder here</button>
+      </div>
+      <div id="mvList"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+        <button class="btn" id="mvCancel">Cancel</button>
+        <button class="btn solid" id="mvConfirm">Move here</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDITOR modal (in-page file editing) -->
+  <div id="editModal" class="editor" aria-hidden="true">
+    <div class="back"></div>
+    <div class="box" role="dialog" aria-modal="true" aria-label="Edit file">
+      <div class="head">
+        <div class="path mono" id="edPath"></div>
+        <div class="grow"></div>
+        <button id="btnEdWrap" class="btn">Wrap: On</button>
+        <button id="btnEdFormat" class="btn" title="Format JSON">Format JSON</button>
+        <button id="btnEdPreview" class="btn" title="Toggle HTML preview">Preview</button>
+        <button id="btnEdCancel" class="btn">Cancel</button>
+        <button id="btnEdSave" class="btn solid">Save</button>
+      </div>
+      <div class="body">
+        <div class="status" id="edStatus">Ready</div>
+        <textarea id="editorTA" class="input mono" spellcheck="false"></textarea>
+        <div class="preview" id="edPreview"><iframe id="edIframe" sandbox=""></iframe></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+    /* Firebase */
+    const firebaseConfig = { apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e" };
+    const LOGO_URL = "/IPTV-/icons/icon-512.png";
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const $=s=>document.querySelector(s);
+    const mono = s => `<span class="mono">${s}</span>`;
+    function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+    /* Logo */
+    $('#brandLogo').style.backgroundImage=`url("${LOGO_URL}")`;
+    const brandLogoM = document.getElementById('brandLogoM'); if(brandLogoM){ brandLogoM.style.backgroundImage=`url("${LOGO_URL}")`; }
+
+    /* Theme (with icon) */
+    const THEME_KEY='iptv_theme';
+    const themeBtn = document.getElementById('themeBtn');
+    const themeIcon = document.getElementById('themeIcon');
+    const setThemeIcon = ()=>{
+      const dark = document.body.classList.contains('dark');
+      themeIcon.innerHTML = dark
+        ? `<path d="M21.752 15.002A9 9 0 118.998 2.248a7.5 7.5 0 1012.754 12.754z"/>`
+        : `<path d="M12 4.5v-2.25M12 21.75v-2.25M4.5 12H2.25M21.75 12H19.5M5.636 5.636L4.05 4.05M19.95 19.95l-1.586-1.586M5.636 18.364L4.05 19.95M19.95 4.05l-1.586 1.586"/><circle cx="12" cy="12" r="3.75"/>`;
+    };
+    const saved = localStorage.getItem(THEME_KEY) || 'light';
+    document.body.classList.toggle('dark', saved==='dark'); setThemeIcon();
+    themeBtn.addEventListener('click', ()=>{
+      const toDark = !document.body.classList.contains('dark');
+      document.body.classList.toggle('dark', toDark);
+      localStorage.setItem(THEME_KEY, toDark? 'dark' : 'light');
+      setThemeIcon();
+    });
+
+    /* More dropdown */
+    const moreBtn = document.getElementById('moreBtn');
+    const moreMenu = document.getElementById('moreMenu');
+    if(moreBtn){
+      moreBtn.addEventListener('click', (e)=>{ e.preventDefault(); moreMenu.classList.toggle('open'); });
+      document.addEventListener('click', (e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)){ moreMenu.classList.remove('open'); } }, {capture:true});
+      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') moreMenu.classList.remove('open'); });
+      const file=(location.pathname.split("/").pop()||"settings.html").toLowerCase();
+      moreMenu.querySelectorAll('a').forEach(a=>{
+        const h=(a.getAttribute('href')||'').toLowerCase();
+        if(h===file){ a.classList.add('is-active'); }
+      });
+    }
+
+    /* Mobile sheet */
+    (()=>{
+      const sheet = document.getElementById('sheet');
+      const open = ()=>{ sheet.classList.add('open'); document.body.style.overflow='hidden'; };
+      const close= ()=>{ sheet.classList.remove('open'); document.body.style.overflow=''; };
+      document.getElementById('hamburger').addEventListener('click', open);
+      document.getElementById('closeSheet').addEventListener('click', close);
+      sheet.querySelector('.back').addEventListener('click', close);
+      const mainOut = document.getElementById('signOutBtn');
+      const mobOut  = document.getElementById('signOutBtnM');
+      if(mainOut && mobOut){ mobOut.addEventListener('click', ()=> mainOut.click()); }
+    })();
+
+    /* Auth */
+    setPersistence(auth,browserLocalPersistence);
+    onAuthStateChanged(auth,u=>{
+      if(!u){ location.href='home.html'; return; }
+      $('#adminEmail').textContent = u.email || u.uid;
+    });
+    document.getElementById('signOutBtn')?.addEventListener('click',()=>signOut(auth).then(()=>location.href='home.html'));
+
+    /* ===== Central Config helper (read only) ===== */
+    const ghOwner=$('#ghOwner'), ghRepo=$('#ghRepo'), ghBranch=$('#ghBranch'), ghPath=$('#ghPath'), rawUrl=$('#rawUrl');
+    function computeRaw(){ return `https://raw.githubusercontent.com/${ghOwner.value.trim()}/${ghRepo.value.trim()}/${ghBranch.value.trim()}/${ghPath.value.trim()}`; }
+    function refreshRaw(){ rawUrl.value = computeRaw(); }
+    [ghOwner,ghRepo,ghBranch,ghPath].forEach(el=>el.addEventListener('input', refreshRaw));
+    refreshRaw();
+    $('#btnOpenFile').onclick=()=> window.open(`https://github.com/${ghOwner.value.trim()}/${ghRepo.value.trim()}/blob/${ghBranch.value.trim()}/${ghPath.value.trim()}`,'_blank','noopener');
+    $('#btnOpenEditor').onclick=()=> window.open(`https://github.com/${ghOwner.value.trim()}/${ghRepo.value.trim()}/edit/${ghBranch.value.trim()}/${ghPath.value.trim()}`,'_blank','noopener');
+    $('#btnLoadConfig').onclick=async()=>{ const out=$('#cfgView'); out.style.display='block'; out.value='Loading…'; try{ const resp=await fetch(computeRaw(),{cache:'no-store'}); out.value=await resp.text(); }catch(e){ out.value='Error: '+(e?.message||String(e)); } };
+    $('#btnCopyLoader').onclick=async()=>{
+      const url=computeRaw();
+      const snip = `// Central loader
+const CONFIG_URL='${url}';
+const appConfig=await fetch(CONFIG_URL,{cache:'no-store'}).then(r=>r.json());
+const firebaseConfig=appConfig.firebaseConfig;`;
+      try{await navigator.clipboard.writeText(snip); toast('Loader snippet copied');}
+      catch{const ta=document.createElement('textarea'); ta.value=snip; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('Loader snippet copied');}
+    };
+
+    /* ===== GITHUB API HELPERS ===== */
+    function ghCfg(){ try{return JSON.parse(localStorage.getItem('iptv_admin_gh')||'{}');}catch{return{};} }
+    function saveGhCfg(c){ localStorage.setItem('iptv_admin_gh', JSON.stringify(c)); }
+    const ghcOwner=$('#ghcOwner'), ghcRepo=$('#ghcRepo'), ghcBranch=$('#ghcBranch'), ghcToken=$('#ghcToken');
+
+    // prefill
+    (()=>{
+      const c=ghCfg();
+      if(c.owner) ghcOwner.value=c.owner;
+      if(c.repo)  ghcRepo.value=c.repo;
+      if(c.branch)ghcBranch.value=c.branch;
+      if(c.token) ghcToken.value=c.token;
+    })();
+
+    $('#ghSave').onclick=()=>{ const c={owner:ghcOwner.value.trim(),repo:ghcRepo.value.trim(),branch:ghcBranch.value.trim()||'main',token:ghcToken.value.trim()}; if(!c.owner||!c.repo||!c.token){toast('Fill owner/repo/token');return;} saveGhCfg(c); toast('GitHub saved'); };
+    $('#ghClear').onclick=()=>{ localStorage.removeItem('iptv_admin_gh'); toast('Cleared'); location.reload(); };
+
+    function headers(scheme='Bearer', tok=ghCfg().token){
+      return {'Authorization':`${scheme} ${tok}`,'Accept':'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'};
+    }
+    async function ghFetch(url,opts={}){ let r=await fetch(url,{...opts,headers:headers('Bearer')}); if(r.status===401) r=await fetch(url,{...opts,headers:headers('token')}); return r; }
+    async function ghText(r){ const t=await r.text().catch(()=> ''); try{ return {json:JSON.parse(t), raw:t}; }catch{ return {json:null, raw:t}; } }
+    function encPath(p){ return (p||'').split('/').map(encodeURIComponent).join('/'); }
+    function needPR(msg,status){ const m=String(msg||'').toLowerCase(); return status===403||status===422||m.includes('protected')||m.includes('status check')||m.includes('resource not accessible'); }
+
+    async function whoami(){ const r=await ghFetch('https://api.github.com/user'); if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`user [${r.status}] ${json?.message||raw}`); } return r.json(); }
+    async function getRef(branch){ const c=ghCfg(); const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/git/ref/heads/${encodeURIComponent(branch)}`); if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`ref [${r.status}] ${json?.message||raw}`); } return (await r.json()).object.sha; }
+    async function getCommit(sha){ const c=ghCfg(); const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/git/commits/${sha}`); if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`commit [${r.status}] ${json?.message||raw}`); } return r.json(); }
+    async function getTree(treeSha){ const c=ghCfg(); const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/git/trees/${treeSha}?recursive=1`); if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`tree [${r.status}] ${json?.message||raw}`); } return r.json(); }
+    async function getBlob(blobSha){ const c=ghCfg(); const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/git/blobs/${blobSha}`); if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`blob [${r.status}] ${json?.message||raw}`); } return r.json(); }
+
+    async function createBranch(from,to){
+      const sha=await getRef(from);
+      const c=ghCfg(); const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/git/refs`,{method:'POST',body:JSON.stringify({ref:`refs/heads/${to}`,sha})});
+      if(!r.ok && r.status!==422){ const {json,raw}=await ghText(r); throw new Error(`branch [${r.status}] ${json?.message||raw}`); }
+    }
+    async function fileSha(path,branch){
+      const c=ghCfg(); const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encPath(path)}?ref=${encodeURIComponent(branch)}`);
+      if(r.status===404) return null;
+      if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`sha [${r.status}] ${json?.message||raw}`); }
+      return (await r.json()).sha||null;
+    }
+
+    // Robust content fetch (handles 404 on /contents via tree/blob)
+    async function fetchFileBase64(path,branch){
+      const c=ghCfg();
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encPath(path)}?ref=${encodeURIComponent(branch)}`;
+      let r=await ghFetch(url);
+      if(r.ok){ const j=await r.json(); if(j && j.content) return j.content.replace(/\n/g,''); throw new Error('No content'); }
+      if(r.status!==404){ const {json,raw}=await ghText(r); throw new Error(`get [${r.status}] ${json?.message||raw}`); }
+      const commitSha=await getRef(branch); const commit=await getCommit(commitSha);
+      const tree=await getTree(commit.tree.sha);
+      const entry=(tree.tree||[]).find(e=>e.type==='blob' && e.path===path);
+      if(!entry) throw new Error(`get [404] Not found: ${path}`);
+      const blob=await getBlob(entry.sha);
+      return (blob.content||'').replace(/\n/g,'');
+    }
+
+    async function fetchFile(path,branch){
+      const c=ghCfg();
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encPath(path)}?ref=${encodeURIComponent(branch)}`;
+      const r=await ghFetch(url);
+      if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`get [${r.status}] ${json?.message||raw}`); }
+      return r.json();
+    }
+    async function listDir(path,branch){
+      const c=ghCfg();
+      const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encPath(path)}?ref=${encodeURIComponent(branch)}`);
+      if(r.status===404) return [];
+      if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`ls [${r.status}] ${json?.message||raw}`); }
+      const arr=await r.json();
+      return Array.isArray(arr)?arr:[];
+    }
+    async function openPR(head,base,title,body){
+      const c=ghCfg();
+      const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/pulls`,{method:'POST',body:JSON.stringify({title,head,base,body})});
+      if(!r.ok && r.status!==422){ const {json,raw}=await ghText(r); throw new Error(`PR [${r.status}] ${json?.message||raw}`); }
+      try{ return await r.json(); }catch{return null;}
+    }
+    async function upsertFile(path,{contentBase64=null,text=null,message,branch}={}){
+      const c=ghCfg(); const br=branch||c.branch||'main';
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encPath(path)}`;
+      const sha=await fileSha(path,br);
+      let payloadContent = contentBase64 ?? btoa(unescape(encodeURIComponent(text||'')));
+      let res=await ghFetch(url,{method:'PUT',body:JSON.stringify({message:message||`Update ${path}`,content:payloadContent,branch:br,...(sha?{sha}:{})})});
+      if(!res.ok){
+        const {json,raw}=await ghText(res);
+        if(needPR(json?.message||raw,res.status)){
+          const tmp=`iptv-admin-${Date.now().toString(36)}`;
+          await createBranch(br,tmp);
+          const sha2=await fileSha(path,tmp);
+          let res2=await ghFetch(url,{method:'PUT',body:JSON.stringify({message:message||`Update ${path}`,content:payloadContent,branch:tmp,...(sha2?{sha:sha2}:{})})});
+          if(!res2.ok){ const {json:jj,raw:rr}=await ghText(res2); throw new Error(`PUT@PR [${res2.status}] ${jj?.message||rr}`); }
+          await openPR(tmp, br, message||`Update ${path}`, `Auto-created by Settings page\n\nPath: \`${path}\``);
+          return res2.json();
+        }
+        throw new Error(`put [${res.status}] ${json?.message||raw}`);
+      }
+      return res.json();
+    }
+    async function deleteFile(path,{message,branch}={}){
+      const c=ghCfg(); const br=branch||c.branch||'main';
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encPath(path)}`;
+      const sha=await fileSha(path,br);
+      if(!sha) return {ok:true,skipped:true};
+      let res=await ghFetch(url,{method:'DELETE',body:JSON.stringify({message:message||`Delete ${path}`,sha,branch:br})});
+      if(!res.ok){
+        const {json,raw}=await ghText(res);
+        if(needPR(json?.message||raw,res.status)){
+          const tmp=`iptv-delete-${Date.now().toString(36)}`;
+          await createBranch(br,tmp);
+          const sha2=await fileSha(path,tmp);
+          if(!sha2) return {ok:true,skipped:true};
+          const res2=await ghFetch(url,{method:'DELETE',body:JSON.stringify({message:message||`Delete ${path}`,sha:sha2,branch:tmp})});
+          if(!res2.ok){ const {json:jj,raw:rr}=await ghText(res2); throw new Error(`del@PR [${res2.status}] ${jj?.message||rr}`); }
+          await openPR(tmp, br, message||`Delete ${path}`, `Auto-created by Settings page (delete)\n\nPath: \`${path}\``);
+          return res2.json();
+        }
+        throw new Error(`del [${res.status}] ${json?.message||raw}`);
+      }
+      return res.json();
+    }
+
+    /* ----- tree & folder utilities ----- */
+    function cleanPath(p){ return (p||'').trim().replace(/^\/+/,'').replace(/\/+/g,'/').replace(/\/$/,''); }
+    function baseName(p){ const s=cleanPath(p).split('/'); return s[s.length-1]||''; }
+    function dirName(p){ const s=cleanPath(p).split('/'); s.pop(); return s.join('/'); }
+    function pathJoin(a,b){ a=cleanPath(a); b=cleanPath(b); return a ? (b? `${a}/${b}` : a) : b; }
+
+    async function listTree(path, branch){
+      const br = branch || (ghCfg().branch||'main');
+      const items = await listDir(cleanPath(path), br);
+      let out = [];
+      for(const it of (items||[])){
+        if(it.type==='file'){
+          out.push(pathJoin(cleanPath(path), it.name));
+        }else if(it.type==='dir'){
+          const sub = await listTree(pathJoin(cleanPath(path), it.name), br);
+          out = out.concat(sub);
+        }
+      }
+      return out;
+    }
+    async function deleteFolder(path){
+      const folder = cleanPath(path);
+      const files = await listTree(folder, ghCfg().branch||'main');
+      for(const f of files){ await deleteFile(f, { message:`Delete ${f}` }); }
+    }
+    async function ensureParentDirs(filePath){
+      const parts = cleanPath(filePath).split('/'); parts.pop();
+      let acc = '';
+      for(const part of parts){
+        acc = acc ? `${acc}/${part}` : part;
+        const marker = `${acc}/.gitkeep`;
+        if(await fileSha(marker, ghCfg().branch||'main') == null){
+          await upsertFile(marker, { text:'', message:`mkdir ${acc}` });
+        }
+      }
+    }
+    async function moveFileInto(srcPath, destFolder){
+      const src = cleanPath(srcPath), folder = cleanPath(destFolder);
+      const dest = folder ? `${folder}/${baseName(src)}` : baseName(src);
+      if(dest===src) return false; // no-op
+      await ensureParentDirs(dest);
+      const contentB64 = await fetchFileBase64(src, ghCfg().branch||'main'); // robust fallback (prevents 404)
+      await upsertFile(dest, { contentBase64: contentB64, message:`Move ${src} → ${dest}` });
+      await deleteFile(src, { message:`Remove ${src}` });
+      return true;
+    }
+    async function moveFolderIntoName(srcFull, parentDir, newName){
+      const src = cleanPath(srcFull);
+      const dstRoot = parentDir ? `${cleanPath(parentDir)}/${cleanPath(newName)}` : cleanPath(newName);
+      const files = await listTree(src, ghCfg().branch||'main');
+      for(const f of files){
+        const rel = f.slice(src.length + 1);
+        const target = pathJoin(dstRoot, rel);
+        await ensureParentDirs(target);
+        const contentB64 = await fetchFileBase64(f, ghCfg().branch||'main');
+        await upsertFile(target, { contentBase64: contentB64, message:`Move ${f} → ${target}` });
+      }
+      for(const f of files){ await deleteFile(f, { message:`Remove ${f}` }); }
+      return true;
+    }
+
+    /* ====== Explorer ====== */
+    let currentPath = '';
+
+    function setCrumbs(){
+      const bc=$('#breadcrumbs');
+      const repo=ghcRepo.value||'repo';
+      const parts=currentPath?currentPath.split('/'):[];
+      const acc=[];
+      let html = `<a href="javascript:void(0)" data-path="" class="active">/${repo}</a>`;
+      parts.forEach((p)=>{
+        acc.push(p);
+        html += `<span class="muted">›</span><a href="javascript:void(0)" data-path="${acc.join('/')}">${p}</a>`;
+      });
+      bc.innerHTML = html;
+      bc.querySelectorAll('a').forEach(a=>{
+        a.onclick=()=>{ currentPath=a.dataset.path||''; refreshExplorer(); };
+      });
+    }
+
+    function icon(type){ return type==='dir' ? '📁' : '📄'; }
+    const TEXT_EXT = ['.html','.htm','.css','.js','.json','.md','.txt','.yml','.yaml','.svg','.ts','.tsx','.jsx','.csv'];
+
+    function looksTextual(name){
+      const n = (name||'').toLowerCase();
+      return TEXT_EXT.some(ext=>n.endsWith(ext));
+    }
+
+    async function refreshExplorer(){
+      const table=$('#exTable'); table.innerHTML='Loading…';
+      setCrumbs();
+      try{
+        const c=ghCfg(); if(!c.owner||!c.repo||!c.branch||!c.token){ table.innerHTML='<div class="muted">Set GitHub connection first.</div>'; return; }
+        let items = await listDir(currentPath, c.branch||'main');
+        items = (items||[]).sort((a,b)=>{
+          if(a.type!==b.type) return a.type==='dir'?-1:1;
+          return a.name.localeCompare(b.name);
+        });
+        const rows = items.map(it=>{
+          const size = it.type==='file' ? `<span class="badge">${(it.size||0)} bytes</span>` : '';
+          const rawUrl = it.type==='file'
+            ? `https://raw.githubusercontent.com/${c.owner}/${c.repo}/${encodeURIComponent(c.branch||'main')}/${encPath((currentPath?currentPath+'/':'')+it.name)}`
+            : '#';
+          const ghUrl = `https://github.com/${c.owner}/${c.repo}/${it.type==='dir'?'tree':'blob'}/${encodeURIComponent(c.branch||'main')}/${encPath((currentPath?currentPath+'/':'')+it.name)}`;
+          const editBtn = it.type==='file' ? `<button class="btn" data-edit>Edit</button>` : '';
+          return `
+            <div class="tr" data-name="${it.name}" data-type="${it.type}">
+              <input type="checkbox" class="chk">
+              <div class="name mono">${icon(it.type)} ${(it.name)}</div>
+              <div>${size}</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                ${it.type==='dir'
+                  ? `<button class="btn" data-open>Open</button>
+                     <button class="btn" data-rename>Rename</button>
+                     <button class="btn" data-move>Move</button>
+                     <button class="btn danger" data-delete-folder>Delete</button>`
+                  : `${editBtn}
+                     <a class="btn" href="${rawUrl}" target="_blank" rel="noopener">Raw</a>
+                     <a class="btn" href="${ghUrl.replace('/blob/','/edit/')}" target="_blank" rel="noopener">GitHub Edit</a>
+                     <button class="btn" data-rename>Rename</button>
+                     <button class="btn" data-move>Move</button>
+                     <button class="btn danger" data-delete>Delete</button>`
+                }
+              </div>
+              <a class="btn" target="_blank" rel="noopener" href="${ghUrl}">GitHub</a>
+            </div>`;
+        }).join('') || '<div class="muted">Empty folder.</div>';
+        table.innerHTML = `<div style="margin-bottom:6px"><label class="badge"><input id="exAll" type="checkbox"> Select all</label></div><div class="table">${rows}</div>`;
+        $('#exAll')?.addEventListener('change',()=>{ table.querySelectorAll('.chk').forEach(x=>x.checked=$('#exAll').checked); });
+
+        // open dir
+        table.querySelectorAll('[data-open]').forEach(btn=>{
+          btn.onclick=()=>{ const row=btn.closest('.tr'); const name=row.dataset.name; currentPath = currentPath?`${currentPath}/${name}`:name; refreshExplorer(); };
+        });
+        // delete file
+        table.querySelectorAll('[data-delete]').forEach(btn=>{
+          btn.onclick=async()=>{
+            const row=btn.closest('.tr'); const name=row.dataset.name;
+            const full=(currentPath?currentPath+'/':'')+name;
+            if(!confirm(`Delete file ${full}?`)) return;
+            try{ await deleteFile(full,{message:`Delete ${full}`}); toast('Deleted (PR if needed)'); refreshExplorer(); }catch(e){ toast(`Delete failed: ${e.message||e}`); }
+          };
+        });
+        // delete folder
+        table.querySelectorAll('[data-delete-folder]').forEach(btn=>{
+          btn.onclick=async()=>{
+            const row=btn.closest('.tr'); const name=row.dataset.name;
+            const full=(currentPath?currentPath+'/':'')+name;
+            if(!confirm(`Recursively delete folder ${full}?`)) return;
+            try{ await deleteFolder(full); toast('Folder deleted (PR if needed)'); refreshExplorer(); }catch(e){ toast(`Delete failed: ${e.message||e}`); }
+          };
+        });
+        // rename
+        table.querySelectorAll('[data-rename]').forEach(btn=>{
+          btn.onclick=async()=>{
+            const row=btn.closest('.tr'); const name=row.dataset.name; const type=row.dataset.type;
+            const full=(currentPath?currentPath+'/':'')+name;
+            const newName=(prompt(`Rename ${type}:\n${full}\n\nto:`, name)||'').trim();
+            if(!newName || newName===name) return;
+            const target=(currentPath?currentPath+'/':'')+newName;
+            try{
+              if(type==='dir'){
+                const parent = dirName(full);
+                await moveFolderIntoName(full, parent, newName);
+              }else{
+                const contentB64=await fetchFileBase64(full, ghCfg().branch||'main');
+                await upsertFile(target,{contentBase64:contentB64,message:`Rename ${full} → ${target}`});
+                await deleteFile(full,{message:`Remove old ${full}`});
+              }
+              toast('Renamed (PR if needed)');
+              refreshExplorer();
+            }catch(e){ toast(`Rename failed: ${e.message||e}`); }
+          };
+        });
+        // move (open dialog)
+        table.querySelectorAll('[data-move]').forEach(btn=>{
+          btn.onclick=()=>{
+            const row=btn.closest('.tr'); const name=row.dataset.name; const type=row.dataset.type;
+            const full=(currentPath?currentPath+'/':'')+name;
+            openMoveDialog([{path:full,type}]);
+          };
+        });
+        // edit (open inline editor)
+        table.querySelectorAll('[data-edit]').forEach(btn=>{
+          btn.onclick=async()=>{
+            const row=btn.closest('.tr'); const name=row.dataset.name;
+            const full=(currentPath?currentPath+'/':'')+name;
+            if(!looksTextual(full)){
+              if(!confirm('This does not look like a text file. Open raw instead?')) return window.open(`https://raw.githubusercontent.com/${ghCfg().owner}/${ghCfg().repo}/${encodeURIComponent(ghCfg().branch||'main')}/${encPath(full)}`,'_blank');
+              return;
+            }
+            try{
+              const base64 = await fetchFileBase64(full, ghCfg().branch||'main');
+              const text = b64ToText(base64);
+              openEditor(full, text, false);
+            }catch(e){ toast('Load failed: '+(e.message||e)); }
+          };
+        });
+
+      }catch(e){
+        console.error(e);
+        table.innerHTML=`<div class="small mono" style="color:#ef4444">${String(e.message||e)}</div>`;
+      }
+    }
+
+    $('#exRefresh').onclick=refreshExplorer;
+    $('#exUp').onclick=()=>{ if(!currentPath) return; currentPath=currentPath.split('/').slice(0,-1).join('/'); refreshExplorer(); };
+    $('#exDeleteSel').onclick=async()=>{
+      const tbl=$('#exTable'); const picks=[...tbl.querySelectorAll('.tr')].filter(r=>r.querySelector('.chk')?.checked);
+      if(picks.length===0){ toast('Pick item(s)'); return; }
+      if(!confirm(`Delete ${picks.length} item(s)? Files are deleted directly; folders are deleted recursively.`)) return;
+      try{
+        for(const r of picks){
+          const name=r.dataset.name, type=r.dataset.type;
+          const full=(currentPath?currentPath+'/':'')+name;
+          if(type==='dir') await deleteFolder(full);
+          else await deleteFile(full,{message:`Delete ${full}`});
+        }
+        toast('Delete done (PR if needed)'); refreshExplorer();
+      }catch(e){ toast(`Delete failed: ${e.message||e}`); }
+    };
+
+    // bulk move
+    $('#exMoveSel').onclick=()=>{
+      const tbl=$('#exTable'); const picks=[...tbl.querySelectorAll('.tr')].filter(r=>r.querySelector('.chk')?.checked)
+        .map(r=>({ path:(currentPath?currentPath+'/':'')+r.dataset.name, type:r.dataset.type }));
+      if(picks.length===0){ toast('Pick item(s)'); return; }
+      openMoveDialog(picks);
+    };
+
+    // New file => open editor with blank content
+    $('#exNewFile').onclick=async()=>{
+      const rel=(prompt('New file path (relative to current folder):','new.txt')||'').trim();
+      if(!rel) return;
+      const full=(currentPath?currentPath+'/':'')+rel;
+      if(!looksTextual(full)){
+        if(!confirm('This path does not look like a text file. Create anyway?')) return;
+      }
+      openEditor(full, '', true);
+    };
+
+    $('#exNewFolder').onclick=async()=>{
+      const name=(prompt('New folder name:', 'NewFolder')||'').trim();
+      if(!name) return;
+      const full=(currentPath?currentPath+'/':'')+name+'/.gitkeep';
+      try{ await upsertFile(full,{text:'',message:`Create folder ${(currentPath?currentPath+'/':'')+name}`}); toast('Folder created'); refreshExplorer(); }catch(e){ toast(`Create failed: ${e.message||e}`); }
+    };
+    $('#exUpload').addEventListener('change', async (ev)=>{
+      const f=ev.target.files?.[0]; if(!f) return;
+      const path=(prompt('Upload to (file name):', (currentPath?currentPath+'/':'')+f.name)||'').trim();
+      if(!path) return;
+      try{
+        const buf=await f.arrayBuffer();
+        let base64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+        await upsertFile(path,{contentBase64:base64,message:`Upload ${path}`});
+        toast('Uploaded'); refreshExplorer();
+      }catch(e){ toast(`Upload failed: ${e.message||e}`); }
+      ev.target.value='';
+    });
+
+    /* ===== PR LIST ===== */
+    async function listPRs(){
+      const c=ghCfg();
+      const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/pulls?state=open`);
+      if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`prs [${r.status}] ${json?.message||raw}`); }
+      return r.json();
+    }
+    async function mergePR(num){
+      const c=ghCfg();
+      const r=await ghFetch(`https://api.github.com/repos/${c.owner}/${c.repo}/pulls/${num}/merge`,{method:'PUT',body:JSON.stringify({merge_method:'squash'})});
+      if(!r.ok){ const {json,raw}=await ghText(r); throw new Error(`merge [${r.status}] ${json?.message||raw}`); }
+      return r.json();
+    }
+    async function refreshPRs(){
+      const list=$('#prList'); list.innerHTML='Loading…';
+      try{
+        const prs=await listPRs();
+        if(!prs||prs.length===0){ list.innerHTML='<div class="muted">No open PRs.</div>'; return; }
+        list.innerHTML=prs.map(p=>`
+          <div class="tr" style="grid-template-columns:1fr auto auto;">
+            <div><b>#${p.number}</b> — ${p.title} <span class="badge">from ${mono(p.head.ref)}</span></div>
+            <a class="btn" target="_blank" rel="noopener" href="${p.html_url}">Open</a>
+            <button class="btn" data-merge="${p.number}">Merge</button>
+          </div>`).join('');
+        list.querySelectorAll('[data-merge]').forEach(b=>{
+          b.onclick=async()=>{ try{ await mergePR(b.dataset.merge); toast('Merged'); refreshExplorer(); refreshPRs(); }catch(e){ toast(`Merge failed: ${e.message||e}`); } };
+        });
+      }catch(e){ list.innerHTML=`<div class="small mono" style="color:#ef4444">${String(e.message||e)}</div>`; }
+    }
+    $('#prRefresh').onclick=refreshPRs;
+
+    // Initial loads
+    refreshExplorer();
+    refreshPRs();
+
+    /* ===== Delete Anonymous Users — UI logic ===== */
+    document.querySelectorAll('.tab').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        const which=btn.dataset.tab;
+        $('#tab-shell').style.display = which==='shell' ? '' : 'none';
+        $('#tab-direct').style.display = which==='direct' ? '' : 'none';
+      });
+    });
+    (function cloudShell(){
+      const daysEl=$('#purgeDays'), fbEl=$('#purgeFbProject'), gcpEl=$('#purgeGcpProject');
+      const outEl=$('#purgeCmd'), btnCopy=$('#btnPurgeCopy'), btnOpen=$('#btnPurgeOpenShell'), btnShow=$('#btnPurgeShow');
+      function buildCommands(){
+        const DAYS=Math.max(0,parseInt(daysEl.value||'0',10))||0;
+        const FB=(fbEl.value||'iptv-bfa').trim();
+        const GCP=(gcpEl.value||FB).trim();
+        return `gcloud config set project ${GCP}
 
 mkdir -p ~/auth-purge && cd ~/auth-purge
 npm init -y >/dev/null 2>&1
@@ -6,10 +937,10 @@ npm i firebase-admin@12 >/dev/null 2>&1
 
 cat > purge-anon.js <<'JS'
 const admin = require('firebase-admin');
-admin.initializeApp({ credential: admin.credential.applicationDefault(), projectId: 'iptv-bfa' });
+admin.initializeApp({ credential: admin.credential.applicationDefault(), projectId: '${FB}' });
 function tms(x){ const n=new Date(x||0).getTime(); return Number.isFinite(n)?n:0; }
 const argv=process.argv.slice(2);function arg(n,d){const i=argv.findIndex(a=>a==='--'+n||a.startsWith('--'+n+'='));if(i<0)return d;const v=argv[i].includes('=')?argv[i].split('=')[1]:argv[i+1];return v??d;}
-const days=Number(arg('days', 0))||0;const dryRun=argv.includes('--dry-run');
+const days=Number(arg('days', ${DAYS}))||0;const dryRun=argv.includes('--dry-run');
 (async()=>{const cutoff=Date.now()-days*24*60*60*1000;let scanned=0,kept=0,next;const batch=[];
   console.log('Scanning… days='+days+', cutoff='+new Date(cutoff).toISOString()+', dryRun='+dryRun);
   do{const page=await admin.auth().listUsers(1000,next);
@@ -24,5 +955,271 @@ const days=Number(arg('days', 0))||0;const dryRun=argv.includes('--dry-run');
 })(); 
 JS
 
-node purge-anon.js --days 0 --dry-run
-node purge-anon.js --days 0
+node purge-anon.js --days ${DAYS} --dry-run
+node purge-anon.js --days ${DAYS}
+`; }
+      function refresh(show=false){ outEl.value=buildCommands(); if(show) outEl.style.display='block'; }
+      btnCopy.addEventListener('click',async()=>{refresh(false); try{await navigator.clipboard.writeText(outEl.value);toast('Commands copied');}catch{outEl.style.display='block';outEl.select();document.execCommand('copy');toast('Commands copied');}});
+      btnShow.addEventListener('click',()=>{refresh(true); outEl.scrollTop=0;});
+      btnOpen.addEventListener('click',()=>{ const gcp=(gcpEl.value||'iptv-bfa-471617').trim(); btnOpen.href=`https://shell.cloud.google.com/?project=${encodeURIComponent(gcp)}`; });
+      [daysEl,fbEl,gcpEl].forEach(el=>el.addEventListener('input',()=>refresh(outEl.style.display==='block')));
+      refresh(false);
+    })();
+    (function directPurge(){
+      const urlEl=$('#purgeUrl'), keyEl=$('#purgeKey'), daysEl=$('#purgeDays2'), out=$('#purgeOut');
+      urlEl.value = localStorage.getItem('purge_url') || '';
+      keyEl.value = localStorage.getItem('purge_key') || '';
+      function save(){ localStorage.setItem('purge_url', urlEl.value.trim()); localStorage.setItem('purge_key', keyEl.value); }
+      urlEl.addEventListener('input',save); keyEl.addEventListener('input',save);
+      async function call(dry){
+        const url=(urlEl.value||'').trim(); const key=keyEl.value||''; const days=Math.max(0,parseInt(daysEl.value||'0',10))||0;
+        if(!url || !key){ out.textContent='Enter function URL and secret key.'; return; }
+        out.textContent='Running...';
+        try{
+          const qp = new URL(url); qp.searchParams.set('days', String(days)); if (dry) qp.searchParams.set('dry','1');
+          const resp = await fetch(qp.toString(), { headers: { 'x-api-key': key }});
+          const j = await resp.json();
+          out.textContent = JSON.stringify(j, null, 2);
+        }catch(e){
+          out.textContent = 'Error: '+(e?.message||String(e));
+        }
+      }
+      $('#btnDirectDry').addEventListener('click',()=>call(true));
+      $('#btnDirectGo').addEventListener('click',()=>call(false));
+    })();
+
+    /* ===== Icons Legend (Dealerships style) ===== */
+    (function renderLegend(){
+      const I = {
+        up:`<svg class="icon" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>`,
+        refresh:`<svg class="icon" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>`,
+        delete:`<svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6l1-2h6l1 2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,
+        move:`<svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>`,
+        newFile:`<svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`,
+        newFolder:`<svg class="icon" viewBox="0 0 24 24"><path d="M4 4h5l2 3h9v13H4z"/></svg>`,
+        upload:`<svg class="icon" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/><path d="M19 19H5"/></svg>`,
+        raw:`<svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`,
+        edit:`<svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5l4 4L7 21l-4 1 1-4z"/></svg>`,
+        github:`<svg class="icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>`
+      };
+      const items=[
+        {icon:I.up,      title:'Up',              desc:'Go to parent folder.'},
+        {icon:I.refresh, title:'Refresh',         desc:'Reload current view.'},
+        {icon:I.delete,  title:'Delete selected', desc:'Files delete directly; folders delete recursively.'},
+        {icon:I.move,    title:'Move',            desc:'Pick destination folder; works for files & folders.'},
+        {icon:I.newFile, title:'New file',        desc:'Create a file (opens in-page editor).'},
+        {icon:I.newFolder,title:'New folder',     desc:'Creates folder via .gitkeep marker.'},
+        {icon:I.upload,  title:'Upload',          desc:'Upload a file to current folder.'},
+        {icon:I.raw,     title:'Raw',             desc:'Open file raw content.'},
+        {icon:I.edit,    title:'Edit (in-page)',  desc:'Open editor modal here — no GitHub login tab.'},
+        {icon:I.github,  title:'GitHub',          desc:'Open path on GitHub.'}
+      ];
+      document.getElementById('legendGrid').innerHTML = items.map(i=>`
+        <div class="legend-item">
+          <button class="iconbtn" disabled>${i.icon}</button>
+          <div><b>${i.title}</b><div class="muted">${i.desc}</div></div>
+        </div>`).join('');
+    })();
+
+    /* ===== Move dialog (folder picker) ===== */
+    const moveModal = $('#moveModal');
+    let moveItems = []; // [{path,type}]
+    let mvPath = '';
+
+    function openMoveDialog(items){
+      moveItems = items || [];
+      mvPath = '';
+      renderMovePicker();
+      moveModal.classList.add('open');
+      moveModal.setAttribute('aria-hidden','false');
+      document.body.style.overflow='hidden';
+    }
+    function closeMoveDialog(){
+      moveModal.classList.remove('open');
+      moveModal.setAttribute('aria-hidden','true');
+      document.body.style.overflow='';
+    }
+    function mvSetCrumbs(){
+      const bc=$('#mvCrumbs');
+      const parts=mvPath?mvPath.split('/'):[];
+      const acc=[];
+      let html = `<a href="javascript:void(0)" data-path="" class="active">/${ghcRepo.value||'repo'}</a>`;
+      parts.forEach((p)=>{
+        acc.push(p);
+        html += `<span class="muted">›</span><a href="javascript:void(0)" data-path="${acc.join('/')}">${p}</a>`;
+      });
+      bc.innerHTML=html;
+      bc.querySelectorAll('a').forEach(a=>{
+        a.onclick=()=>{ mvPath=a.dataset.path||''; renderMovePicker(); };
+      });
+    }
+    async function renderMovePicker(){
+      mvSetCrumbs();
+      const list=$('#mvList');
+      list.innerHTML='Loading…';
+      try{
+        const dirs = (await listDir(mvPath, ghCfg().branch||'main')).filter(x=>x.type==='dir').sort((a,b)=>a.name.localeCompare(b.name));
+        list.innerHTML = dirs.map(d=>`<div class="dirrow"><div class="mono">📁 ${(d.name)}</div><div><button class="btn" data-enter="${d.name}">Open</button></div></div>`).join('') || '<div class="muted">No subfolders.</div>';
+        list.querySelectorAll('[data-enter]').forEach(b=> b.onclick=()=>{ mvPath = mvPath ? `${mvPath}/${b.dataset.enter}` : b.dataset.enter; renderMovePicker(); });
+      }catch(e){
+        list.innerHTML=`<div class="small mono" style="color:#ef4444">${String(e.message||e)}</div>`;
+      }
+    }
+    $('#mvRoot').onclick=()=>{ mvPath=''; renderMovePicker(); };
+    $('#mvUp').onclick=()=>{ if(!mvPath) return; mvPath = mvPath.split('/').slice(0,-1).join('/'); renderMovePicker(); };
+    $('#mvNew').onclick=async()=>{
+      const name=(prompt('New folder name here:','NewFolder')||'').trim();
+      if(!name) return;
+      const full=(mvPath?mvPath+'/':'')+name+'/.gitkeep';
+      try{ await upsertFile(full,{text:'',message:`Create folder ${(mvPath?mvPath+'/':'')+name}`}); toast('Folder created'); renderMovePicker(); }catch(e){ toast(`Create failed: ${e.message||e}`); }
+    };
+    $('#mvCancel').onclick=closeMoveDialog;
+    moveModal.querySelector('.back').onclick=closeMoveDialog;
+
+    $('#mvConfirm').onclick=async()=>{
+      try{
+        let moved = 0;
+        for(const it of moveItems){
+          if(it.type==='dir'){
+            if(mvPath === dirName(it.path)){ continue; }
+            moved += await moveFolderIntoName(it.path, mvPath, baseName(it.path)) ? 1 : 0;
+          }else{
+            const dest = (mvPath ? `${cleanPath(mvPath)}/${baseName(it.path)}` : baseName(it.path));
+            if(dest === cleanPath(it.path)){ continue; }
+            moved += await moveFileInto(it.path, mvPath) ? 1 : 0;
+          }
+        }
+        toast(moved===0 ? 'Nothing to move' : 'Moved (PR if needed)');
+        closeMoveDialog();
+        refreshExplorer();
+      }catch(e){
+        toast(`Move failed: ${e.message||e}`);
+      }
+    };
+
+    /* ===== Save/Test GH connection UI ===== */
+    $('#ghTest').onclick=async()=>{
+      const c=ghCfg(); if(!c.token){ toast('Set token first'); return; }
+      try{
+        const me=await whoami();
+        const ref=await getRef(c.branch||'main');
+        $('#ghStatus').innerHTML=`OK as ${mono(me.login)} — branch ${mono((c.branch||'main'))} @ ${mono(ref.slice(0,7))}`;
+        toast('GitHub OK');
+      }catch(e){ $('#ghStatus').textContent=String(e.message||e); toast('GitHub failed'); }
+    };
+
+    /* =========================================
+       In-page EDITOR logic (open/save/preview)
+    ==========================================*/
+    const edModal = $('#editModal');
+    const edPath = $('#edPath');
+    const edStatus = $('#edStatus');
+    const edTA = $('#editorTA');
+    const btnEdSave = $('#btnEdSave');
+    const btnEdCancel = $('#btnEdCancel');
+    const btnEdWrap = $('#btnEdWrap');
+    const btnEdFormat = $('#btnEdFormat');
+    const btnEdPreview = $('#btnEdPreview');
+    const edPreview = $('#edPreview');
+    const edIframe = $('#edIframe');
+
+    let editorState = { path:'', isNew:false, dirty:false, wrap:true };
+
+    function b64ToText(b64){
+      try{
+        const bin = atob(b64);
+        const bytes = new Uint8Array([...bin].map(c=>c.charCodeAt(0)));
+        return new TextDecoder().decode(bytes);
+      }catch{
+        try{ return decodeURIComponent(escape(atob(b64))); }catch{ return ''; }
+      }
+    }
+
+    function setStatus(msg){ edStatus.textContent = msg; }
+    function setDirty(d){ editorState.dirty = !!d; setStatus(d?'Unsaved changes — Cmd/Ctrl+S to save':'Ready'); }
+    function applyWrap(){
+      edTA.wrap = editorState.wrap ? 'soft' : 'off';
+      btnEdWrap.textContent = 'Wrap: ' + (editorState.wrap ? 'On' : 'Off');
+    }
+    function canFormatJSON(){ return editorState.path.toLowerCase().endsWith('.json'); }
+    function canPreviewHTML(){ const p=editorState.path.toLowerCase(); return p.endsWith('.html')||p.endsWith('.htm'); }
+    function togglePreview(){
+      if(!canPreviewHTML()){ toast('Preview only for HTML'); return; }
+      if(edPreview.style.display==='none'||!edPreview.style.display){
+        edPreview.style.display='block';
+        edIframe.srcdoc = edTA.value;
+      }else{
+        edPreview.style.display='none';
+      }
+    }
+
+    function openEditor(path, initialText, isNew){
+      editorState = { path: cleanPath(path), isNew: !!isNew, dirty:false, wrap:true };
+      edPath.textContent = editorState.path;
+      edTA.value = initialText || '';
+      setStatus('Ready');
+      btnEdFormat.disabled = !canFormatJSON();
+      btnEdPreview.disabled = !canPreviewHTML();
+      edPreview.style.display = 'none';
+      applyWrap();
+
+      edModal.classList.add('open');
+      edModal.setAttribute('aria-hidden','false');
+      document.body.style.overflow='hidden';
+      edTA.focus();
+    }
+
+    function closeEditor(){
+      edModal.classList.remove('open');
+      edModal.setAttribute('aria-hidden','true');
+      document.body.style.overflow='';
+    }
+
+    edTA.addEventListener('input',()=>{ setDirty(true); if(canPreviewHTML() && edPreview.style.display==='block'){ edIframe.srcdoc = edTA.value; }});
+
+    btnEdWrap.onclick=()=>{ editorState.wrap = !editorState.wrap; applyWrap(); edTA.focus(); };
+    btnEdPreview.onclick=()=> togglePreview();
+    btnEdFormat.onclick=()=>{
+      if(!canFormatJSON()) return;
+      try{ const obj = JSON.parse(edTA.value); edTA.value = JSON.stringify(obj,null,2); setDirty(true); toast('JSON formatted'); }
+      catch(e){ toast('Invalid JSON: '+(e.message||e)); }
+    };
+    btnEdCancel.onclick=()=>{
+      if(editorState.dirty && !confirm('Discard changes?')) return;
+      closeEditor();
+    };
+
+    async function saveEditor(){
+      const path = editorState.path;
+      const text = edTA.value;
+      try{
+        btnEdSave.disabled = true;
+        setStatus('Saving…');
+        if(editorState.isNew){ await ensureParentDirs(path); }
+        await upsertFile(path, { text, message:`Update ${path}` });
+        setDirty(false);
+        toast('Saved (PR if needed)');
+        closeEditor();
+        refreshExplorer();
+      }catch(e){
+        toast('Save failed: '+(e.message||e));
+      }finally{
+        btnEdSave.disabled = false;
+      }
+    }
+    btnEdSave.onclick=saveEditor;
+
+    // Cmd/Ctrl+S to save
+    document.addEventListener('keydown',(e)=>{
+      if(!edModal.classList.contains('open')) return;
+      const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
+      if((isMac && e.metaKey && e.key.toLowerCase()==='s') || (!isMac && e.ctrlKey && e.key.toLowerCase()==='s')){
+        e.preventDefault(); saveEditor();
+      }
+      if(e.key==='Escape'){ e.preventDefault(); if(!editorState.dirty || confirm('Discard changes?')) closeEditor(); }
+    });
+    edModal.querySelector('.back').onclick=()=>{ if(!editorState.dirty || confirm('Discard changes?')) closeEditor(); };
+
+  </script>
+</body>
+</html>
