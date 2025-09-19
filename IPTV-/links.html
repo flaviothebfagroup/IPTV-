@@ -153,7 +153,6 @@
             <a href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
             <a href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
             <a href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
-            <!-- Settings = sliders icon -->
             <a href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
           </div>
         </div>
@@ -259,6 +258,13 @@
   const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
   const LOGO_URL="/IPTV-/icons/icon-512.png";
 
+  /* Central config (GitHub) */
+  const CONFIG_URL = '/IPTV-/config/iptv-config.json';
+  let appConfig = null;
+  try {
+    appConfig = await fetch(CONFIG_URL, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(()=>null);
+  } catch(_) { appConfig = null; }
+
   const app=initializeApp(firebaseConfig);
   const auth=getAuth(app);
   const db=getDatabase(app);
@@ -323,7 +329,7 @@
     document.getElementById('adminEmail').textContent=u.email||u.uid;
   });
 
-  /* ===== Quick Links (DB or local fallback) ===== */
+  /* ===== Quick Links (DB → Config → Local) ===== */
   const LINKS_DB_PATH='admin/quickLinks';
   const DEFAULT_LINKS=[
     {emoji:'🔥',title:'Firebase — Overview',href:'https://console.firebase.google.com/project/iptv-bfa/overview',desc:'Console home'},
@@ -341,17 +347,33 @@
   let quickLinks=[], source='db';
 
   async function loadLinks(){
+    const note = document.getElementById('qlStorageNote');
+    // 1) Try DB
     try{
       const s=await get(ref(db,LINKS_DB_PATH));
-      if(s.exists()){ quickLinks=Object.values(s.val()); source='db'; document.getElementById('qlStorageNote').textContent='Links are synced from database.'; }
-      else throw new Error();
-    }catch{
-      quickLinks=JSON.parse(localStorage.getItem('admin_quick_links')||'[]');
-      if(!quickLinks.length) quickLinks=[...DEFAULT_LINKS];
-      source='local'; document.getElementById('qlStorageNote').textContent='Links are stored locally (no DB permission).';
+      if(s.exists()){
+        quickLinks=Object.values(s.val());
+        source='db';
+        note.textContent='Links are synced from Database (admin/quickLinks). Click “Sync → GitHub” to write into /config/iptv-config.json.';
+        renderApps(); return;
+      }
+    }catch(_){}
+    // 2) Try GitHub config
+    const cfgLinks = appConfig?.quickLinks;
+    if(Array.isArray(cfgLinks) && cfgLinks.length){
+      quickLinks = cfgLinks;
+      source='config';
+      note.textContent='Links loaded from GitHub config (config/iptv-config.json). Click “Sync → GitHub” to update the file.';
+      renderApps(); return;
     }
+    // 3) Local fallback
+    quickLinks=JSON.parse(localStorage.getItem('admin_quick_links')||'[]');
+    if(!quickLinks.length) quickLinks=[...DEFAULT_LINKS];
+    source='local';
+    note.textContent='Links are stored locally. Add/edit, then “Sync → GitHub” to commit to code.';
     renderApps();
   }
+
   function renderApps(){
     const grid=document.getElementById('appsGrid'); grid.innerHTML='';
     quickLinks.forEach((l,idx)=>{
@@ -367,16 +389,25 @@
       const i=+b.dataset.remove; quickLinks.splice(i,1); saveLinks(); renderApps(); toast('Link removed');
     }));
   }
+
   async function saveLinks(){
-    if(source==='local'){ localStorage.setItem('admin_quick_links',JSON.stringify(quickLinks)); return; }
+    // Always try DB first (if permitted)
     try{
       const data={}; quickLinks.forEach((l,i)=>data[i]=l);
       await set(ref(db,LINKS_DB_PATH),data);
+      source='db';
+      document.getElementById('qlStorageNote').textContent='Links are synced to Database. Click “Sync → GitHub” to write into config.';
+      return;
     }catch{
-      localStorage.setItem('admin_quick_links',JSON.stringify(quickLinks)); source='local';
-      document.getElementById('qlStorageNote').textContent='Links are stored locally (no DB permission).';
+      // Fallback to local storage
+      localStorage.setItem('admin_quick_links',JSON.stringify(quickLinks));
+      if(source!=='config'){ source='local'; }
+      if(source==='local'){
+        document.getElementById('qlStorageNote').textContent='Links saved locally (no DB permission). Click “Sync → GitHub” to commit to code.';
+      }
     }
   }
+
   document.getElementById('qlAddBtn').addEventListener('click',async ()=>{
     const title=document.getElementById('qlTitle').value.trim();
     const href=document.getElementById('qlHref').value.trim();
@@ -390,6 +421,7 @@
     ['qlTitle','qlHref','qlEmoji','qlImg','qlDesc'].forEach(id=>document.getElementById(id).value='');
     await saveLinks(); renderApps(); toast('Link added');
   });
+
   document.getElementById('qlResetBtn').addEventListener('click',async ()=>{
     quickLinks=[...DEFAULT_LINKS]; await saveLinks(); renderApps(); toast('Defaults restored');
   });
@@ -424,6 +456,8 @@
     if(!r.ok) throw new Error((d&&d.message)||r.statusText);
     return d;
   }
+
+  // Build a config snapshot that now includes quickLinks
   async function snapshot(){
     const [dp,ds,us]=await Promise.all([
       get(ref(db,'dealershipPublic')).catch(()=>({val:()=>null})),
@@ -434,13 +468,22 @@
     Object.entries(us?.val?.()||{}).forEach(([uid,u])=>{
       users[uid]={email:u.email||null,name:u.name||null,role:u.role||'user',dealershipId:u.dealershipId||null};
     });
-    return {meta:{generatedAt:new Date().toISOString(),by:auth.currentUser?.email||'admin',format:'iptv-bfa@1'},
-            dealersPublic:dp?.val?.()||{},displays:ds?.val?.()||{},users};
+    // Prefer the in-memory quickLinks (what you’re viewing/editing), fallback to config, then empty
+    const ql = Array.isArray(quickLinks) ? quickLinks : (appConfig?.quickLinks||[]);
+    return {
+      meta:{generatedAt:new Date().toISOString(),by:auth.currentUser?.email||'admin',format:'iptv-bfa@1'},
+      dealersPublic:dp?.val?.()||{},
+      displays:ds?.val?.()||{},
+      users,
+      quickLinks: ql
+    };
   }
+
   async function exportToGitHub(){
     try{
       const cfg=JSON.parse(localStorage.getItem(LS_GH)||'{}');
       if(!cfg.owner||!cfg.repo||!cfg.branch||!cfg.path||!cfg.token){ toast('Settings incomplete'); return; }
+      // Repo check
       await ghFetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}`,{
         headers:{Authorization:`Bearer ${cfg.token}`,'Accept':'application/vnd.github+json'}
       });
