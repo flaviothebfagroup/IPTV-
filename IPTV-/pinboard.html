@@ -6,29 +6,39 @@
   <title>Sales Pinboard — 1920×1080</title>
   <style>
     :root{
-      --bg:#f1f2f4; --panel:#fff; --ink:#0b0b0c; --muted:#6e6e73;
+      --bg:#0c1116; --panel:#fff; --ink:#0b0b0c; --muted:#6e6e73;
       --line:#d0d3d9; --line-strong:#aeb3bb;
       --green:#1a7f37; --blue:#1b59d1; --red:#c42b2b;
-      --roleW: 170px;      /* left name col */
-      --periodW: 70px;     /* MTD/YTD col */
+      --roleW: 160px;      /* left name col (smaller as requested) */
+      --periodW: 60px;     /* MTD/YTD col (slightly tighter) */
       --cellW: 44px;       /* JS recalculates so everything fits */
-      --rcolW: 56px;       /* width for right summary columns */
+      --rcolW: 60px;       /* width for right summary columns */
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0; font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-      color:var(--ink); background:#0f1114; display:grid; place-items:center;
+      color:var(--ink); background:var(--bg); display:grid; place-items:center;
     }
 
+    /* --- Background layer (GIF/MP4) --- */
+    .bg{position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden}
+    .bg video,.bg img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:saturate(105%) brightness(0.75)}
+    .bg video{display:none; opacity:0.9}
+
     /* 1920×1080 stage */
-    .stage{width:1920px; height:1080px; background:var(--panel); border-radius:14px;
+    .stage{width:1920px; height:1080px; position:relative; z-index:1;
+      background:rgba(255,255,255,0.56); backdrop-filter: blur(16px) saturate(120%);
+      -webkit-backdrop-filter: blur(16px) saturate(120%);
+      border:1px solid rgba(255,255,255,0.45); border-radius:14px;
       box-shadow:0 40px 80px rgba(0,0,0,.45); display:flex; flex-direction:column; overflow:hidden}
+
     .chrome{display:flex; align-items:center; gap:16px; padding:10px 14px 6px; border-bottom:1px solid var(--line);
-      background:linear-gradient(#fbfbfd,#f5f6f8)}
+      background:linear-gradient(rgba(251,251,253,0.85),rgba(245,246,248,0.6))}
     .title{font-weight:700}
     .spacer{flex:1}
     .asof{font-size:13px; color:var(--muted)}
+    .asof strong{font-size:16px; font-weight:800; color:#0b6bcb}
 
     /* Legend */
     .legend{display:flex; gap:18px; align-items:center; padding:8px 14px 10px}
@@ -39,8 +49,9 @@
     .dot.red{background:#f7e9ea; border-color:#f0c9cd}
 
     /* Main content (table) */
-    .content{flex:1; display:flex; flex-direction:column; background:var(--bg); padding:12px 14px 12px}
-    .frame{flex:1; border:1px solid var(--line); border-radius:14px; background:#fff; box-shadow:0 10px 28px rgba(0,0,0,.07); overflow:hidden}
+    .content{flex:1; display:flex; flex-direction:column; background:transparent; padding:12px 14px 12px}
+    .frame{flex:1; border:1px solid rgba(255,255,255,0.45); border-radius:14px; background:rgba(255,255,255,0.6);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow:0 10px 28px rgba(0,0,0,.07); overflow:hidden}
     table{border-collapse:separate; border-spacing:0; width:100%; table-layout:fixed}
     thead th{position:sticky; top:0; z-index:2; background:linear-gradient(#fbfbfc,#f5f6f8);}    
     th, td{border-right:1px solid var(--line); border-bottom:1px solid var(--line)}
@@ -74,7 +85,7 @@
     td.total{font-weight:700; background:#fbfbfd; width:var(--rcolW)}
 
     /* Editor (G/B/WT) */
-    .editor{ position:fixed; left:24px; top:24px; width:380px; background:#fff; border:1px solid var(--line);
+    .editor{ position:fixed; left:24px; top:24px; width:400px; background:#fff; border:1px solid var(--line);
       border-radius:12px; padding:12px; box-shadow:0 14px 36px rgba(0,0,0,.18); display:none; z-index:50 }
     .editor h3{margin:0 0 10px; font-size:14px}
     .rows{display:grid; grid-template-columns:28px 1fr 110px; gap:10px 8px; align-items:center}
@@ -90,15 +101,30 @@
     .btn{appearance:none; border:1px solid var(--line-strong); background:#fff; padding:8px 10px; border-radius:10px; font-weight:600; cursor:pointer}
     .btn.primary{border-color:#0b6bcb; background:#0b6bcb; color:#fff}
 
+    /* Names & month managers inside editor */
     details.nameMgr{margin-top:10px; border-top:1px solid var(--line); padding-top:10px}
     details.nameMgr summary{cursor:pointer; font-weight:600; color:#2f2f31}
     .nameRow{display:grid; grid-template-columns:1fr auto auto; gap:8px; margin-top:8px}
     .nameRow input{padding:6px 8px; border:1px solid var(--line-strong); border-radius:8px}
 
+    details.monthMgr{margin-top:10px; border-top:1px solid var(--line); padding-top:10px}
+    details.monthMgr summary{cursor:pointer; font-weight:600; color:#2f2f31}
+    .monthRow{display:grid; grid-template-columns: 1fr 1fr auto; gap:8px; align-items:center; margin-top:8px}
+    .monthRow select, .monthRow input{padding:6px 8px; border:1px solid var(--line-strong); border-radius:8px; width:100%}
+
     .toolbar{display:none}
   </style>
 </head>
 <body>
+  <!-- Background: use car-bg.mp4 (preferred) or car-bg.gif in the same folder -->
+  <div class="bg" aria-hidden="true">
+    <img id="bgimg" alt="" src="https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExbHZ4aW5yMTFtZjJhcHRraTBvNHg4aHFma2hvMmllczNtMmJnZmF6eiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/eBtpLQVJeFEBx92VCy/giphy.gif" />
+    <video id="bgvid" autoplay muted playsinline loop poster="car-bg.jpg">
+      <source src="car-bg.mp4" type="video/mp4" />
+      <source src="car-bg.webm" type="video/webm" />
+    </video>
+  </div>
+
   <div class="stage">
     <div class="chrome">
       <div class="title">Sales Pinboard</div>
@@ -137,6 +163,15 @@
       </div>
     </details>
 
+    <details class="monthMgr" id="monthMgr">
+      <summary>Change month</summary>
+      <div class="monthRow">
+        <select id="monthSel"></select>
+        <input id="yearInput" type="number" placeholder="Year" />
+        <button class="btn" id="applyMonthBtn" type="button">Apply</button>
+      </div>
+    </details>
+
     <div class="foot">
       <button class="btn" id="cancelEdit" type="button">Cancel</button>
       <button class="btn primary" id="saveEdit" type="button">Save</button>
@@ -145,7 +180,7 @@
 
   <script>
   // ===== Data (MTD/YTD rows, Lease removed) =====
-  const STORAGE_KEY = 'sales-pinboard-1080-v6';
+  const STORAGE_KEY = 'sales-pinboard-1080-v7';
   const defaultTeam = ['Yassir','Sumit','Connor','Mohamad','Jerry','Brittany','Arnold','House'];
   const today = new Date();
   const state = {
@@ -178,21 +213,22 @@
   function render(){
     ensureSkeleton();
     const dim = daysInMonth(state.year, state.month);
-    const monthName = new Date(state.year, state.month, 1).toLocaleString(undefined,{month:'long'});
 
-    // Fit to 1920 width — account for 1 Total + 4 right columns
+    // Fit to 1920 width — account for 1 Total + 4 right columns (New, PO, WT, Rate)
     const stageInner = 1920 - 2*14; // side padding in .content
     const fixedLeft = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--roleW')) +
                       parseInt(getComputedStyle(document.documentElement).getPropertyValue('--periodW'));
     const rcolW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--rcolW')); 
-    const suffixCols = 1 + 4; // Total + New/PO/WT/Rate
+    const suffixCols = 5; // Total + New + PO + WT + Rate
     const usable = stageInner - fixedLeft - suffixCols*rcolW - 2; // -2 borders tolerance
     const cellW = Math.max(30, Math.floor(usable / dim));
     document.documentElement.style.setProperty('--cellW', cellW + 'px');
 
+    const monthName = new Date(state.year, state.month, 1).toLocaleString(undefined,{month:'long'});
+
     let html = '';
     html += '<thead><tr>';
-    html += `<th class=\"name\">Sales Specialist<\/th>`;
+    html += `<th class="name">Sales Specialist</th>`;
     html += `<th class="period">&nbsp;</th>`;
     for (let d=1; d<=dim; d++){
       const isToday = (state.year===today.getFullYear() && state.month===today.getMonth() && d===today.getDate());
@@ -261,9 +297,11 @@
   function renderAsOf(){
     const el = document.getElementById('asof');
     const d = new Date();
-    const ts = d.toLocaleString(undefined,{ hour:'numeric', minute:'2-digit'}) +
+    const ts = d.toLocaleString(undefined,{hour:'numeric', minute:'2-digit'}) +
                ' on ' + d.toLocaleDateString(undefined,{year:'numeric', month:'long', day:'numeric'});
-    el.textContent = `Information current as of ${ts}`;
+    const boardMonth = new Date(state.year, state.month, 1)
+      .toLocaleDateString(undefined,{month:'long', year:'numeric'});
+    el.innerHTML = `<strong>${boardMonth}</strong> &nbsp;•&nbsp; Information current as of ${ts}`;
   }
 
   // ===== Editor + rename =====
@@ -274,8 +312,29 @@
   const editorTitle = document.getElementById('editorTitle');
   const nameField = document.getElementById('nameField');
   const nameMgr = document.getElementById('nameMgr');
-  let current = null;
-  let renameTarget = null;
+  const monthMgr = document.getElementById('monthMgr');
+  const monthSel = document.getElementById('monthSel');
+  const yearInput = document.getElementById('yearInput');
+  const applyMonthBtn = document.getElementById('applyMonthBtn');
+  const MONTHS = Array.from({length:12}, (_,i)=> new Date(2000,i,1).toLocaleString(undefined,{month:'long'}));
+  function populateMonthUI(){
+    if (!monthSel) return;
+    if (!monthSel.options.length){
+      monthSel.innerHTML = MONTHS.map((m,i)=>`<option value="${i}">${m}</option>`).join('');
+    }
+    monthSel.value = String(state.month);
+    yearInput.value = String(state.year);
+  }
+  applyMonthBtn.onclick = ()=>{
+    const m = Number(monthSel.value||state.month);
+    const y = Number(yearInput.value||state.year);
+    if (Number.isFinite(m)) state.month = m;
+    if (Number.isFinite(y)) state.year = y;
+    ensureSkeleton(); save(); render(); renderAsOf();
+  };
+
+  let current = null;     // {name,row,day}
+  let renameTarget = null; // name string if renaming
 
   function placeEditorNear(el){
     editor.style.display = 'block';
@@ -299,7 +358,7 @@
     inG.value = v.g||0; inB.value = v.b||0; inW.value = v.w||0;
     editorTitle.textContent = `Edit — ${name} • ${row} • Day ${day}`;
     current = {name,row,day};
-    renameTarget = null; nameMgr.open = false;
+    renameTarget = null; nameMgr.open = false; monthMgr.open = false; populateMonthUI();
     placeEditorNear(td); inG.focus(); inG.select();
   }
 
@@ -309,7 +368,7 @@
     renameTarget = name;
     nameField.value = name;
     editorTitle.textContent = `Rename — ${name}`;
-    nameMgr.open = true;
+    nameMgr.open = true; monthMgr.open = false; populateMonthUI();
     placeEditorNear(td);
     nameField.focus(); nameField.select();
   }
@@ -326,7 +385,7 @@
   window.addEventListener('keydown', (e)=>{
     if (editor.style.display === 'block'){
       if (e.key === 'Escape'){ editor.style.display = 'none'; renameTarget = null; }
-      if (e.key === 'Enter' && !nameMgr.open){ document.getElementById('saveEdit').click(); }
+      if (e.key === 'Enter' && !nameMgr.open && !monthMgr.open){ document.getElementById('saveEdit').click(); }
     }
   });
 
@@ -356,14 +415,28 @@
   };
 
   // Boot
-  function renderAsOf(){
-    const el = document.getElementById('asof');
-    const d = new Date();
-    const ts = d.toLocaleString(undefined,{ hour:'numeric', minute:'2-digit'}) + ' on ' + d.toLocaleDateString(undefined,{year:'numeric', month:'long', day:'numeric'});
-    el.textContent = `Information current as of ${ts}`;
-  }
   renderAsOf();
   render();
+  // init month UI
+  (function populateOnce(){ const monthSelEl = document.getElementById('monthSel'); if (monthSelEl && !monthSelEl.options.length){ monthSelEl.innerHTML = Array.from({length:12}, (_,i)=>`<option value="${i}">${new Date(2000,i,1).toLocaleString(undefined,{month:'long'})}</option>`).join(''); } populateMonthUI(); })();
+  // Background fallback: try to play MP4; if blocked/missing, keep GIF visible
+  (function(){
+    const vid = document.getElementById('bgvid');
+    const img = document.getElementById('bgimg');
+    if (!vid || !img) return;
+    function showGif(){ if (vid) vid.style.display='none'; if (img) img.style.display='block'; }
+    function showVideo(){ if (img) img.style.display='none'; if (vid) vid.style.display='block'; }
+    vid.addEventListener('loadeddata', showVideo);
+    vid.addEventListener('playing', showVideo);
+    vid.addEventListener('error', showGif);
+    vid.addEventListener('stalled', showGif);
+    try{
+      const p = vid.play();
+      if (p && typeof p.then==='function'){ p.then(showVideo).catch(showGif); }
+      else setTimeout(()=> (vid.readyState>=2?showVideo():showGif()), 1200);
+    }catch(e){ showGif(); }
+    setTimeout(()=> { if (vid.readyState<2) showGif(); }, 1500);
+  })();
   </script>
 </body>
 </html>
