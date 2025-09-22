@@ -22,23 +22,20 @@
     }
 
     /* --- Background layer (GIF/MP4) --- */
-    .bg{position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden}
+    .bg{position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden} 
+    .bg.gifFallback{background: url('car-bg.gif') center/cover no-repeat fixed, radial-gradient(1200px 800px at 50% 20%, #0f1620, #0b1016);} 
     .bg video,.bg img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:saturate(105%) brightness(0.75)}
     .bg video{display:none; opacity:0.9}
+    .bg video{width:100%; height:100%; object-fit:cover; filter:saturate(105%) brightness(0.7); opacity:0.9}
 
     /* 1920×1080 stage */
-    .stage{width:1920px; height:1080px; position:relative; z-index:1;
-      background:rgba(255,255,255,0.56); backdrop-filter: blur(16px) saturate(120%);
-      -webkit-backdrop-filter: blur(16px) saturate(120%);
-      border:1px solid rgba(255,255,255,0.45); border-radius:14px;
-      box-shadow:0 40px 80px rgba(0,0,0,.45); display:flex; flex-direction:column; overflow:hidden}
+    .stage{width:1920px; height:1080px; position:relative; z-index:1; background:rgba(255,255,255,0.28); backdrop-filter: blur(30px) saturate(120%); -webkit-backdrop-filter: blur(30px) saturate(120%); border:1px solid rgba(255,255,255,0.30); border-radius:14px; box-shadow:0 40px 80px rgba(0,0,0,.45); display:flex; flex-direction:column; overflow:hidden} 
 
-    .chrome{display:flex; align-items:center; gap:16px; padding:10px 14px 6px; border-bottom:1px solid var(--line);
-      background:linear-gradient(rgba(251,251,253,0.85),rgba(245,246,248,0.6))}
+    .chrome{display:flex; align-items:center; gap:16px; padding:10px 14px 6px; border-bottom:1px solid rgba(255,255,255,0.35); background:linear-gradient(rgba(251,251,253,0.78), rgba(245,246,248,0.55))} 
     .title{font-weight:700}
     .spacer{flex:1}
     .asof{font-size:13px; color:var(--muted)}
-    .asof strong{font-size:16px; font-weight:800; color:#0b6bcb}
+    .asof strong{font-size:16px; font-weight:800; color:#000} 
 
     /* Legend */
     .legend{display:flex; gap:18px; align-items:center; padding:8px 14px 10px}
@@ -50,16 +47,15 @@
 
     /* Main content (table) */
     .content{flex:1; display:flex; flex-direction:column; background:transparent; padding:12px 14px 12px}
-    .frame{flex:1; border:1px solid rgba(255,255,255,0.45); border-radius:14px; background:rgba(255,255,255,0.6);
-      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow:0 10px 28px rgba(0,0,0,.07); overflow:hidden}
+    .frame{flex:1; border:1px solid rgba(255,255,255,0.30); border-radius:14px; background:rgba(255,255,255,0.32); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow:0 10px 28px rgba(0,0,0,.07); overflow:hidden} 
     table{border-collapse:separate; border-spacing:0; width:100%; table-layout:fixed}
-    thead th{position:sticky; top:0; z-index:2; background:linear-gradient(#fbfbfc,#f5f6f8);}    
+    thead th{position:sticky; top:0; z-index:2; background:linear-gradient(rgba(251,251,253,0.85), rgba(245,246,248,0.65));}     
     th, td{border-right:1px solid var(--line); border-bottom:1px solid var(--line)}
     th:first-child, td:first-child{border-left:1px solid var(--line)}
     th, td{padding:6px 8px; text-align:center}
     th{font-weight:600; color:#263238; font-size:13px}
-    tbody td{height:32px; background:#fff; overflow:hidden}
-    tbody tr:nth-child(odd) td{background:#fcfdff}
+    tbody td{height:32px; background:rgba(255,255,255,0.82); overflow:hidden} 
+    tbody tr:nth-child(odd) td{background:rgba(252,253,255,0.75)} 
 
     /* sticky left cols */
     .name{position:sticky; left:0; z-index:1; background:inherit; text-align:left; font-weight:600; width:var(--roleW); cursor:pointer}
@@ -436,6 +432,30 @@
       else setTimeout(()=> (vid.readyState>=2?showVideo():showGif()), 1200);
     }catch(e){ showGif(); }
     setTimeout(()=> { if (vid.readyState<2) showGif(); }, 1500);
+  })();
+  </script>
+  <script>
+  // background video autoplay helper + fallbacks
+  (function bootBg(){
+    const bg = document.querySelector('.bg');
+    const vid = document.getElementById('bgvid');
+    if (!vid) return;
+    // Autoplay requirements
+    vid.muted = true; vid.setAttribute('muted',''); vid.playsInline = true; vid.setAttribute('playsinline','');
+    const tryPlay = ()=> vid.play().catch(()=>{});
+    let played = false;
+    const markPlayed = ()=>{ played = true; };
+    vid.addEventListener('playing', markPlayed, {once:true});
+    vid.addEventListener('canplay', tryPlay, {once:true});
+    tryPlay();
+    // If not playing after a moment, switch to GIF fallback
+    setTimeout(()=>{
+      if (!played){
+        if (bg) bg.classList.add('gifFallback');
+        const remote = bg?.dataset?.fallback;
+        if (remote){ bg.style.backgroundImage = `url('${remote}')`; bg.style.backgroundSize='cover'; bg.style.backgroundRepeat='no-repeat'; bg.style.backgroundPosition='center'; }
+      }
+    }, 1200);
   })();
   </script>
 </body>
