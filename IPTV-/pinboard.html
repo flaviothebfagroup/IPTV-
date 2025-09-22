@@ -1,330 +1,351 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sales Leaderboard — Apple-Style Islands (No Scroll)</title>
-<style>
-  :root{
-    /* Foundation */
-    --bg:#f6f7fb; --panel:#ffffff; --ink:#0e1320; --muted:#667085;
-    --grid:#e8ebf0; --grid-strong:#d5dae3;
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sales Pinboard — 1920×1080</title>
+  <style>
+    :root{
+      --bg:#f1f2f4; --panel:#fff; --ink:#0b0b0c; --muted:#6e6e73;
+      --line:#d0d3d9; --line-strong:#aeb3bb;
+      --green:#1a7f37; --blue:#1b59d1; --red:#c42b2b; --dark:#111;
+      --roleW: 220px;     /* left name col */
+      --periodW: 70px;    /* MTD/YTD col */
+      --cellW: 44px;      /* JS recalculates so everything fits */
+      --pillW: 18px;      /* JS adjusts for compact */
+      --pillH: 18px;
+      --pillFS: 12px;
+      --pillGap: 6px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      color:var(--ink); background:#0f1114; display:grid; place-items:center;
+    }
 
-    /* Brand tones */
-    --hdr:#0b3a69;         /* header background */
-    --nameCol:#0f4e8a;     /* sticky name column */
-    --blue:#0b3a69;        /* PO & blue dot */
-    --green:#1a7f2e;       /* New & green dot */
-    --red:#c01f24;         /* Winter Tire & red dot */
+    /* 1920×1080 stage */
+    .stage{width:1920px; height:1080px; background:var(--panel); border-radius:14px;
+      box-shadow:0 40px 80px rgba(0,0,0,.45); display:flex; flex-direction:column; overflow:hidden}
+    .chrome{display:flex; align-items:center; gap:16px; padding:10px 14px 6px; border-bottom:1px solid var(--line);
+      background:linear-gradient(#fbfbfd,#f5f6f8)}
+    .title{font-weight:700}
+    .spacer{flex:1}
+    .asof{font-size:13px; color:var(--muted)}
 
-    /* Cards & radii */
-    --radius:16px; --radiusSm:12px;
-    --shadow:0 18px 50px rgba(16,24,40,.10);
+    /* Legend (Lease removed) */
+    .legend{display:flex; gap:18px; align-items:center; padding:8px 14px 12px}
+    .tag{display:inline-flex; align-items:center; gap:6px; font-size:13px; color:#374151}
+    .dot{width:14px; height:14px; border-radius:4px; border:1px solid var(--line-strong)}
+    .dot.green{background:#e8f5ec; border-color:#b7e2c7}
+    .dot.blue{background:#e7efff; border-color:#c2d5ff}
+    .dot.red{background:#f7e9ea; border-color:#f0c9cd}
 
-    /* Base sizing (the whole board gets scaled to fit the screen) */
-    --cellW:48px; --nameW:300px; --rowH:44px; --f:14px; --fs:12px;
+    /* Board */
+    .board{flex:1; padding:12px 14px 14px; background:var(--bg)}
+    .frame{height:100%; border:1px solid var(--line); border-radius:14px; background:#fff; box-shadow:0 10px 28px rgba(0,0,0,.07); overflow:hidden}
+    table{border-collapse:separate; border-spacing:0; width:100%}
+    thead th{position:sticky; top:0; z-index:2; background:linear-gradient(#fbfbfc,#f5f6f8);}
+    th, td{border-right:1px solid var(--line); border-bottom:1px solid var(--line)}
+    th:first-child, td:first-child{border-left:1px solid var(--line)}
+    th, td{padding:6px 8px; text-align:center}
+    th{font-weight:600; color:#263238; font-size:13px}
+    tbody td{height:32px; background:#fff}
+    tbody tr:nth-child(odd) td{background:#fcfdff}
 
-    /* Day-dot spec */
-    --dot:20px; --gap:6px;
+    /* sticky left cols */
+    .name{position:sticky; left:0; z-index:1; background:inherit; text-align:left; font-weight:600; width:var(--roleW)}
+    .period{position:sticky; left:var(--roleW); z-index:1; background:inherit; width:var(--periodW); font-weight:600; color:#374151}
 
-    /* Column island look */
-    --islandBg:rgba(10, 22, 40, 0.035);
-    --islandBorder:rgba(10, 22, 40, 0.06);
-    --islandShadow:0 8px 20px rgba(16,24,40,.06) inset;
-  }
+    /* day widths (set by JS) */
+    .daynum, td.cell, td.total {width:var(--cellW)}
+    .today{background:#fff7ea !important}
 
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; background:var(--bg); color:var(--ink);
-    font:var(--f)/1.35 ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
-         Segoe UI, Roboto, Inter, Arial, sans-serif;
-    display:flex; align-items:center; justify-content:center;
-  }
+    /* tiny colored numbers — never wrap */
+    .pills{display:flex; justify-content:center; gap:var(--pillGap); flex-wrap:nowrap; white-space:nowrap}
+    .pill{min-width:var(--pillW); height:var(--pillH); padding:0 4px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:var(--pillFS); border:1px solid transparent}
+    .pill.g{color:var(--green); background:#e8f5ec; border-color:#b7e2c7}   /* New */
+    .pill.b{color:var(--blue);  background:#e7efff; border-color:#c2d5ff}  /* Pre-Owned */
+    .pill.wt{color:var(--red);   background:#f7e9ea; border-color:#f0c9cd}  /* Winter Tire */
 
-  /* Frame & scalable board (no scroll) */
-  .frame{width:100vw;height:100vh;overflow:hidden;display:grid;place-items:center}
-  .board{
-    transform-origin: top left;
-    background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow);
-    padding:16px; display:flex; flex-direction:column; gap:12px; position:relative;
-  }
+    /* single Total column at end */
+    td.total{font-weight:700; background:#fbfbfd}
 
-  /* Legend (pills) */
-  .top{display:flex;align-items:center;justify-content:space-between;gap:16px}
-  .legend{
-    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-    background:#f7f9fc;padding:10px 12px;border-radius:14px;border:1px solid var(--grid)
-  }
-  .legend b{font-weight:800;margin-right:2px}
-  .pill{
-    display:inline-flex;align-items:center;gap:8px;background:#f1f5f9;
-    border:1px solid var(--grid);padding:6px 10px;border-radius:999px;font-weight:700
-  }
-  .pill .badge{
-    width:24px;height:24px;border-radius:999px;display:grid;place-items:center;
-    font-weight:900;font-variant-numeric:tabular-nums;color:#fff
-  }
-  .badge.g{background:var(--green)}
-  .badge.b{background:var(--blue)}
-  .badge.r{background:var(--red)}
-  .stamp{color:var(--muted);font-size:var(--fs)}
+    /* Editor (G/B/WT only) — neat 3-column layout and placed next to the clicked cell */
+    .editor{
+      position:fixed; left:24px; top:24px; width:360px; background:#fff; border:1px solid var(--line);
+      border-radius:12px; padding:12px; box-shadow:0 14px 36px rgba(0,0,0,.18); display:none
+    }
+    .editor h3{margin:0 0 10px; font-size:14px}
+    .rows{display:grid; grid-template-columns:28px 1fr 90px; gap:10px 8px; align-items:center}
+    .chip{min-width:22px; height:18px; padding:0 4px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; border:1px solid transparent}
+    .chip.g{color:var(--green); background:#e8f5ec; border-color:#b7e2c7}
+    .chip.b{color:var(--blue);  background:#e7efff; border-color:#c2d5ff}
+    .chip.wt{color:var(--red);  background:#f7e9ea; border-color:#f0c9cd}
+    .rows label{font-weight:600; color:#2f2f31; text-align:left}
+    .rows input{width:100%; padding:6px 8px; border:1px solid var(--line-strong); border-radius:8px}
+    /* Hide number spinners if you want it cleaner */
+    .rows input[type=number]::-webkit-outer-spin-button,
+    .rows input[type=number]::-webkit-inner-spin-button{ -webkit-appearance: none; margin: 0; }
+    .rows input[type=number]{ -moz-appearance: textfield; }
 
-  /* Grid shell */
-  .grid{
-    border:1px solid var(--grid); border-radius:12px; background:#fff;
-    position:relative;   /* for column islands */
-    overflow:visible;    /* islands can breathe */
-  }
-  /* Column islands layer (behind the table) */
-  .islands{position:absolute; inset:0; z-index:0; pointer-events:none}
-  .island{
-    position:absolute; top:8px; bottom:8px;
-    background:var(--islandBg);
-    border:1px solid var(--islandBorder);
-    border-radius:var(--radiusSm);
-    box-shadow:var(--islandShadow);
-  }
+    .foot{display:flex; gap:8px; justify-content:flex-end; margin-top:12px}
+    .btn{appearance:none; border:1px solid var(--line-strong); background:#fff; padding:8px 10px; border-radius:10px; font-weight:600; cursor:pointer}
+    .btn.primary{border-color:#0b6bcb; background:#0b6bcb; color:#fff}
 
-  table{position:relative; z-index:1; border-collapse:separate; border-spacing:0}
-  th,td{
-    min-width:var(--cellW); height:var(--rowH);
-    border-right:1px solid var(--grid); border-bottom:1px solid var(--grid);
-    text-align:center; padding:6px 6px; white-space:nowrap; font-size:var(--f);
-    background:transparent;
-  }
+    /* Names manager inside editor */
+    details.nameMgr{margin-top:10px; border-top:1px solid var(--line); padding-top:10px}
+    details.nameMgr summary{cursor:pointer; font-weight:600; color:#2f2f31}
+    .nameRow{display:grid; grid-template-columns:1fr auto auto; gap:8px; margin-top:8px}
+    .nameRow input{padding:6px 8px; border:1px solid var(--line-strong); border-radius:8px}
 
-  thead th{
-    position:sticky; top:0; background:var(--hdr); color:#fff; font-weight:900; z-index:2
-  }
-  thead th:first-child{
-    left:0; min-width:var(--nameW); text-align:left; padding-left:12px; border-right:1px solid #072a4b
-  }
-  thead th.day{font-variant-numeric:tabular-nums}
-
-  tbody th{
-    position:sticky; left:0; background:var(--nameCol); color:#fff; text-align:left;
-    padding-left:12px; min-width:var(--nameW); border-right:1px solid #0a3b6b
-  }
-  .label{display:flex;align-items:center;gap:10px}
-  .name{font-weight:800}
-  .chip{
-    font-size:var(--fs);font-weight:800;color:#fff;
-    background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22);
-    padding:2px 8px;border-radius:999px
-  }
-  .ytdOnly .name{display:none} /* name once, on MTD row */
-
-  /* Airy gaps */
-  tbody tr.is-mtd td{background:transparent}
-  tbody tr.is-ytd td{background:transparent}
-  tbody tr.gap td{background:#f8fafc;height:26px}
-
-  /* Right totals emphasis */
-  .n-new{color:var(--green);font-weight:900}
-  .n-po{color:#0f2b66;font-weight:900}
-  .n-lse{color:#111;font-weight:900}
-  .n-wt{color:var(--red);font-weight:900}
-
-  /* Day cell dots: fixed layout (never squish) */
-  .tri{
-    display:flex;align-items:center;justify-content:center;
-    gap:var(--gap);
-    width:calc(var(--dot)*3 + var(--gap)*2);
-    margin:0 auto;
-  }
-  .bubble{
-    flex:0 0 var(--dot);
-    width:var(--dot);height:var(--dot);border-radius:999px;
-    display:grid;place-items:center;
-    font-weight:900;font-size:12px;line-height:1;
-    color:#fff;border:1px solid transparent;
-  }
-  .g{background:var(--green);border-color:var(--green)}
-  .b{background:var(--blue); border-color:var(--blue)}
-  .r{background:var(--red);  border-color:var(--red)}
-  .zero{background:transparent !important;color:transparent;border-color:#d6dde8}
-</style>
+    /* Hide all old toolbar buttons (kept editing popover only) */
+    .toolbar{display:none}
+  </style>
 </head>
 <body>
-  <div class="frame">
-    <div id="board" class="board">
-      <div class="top">
-        <div class="legend">
-          <b>LEGEND</b>
-          <span class="pill"><span class="badge g">1</span> New Car Sales</span>
-          <span class="pill"><span class="badge b">1</span> Pre-Owned Sales</span>
-          <span class="pill"><span class="badge r">1</span> Winter Tire Package</span>
-        </div>
-        <div class="stamp" id="stamp"></div>
-      </div>
+  <div class="stage">
+    <div class="chrome">
+      <div class="title">Sales Pinboard</div>
+      <div class="spacer"></div>
+      <div class="asof" id="asof">—</div>
+    </div>
 
-      <div class="grid">
-        <!-- Column islands get drawn here -->
-        <div class="islands" id="islands"></div>
+    <div class="legend">
+      <span class="tag"><span class="dot green"></span> New Car</span>
+      <span class="tag"><span class="dot blue"></span> Pre-Owned</span>
+      <span class="tag"><span class="dot red"></span> Winter Tire</span>
+    </div>
 
-        <table id="tbl">
-          <thead id="thead"></thead>
-          <tbody id="tbody"></tbody>
-        </table>
+    <div class="board">
+      <div class="frame">
+        <table id="grid"></table>
       </div>
     </div>
   </div>
 
-<script>
-/* ===== Month length ===== */
-const DAYS = 30; // set 31 for a 31-day month
+  <!-- Editor (G/B/WT only) -->
+  <div class="editor" id="editor" role="dialog" aria-modal="true">
+    <h3 id="editorTitle">Edit</h3>
+    <div class="rows">
+      <div class="chip g">G</div><label for="inG">New</label><input id="inG" type="number" min="0" step="1" />
+      <div class="chip b">B</div><label for="inB">Pre-Owned</label><input id="inB" type="number" min="0" step="1" />
+      <div class="chip wt">WT</div><label for="inW">WT</label><input id="inW" type="number" min="0" step="1" />
+    </div>
 
-/* ===== Data (from your screenshot) =====
-   dots: [green(New), blue(PO), red(Winter)]
-   Zeros render as faint rings to keep alignment.
-*/
-const reps = [
-  { name:'Yassir',
-    mtd:{ dots: d([[0,0,0],[2,0,0],[1,0,0],[0,0,0],[2,0,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0],[0,0,0],[1,0,0],[1,0,0],[0,0,0],[1,0,0],[0,0,0],[2,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,1],[0,0,2]]), new:9, po:9, lse:4, mtdwt:'0' },
-    ytd:{ new:113, po:84, lse:23, mtdwt:'0%' } },
-  { name:'Sumit',
-    mtd:{ dots: d([[0,1,0],[1,0,0],[0,0,0],[1,0,0],[0,2,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0],[1,0,0],[0,1,1],[0,2,0],[1,0,0],[0,0,0],[0,0,0],[0,0,0],[0,2,0],[0,1,0]]), new:8, po:7, lse:5, mtdwt:'0' },
-    ytd:{ new:79, po:45, lse:15, mtdwt:'0%' } },
-  { name:'Connor',
-    mtd:{ dots: d([[0,0,0],[0,0,0],[1,0,0],[0,0,0],[0,0,0],[0,0,1],[0,0,0],[0,0,0],[0,1,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0],[0,0,1],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[3,0,0],[2,0,0]]), new:9, po:5, lse:5, mtdwt:'0' },
-    ytd:{ new:31, po:18, lse:9, mtdwt:'0%' } },
-  { name:'Mohamad',
-    mtd:{ dots: d([[0,0,0],[1,0,0],[0,0,0],[0,0,0],[1,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0],[1,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0]]), new:4, po:5, lse:4, mtdwt:'0' },
-    ytd:{ new:67, po:59, lse:11, mtdwt:'0%' } },
-  { name:'Jerry',
-    mtd:{ dots: d([[0,0,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0],[0,0,0],[0,0,2],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[2,0,0]]), new:5, po:3, lse:2, mtdwt:'0' },
-    ytd:{ new:86, po:21, lse:9, mtdwt:'0%' } },
-  { name:'Brittany',
-    mtd:{ dots: d([[0,1,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0],[1,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,2],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,1]]), new:5, po:2, lse:3, mtdwt:'1' },
-    ytd:{ new:72, po:39, lse:12, mtdwt:'10%' } },
-  { name:'Arnold',
-    mtd:{ dots: d([[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,1,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0]]), new:3, po:1, lse:2, mtdwt:'0' },
-    ytd:{ new:66, po:20, lse:8, mtdwt:'0%' } },
-  { name:'House',
-    mtd:{ dots: d([[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0]]), new:2, po:0, lse:2, mtdwt:'0' },
-    ytd:{ new:22, po:4, lse:8, mtdwt:'0%' } },
-];
+    <details class="nameMgr">
+      <summary>Manage names</summary>
+      <div class="nameRow">
+        <input id="nameField" placeholder="Type a name…" />
+        <button class="btn" id="addNameBtn" type="button">Add</button>
+        <button class="btn" id="renameBtn" type="button">Rename current</button>
+      </div>
+    </details>
 
-/* Expand partial day lists to full month */
-function d(list){
-  const arr = Array.from({length: DAYS}, ()=>[0,0,0]);
-  list.forEach((t,i)=>{ if(arr[i]) arr[i]=t; });
-  return arr;
-}
+    <div class="foot">
+      <button class="btn" id="cancelEdit" type="button">Cancel</button>
+      <button class="btn primary" id="saveEdit" type="button">Save</button>
+    </div>
+  </div>
 
-/* Build header */
-const thead = document.getElementById('thead');
-const hr = document.createElement('tr');
-const nameTh = document.createElement('th');
-nameTh.textContent='Sales Specialist';
-nameTh.style.minWidth='var(--nameW)';
-hr.appendChild(nameTh);
+  <script>
+  // ===== Data (MTD/YTD rows, Lease removed) =====
+  const STORAGE_KEY = 'sales-pinboard-1080-v2';
+  const defaultTeam = ['Yassir','Sumit','Connor','Mohamad','Jerry','Brittany','Arnold','House'];
+  const today = new Date();
+  const state = {
+    year: today.getFullYear(),
+    month: today.getMonth(), // 0-11
+    names: [...defaultTeam],
+    data: {} // data[name].MTD[day] = {g,b,w}, data[name].YTD[day] = {g,b,w}
+  };
 
-for(let i=1;i<=DAYS;i++){
-  const th=document.createElement('th'); th.className='day'; th.textContent=i; hr.appendChild(th);
-}
-['New','PO','Lse','MTD WT'].forEach(lbl=>{
-  const th=document.createElement('th'); th.textContent=lbl; hr.appendChild(th);
-});
-thead.appendChild(hr);
+  // Load
+  try { const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)||'null'); if (saved) Object.assign(state, saved); } catch {}
 
-/* Render body */
-const tbody = document.getElementById('tbody');
+  function daysInMonth(y,m){ return new Date(y,m+1,0).getDate(); }
 
-function dayCell([g,b,r]){
-  const td = document.createElement('td');
-  const wrap = document.createElement('div'); wrap.className='tri';
-  wrap.append(
-    bubble('r',r),
-    bubble('b',b),
-    bubble('g',g)
-  );
-  td.appendChild(wrap);
-  return td;
-}
-function bubble(cls,val){
-  const el=document.createElement('div');
-  el.className=`bubble ${cls} ${val>0?'':'zero'}`;
-  el.textContent = val>0 ? String(val) : '';
-  return el;
-}
-function cell(txt, cls){ const td=document.createElement('td'); if(cls) td.className=cls; td.textContent=(txt??'')===0?'':(txt??''); return td; }
+  function ensureSkeleton(){
+    const dim = daysInMonth(state.year, state.month);
+    if (!state.names?.length) state.names = [...defaultTeam];
+    state.data = state.data || {};
+    for (const n of state.names){
+      state.data[n] = state.data[n] || { MTD:{}, YTD:{} };
+      for (const row of ['MTD','YTD']){
+        for (let d=1; d<=dim; d++){
+          state.data[n][row][d] = state.data[n][row][d] || {g:0,b:0,w:0};
+        }
+        // prune days beyond month
+        for (const k of Object.keys(state.data[n][row])) {
+          const day = Number(k); if (day>dim) delete state.data[n][row][k];
+        }
+      }
+    }
+  }
 
-function row(rep,isMTD){
-  const tr=document.createElement('tr');
-  tr.className = isMTD ? 'is-mtd' : 'is-ytd';
-  if(!isMTD) tr.classList.add('ytdOnly');
+  function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); renderAsOf(); }
 
-  const th=document.createElement('th');
-  th.innerHTML=`<div class="label"><span class="name">${rep.name}</span><span class="chip">${isMTD?'MTD':'YTD'}</span></div>`;
-  tr.appendChild(th);
+  const gridEl = document.getElementById('grid');
 
-  const dots = isMTD ? rep.mtd.dots : Array.from({length:DAYS},()=>[0,0,0]);
-  for(let i=0;i<DAYS;i++){ tr.appendChild(dayCell(dots[i])); }
+  function render(){
+    ensureSkeleton();
+    const dim = daysInMonth(state.year, state.month);
+    const monthName = new Date(state.year, state.month, 1).toLocaleString(undefined,{month:'long'});
 
-  const totals = isMTD ? rep.mtd : rep.ytd;
-  tr.appendChild(cell(totals.new,'n-new'));
-  tr.appendChild(cell(totals.po,'n-po'));
-  tr.appendChild(cell(totals.lse,'n-lse'));
-  tr.appendChild(cell(totals.mtdwt,'n-wt'));
-  return tr;
-}
+    // Compute cell width to fill 1920 with no horizontal scroll
+    const stageInner = 1920 - 2*14; // side padding in .board
+    const fixed = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--roleW')) +
+                  parseInt(getComputedStyle(document.documentElement).getPropertyValue('--periodW'));
+    const cols = dim + 1; // days + Total
+    const cellW = Math.max(32, Math.floor((stageInner - fixed - 2) / cols));
+    document.documentElement.style.setProperty('--cellW', cellW + 'px');
 
-reps.forEach(rep=>{
-  tbody.appendChild(row(rep,true));
-  tbody.appendChild(row(rep,false));
-  const gap=document.createElement('tr'); gap.className='gap';
-  const gtd=document.createElement('td'); gtd.colSpan=1 + DAYS + 4; gap.appendChild(gtd); tbody.appendChild(gap);
-});
+    // Set pill compactness so 3 can fit in one line
+    if (cellW < 60) {
+      document.documentElement.style.setProperty('--pillW', Math.max(12, Math.floor((cellW - 12) / 3)) + 'px');
+      document.documentElement.style.setProperty('--pillH', '16px');
+      document.documentElement.style.setProperty('--pillFS', '11px');
+      document.documentElement.style.setProperty('--pillGap', '4px');
+    } else {
+      document.documentElement.style.setProperty('--pillW', '18px');
+      document.documentElement.style.setProperty('--pillH', '18px');
+      document.documentElement.style.setProperty('--pillFS', '12px');
+      document.documentElement.style.setProperty('--pillGap', '6px');
+    }
 
-/* Timestamp */
-document.getElementById('stamp').textContent =
-  `Information current as of ${new Intl.DateTimeFormat(undefined,{dateStyle:'long', timeStyle:'short'}).format(new Date())}`;
+    let html = '';
+    html += '<thead><tr>';
+    html += `<th class="name">Sales Specialist — ${monthName}</th>`;
+    html += `<th class="period">&nbsp;</th>`;
+    for (let d=1; d<=dim; d++){
+      const isToday = (state.year===today.getFullYear() && state.month===today.getMonth() && d===today.getDate());
+      html += `<th class="daynum${isToday?' today':''}">${d}</th>`;
+    }
+    html += `<th>Total</th>`;
+    html += '</tr></thead>';
 
-/* Column islands: draw one rounded “card” behind each day column */
-function drawIslands(){
-  const islands = document.getElementById('islands');
-  islands.innerHTML = '';
-  const headerCells = Array.from(document.querySelectorAll('#thead th.day'));
-  if(headerCells.length===0) return;
+    html += '<tbody>';
+    for (const name of state.names){
+      let first = true;
+      for (const row of ['MTD','YTD']){
+        html += '<tr>';
+        if (first){ html += `<td class="name" rowspan="2">${name}</td>`; first=false; }
+        html += `<td class="period">${row}</td>`;
+        let sum=0;
+        for (let d=1; d<=dim; d++){
+          const v = state.data[name][row][d] || {g:0,b:0,w:0};
+          sum += (v.g|0) + (v.b|0) + (v.w|0);
+          const isToday = (state.year===today.getFullYear() && state.month===today.getMonth() && d===today.getDate());
+          html += `<td class="cell${isToday?' today':''}" data-name="${encodeURIComponent(name)}" data-row="${row}" data-day="${d}">
+            <div class="pills">
+              ${v.g?`<span class='pill g' title='New'>${v.g}</span>`:''}
+              ${v.b?`<span class='pill b' title='Pre-Owned'>${v.b}</span>`:''}
+              ${v.w?`<span class='pill wt' title='Winter Tire'>${v.w}</span>`:''}
+            </div>
+          </td>`;
+        }
+        html += `<td class="total">${sum}</td>`;
+        html += '</tr>';
+      }
+    }
+    html += '</tbody>';
 
-  // vertical bounds of the table, with a little breathing room
-  const grid = document.querySelector('.grid');
-  const tbl = document.querySelector('#tbl');
-  const topOffset = tbl.offsetTop; // includes header
-  const islandTop = 6;  // padding from container
-  const islandBottom = 6;
+    gridEl.innerHTML = html;
 
-  headerCells.forEach(th=>{
-    const left = th.offsetLeft;
-    const width = th.offsetWidth;
+    // click-to-edit
+    gridEl.querySelectorAll('td.cell').forEach(td=>{
+      td.addEventListener('click', (ev)=> openEditor(td, ev));
+    });
+  }
 
-    const div = document.createElement('div');
-    div.className = 'island';
-    div.style.left = (left + 1) + 'px';
-    div.style.width = (width - 2) + 'px';
-    div.style.top = islandTop + 'px';
-    div.style.bottom = islandBottom + 'px';
-    islands.appendChild(div);
+  function renderAsOf(){
+    const el = document.getElementById('asof');
+    const d = new Date();
+    const ts = d.toLocaleString(undefined,{ hour:'numeric', minute:'2-digit'}) +
+               ' on ' + d.toLocaleDateString(undefined,{year:'numeric', month:'long', day:'numeric'});
+    el.textContent = `Information current as of ${ts}`;
+  }
+
+  // ===== Editor (G/B/WT) with add/rename names =====
+  const editor = document.getElementById('editor');
+  const inG = document.getElementById('inG');
+  const inB = document.getElementById('inB');
+  const inW = document.getElementById('inW');
+  const editorTitle = document.getElementById('editorTitle');
+  const nameField = document.getElementById('nameField');
+  let current = null;
+
+  function openEditor(td, ev){
+    const name = decodeURIComponent(td.dataset.name);
+    const row = td.dataset.row;
+    const day = Number(td.dataset.day);
+    const v = state.data[name][row][day] || {g:0,b:0,w:0};
+    inG.value = v.g||0; inB.value = v.b||0; inW.value = v.w||0;
+    editorTitle.textContent = `Edit — ${name} • ${row} • Day ${day}`;
+    current = {name,row,day};
+
+    // place editor near the clicked cell, inside the stage
+    editor.style.display = 'block';
+    requestAnimationFrame(()=>{
+      const rect = td.getBoundingClientRect();
+      const stageRect = document.querySelector('.stage').getBoundingClientRect();
+      let left = Math.min(stageRect.right - editor.offsetWidth - 12, rect.left + 8);
+      let top  = Math.min(stageRect.bottom - editor.offsetHeight - 12, rect.bottom + 8);
+      left = Math.max(stageRect.left + 12, left);
+      top  = Math.max(stageRect.top + 12, top);
+      editor.style.left = left + 'px';
+      editor.style.top  = top  + 'px';
+      inG.focus(); inG.select();
+    });
+  }
+
+  document.getElementById('cancelEdit').onclick = ()=> editor.style.display = 'none';
+  document.getElementById('saveEdit').onclick = saveEditor;
+  function saveEditor(){
+    if (!current) return;
+    state.data[current.name][current.row][current.day] = {
+      g: Number(inG.value||0),
+      b: Number(inB.value||0),
+      w: Number(inW.value||0)
+    };
+    save(); render(); editor.style.display = 'none';
+  }
+
+  // Keyboard shortcuts
+  window.addEventListener('keydown', (e)=>{
+    if (editor.style.display === 'block'){
+      if (e.key === 'Escape'){ editor.style.display = 'none'; }
+      if (e.key === 'Enter'){ saveEditor(); }
+    }
   });
-}
 
-/* Fit-to-screen (no scroll) */
-const board = document.getElementById('board');
-function fitToScreen(){
-  board.style.transform='scale(1)';
-  drawIslands(); // measure columns first at scale 1
+  // Names manager
+  document.getElementById('addNameBtn').onclick = ()=>{
+    const nm = (nameField.value||'').trim();
+    if (!nm) return;
+    if (state.names.includes(nm)) { alert('Name already exists.'); return; }
+    state.names.push(nm);
+    ensureSkeleton(); save(); render();
+    nameField.value = '';
+  };
+  document.getElementById('renameBtn').onclick = ()=>{
+    const nm = (nameField.value||'').trim();
+    if (!nm || !current) return;
+    if (state.names.includes(nm)) { alert('Name already exists.'); return; }
+    const idx = state.names.indexOf(current.name);
+    if (idx>=0){
+      state.names[idx] = nm;
+      state.data[nm] = state.data[current.name];
+      delete state.data[current.name];
+      current.name = nm;
+      save(); render();
+      nameField.value = '';
+    }
+  };
 
-  const padW=40,padH=40;
-  const bw=board.scrollWidth,bh=board.scrollHeight;
-  const vw=window.innerWidth-padW,vh=window.innerHeight-padH;
-  const scale=Math.min(vw/bw, vh/bh);
-  board.style.transform=`scale(${scale})`;
-}
-addEventListener('resize', fitToScreen);
-addEventListener('load', fitToScreen);
-setTimeout(fitToScreen,0);
-</script>
+  // Boot
+  renderAsOf();
+  render();
+  </script>
 </body>
 </html>
