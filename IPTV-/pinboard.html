@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sales Leaderboard — Apple-Style Islands (No Scroll)</title>
+<style>
+  :root{
+    /* Foundation */
+    --bg:#f6f7fb; --panel:#ffffff; --ink:#0e1320; --muted:#667085;
+    --grid:#e8ebf0; --grid-strong:#d5dae3;
+
+    /* Brand tones */
+    --hdr:#0b3a69;         /* header background */
+    --nameCol:#0f4e8a;     /* sticky name column */
+    --blue:#0b3a69;        /* PO & blue dot */
+    --green:#1a7f2e;       /* New & green dot */
+    --red:#c01f24;         /* Winter Tire & red dot */
+
+    /* Cards & radii */
+    --radius:16px; --radiusSm:12px;
+    --shadow:0 18px 50px rgba(16,24,40,.10);
+
+    /* Base sizing (the whole board gets scaled to fit the screen) */
+    --cellW:48px; --nameW:300px; --rowH:44px; --f:14px; --fs:12px;
+
+    /* Day-dot spec */
+    --dot:20px; --gap:6px;
+
+    /* Column island look */
+    --islandBg:rgba(10, 22, 40, 0.035);
+    --islandBorder:rgba(10, 22, 40, 0.06);
+    --islandShadow:0 8px 20px rgba(16,24,40,.06) inset;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:var(--f)/1.35 ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
+         Segoe UI, Roboto, Inter, Arial, sans-serif;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* Frame & scalable board (no scroll) */
+  .frame{width:100vw;height:100vh;overflow:hidden;display:grid;place-items:center}
+  .board{
+    transform-origin: top left;
+    background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:16px; display:flex; flex-direction:column; gap:12px; position:relative;
+  }
+
+  /* Legend (pills) */
+  .top{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .legend{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    background:#f7f9fc;padding:10px 12px;border-radius:14px;border:1px solid var(--grid)
+  }
+  .legend b{font-weight:800;margin-right:2px}
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;background:#f1f5f9;
+    border:1px solid var(--grid);padding:6px 10px;border-radius:999px;font-weight:700
+  }
+  .pill .badge{
+    width:24px;height:24px;border-radius:999px;display:grid;place-items:center;
+    font-weight:900;font-variant-numeric:tabular-nums;color:#fff
+  }
+  .badge.g{background:var(--green)}
+  .badge.b{background:var(--blue)}
+  .badge.r{background:var(--red)}
+  .stamp{color:var(--muted);font-size:var(--fs)}
+
+  /* Grid shell */
+  .grid{
+    border:1px solid var(--grid); border-radius:12px; background:#fff;
+    position:relative;   /* for column islands */
+    overflow:visible;    /* islands can breathe */
+  }
+  /* Column islands layer (behind the table) */
+  .islands{position:absolute; inset:0; z-index:0; pointer-events:none}
+  .island{
+    position:absolute; top:8px; bottom:8px;
+    background:var(--islandBg);
+    border:1px solid var(--islandBorder);
+    border-radius:var(--radiusSm);
+    box-shadow:var(--islandShadow);
+  }
+
+  table{position:relative; z-index:1; border-collapse:separate; border-spacing:0}
+  th,td{
+    min-width:var(--cellW); height:var(--rowH);
+    border-right:1px solid var(--grid); border-bottom:1px solid var(--grid);
+    text-align:center; padding:6px 6px; white-space:nowrap; font-size:var(--f);
+    background:transparent;
+  }
+
+  thead th{
+    position:sticky; top:0; background:var(--hdr); color:#fff; font-weight:900; z-index:2
+  }
+  thead th:first-child{
+    left:0; min-width:var(--nameW); text-align:left; padding-left:12px; border-right:1px solid #072a4b
+  }
+  thead th.day{font-variant-numeric:tabular-nums}
+
+  tbody th{
+    position:sticky; left:0; background:var(--nameCol); color:#fff; text-align:left;
+    padding-left:12px; min-width:var(--nameW); border-right:1px solid #0a3b6b
+  }
+  .label{display:flex;align-items:center;gap:10px}
+  .name{font-weight:800}
+  .chip{
+    font-size:var(--fs);font-weight:800;color:#fff;
+    background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22);
+    padding:2px 8px;border-radius:999px
+  }
+  .ytdOnly .name{display:none} /* name once, on MTD row */
+
+  /* Airy gaps */
+  tbody tr.is-mtd td{background:transparent}
+  tbody tr.is-ytd td{background:transparent}
+  tbody tr.gap td{background:#f8fafc;height:26px}
+
+  /* Right totals emphasis */
+  .n-new{color:var(--green);font-weight:900}
+  .n-po{color:#0f2b66;font-weight:900}
+  .n-lse{color:#111;font-weight:900}
+  .n-wt{color:var(--red);font-weight:900}
+
+  /* Day cell dots: fixed layout (never squish) */
+  .tri{
+    display:flex;align-items:center;justify-content:center;
+    gap:var(--gap);
+    width:calc(var(--dot)*3 + var(--gap)*2);
+    margin:0 auto;
+  }
+  .bubble{
+    flex:0 0 var(--dot);
+    width:var(--dot);height:var(--dot);border-radius:999px;
+    display:grid;place-items:center;
+    font-weight:900;font-size:12px;line-height:1;
+    color:#fff;border:1px solid transparent;
+  }
+  .g{background:var(--green);border-color:var(--green)}
+  .b{background:var(--blue); border-color:var(--blue)}
+  .r{background:var(--red);  border-color:var(--red)}
+  .zero{background:transparent !important;color:transparent;border-color:#d6dde8}
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div id="board" class="board">
+      <div class="top">
+        <div class="legend">
+          <b>LEGEND</b>
+          <span class="pill"><span class="badge g">1</span> New Car Sales</span>
+          <span class="pill"><span class="badge b">1</span> Pre-Owned Sales</span>
+          <span class="pill"><span class="badge r">1</span> Winter Tire Package</span>
+        </div>
+        <div class="stamp" id="stamp"></div>
+      </div>
+
+      <div class="grid">
+        <!-- Column islands get drawn here -->
+        <div class="islands" id="islands"></div>
+
+        <table id="tbl">
+          <thead id="thead"></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ===== Month length ===== */
+const DAYS = 30; // set 31 for a 31-day month
+
+/* ===== Data (from your screenshot) =====
+   dots: [green(New), blue(PO), red(Winter)]
+   Zeros render as faint rings to keep alignment.
+*/
+const reps = [
+  { name:'Yassir',
+    mtd:{ dots: d([[0,0,0],[2,0,0],[1,0,0],[0,0,0],[2,0,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0],[0,0,0],[1,0,0],[1,0,0],[0,0,0],[1,0,0],[0,0,0],[2,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,1],[0,0,2]]), new:9, po:9, lse:4, mtdwt:'0' },
+    ytd:{ new:113, po:84, lse:23, mtdwt:'0%' } },
+  { name:'Sumit',
+    mtd:{ dots: d([[0,1,0],[1,0,0],[0,0,0],[1,0,0],[0,2,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0],[1,0,0],[0,1,1],[0,2,0],[1,0,0],[0,0,0],[0,0,0],[0,0,0],[0,2,0],[0,1,0]]), new:8, po:7, lse:5, mtdwt:'0' },
+    ytd:{ new:79, po:45, lse:15, mtdwt:'0%' } },
+  { name:'Connor',
+    mtd:{ dots: d([[0,0,0],[0,0,0],[1,0,0],[0,0,0],[0,0,0],[0,0,1],[0,0,0],[0,0,0],[0,1,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0],[0,0,1],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[3,0,0],[2,0,0]]), new:9, po:5, lse:5, mtdwt:'0' },
+    ytd:{ new:31, po:18, lse:9, mtdwt:'0%' } },
+  { name:'Mohamad',
+    mtd:{ dots: d([[0,0,0],[1,0,0],[0,0,0],[0,0,0],[1,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0],[1,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0]]), new:4, po:5, lse:4, mtdwt:'0' },
+    ytd:{ new:67, po:59, lse:11, mtdwt:'0%' } },
+  { name:'Jerry',
+    mtd:{ dots: d([[0,0,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0],[0,0,0],[0,0,2],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[2,0,0]]), new:5, po:3, lse:2, mtdwt:'0' },
+    ytd:{ new:86, po:21, lse:9, mtdwt:'0%' } },
+  { name:'Brittany',
+    mtd:{ dots: d([[0,1,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0],[1,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,2],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,1]]), new:5, po:2, lse:3, mtdwt:'1' },
+    ytd:{ new:72, po:39, lse:12, mtdwt:'10%' } },
+  { name:'Arnold',
+    mtd:{ dots: d([[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,1,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0]]), new:3, po:1, lse:2, mtdwt:'0' },
+    ytd:{ new:66, po:20, lse:8, mtdwt:'0%' } },
+  { name:'House',
+    mtd:{ dots: d([[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[1,0,0]]), new:2, po:0, lse:2, mtdwt:'0' },
+    ytd:{ new:22, po:4, lse:8, mtdwt:'0%' } },
+];
+
+/* Expand partial day lists to full month */
+function d(list){
+  const arr = Array.from({length: DAYS}, ()=>[0,0,0]);
+  list.forEach((t,i)=>{ if(arr[i]) arr[i]=t; });
+  return arr;
+}
+
+/* Build header */
+const thead = document.getElementById('thead');
+const hr = document.createElement('tr');
+const nameTh = document.createElement('th');
+nameTh.textContent='Sales Specialist';
+nameTh.style.minWidth='var(--nameW)';
+hr.appendChild(nameTh);
+
+for(let i=1;i<=DAYS;i++){
+  const th=document.createElement('th'); th.className='day'; th.textContent=i; hr.appendChild(th);
+}
+['New','PO','Lse','MTD WT'].forEach(lbl=>{
+  const th=document.createElement('th'); th.textContent=lbl; hr.appendChild(th);
+});
+thead.appendChild(hr);
+
+/* Render body */
+const tbody = document.getElementById('tbody');
+
+function dayCell([g,b,r]){
+  const td = document.createElement('td');
+  const wrap = document.createElement('div'); wrap.className='tri';
+  wrap.append(
+    bubble('r',r),
+    bubble('b',b),
+    bubble('g',g)
+  );
+  td.appendChild(wrap);
+  return td;
+}
+function bubble(cls,val){
+  const el=document.createElement('div');
+  el.className=`bubble ${cls} ${val>0?'':'zero'}`;
+  el.textContent = val>0 ? String(val) : '';
+  return el;
+}
+function cell(txt, cls){ const td=document.createElement('td'); if(cls) td.className=cls; td.textContent=(txt??'')===0?'':(txt??''); return td; }
+
+function row(rep,isMTD){
+  const tr=document.createElement('tr');
+  tr.className = isMTD ? 'is-mtd' : 'is-ytd';
+  if(!isMTD) tr.classList.add('ytdOnly');
+
+  const th=document.createElement('th');
+  th.innerHTML=`<div class="label"><span class="name">${rep.name}</span><span class="chip">${isMTD?'MTD':'YTD'}</span></div>`;
+  tr.appendChild(th);
+
+  const dots = isMTD ? rep.mtd.dots : Array.from({length:DAYS},()=>[0,0,0]);
+  for(let i=0;i<DAYS;i++){ tr.appendChild(dayCell(dots[i])); }
+
+  const totals = isMTD ? rep.mtd : rep.ytd;
+  tr.appendChild(cell(totals.new,'n-new'));
+  tr.appendChild(cell(totals.po,'n-po'));
+  tr.appendChild(cell(totals.lse,'n-lse'));
+  tr.appendChild(cell(totals.mtdwt,'n-wt'));
+  return tr;
+}
+
+reps.forEach(rep=>{
+  tbody.appendChild(row(rep,true));
+  tbody.appendChild(row(rep,false));
+  const gap=document.createElement('tr'); gap.className='gap';
+  const gtd=document.createElement('td'); gtd.colSpan=1 + DAYS + 4; gap.appendChild(gtd); tbody.appendChild(gap);
+});
+
+/* Timestamp */
+document.getElementById('stamp').textContent =
+  `Information current as of ${new Intl.DateTimeFormat(undefined,{dateStyle:'long', timeStyle:'short'}).format(new Date())}`;
+
+/* Column islands: draw one rounded “card” behind each day column */
+function drawIslands(){
+  const islands = document.getElementById('islands');
+  islands.innerHTML = '';
+  const headerCells = Array.from(document.querySelectorAll('#thead th.day'));
+  if(headerCells.length===0) return;
+
+  // vertical bounds of the table, with a little breathing room
+  const grid = document.querySelector('.grid');
+  const tbl = document.querySelector('#tbl');
+  const topOffset = tbl.offsetTop; // includes header
+  const islandTop = 6;  // padding from container
+  const islandBottom = 6;
+
+  headerCells.forEach(th=>{
+    const left = th.offsetLeft;
+    const width = th.offsetWidth;
+
+    const div = document.createElement('div');
+    div.className = 'island';
+    div.style.left = (left + 1) + 'px';
+    div.style.width = (width - 2) + 'px';
+    div.style.top = islandTop + 'px';
+    div.style.bottom = islandBottom + 'px';
+    islands.appendChild(div);
+  });
+}
+
+/* Fit-to-screen (no scroll) */
+const board = document.getElementById('board');
+function fitToScreen(){
+  board.style.transform='scale(1)';
+  drawIslands(); // measure columns first at scale 1
+
+  const padW=40,padH=40;
+  const bw=board.scrollWidth,bh=board.scrollHeight;
+  const vw=window.innerWidth-padW,vh=window.innerHeight-padH;
+  const scale=Math.min(vw/bw, vh/bh);
+  board.style.transform=`scale(${scale})`;
+}
+addEventListener('resize', fitToScreen);
+addEventListener('load', fitToScreen);
+setTimeout(fitToScreen,0);
+</script>
+</body>
+</html>
