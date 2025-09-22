@@ -8,14 +8,10 @@
     :root{
       --bg:#f1f2f4; --panel:#fff; --ink:#0b0b0c; --muted:#6e6e73;
       --line:#d0d3d9; --line-strong:#aeb3bb;
-      --green:#1a7f37; --blue:#1b59d1; --red:#c42b2b; --dark:#111;
-      --roleW: 220px;     /* left name col */
-      --periodW: 70px;    /* MTD/YTD col */
-      --cellW: 44px;      /* JS recalculates so everything fits */
-      --pillW: 18px;      /* JS adjusts for compact */
-      --pillH: 18px;
-      --pillFS: 12px;
-      --pillGap: 6px;
+      --green:#1a7f37; --blue:#1b59d1; --red:#c42b2b;
+      --roleW: 220px;      /* left name col */
+      --periodW: 70px;     /* MTD/YTD col */
+      --cellW: 44px;       /* JS recalculates so everything fits */
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -33,7 +29,7 @@
     .spacer{flex:1}
     .asof{font-size:13px; color:var(--muted)}
 
-    /* Legend (Lease removed) */
+    /* Legend */
     .legend{display:flex; gap:18px; align-items:center; padding:8px 14px 12px}
     .tag{display:inline-flex; align-items:center; gap:6px; font-size:13px; color:#374151}
     .dot{width:14px; height:14px; border-radius:4px; border:1px solid var(--line-strong)}
@@ -44,50 +40,55 @@
     /* Board */
     .board{flex:1; padding:12px 14px 14px; background:var(--bg)}
     .frame{height:100%; border:1px solid var(--line); border-radius:14px; background:#fff; box-shadow:0 10px 28px rgba(0,0,0,.07); overflow:hidden}
-    table{border-collapse:separate; border-spacing:0; width:100%}
+    table{border-collapse:separate; border-spacing:0; width:100%; table-layout:fixed}
     thead th{position:sticky; top:0; z-index:2; background:linear-gradient(#fbfbfc,#f5f6f8);}
     th, td{border-right:1px solid var(--line); border-bottom:1px solid var(--line)}
     th:first-child, td:first-child{border-left:1px solid var(--line)}
     th, td{padding:6px 8px; text-align:center}
     th{font-weight:600; color:#263238; font-size:13px}
-    tbody td{height:32px; background:#fff}
+    tbody td{height:32px; background:#fff; overflow:hidden}
     tbody tr:nth-child(odd) td{background:#fcfdff}
 
     /* sticky left cols */
-    .name{position:sticky; left:0; z-index:1; background:inherit; text-align:left; font-weight:600; width:var(--roleW)}
+    .name{position:sticky; left:0; z-index:1; background:inherit; text-align:left; font-weight:600; width:var(--roleW); cursor:pointer}
     .period{position:sticky; left:var(--roleW); z-index:1; background:inherit; width:var(--periodW); font-weight:600; color:#374151}
 
     /* day widths (set by JS) */
     .daynum, td.cell, td.total {width:var(--cellW)}
     .today{background:#fff7ea !important}
 
-    /* tiny colored numbers — never wrap */
-    .pills{display:flex; justify-content:center; gap:var(--pillGap); flex-wrap:nowrap; white-space:nowrap}
-    .pill{min-width:var(--pillW); height:var(--pillH); padding:0 4px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:var(--pillFS); border:1px solid transparent}
-    .pill.g{color:var(--green); background:#e8f5ec; border-color:#b7e2c7}   /* New */
-    .pill.b{color:var(--blue);  background:#e7efff; border-color:#c2d5ff}  /* Pre-Owned */
-    .pill.wt{color:var(--red);   background:#f7e9ea; border-color:#f0c9cd}  /* Winter Tire */
+    /* pills — never wrap; empty pills hidden; auto-squish classes */
+    .pills{display:flex; justify-content:center; align-items:center; gap:6px; flex-wrap:nowrap; white-space:nowrap}
+    .pill{height:18px; padding:0 6px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; border:1px solid transparent}
+    .pill:empty{display:none}                 /* hide empties */
+    .pill.g{color:var(--green); background:#e8f5ec; border-color:#b7e2c7}
+    .pill.b{color:var(--blue);  background:#e7efff; border-color:#c2d5ff}
+    .pill.wt{color:var(--red);   background:#f7e9ea; border-color:#f0c9cd}
+    .pills.squish  {gap:4px}
+    .pills.squish  .pill{font-size:11px; padding:0 5px}
+    .pills.xs      {gap:2px}
+    .pills.xs      .pill{font-size:10px; padding:0 3px}
+    .pills.xxs     {gap:1px}
+    .pills.xxs     .pill{font-size:9px;  padding:0 2px}
 
-    /* single Total column at end */
     td.total{font-weight:700; background:#fbfbfd}
 
-    /* Editor (G/B/WT only) — neat 3-column layout and placed next to the clicked cell */
+    /* Editor (G/B/WT) */
     .editor{
-      position:fixed; left:24px; top:24px; width:360px; background:#fff; border:1px solid var(--line);
-      border-radius:12px; padding:12px; box-shadow:0 14px 36px rgba(0,0,0,.18); display:none
+      position:fixed; left:24px; top:24px; width:380px; background:#fff; border:1px solid var(--line);
+      border-radius:12px; padding:12px; box-shadow:0 14px 36px rgba(0,0,0,.18); display:none; z-index:50
     }
     .editor h3{margin:0 0 10px; font-size:14px}
-    .rows{display:grid; grid-template-columns:28px 1fr 90px; gap:10px 8px; align-items:center}
+    .rows{display:grid; grid-template-columns:28px 1fr 110px; gap:10px 8px; align-items:center}
     .chip{min-width:22px; height:18px; padding:0 4px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; border:1px solid transparent}
     .chip.g{color:var(--green); background:#e8f5ec; border-color:#b7e2c7}
     .chip.b{color:var(--blue);  background:#e7efff; border-color:#c2d5ff}
     .chip.wt{color:var(--red);  background:#f7e9ea; border-color:#f0c9cd}
     .rows label{font-weight:600; color:#2f2f31; text-align:left}
     .rows input{width:100%; padding:6px 8px; border:1px solid var(--line-strong); border-radius:8px}
-    /* Hide number spinners if you want it cleaner */
     .rows input[type=number]::-webkit-outer-spin-button,
-    .rows input[type=number]::-webkit-inner-spin-button{ -webkit-appearance: none; margin: 0; }
-    .rows input[type=number]{ -moz-appearance: textfield; }
+    .rows input[type=number]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0 }
+    .rows input[type=number]{ -moz-appearance:textfield }
 
     .foot{display:flex; gap:8px; justify-content:flex-end; margin-top:12px}
     .btn{appearance:none; border:1px solid var(--line-strong); background:#fff; padding:8px 10px; border-radius:10px; font-weight:600; cursor:pointer}
@@ -99,7 +100,6 @@
     .nameRow{display:grid; grid-template-columns:1fr auto auto; gap:8px; margin-top:8px}
     .nameRow input{padding:6px 8px; border:1px solid var(--line-strong); border-radius:8px}
 
-    /* Hide all old toolbar buttons (kept editing popover only) */
     .toolbar{display:none}
   </style>
 </head>
@@ -124,7 +124,7 @@
     </div>
   </div>
 
-  <!-- Editor (G/B/WT only) -->
+  <!-- Editor -->
   <div class="editor" id="editor" role="dialog" aria-modal="true">
     <h3 id="editorTitle">Edit</h3>
     <div class="rows">
@@ -133,12 +133,12 @@
       <div class="chip wt">WT</div><label for="inW">WT</label><input id="inW" type="number" min="0" step="1" />
     </div>
 
-    <details class="nameMgr">
+    <details class="nameMgr" id="nameMgr">
       <summary>Manage names</summary>
       <div class="nameRow">
         <input id="nameField" placeholder="Type a name…" />
         <button class="btn" id="addNameBtn" type="button">Add</button>
-        <button class="btn" id="renameBtn" type="button">Rename current</button>
+        <button class="btn" id="renameBtn" type="button">Rename selected</button>
       </div>
     </details>
 
@@ -150,7 +150,7 @@
 
   <script>
   // ===== Data (MTD/YTD rows, Lease removed) =====
-  const STORAGE_KEY = 'sales-pinboard-1080-v2';
+  const STORAGE_KEY = 'sales-pinboard-1080-v4';
   const defaultTeam = ['Yassir','Sumit','Connor','Mohamad','Jerry','Brittany','Arnold','House'];
   const today = new Date();
   const state = {
@@ -160,7 +160,6 @@
     data: {} // data[name].MTD[day] = {g,b,w}, data[name].YTD[day] = {g,b,w}
   };
 
-  // Load
   try { const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)||'null'); if (saved) Object.assign(state, saved); } catch {}
 
   function daysInMonth(y,m){ return new Date(y,m+1,0).getDate(); }
@@ -175,7 +174,6 @@
         for (let d=1; d<=dim; d++){
           state.data[n][row][d] = state.data[n][row][d] || {g:0,b:0,w:0};
         }
-        // prune days beyond month
         for (const k of Object.keys(state.data[n][row])) {
           const day = Number(k); if (day>dim) delete state.data[n][row][k];
         }
@@ -197,21 +195,8 @@
     const fixed = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--roleW')) +
                   parseInt(getComputedStyle(document.documentElement).getPropertyValue('--periodW'));
     const cols = dim + 1; // days + Total
-    const cellW = Math.max(32, Math.floor((stageInner - fixed - 2) / cols));
+    const cellW = Math.max(34, Math.floor((stageInner - fixed - 2) / cols));
     document.documentElement.style.setProperty('--cellW', cellW + 'px');
-
-    // Set pill compactness so 3 can fit in one line
-    if (cellW < 60) {
-      document.documentElement.style.setProperty('--pillW', Math.max(12, Math.floor((cellW - 12) / 3)) + 'px');
-      document.documentElement.style.setProperty('--pillH', '16px');
-      document.documentElement.style.setProperty('--pillFS', '11px');
-      document.documentElement.style.setProperty('--pillGap', '4px');
-    } else {
-      document.documentElement.style.setProperty('--pillW', '18px');
-      document.documentElement.style.setProperty('--pillH', '18px');
-      document.documentElement.style.setProperty('--pillFS', '12px');
-      document.documentElement.style.setProperty('--pillGap', '6px');
-    }
 
     let html = '';
     html += '<thead><tr>';
@@ -229,7 +214,7 @@
       let first = true;
       for (const row of ['MTD','YTD']){
         html += '<tr>';
-        if (first){ html += `<td class="name" rowspan="2">${name}</td>`; first=false; }
+        if (first){ html += `<td class="name nameCell" data-name="${encodeURIComponent(name)}" rowspan="2" title="Click to rename">${name}</td>`; first=false; }
         html += `<td class="period">${row}</td>`;
         let sum=0;
         for (let d=1; d<=dim; d++){
@@ -238,9 +223,9 @@
           const isToday = (state.year===today.getFullYear() && state.month===today.getMonth() && d===today.getDate());
           html += `<td class="cell${isToday?' today':''}" data-name="${encodeURIComponent(name)}" data-row="${row}" data-day="${d}">
             <div class="pills">
-              ${v.g?`<span class='pill g' title='New'>${v.g}</span>`:''}
-              ${v.b?`<span class='pill b' title='Pre-Owned'>${v.b}</span>`:''}
-              ${v.w?`<span class='pill wt' title='Winter Tire'>${v.w}</span>`:''}
+              <span class="pill g">${v.g||''}</span>
+              <span class="pill b">${v.b||''}</span>
+              <span class="pill wt">${v.w||''}</span>
             </div>
           </td>`;
         }
@@ -252,9 +237,30 @@
 
     gridEl.innerHTML = html;
 
-    // click-to-edit
+    // Fit pills per cell so they never wrap/overflow
+    fitAllCells();
+
+    // click-to-edit day cells
     gridEl.querySelectorAll('td.cell').forEach(td=>{
       td.addEventListener('click', (ev)=> openEditor(td, ev));
+    });
+
+    // click-to-rename name cells
+    gridEl.querySelectorAll('td.nameCell').forEach(td=>{
+      td.addEventListener('click', ()=> openRenameFromName(td));
+    });
+  }
+
+  function fitAllCells(){
+    const cells = gridEl.querySelectorAll('td.cell');
+    cells.forEach(td=>{
+      const pills = td.querySelector('.pills');
+      if (!pills) return;
+      pills.classList.remove('squish','xs','xxs');
+      const max = td.clientWidth - 6;
+      if (pills.scrollWidth > max) pills.classList.add('squish');
+      if (pills.scrollWidth > max) pills.classList.add('xs');
+      if (pills.scrollWidth > max) pills.classList.add('xxs');
     });
   }
 
@@ -273,21 +279,14 @@
   const inW = document.getElementById('inW');
   const editorTitle = document.getElementById('editorTitle');
   const nameField = document.getElementById('nameField');
+  const nameMgr = document.getElementById('nameMgr');
   let current = null;
+  let renameTarget = null; // if set, renameBtn renames this name
 
-  function openEditor(td, ev){
-    const name = decodeURIComponent(td.dataset.name);
-    const row = td.dataset.row;
-    const day = Number(td.dataset.day);
-    const v = state.data[name][row][day] || {g:0,b:0,w:0};
-    inG.value = v.g||0; inB.value = v.b||0; inW.value = v.w||0;
-    editorTitle.textContent = `Edit — ${name} • ${row} • Day ${day}`;
-    current = {name,row,day};
-
-    // place editor near the clicked cell, inside the stage
+  function placeEditorNear(el){
     editor.style.display = 'block';
     requestAnimationFrame(()=>{
-      const rect = td.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
       const stageRect = document.querySelector('.stage').getBoundingClientRect();
       let left = Math.min(stageRect.right - editor.offsetWidth - 12, rect.left + 8);
       let top  = Math.min(stageRect.bottom - editor.offsetHeight - 12, rect.bottom + 8);
@@ -295,11 +294,35 @@
       top  = Math.max(stageRect.top + 12, top);
       editor.style.left = left + 'px';
       editor.style.top  = top  + 'px';
-      inG.focus(); inG.select();
     });
   }
 
-  document.getElementById('cancelEdit').onclick = ()=> editor.style.display = 'none';
+  function openEditor(td){
+    const name = decodeURIComponent(td.dataset.name);
+    const row = td.dataset.row;
+    const day = Number(td.dataset.day);
+    const v = state.data[name][row][day] || {g:0,b:0,w:0};
+    inG.value = v.g||0; inB.value = v.b||0; inW.value = v.w||0;
+    editorTitle.textContent = `Edit — ${name} • ${row} • Day ${day}`;
+    current = {name,row,day};
+    renameTarget = null;                 // editing numbers, not renaming
+    nameMgr.open = false;
+    placeEditorNear(td);
+    inG.focus(); inG.select();
+  }
+
+  function openRenameFromName(td){
+    const name = decodeURIComponent(td.dataset.name);
+    current = {name,row:'MTD',day:1};    // dummy context
+    renameTarget = name;                 // explicit rename target
+    nameField.value = name;
+    editorTitle.textContent = `Rename — ${name}`;
+    nameMgr.open = true;                 // show manager
+    placeEditorNear(td);
+    nameField.focus(); nameField.select();
+  }
+
+  document.getElementById('cancelEdit').onclick = ()=>{ editor.style.display = 'none'; renameTarget = null; };
   document.getElementById('saveEdit').onclick = saveEditor;
   function saveEditor(){
     if (!current) return;
@@ -314,8 +337,8 @@
   // Keyboard shortcuts
   window.addEventListener('keydown', (e)=>{
     if (editor.style.display === 'block'){
-      if (e.key === 'Escape'){ editor.style.display = 'none'; }
-      if (e.key === 'Enter'){ saveEditor(); }
+      if (e.key === 'Escape'){ editor.style.display = 'none'; renameTarget = null; }
+      if (e.key === 'Enter' && !nameMgr.open){ saveEditor(); }
     }
   });
 
@@ -330,14 +353,16 @@
   };
   document.getElementById('renameBtn').onclick = ()=>{
     const nm = (nameField.value||'').trim();
-    if (!nm || !current) return;
+    const src = renameTarget || (current && current.name);
+    if (!nm || !src) return;
     if (state.names.includes(nm)) { alert('Name already exists.'); return; }
-    const idx = state.names.indexOf(current.name);
+    const idx = state.names.indexOf(src);
     if (idx>=0){
       state.names[idx] = nm;
-      state.data[nm] = state.data[current.name];
-      delete state.data[current.name];
-      current.name = nm;
+      state.data[nm] = state.data[src];
+      delete state.data[src];
+      if (current) current.name = nm;
+      if (renameTarget) renameTarget = nm;
       save(); render();
       nameField.value = '';
     }
