@@ -12,6 +12,7 @@
       --roleW: 220px;      /* left name col */
       --periodW: 70px;     /* MTD/YTD col */
       --cellW: 44px;       /* JS recalculates so everything fits */
+      --rcolW: 56px;       /* width for right summary columns */
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -30,18 +31,18 @@
     .asof{font-size:13px; color:var(--muted)}
 
     /* Legend */
-    .legend{display:flex; gap:18px; align-items:center; padding:8px 14px 12px}
+    .legend{display:flex; gap:18px; align-items:center; padding:8px 14px 10px}
     .tag{display:inline-flex; align-items:center; gap:6px; font-size:13px; color:#374151}
     .dot{width:14px; height:14px; border-radius:4px; border:1px solid var(--line-strong)}
     .dot.green{background:#e8f5ec; border-color:#b7e2c7}
     .dot.blue{background:#e7efff; border-color:#c2d5ff}
     .dot.red{background:#f7e9ea; border-color:#f0c9cd}
 
-    /* Board */
-    .board{flex:1; padding:12px 14px 14px; background:var(--bg)}
-    .frame{height:100%; border:1px solid var(--line); border-radius:14px; background:#fff; box-shadow:0 10px 28px rgba(0,0,0,.07); overflow:hidden}
+    /* Main content (table) */
+    .content{flex:1; display:flex; flex-direction:column; background:var(--bg); padding:12px 14px 12px}
+    .frame{flex:1; border:1px solid var(--line); border-radius:14px; background:#fff; box-shadow:0 10px 28px rgba(0,0,0,.07); overflow:hidden}
     table{border-collapse:separate; border-spacing:0; width:100%; table-layout:fixed}
-    thead th{position:sticky; top:0; z-index:2; background:linear-gradient(#fbfbfc,#f5f6f8);}
+    thead th{position:sticky; top:0; z-index:2; background:linear-gradient(#fbfbfc,#f5f6f8);}    
     th, td{border-right:1px solid var(--line); border-bottom:1px solid var(--line)}
     th:first-child, td:first-child{border-left:1px solid var(--line)}
     th, td{padding:6px 8px; text-align:center}
@@ -54,30 +55,27 @@
     .period{position:sticky; left:var(--roleW); z-index:1; background:inherit; width:var(--periodW); font-weight:600; color:#374151}
 
     /* day widths (set by JS) */
-    .daynum, td.cell, td.total {width:var(--cellW)}
+    .daynum, td.cell {width:var(--cellW)}
     .today{background:#fff7ea !important}
 
-    /* pills — never wrap; empty pills hidden; auto-squish classes */
+    /* pills — never wrap */
     .pills{display:flex; justify-content:center; align-items:center; gap:6px; flex-wrap:nowrap; white-space:nowrap}
     .pill{height:18px; padding:0 6px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; border:1px solid transparent}
-    .pill:empty{display:none}                 /* hide empties */
+    .pill:empty{display:none}
     .pill.g{color:var(--green); background:#e8f5ec; border-color:#b7e2c7}
     .pill.b{color:var(--blue);  background:#e7efff; border-color:#c2d5ff}
     .pill.wt{color:var(--red);   background:#f7e9ea; border-color:#f0c9cd}
-    .pills.squish  {gap:4px}
-    .pills.squish  .pill{font-size:11px; padding:0 5px}
-    .pills.xs      {gap:2px}
-    .pills.xs      .pill{font-size:10px; padding:0 3px}
-    .pills.xxs     {gap:1px}
-    .pills.xxs     .pill{font-size:9px;  padding:0 2px}
+    .pills.squish  {gap:4px} .pills.squish  .pill{font-size:11px; padding:0 5px}
+    .pills.xs      {gap:2px} .pills.xs      .pill{font-size:10px; padding:0 3px}
+    .pills.xxs     {gap:1px} .pills.xxs     .pill{font-size:9px;  padding:0 2px}
 
-    td.total{font-weight:700; background:#fbfbfd}
+    /* Right summary columns */
+    th.rcol, td.rcol{width:var(--rcolW)}
+    td.total{font-weight:700; background:#fbfbfd; width:var(--rcolW)}
 
     /* Editor (G/B/WT) */
-    .editor{
-      position:fixed; left:24px; top:24px; width:380px; background:#fff; border:1px solid var(--line);
-      border-radius:12px; padding:12px; box-shadow:0 14px 36px rgba(0,0,0,.18); display:none; z-index:50
-    }
+    .editor{ position:fixed; left:24px; top:24px; width:380px; background:#fff; border:1px solid var(--line);
+      border-radius:12px; padding:12px; box-shadow:0 14px 36px rgba(0,0,0,.18); display:none; z-index:50 }
     .editor h3{margin:0 0 10px; font-size:14px}
     .rows{display:grid; grid-template-columns:28px 1fr 110px; gap:10px 8px; align-items:center}
     .chip{min-width:22px; height:18px; padding:0 4px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; border:1px solid transparent}
@@ -86,15 +84,12 @@
     .chip.wt{color:var(--red);  background:#f7e9ea; border-color:#f0c9cd}
     .rows label{font-weight:600; color:#2f2f31; text-align:left}
     .rows input{width:100%; padding:6px 8px; border:1px solid var(--line-strong); border-radius:8px}
-    .rows input[type=number]::-webkit-outer-spin-button,
-    .rows input[type=number]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0 }
+    .rows input[type=number]::-webkit-outer-spin-button, .rows input[type=number]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0 }
     .rows input[type=number]{ -moz-appearance:textfield }
-
     .foot{display:flex; gap:8px; justify-content:flex-end; margin-top:12px}
     .btn{appearance:none; border:1px solid var(--line-strong); background:#fff; padding:8px 10px; border-radius:10px; font-weight:600; cursor:pointer}
     .btn.primary{border-color:#0b6bcb; background:#0b6bcb; color:#fff}
 
-    /* Names manager inside editor */
     details.nameMgr{margin-top:10px; border-top:1px solid var(--line); padding-top:10px}
     details.nameMgr summary{cursor:pointer; font-weight:600; color:#2f2f31}
     .nameRow{display:grid; grid-template-columns:1fr auto auto; gap:8px; margin-top:8px}
@@ -117,7 +112,7 @@
       <span class="tag"><span class="dot red"></span> Winter Tire</span>
     </div>
 
-    <div class="board">
+    <div class="content">
       <div class="frame">
         <table id="grid"></table>
       </div>
@@ -150,7 +145,7 @@
 
   <script>
   // ===== Data (MTD/YTD rows, Lease removed) =====
-  const STORAGE_KEY = 'sales-pinboard-1080-v4';
+  const STORAGE_KEY = 'sales-pinboard-1080-v6';
   const defaultTeam = ['Yassir','Sumit','Connor','Mohamad','Jerry','Brittany','Arnold','House'];
   const today = new Date();
   const state = {
@@ -161,9 +156,7 @@
   };
 
   try { const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)||'null'); if (saved) Object.assign(state, saved); } catch {}
-
   function daysInMonth(y,m){ return new Date(y,m+1,0).getDate(); }
-
   function ensureSkeleton(){
     const dim = daysInMonth(state.year, state.month);
     if (!state.names?.length) state.names = [...defaultTeam];
@@ -174,13 +167,10 @@
         for (let d=1; d<=dim; d++){
           state.data[n][row][d] = state.data[n][row][d] || {g:0,b:0,w:0};
         }
-        for (const k of Object.keys(state.data[n][row])) {
-          const day = Number(k); if (day>dim) delete state.data[n][row][k];
-        }
+        for (const k of Object.keys(state.data[n][row])) { const day = Number(k); if (day>dim) delete state.data[n][row][k]; }
       }
     }
   }
-
   function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); renderAsOf(); }
 
   const gridEl = document.getElementById('grid');
@@ -190,12 +180,14 @@
     const dim = daysInMonth(state.year, state.month);
     const monthName = new Date(state.year, state.month, 1).toLocaleString(undefined,{month:'long'});
 
-    // Compute cell width to fill 1920 with no horizontal scroll
-    const stageInner = 1920 - 2*14; // side padding in .board
-    const fixed = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--roleW')) +
-                  parseInt(getComputedStyle(document.documentElement).getPropertyValue('--periodW'));
-    const cols = dim + 1; // days + Total
-    const cellW = Math.max(34, Math.floor((stageInner - fixed - 2) / cols));
+    // Fit to 1920 width — account for 1 Total + 4 right columns
+    const stageInner = 1920 - 2*14; // side padding in .content
+    const fixedLeft = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--roleW')) +
+                      parseInt(getComputedStyle(document.documentElement).getPropertyValue('--periodW'));
+    const rcolW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--rcolW')); 
+    const suffixCols = 1 + 4; // Total + New/PO/WT/Rate
+    const usable = stageInner - fixedLeft - suffixCols*rcolW - 2; // -2 borders tolerance
+    const cellW = Math.max(30, Math.floor(usable / dim));
     document.documentElement.style.setProperty('--cellW', cellW + 'px');
 
     let html = '';
@@ -206,7 +198,11 @@
       const isToday = (state.year===today.getFullYear() && state.month===today.getMonth() && d===today.getDate());
       html += `<th class="daynum${isToday?' today':''}">${d}</th>`;
     }
-    html += `<th>Total</th>`;
+    html += `<th class="rcol">Total</th>`;
+    html += `<th class="rcol">New</th>`;
+    html += `<th class="rcol">PO</th>`;
+    html += `<th class="rcol">WT</th>`;
+    html += `<th class="rcol">Rate</th>`;
     html += '</tr></thead>';
 
     html += '<tbody>';
@@ -216,9 +212,10 @@
         html += '<tr>';
         if (first){ html += `<td class="name nameCell" data-name="${encodeURIComponent(name)}" rowspan="2" title="Click to rename">${name}</td>`; first=false; }
         html += `<td class="period">${row}</td>`;
-        let sum=0;
+        let sum=0, gsum=0, bsum=0, wsum=0;
         for (let d=1; d<=dim; d++){
           const v = state.data[name][row][d] || {g:0,b:0,w:0};
+          gsum += v.g|0; bsum += v.b|0; wsum += v.w|0;
           sum += (v.g|0) + (v.b|0) + (v.w|0);
           const isToday = (state.year===today.getFullYear() && state.month===today.getMonth() && d===today.getDate());
           html += `<td class="cell${isToday?' today':''}" data-name="${encodeURIComponent(name)}" data-row="${row}" data-day="${d}">
@@ -229,7 +226,13 @@
             </div>
           </td>`;
         }
-        html += `<td class="total">${sum}</td>`;
+        const denom = (gsum+bsum) || 0; // attach rate uses New+PO base
+        const rate = denom? Math.round((wsum/denom)*100) + '%':'—';
+        html += `<td class="rcol total">${sum}</td>`;
+        html += `<td class="rcol">${gsum}</td>`;
+        html += `<td class="rcol">${bsum}</td>`;
+        html += `<td class="rcol">${wsum}</td>`;
+        html += `<td class="rcol">${rate}</td>`;
         html += '</tr>';
       }
     }
@@ -237,18 +240,9 @@
 
     gridEl.innerHTML = html;
 
-    // Fit pills per cell so they never wrap/overflow
     fitAllCells();
-
-    // click-to-edit day cells
-    gridEl.querySelectorAll('td.cell').forEach(td=>{
-      td.addEventListener('click', (ev)=> openEditor(td, ev));
-    });
-
-    // click-to-rename name cells
-    gridEl.querySelectorAll('td.nameCell').forEach(td=>{
-      td.addEventListener('click', ()=> openRenameFromName(td));
-    });
+    gridEl.querySelectorAll('td.cell').forEach(td=> td.addEventListener('click', (ev)=> openEditor(td, ev)));
+    gridEl.querySelectorAll('td.nameCell').forEach(td=> td.addEventListener('click', ()=> openRenameFromName(td)));
   }
 
   function fitAllCells(){
@@ -272,7 +266,7 @@
     el.textContent = `Information current as of ${ts}`;
   }
 
-  // ===== Editor (G/B/WT) with add/rename names =====
+  // ===== Editor + rename =====
   const editor = document.getElementById('editor');
   const inG = document.getElementById('inG');
   const inB = document.getElementById('inB');
@@ -281,7 +275,7 @@
   const nameField = document.getElementById('nameField');
   const nameMgr = document.getElementById('nameMgr');
   let current = null;
-  let renameTarget = null; // if set, renameBtn renames this name
+  let renameTarget = null;
 
   function placeEditorNear(el){
     editor.style.display = 'block';
@@ -305,44 +299,37 @@
     inG.value = v.g||0; inB.value = v.b||0; inW.value = v.w||0;
     editorTitle.textContent = `Edit — ${name} • ${row} • Day ${day}`;
     current = {name,row,day};
-    renameTarget = null;                 // editing numbers, not renaming
-    nameMgr.open = false;
-    placeEditorNear(td);
-    inG.focus(); inG.select();
+    renameTarget = null; nameMgr.open = false;
+    placeEditorNear(td); inG.focus(); inG.select();
   }
 
   function openRenameFromName(td){
     const name = decodeURIComponent(td.dataset.name);
-    current = {name,row:'MTD',day:1};    // dummy context
-    renameTarget = name;                 // explicit rename target
+    current = {name,row:'MTD',day:1};
+    renameTarget = name;
     nameField.value = name;
     editorTitle.textContent = `Rename — ${name}`;
-    nameMgr.open = true;                 // show manager
+    nameMgr.open = true;
     placeEditorNear(td);
     nameField.focus(); nameField.select();
   }
 
   document.getElementById('cancelEdit').onclick = ()=>{ editor.style.display = 'none'; renameTarget = null; };
-  document.getElementById('saveEdit').onclick = saveEditor;
-  function saveEditor(){
+  document.getElementById('saveEdit').onclick = ()=>{
     if (!current) return;
     state.data[current.name][current.row][current.day] = {
-      g: Number(inG.value||0),
-      b: Number(inB.value||0),
-      w: Number(inW.value||0)
+      g: Number(inG.value||0), b: Number(inB.value||0), w: Number(inW.value||0)
     };
     save(); render(); editor.style.display = 'none';
-  }
+  };
 
-  // Keyboard shortcuts
   window.addEventListener('keydown', (e)=>{
     if (editor.style.display === 'block'){
       if (e.key === 'Escape'){ editor.style.display = 'none'; renameTarget = null; }
-      if (e.key === 'Enter' && !nameMgr.open){ saveEditor(); }
+      if (e.key === 'Enter' && !nameMgr.open){ document.getElementById('saveEdit').click(); }
     }
   });
 
-  // Names manager
   document.getElementById('addNameBtn').onclick = ()=>{
     const nm = (nameField.value||'').trim();
     if (!nm) return;
@@ -369,6 +356,12 @@
   };
 
   // Boot
+  function renderAsOf(){
+    const el = document.getElementById('asof');
+    const d = new Date();
+    const ts = d.toLocaleString(undefined,{ hour:'numeric', minute:'2-digit'}) + ' on ' + d.toLocaleDateString(undefined,{year:'numeric', month:'long', day:'numeric'});
+    el.textContent = `Information current as of ${ts}`;
+  }
   renderAsOf();
   render();
   </script>
