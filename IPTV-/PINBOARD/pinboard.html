@@ -4,34 +4,22 @@
 <meta charset="utf-8" />
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sales Pinboard — BrightSign + GIF + Live Sync</title>
+<title>Sales Pinboard — 3-Row Layout + Live</title>
 <style>
   :root{
-    --roleW: 160px;
-    --periodW: 60px;
-    --rcolW: 64px;
-    --cellW: 44px;
-
-    --bg:#0b0f14;
-    --panel: rgba(255,255,255,0.94);
-    --frame: rgba(255,255,255,0.96);
-    --ink:#0b0b0c;
-    --muted:#5b6570;
-    --line:#d0d3d9;
-
-    --green:#1a7f37;
-    --blue:#1b59d1;
-    --red:#c42b2b;
+    --roleW:160px; --typeW:120px; --rcolW:72px; --cellW:44px;
+    --bg:#0b0f14; --panel:rgba(255,255,255,.94); --frame:rgba(255,255,255,.96);
+    --ink:#0b0b0c; --muted:#5b6570; --line:#d0d3d9;
+    --green:#1a7f37; --blue:#1b59d1; --red:#c42b2b;
   }
-
   *{box-sizing:border-box}
   html,body{height:100%}
   body{margin:0; color:var(--ink); font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg)}
 
-  /* Background GIF */
+  /* Background (optional, never blocks) */
   .bg{position:fixed; inset:0; z-index:0; pointer-events:none}
-  .bg img{width:100%; height:100%; object-fit:cover; filter:saturate(115%) brightness(0.75)}
-  .bg::after{content:""; position:absolute; inset:0; background:radial-gradient(1200px 800px at 50% 15%, rgba(0,0,0,.12), rgba(0,0,0,.28))}
+  .bg img{width:100%; height:100%; object-fit:cover; filter:saturate(115%) brightness(.75)}
+  .bg.hidden{display:none}
 
   .stage{width:100vw; height:100vh; position:relative; z-index:1; display:flex; flex-direction:column; background:var(--panel)}
 
@@ -49,7 +37,7 @@
   .dot.blue{ background:#e7efff; border-color:#b9ccff}
   .dot.red{  background:#f7e9ea; border-color:#efc9cd}
 
-  .content{flex:1; padding:12px 16px 16px; background:transparent}
+  .content{flex:1; padding:12px 16px 16px}
   .frame{height:100%; background:var(--frame); border:1px solid var(--line); border-radius:10px; overflow:hidden}
 
   table{border-collapse:separate; border-spacing:0; width:100%; table-layout:fixed}
@@ -58,27 +46,30 @@
   th:first-child,td:first-child{border-left:1px solid var(--line)}
   th{font-weight:600; color:#263238; font-size:13px}
 
+  /* Left sticky columns */
   .name{position:sticky; left:0; z-index:1; background:var(--frame); text-align:left; font-weight:600; width:var(--roleW); cursor:pointer}
-  .period{position:sticky; left:var(--roleW); z-index:1; background:var(--frame); width:var(--periodW); font-weight:600; color:#374151}
+  .type{position:sticky; left:var(--roleW); z-index:1; background:var(--frame); width:var(--typeW); font-weight:600; text-align:left}
 
+  /* Day cells */
   .daynum, td.cell{width:var(--cellW)}
   tbody td{background:rgba(255,255,255,.94)}
   tbody tr:nth-child(odd) td{background:rgba(252,253,255,.90)}
   .today{background:#fff7ea !important}
 
-  th.rcol, td.rcol{width:var(--rcolW)}
-  td.total{font-weight:700; background:rgba(251,251,253,.95)}
+  /* Right summary columns: MTD, YTD */
+  th.rcol, td.rcol{width:var(--rcolW); font-weight:700; background:rgba(251,251,253,.95)}
 
-  .pills{display:flex; justify-content:center; align-items:center; gap:6px; white-space:nowrap}
-  .pill{min-width:18px; height:18px; padding:0 6px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; border:1px solid transparent}
-  .pill:empty{display:none}
-  .pill.g{color:var(--green); background:#e8f5ec; border-color:#b7e2c7}
-  .pill.b{color:var(--blue);  background:#e7efff; border-color:#c2d5ff}
-  .pill.wt{color:var(--red);   background:#f7e9ea; border-color:#f0c9cd}
-  .pills.squish{gap:4px}.pills.squish .pill{font-size:11px; padding:0 5px}
-  .pills.xs{gap:2px}.pills.xs .pill{font-size:10px; padding:0 3px}
-  .pills.xxs{gap:1px}.pills.xxs .pill{font-size:9px; padding:0 2px}
+  /* Category coloring */
+  .row-new  td.cell .num{color:var(--green)}
+  .row-po   td.cell .num{color:var(--blue)}
+  .row-wt   td.cell .num{color:var(--red)}
+  .tag-new{color:var(--green)} .tag-po{color:var(--blue)} .tag-wt{color:var(--red)}
+  .num{display:inline-block; min-width:18px; padding:0 4px; border-radius:6px; border:1px solid transparent}
+  .row-new .num{background:#e8f5ec; border-color:#b7e2c7}
+  .row-po  .num{background:#e7efff; border-color:#c2d5ff}
+  .row-wt  .num{background:#f7e9ea; border-color:#f0c9cd}
 
+  /* Editor */
   .editor{position:fixed; left:16px; bottom:16px; width:400px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px; box-shadow:0 12px 24px rgba(0,0,0,.18); display:none; z-index:50}
   .editor h3{margin:0 0 8px; font-size:14px}
   .rows{display:grid; grid-template-columns:28px 1fr 110px; gap:10px 8px; align-items:center}
@@ -90,7 +81,6 @@
   .rows input{width:100%; padding:6px 8px; border:1px solid #aeb3bb; border-radius:8px}
   .rows input[type=number]{-moz-appearance:textfield}
   .rows input[type=number]::-webkit-outer-spin-button,.rows input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
-
   details.box{margin-top:10px; border-top:1px solid var(--line); padding-top:10px}
   details.box summary{cursor:pointer; font-weight:600; color:#2f2f31}
   .nameRow{display:grid; grid-template-columns:1fr auto auto; gap:8px; margin-top:8px}
@@ -100,10 +90,14 @@
   .foot{display:flex; gap:8px; justify-content:flex-end; margin-top:12px}
   .btn{appearance:none; border:1px solid #aeb3bb; background:#fff; padding:8px 10px; border-radius:8px; font-weight:600; cursor:pointer}
   .btn.primary{border-color:#0b6bcb; background:#0b6bcb; color:#fff}
+
+  /* Debug banner (optional) */
+  .dbg{position:fixed; right:8px; bottom:8px; font:12px/1.2 system-ui; background:rgba(0,0,0,.55); color:#fff; padding:6px 8px; border-radius:8px; display:none; z-index:99}
+  .dbg.good{background:rgba(0,128,0,.55)} .dbg.bad{background:rgba(128,0,0,.55)}
 </style>
 </head>
 <body>
-  <!-- Background GIF. Set via ?gif=URL, else uses bg.gif in same folder. -->
+  <!-- Background GIF. Uses bg.gif by default or ?gif=URL. Never blocks. -->
   <div class="bg" aria-hidden="true"><img id="bgimg" alt="" /></div>
 
   <div class="stage">
@@ -133,7 +127,7 @@
     <div class="rows">
       <div class="chip g">G</div><label for="inG">New</label><input id="inG" type="number" min="0" step="1" />
       <div class="chip b">B</div><label for="inB">Pre-Owned</label><input id="inB" type="number" min="0" step="1" />
-      <div class="chip wt">WT</div><label for="inW">WT</label><input id="inW" type="number" min="0" step="1" />
+      <div class="chip wt">WT</div><label for="inW">Winter Tire</label><input id="inW" type="number" min="0" step="1" />
     </div>
 
     <details class="box" id="nameMgr">
@@ -160,55 +154,43 @@
     </div>
   </div>
 
+  <!-- Debug banner -->
+  <div id="dbg" class="dbg"></div>
+
 <script>
-/* ===== Helpers: simple param parser for older engines ===== */
+/* ===== Older-engine friendly query parsing ===== */
 function getQS(){
-  var s = location.search.replace(/^\?/, '');
-  var o = {};
-  if (!s) return o;
-  s.split('&').forEach(function(p){
-    var kv = p.split('=');
-    o[decodeURIComponent(kv[0])] = decodeURIComponent((kv[1]||'').replace(/\+/g,' '));
-  });
+  var s = location.search.replace(/^\?/, ''); var o = {}; if (!s) return o;
+  var a = s.split('&'); for (var i=0;i<a.length;i++){ var kv=a[i].split('='); o[decodeURIComponent(kv[0])] = decodeURIComponent((kv[1]||'').replace(/\+/g,' ')); }
   return o;
 }
 
-/* ===== Background GIF ===== */
+/* ===== Background (never blocks) ===== */
 (function(){
-  var qs = getQS();
-  var img = document.getElementById('bgimg');
+  var qs = getQS(); var el = document.getElementById('bgimg');
   var url = qs.gif || 'bg.gif';
-  img.src = url;
-  img.onerror = function(){ var bg = document.querySelector('.bg'); if (bg) bg.style.display='none'; };
+  el.onerror = function(){ var bg = document.querySelector('.bg'); if (bg) bg.classList.add('hidden'); };
+  el.src = url;
 })();
 
 /* ===== Data / Live sync ===== */
 var STORAGE_KEY = 'sales-pinboard-live-v1';
 var defaultTeam = ['Yassir','Sumit','Connor','Mohamad','Jerry','Brittany','Arnold','House'];
 var today = new Date();
-
 var qs = getQS();
-var FEED_URL = qs.feed || '';    // your Apps Script URL
+var FEED_URL = qs.feed || '';    // Google Apps Script URL
 var POLL_MS  = Math.max(5000, parseInt(qs.poll || '30000', 10) || 30000);
 var PUSH     = (qs.push === '1');
 var PUSHKEY  = qs.pushkey || '';
+var DEBUG    = (qs.debug === '1');
 
-var state = {
-  year: today.getFullYear(),
-  month: today.getMonth(), // 0-11
-  names: defaultTeam.slice(),
-  data: {} // data[name].MTD[day] = {g,b,w}, data[name].YTD[day] = {g,b,w}
-};
+var state = { year: today.getFullYear(), month: today.getMonth(), names: defaultTeam.slice(), data: {} };
+try { var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); if (saved && typeof saved==='object'){ for (var k in saved) state[k]=saved[k]; } } catch(e){}
 
-try {
-  var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-  if (saved && typeof saved === 'object') {
-    // shallow merge
-    for (var k in saved) state[k] = saved[k];
-  }
-} catch(e) {}
+/* Keep backward compatibility with your old schema:
+   - If data[name] has {MTD:{}, YTD:{}} we will read MTD daily from .MTD.
+   - YTD totals on the right will be the sum of .YTD if nonzero, otherwise we mirror MTD. */
 
-/* skeleton */
 function daysInMonth(y,m){ return new Date(y, m+1, 0).getDate(); }
 function ensureSkeleton(){
   var dim = daysInMonth(state.year, state.month);
@@ -216,20 +198,20 @@ function ensureSkeleton(){
   state.data = state.data || {};
   for (var i=0;i<state.names.length;i++){
     var n = state.names[i];
-    if (!state.data[n]) state.data[n] = {MTD:{}, YTD:{}};
-    for (var r=0;r<2;r++){
-      var row = r===0?'MTD':'YTD';
-      for (var d=1; d<=dim; d++){
-        if (!state.data[n][row][d]) state.data[n][row][d] = {g:0,b:0,w:0};
-      }
-      for (var k in state.data[n][row]){
-        var dd = +k; if (dd>dim) delete state.data[n][row][k];
-      }
+    if (!state.data[n]) state.data[n] = {MTD:{}, YTD:{}};         // legacy shape
+    if (!state.data[n].MTD) state.data[n].MTD = {};               // ensure MTD bucket
+    if (!state.data[n].YTD) state.data[n].YTD = {};               // ensure YTD bucket
+
+    for (var d=1; d<=dim; d++){
+      if (!state.data[n].MTD[d]) state.data[n].MTD[d] = {g:0,b:0,w:0};
+      if (!state.data[n].YTD[d]) state.data[n].YTD[d] = {g:0,b:0,w:0}; // ok if unused
     }
+    // prune
+    for (var k in state.data[n].MTD){ if (+k>dim) delete state.data[n].MTD[k]; }
+    for (var k2 in state.data[n].YTD){ if (+k2>dim) delete state.data[n].YTD[k2]; }
   }
 }
 
-/* save + optional PUSH (POST text/plain to avoid preflight) */
 function save(localOnly){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   renderAsOf();
@@ -238,52 +220,69 @@ function save(localOnly){
     var xhr = new XMLHttpRequest();
     xhr.open('POST', url, true);
     xhr.setRequestHeader('Content-Type','text/plain;charset=utf-8');
-    xhr.send(JSON.stringify(state));
+    xhr.onreadystatechange = function(){
+      if (DEBUG && xhr.readyState===4){ showDbg(xhr.status===200?'PUSH ok':'PUSH fail '+xhr.status, xhr.status===200); }
+    };
+    try { xhr.send(JSON.stringify(state)); } catch(e){}
   }
 }
 
-/* JSONP reader so CORS isn't required */
+/* JSONP fetch (no CORS needed) */
 function jsonp(url, onsuccess, onerror){
   var cb = 'CB' + String(Math.random()).slice(2);
-  window[cb] = function(payload){
-    cleanup(); onsuccess && onsuccess(payload);
-  };
+  window[cb] = function(payload){ cleanup(); onsuccess && onsuccess(payload); };
   function cleanup(){ try{ delete window[cb]; }catch(e){ window[cb]=undefined; } if (tag && tag.parentNode) tag.parentNode.removeChild(tag); }
   var tag = document.createElement('script');
   tag.src = url + (url.indexOf('?')>-1?'&':'?') + 'callback=' + cb + '&t=' + Date.now();
   tag.onerror = function(){ cleanup(); onerror && onerror(); };
   document.head.appendChild(tag);
 }
-
-/* pullOnce using JSONP */
 function pullOnce(cb){
   if (!FEED_URL){ cb && cb(false); return; }
   jsonp(FEED_URL, function(remote){
     if (remote && remote.names && remote.data){
-      for (var k in remote) state[k] = remote[k];
+      var before = JSON.stringify(state);
+      for (var k in remote) state[k]=remote[k];
       ensureSkeleton();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      var changed = (JSON.stringify(state)!==before);
       var live = document.getElementById('live'); if (live) live.style.display='inline-block';
-      cb && cb(true);
-    } else {
-      cb && cb(false);
-    }
-  }, function(){ cb && cb(false); });
+      if (DEBUG) showDbg('PULL ok ' + new Date().toLocaleTimeString(), true);
+      cb && cb(changed);
+    } else { if (DEBUG) showDbg('PULL empty', false); cb && cb(false); }
+  }, function(){ if (DEBUG) showDbg('PULL error', false); cb && cb(false); });
 }
 
 /* ===== Rendering ===== */
 var gridEl = document.getElementById('grid');
 
+function computeTotalsFor(name){
+  var dim = daysInMonth(state.year, state.month);
+  var m = {g:0,b:0,w:0}, y = {g:0,b:0,w:0}, anyY=0;
+
+  for (var d=1; d<=dim; d++){
+    var vM = (state.data[name].MTD[d] || {g:0,b:0,w:0});
+    m.g += vM.g|0; m.b += vM.b|0; m.w += vM.w|0;
+
+    var vY = (state.data[name].YTD[d] || {g:0,b:0,w:0});
+    y.g += vY.g|0; y.b += vY.b|0; y.w += vY.w|0;
+    if (vY.g|0 || vY.b|0 || vY.w|0) anyY=1;
+  }
+  if (!anyY){ y = {g:m.g, b:m.b, w:m.w}; } // fallback: mirror MTD if YTD not populated
+  return {mtd:m, ytd:y};
+}
+
 function render(){
   ensureSkeleton();
   var dim = daysInMonth(state.year, state.month);
 
+  // widths
   var frame = document.querySelector('.frame');
   var avail = frame.clientWidth;
   var fixedLeft = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--roleW'),10) +
-                  parseInt(getComputedStyle(document.documentElement).getPropertyValue('--periodW'),10);
+                  parseInt(getComputedStyle(document.documentElement).getPropertyValue('--typeW'),10);
   var rcolW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--rcolW'),10);
-  var suffixCols = 5;
+  var suffixCols = 2; // MTD + YTD only
   var usable = avail - fixedLeft - suffixCols*rcolW - 2;
   var cellW = Math.max(30, Math.floor(usable / dim));
   document.documentElement.style.setProperty('--cellW', cellW + 'px');
@@ -291,52 +290,42 @@ function render(){
   var html = '';
   html += '<thead><tr>';
   html += '<th class="name">Sales Specialist</th>';
-  html += '<th class="period">&nbsp;</th>';
+  html += '<th class="type">Type</th>';
   for (var d=1; d<=dim; d++){
     var isToday = (state.year===today.getFullYear() && state.month===today.getMonth() && d===today.getDate());
     html += '<th class="daynum' + (isToday?' today':'') + '">' + d + '</th>';
   }
-  html += '<th class="rcol">Total</th>';
-  html += '<th class="rcol">New</th>';
-  html += '<th class="rcol">PO</th>';
-  html += '<th class="rcol">WT</th>';
-  html += '<th class="rcol">Rate</th>';
+  html += '<th class="rcol">MTD</th><th class="rcol">YTD</th>';
   html += '</tr></thead>';
 
   html += '<tbody>';
   for (var i=0;i<state.names.length;i++){
     var name = state.names[i];
-    var first = true;
-    for (var rr=0; rr<2; rr++){
-      var row = rr===0?'MTD':'YTD';
-      html += '<tr>';
-      if (first){
-        html += '<td class="name nameCell" data-name="' + encodeURIComponent(name) + '" rowspan="2" title="Click to rename">' + name + '</td>';
-        first = false;
+    var totals = computeTotalsFor(name);
+    var rows = [
+      {key:'g', cls:'row-new', label:'New'},
+      {key:'b', cls:'row-po',  label:'Pre-Owned'},
+      {key:'w', cls:'row-wt',  label:'Winter Tire'}
+    ];
+    for (var r=0; r<rows.length; r++){
+      var R = rows[r];
+      html += '<tr class="'+R.cls+'">';
+      if (r===0){
+        html += '<td class="name nameCell" data-name="' + encodeURIComponent(name) + '" rowspan="3" title="Click to rename">' + name + '</td>';
       }
-      html += '<td class="period">' + row + '</td>';
+      html += '<td class="type"><span class="tag-'+(R.key==='g'?'new':R.key==='b'?'po':'wt')+'">'+R.label+'</span></td>';
 
-      var sum=0, gsum=0, bsum=0, wsum=0;
       for (var d2=1; d2<=dim; d2++){
-        var v = (state.data[name] && state.data[name][row] && state.data[name][row][d2]) || {g:0,b:0,w:0};
-        gsum += v.g|0; bsum += v.b|0; wsum += v.w|0;
-        sum  += (v.g|0) + (v.b|0) + (v.w|0);
+        var v = (state.data[name].MTD[d2] || {g:0,b:0,w:0});
+        var n = v[R.key] || '';
         var isToday2 = (state.year===today.getFullYear() && state.month===today.getMonth() && d2===today.getDate());
-        html += '<td class="cell' + (isToday2?' today':'') + '" data-name="' + encodeURIComponent(name) + '" data-row="' + row + '" data-day="' + d2 + '">' +
-                  '<div class="pills">' +
-                    '<span class="pill g">' + (v.g||'') + '</span>' +
-                    '<span class="pill b">' + (v.b||'') + '</span>' +
-                    '<span class="pill wt">' + (v.w||'') + '</span>' +
-                  '</div>' +
-                '</td>';
+        html += '<td class="cell' + (isToday2?' today':'') + '" data-name="' + encodeURIComponent(name) + '" data-cat="' + R.key + '" data-day="' + d2 + '">';
+        html += n ? '<span class="num">'+ n +'</span>' : '<span class="num" style="visibility:hidden">0</span>';
+        html += '</td>';
       }
-      var denom = (gsum + bsum) || 0;
-      var rate = denom ? Math.round((wsum/denom)*100) + '%' : '—';
-      html += '<td class="rcol total">' + sum + '</td>';
-      html += '<td class="rcol">' + gsum + '</td>';
-      html += '<td class="rcol">' + bsum + '</td>';
-      html += '<td class="rcol">' + wsum + '</td>';
-      html += '<td class="rcol">' + rate + '</td>';
+      // Right-side MTD/YTD for this category
+      var m = totals.mtd[R.key]||0, y = totals.ytd[R.key]||0;
+      html += '<td class="rcol">' + m + '</td><td class="rcol">' + y + '</td>';
       html += '</tr>';
     }
   }
@@ -344,145 +333,122 @@ function render(){
 
   gridEl.innerHTML = html;
 
+  // Bind clicks
   var tds = gridEl.querySelectorAll('td.cell');
-  for (var j=0;j<tds.length;j++){
-    (function(td){ td.addEventListener('click', function(){ openEditor(td); }); })(tds[j]);
-  }
+  for (var j=0;j<tds.length;j++){ (function(td){ td.addEventListener('click', function(){ openEditor(td); }); })(tds[j]); }
   var nameTds = gridEl.querySelectorAll('td.nameCell');
-  for (var k=0;k<nameTds.length;k++){
-    (function(td){ td.addEventListener('click', function(){ openRenameFromName(td); }); })(nameTds[k]);
-  }
-
-  fitAllCells();
-}
-
-function fitAllCells(){
-  var tds = gridEl.querySelectorAll('td.cell');
-  for (var i=0;i<tds.length;i++){
-    var td = tds[i];
-    var pills = td.querySelector('.pills');
-    if (!pills) continue;
-    pills.classList.remove('squish','xs','xxs');
-    var max = td.clientWidth - 6;
-    if (pills.scrollWidth > max) pills.classList.add('squish');
-    if (pills.scrollWidth > max) pills.classList.add('xs');
-    if (pills.scrollWidth > max) pills.classList.add('xxs');
-  }
+  for (var k=0;k<nameTds.length;k++){ (function(td){ td.addEventListener('click', function(){ openRenameFromName(td); }); })(nameTds[k]); }
 }
 
 function renderAsOf(){
   var el = document.getElementById('asof');
   var d = new Date();
-  var ts = d.toLocaleString(undefined,{hour:'numeric', minute:'2-digit'}) +
-           ' on ' + d.toLocaleDateString(undefined,{year:'numeric', month:'long', day:'numeric'});
-  var boardMonth = new Date(state.year, state.month, 1)
-    .toLocaleDateString(undefined,{month:'long', year:'numeric'});
+  var ts = d.toLocaleString(undefined,{hour:'numeric', minute:'2-digit'}) + ' on ' + d.toLocaleDateString(undefined,{year:'numeric', month:'long', day:'numeric'});
+  var boardMonth = new Date(state.year, state.month, 1).toLocaleDateString(undefined,{month:'long', year:'numeric'});
   el.innerHTML = '<strong>' + boardMonth + '</strong> &nbsp;•&nbsp; Information current as of ' + ts;
 }
 
 /* ===== Editor / Names / Month ===== */
 var editor = document.getElementById('editor');
-var inG = document.getElementById('inG');
-var inB = document.getElementById('inB');
-var inW = document.getElementById('inW');
+var inG = document.getElementById('inG'), inB = document.getElementById('inB'), inW = document.getElementById('inW');
 var editorTitle = document.getElementById('editorTitle');
 var nameField = document.getElementById('nameField');
-var monthSel = document.getElementById('monthSel');
-var yearInput = document.getElementById('yearInput');
+var monthSel = document.getElementById('monthSel'), yearInput = document.getElementById('yearInput');
 
-var current = null;      // {name,row,day}
-var renameTarget = null;
+var current = null, renameTarget = null;
 
-function placeEditorNear(){ editor.style.display = 'block'; }
-
+function placeEditor(){ editor.style.display = 'block'; }
 function openEditor(td){
   var name = decodeURIComponent(td.getAttribute('data-name'));
-  var row  = td.getAttribute('data-row');
+  var cat  = td.getAttribute('data-cat'); // 'g' | 'b' | 'w'
   var day  = +td.getAttribute('data-day');
-  var v = (state.data[name] && state.data[name][row] && state.data[name][row][day]) || {g:0,b:0,w:0};
+  var v = (state.data[name].MTD[day] || {g:0,b:0,w:0});
   inG.value = v.g||0; inB.value = v.b||0; inW.value = v.w||0;
-  editorTitle.textContent = 'Edit — ' + name + ' • ' + row + ' • Day ' + day;
-  current = {name:name, row:row, day:day};
+  var catName = (cat==='g'?'New':cat==='b'?'Pre-Owned':'Winter Tire');
+  editorTitle.textContent = 'Edit — ' + name + ' • Day ' + day + ' (' + catName + ')';
+  current = {name:name, day:day};
   renameTarget = null;
-  placeEditorNear();
-  inG.focus(); inG.select();
+  placeEditor(); (cat==='g'?inG:cat==='b'?inB:inW).focus(); (cat==='g'?inG:cat==='b'?inB:inW).select();
 }
 function openRenameFromName(td){
   var name = decodeURIComponent(td.getAttribute('data-name'));
-  current = {name:name, row:'MTD', day:1};
+  current = {name:name, day:1};
   renameTarget = name;
   nameField.value = name;
   editorTitle.textContent = 'Rename — ' + name;
-  placeEditorNear();
-  nameField.focus(); nameField.select();
+  placeEditor(); nameField.focus(); nameField.select();
 }
 
 document.getElementById('cancelEdit').onclick = function(){ editor.style.display='none'; renameTarget=null; };
-
 document.getElementById('saveEdit').onclick = function(){
   if (!current) return;
   if (!state.data[current.name]) state.data[current.name] = {MTD:{}, YTD:{}};
-  if (!state.data[current.name][current.row]) state.data[current.name][current.row] = {};
-  state.data[current.name][current.row][current.day] = {
-    g: Number(inG.value||0),
-    b: Number(inB.value||0),
-    w: Number(inW.value||0)
-  };
+  if (!state.data[current.name].MTD[current.day]) state.data[current.name].MTD[current.day] = {g:0,b:0,w:0};
+  state.data[current.name].MTD[current.day] = { g:Number(inG.value||0), b:Number(inB.value||0), w:Number(inW.value||0) };
   save(false); render(); editor.style.display='none';
 };
 
 document.getElementById('addNameBtn').onclick = function(){
-  var nm = (nameField.value||'').trim();
-  if (!nm) return;
-  if (state.names.indexOf(nm) !== -1) { alert('Name already exists.'); return; }
-  state.names.push(nm);
-  ensureSkeleton(); save(false); render();
-  nameField.value = '';
+  var nm = (nameField.value||'').trim(); if (!nm) return;
+  if (state.names.indexOf(nm)!==-1){ alert('Name already exists.'); return; }
+  state.names.push(nm); ensureSkeleton(); save(false); render(); nameField.value='';
 };
 document.getElementById('renameBtn').onclick = function(){
-  var nm = (nameField.value||'').trim();
-  var src = renameTarget || (current && current.name);
-  if (!nm || !src) return;
-  if (state.names.indexOf(nm) !== -1) { alert('Name already exists.'); return; }
-  var idx = state.names.indexOf(src);
-  if (idx>=0){
-    state.names[idx] = nm;
-    state.data[nm] = state.data[src];
-    delete state.data[src];
-    if (current) current.name = nm;
-    if (renameTarget) renameTarget = nm;
-    save(false); render();
-    nameField.value = '';
-  }
+  var nm=(nameField.value||'').trim(); var src = renameTarget || (current && current.name); if (!nm||!src) return;
+  if (state.names.indexOf(nm)!==-1){ alert('Name already exists.'); return; }
+  var idx=state.names.indexOf(src); if (idx>=0){ state.names[idx]=nm; state.data[nm]=state.data[src]; delete state.data[src]; if(current) current.name=nm; if(renameTarget) renameTarget=nm; save(false); render(); nameField.value=''; }
 };
 
 /* Month selector */
-(function initMonthUI(){
-  var months=[], i; for(i=0;i<12;i++){ months.push(new Date(2000,i,1).toLocaleString(undefined,{month:'long'})); }
-  var opts=''; for(i=0;i<12;i++){ opts += '<option value="'+i+'">'+months[i]+'</option>'; }
-  monthSel.innerHTML = opts;
-  monthSel.value = String(state.month);
-  yearInput.value = String(state.year);
+(function(){ var months=[],i; for(i=0;i<12;i++){ months.push(new Date(2000,i,1).toLocaleString(undefined,{month:'long'})); }
+  var opts=''; for(i=0;i<12;i++){ opts+='<option value="'+i+'">'+months[i]+'</option>'; }
+  monthSel.innerHTML=opts; monthSel.value=String(state.month); yearInput.value=String(state.year);
 })();
 document.getElementById('applyMonthBtn').onclick = function(){
-  var m = Number(monthSel.value||state.month);
-  var y = Number(yearInput.value||state.year);
-  if (isFinite(m)) state.month = m;
-  if (isFinite(y)) state.year = y;
+  var m=Number(monthSel.value||state.month), y=Number(yearInput.value||state.year);
+  if (isFinite(m)) state.month=m; if (isFinite(y)) state.year=y;
   ensureSkeleton(); save(false); render(); renderAsOf();
 };
 
-/* Boot + polling (JSONP) */
-renderAsOf();
-render();
+/* Keyboard shortcuts */
+window.addEventListener('keydown', function(e){ if (editor.style.display==='block'){ if (e.key==='Escape') editor.style.display='none'; if (e.key==='Enter') document.getElementById('saveEdit').click(); }});
 
+/* Debug banner */
+function showDbg(msg, good){ var el=document.getElementById('dbg'); if (!DEBUG){ el.style.display='none'; return; } el.textContent=msg; el.className='dbg ' + (good?'good':'bad'); el.style.display='block'; }
+
+/* Boot + polling */
+renderAsOf(); render();
 if (FEED_URL){
   pullOnce(function(changed){ if (changed){ render(); renderAsOf(); } });
   setInterval(function(){ pullOnce(function(ok){ if (ok){ render(); renderAsOf(); } }); }, POLL_MS);
 }
-
-/* Resize */
 window.addEventListener('resize', function(){ render(); });
+
+/* ===== JSONP & pull helpers (placed late so functions exist) ===== */
+function pullOnce(cb){
+  if (!FEED_URL){ cb && cb(false); return; }
+  jsonp(FEED_URL, function(remote){
+    if (remote && remote.names && remote.data){
+      var before = JSON.stringify(state);
+      for (var k in remote) state[k]=remote[k];
+      ensureSkeleton();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      var changed = (JSON.stringify(state)!==before);
+      var live = document.getElementById('live'); if (live) live.style.display='inline-block';
+      if (DEBUG) showDbg('PULL ok ' + new Date().toLocaleTimeString(), true);
+      cb && cb(changed);
+    } else { if (DEBUG) showDbg('PULL empty', false); cb && cb(false); }
+  }, function(){ if (DEBUG) showDbg('PULL error', false); cb && cb(false); });
+}
+function jsonp(url, onsuccess, onerror){
+  var cb = 'CB' + String(Math.random()).slice(2);
+  window[cb] = function(payload){ cleanup(); onsuccess && onsuccess(payload); };
+  function cleanup(){ try{ delete window[cb]; }catch(e){ window[cb]=undefined; } if (tag && tag.parentNode) tag.parentNode.removeChild(tag); }
+  var tag = document.createElement('script');
+  tag.src = url + (url.indexOf('?')>-1?'&':'?') + 'callback=' + cb + '&t=' + Date.now();
+  tag.onerror = function(){ cleanup(); onerror && onerror(); };
+  document.head.appendChild(tag);
+}
 </script>
 </body>
 </html>
