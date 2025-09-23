@@ -8,6 +8,7 @@
 <style>
   :root{
     --roleW:160px; --typeW:120px; --rcolW:72px; --cellW:44px;
+    --rowH:32px; /* JS recalculates so all rows fit exactly */
     --bg:#0b0f14; --panel:rgba(255,255,255,.94); --frame:rgba(255,255,255,.96);
     --ink:#0b0b0c; --muted:#5b6570; --line:#d0d3d9;
     --green:#1a7f37; --blue:#1b59d1; --red:#c42b2b;
@@ -42,7 +43,7 @@
 
   table{border-collapse:separate; border-spacing:0; width:100%; table-layout:fixed}
   thead th{position:sticky; top:0; z-index:2; background:rgba(245,246,248,.92)}
-  th,td{border-right:1px solid var(--line); border-bottom:1px solid var(--line); padding:6px 8px; text-align:center}
+  th,td{border-right:1px solid var(--line); border-bottom:1px solid var(--line); padding:6px 8px; text-align:center; vertical-align:middle}
   th:first-child,td:first-child{border-left:1px solid var(--line)}
   th{font-weight:600; color:#263238; font-size:13px}
 
@@ -50,11 +51,13 @@
   .name{position:sticky; left:0; z-index:1; background:var(--frame); text-align:left; font-weight:600; width:var(--roleW); cursor:pointer}
   .type{position:sticky; left:var(--roleW); z-index:1; background:var(--frame); width:var(--typeW); font-weight:600; text-align:left}
 
-  /* Day cells */
+  /* Day cells + row height control */
   .daynum, td.cell{width:var(--cellW)}
+  td.cell, td.type{height:var(--rowH)} /* <-- JS sets --rowH so all rows fit */
   tbody td{background:rgba(255,255,255,.94)}
   tbody tr:nth-child(odd) td{background:rgba(252,253,255,.90)}
-  .today{background:#fff7ea !important}
+  /* Remove any “today” highlight completely */
+  .today{ /* intentionally empty to remove yellow highlight */ }
 
   /* Right summary columns: MTD, YTD */
   th.rcol, td.rcol{width:var(--rcolW); font-weight:700; background:rgba(251,251,253,.95)}
@@ -187,10 +190,9 @@ var DEBUG    = (qs.debug === '1');
 var state = { year: today.getFullYear(), month: today.getMonth(), names: defaultTeam.slice(), data: {} };
 try { var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); if (saved && typeof saved==='object'){ for (var k in saved) state[k]=saved[k]; } } catch(e){}
 
-/* Keep backward compatibility with your old schema:
-   - If data[name] has {MTD:{}, YTD:{}} we will read MTD daily from .MTD.
-   - YTD totals on the right will be the sum of .YTD if nonzero, otherwise we mirror MTD. */
+/* schema: state.data[name].MTD[day] = {g,b,w}; state.data[name].YTD[day] (optional) */
 
+/* helpers */
 function daysInMonth(y,m){ return new Date(y, m+1, 0).getDate(); }
 function ensureSkeleton(){
   var dim = daysInMonth(state.year, state.month);
@@ -198,20 +200,32 @@ function ensureSkeleton(){
   state.data = state.data || {};
   for (var i=0;i<state.names.length;i++){
     var n = state.names[i];
-    if (!state.data[n]) state.data[n] = {MTD:{}, YTD:{}};         // legacy shape
-    if (!state.data[n].MTD) state.data[n].MTD = {};               // ensure MTD bucket
-    if (!state.data[n].YTD) state.data[n].YTD = {};               // ensure YTD bucket
-
+    if (!state.data[n]) state.data[n] = {MTD:{}, YTD:{}};
+    if (!state.data[n].MTD) state.data[n].MTD = {};
+    if (!state.data[n].YTD) state.data[n].YTD = {};
     for (var d=1; d<=dim; d++){
       if (!state.data[n].MTD[d]) state.data[n].MTD[d] = {g:0,b:0,w:0};
-      if (!state.data[n].YTD[d]) state.data[n].YTD[d] = {g:0,b:0,w:0}; // ok if unused
+      if (!state.data[n].YTD[d]) state.data[n].YTD[d] = {g:0,b:0,w:0};
     }
-    // prune
     for (var k in state.data[n].MTD){ if (+k>dim) delete state.data[n].MTD[k]; }
     for (var k2 in state.data[n].YTD){ if (+k2>dim) delete state.data[n].YTD[k2]; }
   }
 }
+function computeTotalsFor(name){
+  var dim = daysInMonth(state.year, state.month);
+  var m = {g:0,b:0,w:0}, y = {g:0,b:0,w:0}, anyY=0;
+  for (var d=1; d<=dim; d++){
+    var vM = (state.data[name].MTD[d] || {g:0,b:0,w:0});
+    m.g += vM.g|0; m.b += vM.b|0; m.w += vM.w|0;
+    var vY = (state.data[name].YTD[d] || {g:0,b:0,w:0});
+    y.g += vY.g|0; y.b += vY.b|0; y.w += vY.w|0;
+    if ((vY.g|0)||(vY.b|0)||(vY.w|0)) anyY=1;
+  }
+  if (!anyY){ y = {g:m.g, b:m.b, w:m.w}; }
+  return {mtd:m, ytd:y};
+}
 
+/* PUSH (simple POST) */
 function save(localOnly){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   renderAsOf();
@@ -227,7 +241,7 @@ function save(localOnly){
   }
 }
 
-/* JSONP fetch (no CORS needed) */
+/* JSONP pull (no CORS) */
 function jsonp(url, onsuccess, onerror){
   var cb = 'CB' + String(Math.random()).slice(2);
   window[cb] = function(payload){ cleanup(); onsuccess && onsuccess(payload); };
@@ -242,7 +256,7 @@ function pullOnce(cb){
   jsonp(FEED_URL, function(remote){
     if (remote && remote.names && remote.data){
       var before = JSON.stringify(state);
-      for (var k in remote) state[k]=remote[k];
+      for (var k in remote) state[k] = remote[k];
       ensureSkeleton();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       var changed = (JSON.stringify(state)!==before);
@@ -253,24 +267,35 @@ function pullOnce(cb){
   }, function(){ if (DEBUG) showDbg('PULL error', false); cb && cb(false); });
 }
 
+/* ===== Row auto-fit so the board contracts/extends to names ===== */
+function autoFitRows(){
+  var rows = (state.names ? state.names.length : 0) * 3; if (rows<1) rows=1;
+  var stageH = window.innerHeight;
+
+  var chrome = document.querySelector('.chrome');
+  var legend = document.querySelector('.legend');
+  var content = document.querySelector('.content');
+  var thead = document.querySelector('#grid thead');
+
+  var chromeH = chrome ? chrome.offsetHeight : 0;
+  var legendH = legend ? legend.offsetHeight : 0;
+  var padTop = parseInt(getComputedStyle(content).paddingTop,10) || 0;
+  var padBot = parseInt(getComputedStyle(content).paddingBottom,10) || 0;
+  var headerH = thead ? thead.offsetHeight : 34;
+
+  // leave a small safety margin for borders
+  var avail = stageH - chromeH - legendH - padTop - padBot - headerH - 6;
+  var rowH = Math.floor(avail / rows);
+
+  // keep readable bounds
+  if (rowH > 56) rowH = 56;
+  if (rowH < 22) rowH = 22;
+
+  document.documentElement.style.setProperty('--rowH', rowH + 'px');
+}
+
 /* ===== Rendering ===== */
 var gridEl = document.getElementById('grid');
-
-function computeTotalsFor(name){
-  var dim = daysInMonth(state.year, state.month);
-  var m = {g:0,b:0,w:0}, y = {g:0,b:0,w:0}, anyY=0;
-
-  for (var d=1; d<=dim; d++){
-    var vM = (state.data[name].MTD[d] || {g:0,b:0,w:0});
-    m.g += vM.g|0; m.b += vM.b|0; m.w += vM.w|0;
-
-    var vY = (state.data[name].YTD[d] || {g:0,b:0,w:0});
-    y.g += vY.g|0; y.b += vY.b|0; y.w += vY.w|0;
-    if (vY.g|0 || vY.b|0 || vY.w|0) anyY=1;
-  }
-  if (!anyY){ y = {g:m.g, b:m.b, w:m.w}; } // fallback: mirror MTD if YTD not populated
-  return {mtd:m, ytd:y};
-}
 
 function render(){
   ensureSkeleton();
@@ -293,7 +318,7 @@ function render(){
   html += '<th class="type">Type</th>';
   for (var d=1; d<=dim; d++){
     var isToday = (state.year===today.getFullYear() && state.month===today.getMonth() && d===today.getDate());
-    html += '<th class="daynum' + (isToday?' today':'') + '">' + d + '</th>';
+    html += '<th class="daynum' + (isToday?' today':'') + '">' + d + '</th>'; // .today has no styling now
   }
   html += '<th class="rcol">MTD</th><th class="rcol">YTD</th>';
   html += '</tr></thead>';
@@ -338,6 +363,8 @@ function render(){
   for (var j=0;j<tds.length;j++){ (function(td){ td.addEventListener('click', function(){ openEditor(td); }); })(tds[j]); }
   var nameTds = gridEl.querySelectorAll('td.nameCell');
   for (var k=0;k<nameTds.length;k++){ (function(td){ td.addEventListener('click', function(){ openRenameFromName(td); }); })(nameTds[k]); }
+
+  autoFitRows(); /* <-- adjust row height to current number of names */
 }
 
 function renderAsOf(){
@@ -391,12 +418,16 @@ document.getElementById('saveEdit').onclick = function(){
 document.getElementById('addNameBtn').onclick = function(){
   var nm = (nameField.value||'').trim(); if (!nm) return;
   if (state.names.indexOf(nm)!==-1){ alert('Name already exists.'); return; }
-  state.names.push(nm); ensureSkeleton(); save(false); render(); nameField.value='';
+  state.names.push(nm); ensureSkeleton(); save(false); render();
+  nameField.value='';
 };
 document.getElementById('renameBtn').onclick = function(){
   var nm=(nameField.value||'').trim(); var src = renameTarget || (current && current.name); if (!nm||!src) return;
   if (state.names.indexOf(nm)!==-1){ alert('Name already exists.'); return; }
-  var idx=state.names.indexOf(src); if (idx>=0){ state.names[idx]=nm; state.data[nm]=state.data[src]; delete state.data[src]; if(current) current.name=nm; if(renameTarget) renameTarget=nm; save(false); render(); nameField.value=''; }
+  var idx=state.names.indexOf(src); if (idx>=0){
+    state.names[idx]=nm; state.data[nm]=state.data[src]; delete state.data[src];
+    if(current) current.name=nm; if(renameTarget) renameTarget=nm; save(false); render(); nameField.value='';
+  }
 };
 
 /* Month selector */
@@ -417,14 +448,15 @@ window.addEventListener('keydown', function(e){ if (editor.style.display==='bloc
 function showDbg(msg, good){ var el=document.getElementById('dbg'); if (!DEBUG){ el.style.display='none'; return; } el.textContent=msg; el.className='dbg ' + (good?'good':'bad'); el.style.display='block'; }
 
 /* Boot + polling */
-renderAsOf(); render();
-if (FEED_URL){
-  pullOnce(function(changed){ if (changed){ render(); renderAsOf(); } });
-  setInterval(function(){ pullOnce(function(ok){ if (ok){ render(); renderAsOf(); } }); }, POLL_MS);
-}
-window.addEventListener('resize', function(){ render(); });
+renderAsOf(); render(); autoFitRows();
 
-/* ===== JSONP & pull helpers (placed late so functions exist) ===== */
+if (FEED_URL){
+  pullOnce(function(changed){ if (changed){ render(); renderAsOf(); autoFitRows(); } });
+  setInterval(function(){ pullOnce(function(ok){ if (ok){ render(); renderAsOf(); autoFitRows(); } }); }, POLL_MS);
+}
+window.addEventListener('resize', function(){ render(); autoFitRows(); });
+
+/* JSONP helpers (kept last for older engines) */
 function pullOnce(cb){
   if (!FEED_URL){ cb && cb(false); return; }
   jsonp(FEED_URL, function(remote){
