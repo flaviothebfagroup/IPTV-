@@ -6,157 +6,100 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Sales Pinboard — BrightSign + GIF + Live Sync</title>
 <style>
-  /* ---------- BrightSign-safe styles (no blur), with GIF background visible ---------- */
   :root{
-    /* Tunables */
-    --roleW: 160px;   /* Sales Specialist column width */
-    --periodW: 60px;  /* MTD/YTD column width */
-    --rcolW: 64px;    /* Right-side summary columns */
-    --cellW: 44px;    /* Day cell width (JS recalculates) */
+    --roleW: 160px;
+    --periodW: 60px;
+    --rcolW: 64px;
+    --cellW: 44px;
 
-    /* Colors */
-    --bg: #0b0f14;         /* page background */
-    --panel: rgba(255,255,255,0.94);  /* slight transparency so GIF shows subtly */
+    --bg:#0b0f14;
+    --panel: rgba(255,255,255,0.94);
     --frame: rgba(255,255,255,0.96);
-    --ink: #0b0b0c;
-    --muted: #5b6570;
-    --line: #d0d3d9;
+    --ink:#0b0b0c;
+    --muted:#5b6570;
+    --line:#d0d3d9;
 
-    --green: #1a7f37;
-    --blue:  #1b59d1;
-    --red:   #c42b2b;
+    --green:#1a7f37;
+    --blue:#1b59d1;
+    --red:#c42b2b;
   }
 
-  *{ box-sizing: border-box; }
-  html, body { height:100%; }
-  body{
-    margin:0;
-    color:var(--ink);
-    font:14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-    background: var(--bg);
-  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0; color:var(--ink); font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg)}
 
-  /* Background GIF (desktop + BrightSign) */
-  .bg{ position:fixed; inset:0; z-index:0; pointer-events:none; }
-  .bg img{ width:100%; height:100%; object-fit:cover; filter:saturate(115%) brightness(0.75); }
-  .bg::after{ content:""; position:absolute; inset:0; background:radial-gradient(1200px 800px at 50% 15%, rgba(0,0,0,0.12), rgba(0,0,0,0.28)); }
+  /* Background GIF */
+  .bg{position:fixed; inset:0; z-index:0; pointer-events:none}
+  .bg img{width:100%; height:100%; object-fit:cover; filter:saturate(115%) brightness(0.75)}
+  .bg::after{content:""; position:absolute; inset:0; background:radial-gradient(1200px 800px at 50% 15%, rgba(0,0,0,.12), rgba(0,0,0,.28))}
 
-  /* Fullscreen stage — scales to any player resolution */
-  .stage{
-    width:100vw; height:100vh;
-    position:relative; z-index:1;   /* above background */
-    display:flex; flex-direction:column;
-    background: var(--panel);
-  }
+  .stage{width:100vw; height:100vh; position:relative; z-index:1; display:flex; flex-direction:column; background:var(--panel)}
 
-  /* Top chrome */
-  .chrome{
-    display:flex; align-items:center; gap:16px;
-    padding:10px 16px 6px;
-    border-bottom:1px solid var(--line);
-    background: rgba(255,255,255,0.9);
-  }
-  .title{ font-weight:700; }
-  .spacer{ flex:1; }
-  .asof{ font-size:13px; color:var(--muted); }
-  .asof strong{ color:#000; font-size:16px; font-weight:800; }
-  .live{ margin-left:10px; font-size:12px; font-weight:700; color:#0a7; display:none }
+  .chrome{display:flex; align-items:center; gap:16px; padding:10px 16px 6px; border-bottom:1px solid var(--line); background:rgba(255,255,255,.9)}
+  .title{font-weight:700}
+  .spacer{flex:1}
+  .asof{font-size:13px; color:var(--muted)}
+  .asof strong{color:#000; font-size:16px; font-weight:800}
+  .live{margin-left:10px; font-size:12px; font-weight:700; color:#0a7; display:none}
 
-  /* Legend (top-left) – high contrast */
-  .legend{
-    display:flex; gap:14px; align-items:center;
-    padding:8px 16px; background:rgba(255,255,255,0.92); border-bottom:1px solid var(--line);
-  }
-  .tag{ display:inline-flex; align-items:center; gap:8px; color:#0b0b0c; }
-  .dot{ width:14px; height:14px; border-radius:4px; border:1px solid #bfc5cf; }
-  .dot.green{ background:#e8f5ec; border-color:#a7d6b8; }
-  .dot.blue{  background:#e7efff; border-color:#b9ccff; }
-  .dot.red{   background:#f7e9ea; border-color:#efc9cd; }
+  .legend{display:flex; gap:14px; align-items:center; padding:8px 16px; background:rgba(255,255,255,.92); border-bottom:1px solid var(--line)}
+  .tag{display:inline-flex; align-items:center; gap:8px; color:#0b0b0c}
+  .dot{width:14px; height:14px; border-radius:4px; border:1px solid #bfc5cf}
+  .dot.green{background:#e8f5ec; border-color:#a7d6b8}
+  .dot.blue{ background:#e7efff; border-color:#b9ccff}
+  .dot.red{  background:#f7e9ea; border-color:#efc9cd}
 
-  /* Main table container */
-  .content{ flex:1; padding:12px 16px 16px; background:transparent; }
-  .frame{
-    height:100%; background:var(--frame); border:1px solid var(--line); border-radius:10px;
-    overflow:hidden;
-  }
+  .content{flex:1; padding:12px 16px 16px; background:transparent}
+  .frame{height:100%; background:var(--frame); border:1px solid var(--line); border-radius:10px; overflow:hidden}
 
-  table{ border-collapse:separate; border-spacing:0; width:100%; table-layout:fixed; }
-  thead th{
-    position:sticky; top:0; z-index:2;
-    background:rgba(245,246,248,0.92);
-  }
-  th, td{
-    border-right:1px solid var(--line);
-    border-bottom:1px solid var(--line);
-    padding:6px 8px; text-align:center;
-  }
-  th:first-child, td:first-child{ border-left:1px solid var(--line); }
-  th{ font-weight:600; color:#263238; font-size:13px; }
+  table{border-collapse:separate; border-spacing:0; width:100%; table-layout:fixed}
+  thead th{position:sticky; top:0; z-index:2; background:rgba(245,246,248,.92)}
+  th,td{border-right:1px solid var(--line); border-bottom:1px solid var(--line); padding:6px 8px; text-align:center}
+  th:first-child,td:first-child{border-left:1px solid var(--line)}
+  th{font-weight:600; color:#263238; font-size:13px}
 
-  /* Left sticky columns */
-  .name{
-    position:sticky; left:0; z-index:1; background:var(--frame);
-    text-align:left; font-weight:600; width:var(--roleW); cursor:pointer;
-  }
-  .period{
-    position:sticky; left:var(--roleW); z-index:1; background:var(--frame);
-    width:var(--periodW); font-weight:600; color:#374151;
-  }
+  .name{position:sticky; left:0; z-index:1; background:var(--frame); text-align:left; font-weight:600; width:var(--roleW); cursor:pointer}
+  .period{position:sticky; left:var(--roleW); z-index:1; background:var(--frame); width:var(--periodW); font-weight:600; color:#374151}
 
-  /* Day cells */
-  .daynum, td.cell { width:var(--cellW); }
-  tbody td{ background:rgba(255,255,255,0.94); }
-  tbody tr:nth-child(odd) td{ background:rgba(252,253,255,0.90); }
-  .today{ background:#fff7ea !important; }
+  .daynum, td.cell{width:var(--cellW)}
+  tbody td{background:rgba(255,255,255,.94)}
+  tbody tr:nth-child(odd) td{background:rgba(252,253,255,.90)}
+  .today{background:#fff7ea !important}
 
-  /* Right summary columns */
-  th.rcol, td.rcol { width:var(--rcolW); }
-  td.total{ font-weight:700; background:rgba(251,251,253,0.95); }
+  th.rcol, td.rcol{width:var(--rcolW)}
+  td.total{font-weight:700; background:rgba(251,251,253,.95)}
 
-  /* Non-overlapping pill counts in each cell */
-  .pills{ display:flex; justify-content:center; align-items:center; gap:6px; white-space:nowrap; }
-  .pill{
-    min-width:18px; height:18px; padding:0 6px; border-radius:6px;
-    display:inline-flex; align-items:center; justify-content:center;
-    font-size:12px; border:1px solid transparent;
-  }
-  .pill:empty{ display:none; }
-  .pill.g{ color:var(--green); background:#e8f5ec; border-color:#b7e2c7; }
-  .pill.b{ color:var(--blue);  background:#e7efff; border-color:#c2d5ff; }
-  .pill.wt{color:var(--red);   background:#f7e9ea; border-color:#f0c9cd; }
-  .pills.squish  { gap:4px; } .pills.squish  .pill{ font-size:11px; padding:0 5px; }
-  .pills.xs      { gap:2px; } .pills.xs      .pill{ font-size:10px; padding:0 3px; }
-  .pills.xxs     { gap:1px; } .pills.xxs     .pill{ font-size:9px;  padding:0 2px; }
+  .pills{display:flex; justify-content:center; align-items:center; gap:6px; white-space:nowrap}
+  .pill{min-width:18px; height:18px; padding:0 6px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; border:1px solid transparent}
+  .pill:empty{display:none}
+  .pill.g{color:var(--green); background:#e8f5ec; border-color:#b7e2c7}
+  .pill.b{color:var(--blue);  background:#e7efff; border-color:#c2d5ff}
+  .pill.wt{color:var(--red);   background:#f7e9ea; border-color:#f0c9cd}
+  .pills.squish{gap:4px}.pills.squish .pill{font-size:11px; padding:0 5px}
+  .pills.xs{gap:2px}.pills.xs .pill{font-size:10px; padding:0 3px}
+  .pills.xxs{gap:1px}.pills.xxs .pill{font-size:9px; padding:0 2px}
 
-  /* Editor (numbers + names + month) */
-  .editor{
-    position:fixed; left:16px; bottom:16px; width:400px;
-    background:#fff; border:1px solid var(--line); border-radius:10px;
-    padding:12px; box-shadow:0 12px 24px rgba(0,0,0,.18); display:none; z-index:50;
-  }
-  .editor h3{ margin:0 0 8px; font-size:14px; }
-  .rows{ display:grid; grid-template-columns:28px 1fr 110px; gap:10px 8px; align-items:center; }
-  .chip{ min-width:22px; height:18px; padding:0 4px; border-radius:6px;
-         display:inline-flex; align-items:center; justify-content:center; font-size:12px; border:1px solid transparent; }
-  .chip.g{ color:var(--green); background:#e8f5ec; border-color:#b7e2c7; }
-  .chip.b{ color:var(--blue);  background:#e7efff; border-color:#c2d5ff; }
-  .chip.wt{color:var(--red);   background:#f7e9ea; border-color:#f0c9cd; }
-  .rows label{ font-weight:600; color:#2f2f31; text-align:left; }
-  .rows input{ width:100%; padding:6px 8px; border:1px solid #aeb3bb; border-radius:8px; }
-  .rows input[type=number]{ -moz-appearance:textfield; }
-  .rows input[type=number]::-webkit-outer-spin-button,
-  .rows input[type=number]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  .editor{position:fixed; left:16px; bottom:16px; width:400px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px; box-shadow:0 12px 24px rgba(0,0,0,.18); display:none; z-index:50}
+  .editor h3{margin:0 0 8px; font-size:14px}
+  .rows{display:grid; grid-template-columns:28px 1fr 110px; gap:10px 8px; align-items:center}
+  .chip{min-width:22px; height:18px; padding:0 4px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; border:1px solid transparent}
+  .chip.g{color:var(--green); background:#e8f5ec; border-color:#b7e2c7}
+  .chip.b{color:var(--blue);  background:#e7efff; border-color:#c2d5ff}
+  .chip.wt{color:var(--red);   background:#f7e9ea; border-color:#f0c9cd}
+  .rows label{font-weight:600; color:#2f2f31; text-align:left}
+  .rows input{width:100%; padding:6px 8px; border:1px solid #aeb3bb; border-radius:8px}
+  .rows input[type=number]{-moz-appearance:textfield}
+  .rows input[type=number]::-webkit-outer-spin-button,.rows input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
 
-  details.box{ margin-top:10px; border-top:1px solid var(--line); padding-top:10px; }
-  details.box summary{ cursor:pointer; font-weight:600; color:#2f2f31; }
-  .nameRow{ display:grid; grid-template-columns:1fr auto auto; gap:8px; margin-top:8px; }
-  .nameRow input,
-  .monthRow select, .monthRow input{ padding:6px 8px; border:1px solid #aeb3bb; border-radius:8px; width:100%; }
-  .monthRow{ display:grid; grid-template-columns: 1fr 1fr auto; gap:8px; align-items:center; margin-top:8px; }
+  details.box{margin-top:10px; border-top:1px solid var(--line); padding-top:10px}
+  details.box summary{cursor:pointer; font-weight:600; color:#2f2f31}
+  .nameRow{display:grid; grid-template-columns:1fr auto auto; gap:8px; margin-top:8px}
+  .nameRow input,.monthRow select,.monthRow input{padding:6px 8px; border:1px solid #aeb3bb; border-radius:8px; width:100%}
+  .monthRow{display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:center; margin-top:8px}
 
-  .foot{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
-  .btn{ appearance:none; border:1px solid #aeb3bb; background:#fff; padding:8px 10px; border-radius:8px; font-weight:600; cursor:pointer; }
-  .btn.primary{ border-color:#0b6bcb; background:#0b6bcb; color:#fff; }
+  .foot{display:flex; gap:8px; justify-content:flex-end; margin-top:12px}
+  .btn{appearance:none; border:1px solid #aeb3bb; background:#fff; padding:8px 10px; border-radius:8px; font-weight:600; cursor:pointer}
+  .btn.primary{border-color:#0b6bcb; background:#0b6bcb; color:#fff}
 </style>
 </head>
 <body>
@@ -218,156 +161,182 @@
   </div>
 
 <script>
-/* ============ Background GIF setup ============ */
+/* ===== Helpers: simple param parser for older engines ===== */
+function getQS(){
+  var s = location.search.replace(/^\?/, '');
+  var o = {};
+  if (!s) return o;
+  s.split('&').forEach(function(p){
+    var kv = p.split('=');
+    o[decodeURIComponent(kv[0])] = decodeURIComponent((kv[1]||'').replace(/\+/g,' '));
+  });
+  return o;
+}
+
+/* ===== Background GIF ===== */
 (function(){
-  const qs = new URLSearchParams(location.search);
-  const img = document.getElementById('bgimg');
-  // Use ?gif=<URL> or default to bg.gif in the same folder
-  const url = qs.get('gif') || 'bg.gif';
+  var qs = getQS();
+  var img = document.getElementById('bgimg');
+  var url = qs.gif || 'bg.gif';
   img.src = url;
-  img.onerror = ()=>{ document.querySelector('.bg').style.display='none'; };
+  img.onerror = function(){ var bg = document.querySelector('.bg'); if (bg) bg.style.display='none'; };
 })();
 
-/* ============ Data / Live sync ============ */
-const STORAGE_KEY = 'sales-pinboard-live-v1';
-const defaultTeam = ['Yassir','Sumit','Connor','Mohamad','Jerry','Brittany','Arnold','House'];
-const today = new Date();
+/* ===== Data / Live sync ===== */
+var STORAGE_KEY = 'sales-pinboard-live-v1';
+var defaultTeam = ['Yassir','Sumit','Connor','Mohamad','Jerry','Brittany','Arnold','House'];
+var today = new Date();
 
-// Optional remote JSON feed for signage players: pass ?feed=URL&poll=30000
-const qs = new URLSearchParams(location.search);
-const FEED_URL = qs.get('feed'); // e.g., https://yourdomain.com/pinboard.json
-const POLL_MS = Math.max(5000, parseInt(qs.get('poll')||'30000',10) || 30000);
-const PUSH = qs.get('push')==='1'; // if you control the endpoint and want to publish edits
+var qs = getQS();
+var FEED_URL = qs.feed || '';    // your Apps Script URL
+var POLL_MS  = Math.max(5000, parseInt(qs.poll || '30000', 10) || 30000);
+var PUSH     = (qs.push === '1');
+var PUSHKEY  = qs.pushkey || '';
 
-const state = {
+var state = {
   year: today.getFullYear(),
   month: today.getMonth(), // 0-11
-  names: [...defaultTeam],
+  names: defaultTeam.slice(),
   data: {} // data[name].MTD[day] = {g,b,w}, data[name].YTD[day] = {g,b,w}
 };
 
 try {
-  const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-  if (saved && typeof saved === 'object') Object.assign(state, saved);
-} catch { /* ignore */ }
+  var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+  if (saved && typeof saved === 'object') {
+    // shallow merge
+    for (var k in saved) state[k] = saved[k];
+  }
+} catch(e) {}
 
+/* skeleton */
 function daysInMonth(y,m){ return new Date(y, m+1, 0).getDate(); }
-
 function ensureSkeleton(){
-  const dim = daysInMonth(state.year, state.month);
-  if (!state.names?.length) state.names = [...defaultTeam];
+  var dim = daysInMonth(state.year, state.month);
+  if (!state.names || !state.names.length) state.names = defaultTeam.slice();
   state.data = state.data || {};
-  for (const n of state.names){
-    state.data[n] = state.data[n] || { MTD:{}, YTD:{} };
-    for (const row of ['MTD','YTD']){
-      for (let d=1; d<=dim; d++){
-        state.data[n][row][d] = state.data[n][row][d] || {g:0,b:0,w:0};
+  for (var i=0;i<state.names.length;i++){
+    var n = state.names[i];
+    if (!state.data[n]) state.data[n] = {MTD:{}, YTD:{}};
+    for (var r=0;r<2;r++){
+      var row = r===0?'MTD':'YTD';
+      for (var d=1; d<=dim; d++){
+        if (!state.data[n][row][d]) state.data[n][row][d] = {g:0,b:0,w:0};
       }
-      // prune extra days
-      for (const k of Object.keys(state.data[n][row])){
-        const dd = +k; if (dd>dim) delete state.data[n][row][k];
+      for (var k in state.data[n][row]){
+        var dd = +k; if (dd>dim) delete state.data[n][row][k];
       }
     }
   }
 }
 
-function save(localOnly=false){
+/* save + optional PUSH (POST text/plain to avoid preflight) */
+function save(localOnly){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   renderAsOf();
-  if (PUSH && FEED_URL && !localOnly){
-    // Try to publish the whole state to your endpoint (server must allow CORS & PUT/POST)
-    fetch(FEED_URL, {
-      method: 'PUT',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify(state)
-    }).catch(()=>{});
+  if (!localOnly && PUSH && FEED_URL){
+    var url = FEED_URL + (FEED_URL.indexOf('?')>-1 ? '&':'?') + 'key=' + encodeURIComponent(PUSHKEY);
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', url, true);
+    xhr.setRequestHeader('Content-Type','text/plain;charset=utf-8');
+    xhr.send(JSON.stringify(state));
   }
 }
 
-async function pullOnce(){
-  if (!FEED_URL) return false;
-  try{
-    const res = await fetch(FEED_URL + (FEED_URL.includes('?')?'&':'?') + 't=' + Date.now(), {cache:'no-store'});
-    if (!res.ok) throw new Error('HTTP '+res.status);
-    const remote = await res.json();
-    if (remote && remote.names && remote.data){
-      Object.assign(state, remote);
-      ensureSkeleton();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      document.getElementById('live').style.display='inline-block';
-      return true;
-    }
-  }catch(e){ /* ignore fetch errors on player */ }
-  return false;
+/* JSONP reader so CORS isn't required */
+function jsonp(url, onsuccess, onerror){
+  var cb = 'CB' + String(Math.random()).slice(2);
+  window[cb] = function(payload){
+    cleanup(); onsuccess && onsuccess(payload);
+  };
+  function cleanup(){ try{ delete window[cb]; }catch(e){ window[cb]=undefined; } if (tag && tag.parentNode) tag.parentNode.removeChild(tag); }
+  var tag = document.createElement('script');
+  tag.src = url + (url.indexOf('?')>-1?'&':'?') + 'callback=' + cb + '&t=' + Date.now();
+  tag.onerror = function(){ cleanup(); onerror && onerror(); };
+  document.head.appendChild(tag);
 }
 
-/* ============ Rendering ============ */
-const gridEl = document.getElementById('grid');
+/* pullOnce using JSONP */
+function pullOnce(cb){
+  if (!FEED_URL){ cb && cb(false); return; }
+  jsonp(FEED_URL, function(remote){
+    if (remote && remote.names && remote.data){
+      for (var k in remote) state[k] = remote[k];
+      ensureSkeleton();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      var live = document.getElementById('live'); if (live) live.style.display='inline-block';
+      cb && cb(true);
+    } else {
+      cb && cb(false);
+    }
+  }, function(){ cb && cb(false); });
+}
+
+/* ===== Rendering ===== */
+var gridEl = document.getElementById('grid');
 
 function render(){
   ensureSkeleton();
-  const dim = daysInMonth(state.year, state.month);
+  var dim = daysInMonth(state.year, state.month);
 
-  // Compute day width to fit available space
-  const frame = document.querySelector('.frame');
-  const avail = frame.clientWidth; // inner width
-  const fixedLeft = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--roleW')) +
-                    parseInt(getComputedStyle(document.documentElement).getPropertyValue('--periodW'));
-  const rcolW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--rcolW'));
-  const suffixCols = 5; // Total + New + PO + WT + Rate
-  const usable = avail - fixedLeft - suffixCols*rcolW - 2; // borders tolerance
-  const cellW = Math.max(30, Math.floor(usable / dim));
+  var frame = document.querySelector('.frame');
+  var avail = frame.clientWidth;
+  var fixedLeft = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--roleW'),10) +
+                  parseInt(getComputedStyle(document.documentElement).getPropertyValue('--periodW'),10);
+  var rcolW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--rcolW'),10);
+  var suffixCols = 5;
+  var usable = avail - fixedLeft - suffixCols*rcolW - 2;
+  var cellW = Math.max(30, Math.floor(usable / dim));
   document.documentElement.style.setProperty('--cellW', cellW + 'px');
 
-  let html = '';
-  // Header
+  var html = '';
   html += '<thead><tr>';
-  html += `<th class="name">Sales Specialist</th>`;
-  html += `<th class="period">&nbsp;</th>`;
-  for (let d=1; d<=dim; d++){
-    const isToday = (state.year===today.getFullYear() && state.month===today.getMonth() && d===today.getDate());
-    html += `<th class="daynum${isToday?' today':''}">${d}</th>`;
+  html += '<th class="name">Sales Specialist</th>';
+  html += '<th class="period">&nbsp;</th>';
+  for (var d=1; d<=dim; d++){
+    var isToday = (state.year===today.getFullYear() && state.month===today.getMonth() && d===today.getDate());
+    html += '<th class="daynum' + (isToday?' today':'') + '">' + d + '</th>';
   }
-  html += `<th class="rcol">Total</th>`;
-  html += `<th class="rcol">New</th>`;
-  html += `<th class="rcol">PO</th>`;
-  html += `<th class="rcol">WT</th>`;
-  html += `<th class="rcol">Rate</th>`;
+  html += '<th class="rcol">Total</th>';
+  html += '<th class="rcol">New</th>';
+  html += '<th class="rcol">PO</th>';
+  html += '<th class="rcol">WT</th>';
+  html += '<th class="rcol">Rate</th>';
   html += '</tr></thead>';
 
-  // Body
   html += '<tbody>';
-  for (const name of state.names){
-    let first = true;
-    for (const row of ['MTD','YTD']){
+  for (var i=0;i<state.names.length;i++){
+    var name = state.names[i];
+    var first = true;
+    for (var rr=0; rr<2; rr++){
+      var row = rr===0?'MTD':'YTD';
       html += '<tr>';
       if (first){
-        html += `<td class="name nameCell" data-name="${encodeURIComponent(name)}" rowspan="2" title="Click to rename">${name}</td>`;
+        html += '<td class="name nameCell" data-name="' + encodeURIComponent(name) + '" rowspan="2" title="Click to rename">' + name + '</td>';
         first = false;
       }
-      html += `<td class="period">${row}</td>`;
+      html += '<td class="period">' + row + '</td>';
 
-      let sum=0, gsum=0, bsum=0, wsum=0;
-      for (let d=1; d<=dim; d++){
-        const v = state.data[name][row][d] || {g:0,b:0,w:0};
+      var sum=0, gsum=0, bsum=0, wsum=0;
+      for (var d2=1; d2<=dim; d2++){
+        var v = (state.data[name] && state.data[name][row] && state.data[name][row][d2]) || {g:0,b:0,w:0};
         gsum += v.g|0; bsum += v.b|0; wsum += v.w|0;
-        sum += (v.g|0) + (v.b|0) + (v.w|0);
-        const isToday = (state.year===today.getFullYear() && state.month===today.getMonth() && d===today.getDate());
-        html += `<td class="cell${isToday?' today':''}" data-name="${encodeURIComponent(name)}" data-row="${row}" data-day="${d}">
-          <div class="pills">
-            <span class="pill g">${v.g||''}</span>
-            <span class="pill b">${v.b||''}</span>
-            <span class="pill wt">${v.w||''}</span>
-          </div>
-        </td>`;
+        sum  += (v.g|0) + (v.b|0) + (v.w|0);
+        var isToday2 = (state.year===today.getFullYear() && state.month===today.getMonth() && d2===today.getDate());
+        html += '<td class="cell' + (isToday2?' today':'') + '" data-name="' + encodeURIComponent(name) + '" data-row="' + row + '" data-day="' + d2 + '">' +
+                  '<div class="pills">' +
+                    '<span class="pill g">' + (v.g||'') + '</span>' +
+                    '<span class="pill b">' + (v.b||'') + '</span>' +
+                    '<span class="pill wt">' + (v.w||'') + '</span>' +
+                  '</div>' +
+                '</td>';
       }
-      const denom = (gsum + bsum) || 0; // WT rate base = New + PO
-      const rate = denom ? Math.round((wsum/denom)*100) + '%' : '—';
-      html += `<td class="rcol total">${sum}</td>`;
-      html += `<td class="rcol">${gsum}</td>`;
-      html += `<td class="rcol">${bsum}</td>`;
-      html += `<td class="rcol">${wsum}</td>`;
-      html += `<td class="rcol">${rate}</td>`;
+      var denom = (gsum + bsum) || 0;
+      var rate = denom ? Math.round((wsum/denom)*100) + '%' : '—';
+      html += '<td class="rcol total">' + sum + '</td>';
+      html += '<td class="rcol">' + gsum + '</td>';
+      html += '<td class="rcol">' + bsum + '</td>';
+      html += '<td class="rcol">' + wsum + '</td>';
+      html += '<td class="rcol">' + rate + '</td>';
       html += '</tr>';
     }
   }
@@ -375,145 +344,145 @@ function render(){
 
   gridEl.innerHTML = html;
 
-  // bind clicks
-  gridEl.querySelectorAll('td.cell').forEach(td => td.addEventListener('click', () => openEditor(td)));
-  gridEl.querySelectorAll('td.nameCell').forEach(td => td.addEventListener('click', () => openRenameFromName(td)));
+  var tds = gridEl.querySelectorAll('td.cell');
+  for (var j=0;j<tds.length;j++){
+    (function(td){ td.addEventListener('click', function(){ openEditor(td); }); })(tds[j]);
+  }
+  var nameTds = gridEl.querySelectorAll('td.nameCell');
+  for (var k=0;k<nameTds.length;k++){
+    (function(td){ td.addEventListener('click', function(){ openRenameFromName(td); }); })(nameTds[k]);
+  }
 
-  // ensure pills never overlap
   fitAllCells();
 }
 
 function fitAllCells(){
-  gridEl.querySelectorAll('td.cell').forEach(td=>{
-    const pills = td.querySelector('.pills');
-    if (!pills) return;
+  var tds = gridEl.querySelectorAll('td.cell');
+  for (var i=0;i<tds.length;i++){
+    var td = tds[i];
+    var pills = td.querySelector('.pills');
+    if (!pills) continue;
     pills.classList.remove('squish','xs','xxs');
-    const max = td.clientWidth - 6;
+    var max = td.clientWidth - 6;
     if (pills.scrollWidth > max) pills.classList.add('squish');
     if (pills.scrollWidth > max) pills.classList.add('xs');
     if (pills.scrollWidth > max) pills.classList.add('xxs');
-  });
+  }
 }
 
 function renderAsOf(){
-  const el = document.getElementById('asof');
-  const d = new Date();
-  const ts = d.toLocaleString(undefined,{hour:'numeric', minute:'2-digit'}) +
-             ' on ' + d.toLocaleDateString(undefined,{year:'numeric', month:'long', day:'numeric'});
-  const boardMonth = new Date(state.year, state.month, 1)
+  var el = document.getElementById('asof');
+  var d = new Date();
+  var ts = d.toLocaleString(undefined,{hour:'numeric', minute:'2-digit'}) +
+           ' on ' + d.toLocaleDateString(undefined,{year:'numeric', month:'long', day:'numeric'});
+  var boardMonth = new Date(state.year, state.month, 1)
     .toLocaleDateString(undefined,{month:'long', year:'numeric'});
-  el.innerHTML = `<strong>${boardMonth}</strong> &nbsp;•&nbsp; Information current as of ${ts}`;
+  el.innerHTML = '<strong>' + boardMonth + '</strong> &nbsp;•&nbsp; Information current as of ' + ts;
 }
 
-/* ============ Editor / Names / Month ============ */
-const editor = document.getElementById('editor');
-const inG = document.getElementById('inG');
-const inB = document.getElementById('inB');
-const inW = document.getElementById('inW');
-const editorTitle = document.getElementById('editorTitle');
-const nameField = document.getElementById('nameField');
-const monthSel = document.getElementById('monthSel');
-const yearInput = document.getElementById('yearInput');
+/* ===== Editor / Names / Month ===== */
+var editor = document.getElementById('editor');
+var inG = document.getElementById('inG');
+var inB = document.getElementById('inB');
+var inW = document.getElementById('inW');
+var editorTitle = document.getElementById('editorTitle');
+var nameField = document.getElementById('nameField');
+var monthSel = document.getElementById('monthSel');
+var yearInput = document.getElementById('yearInput');
 
-let current = null;      // {name,row,day}
-let renameTarget = null; // string
+var current = null;      // {name,row,day}
+var renameTarget = null;
 
 function placeEditorNear(){ editor.style.display = 'block'; }
 
 function openEditor(td){
-  const name = decodeURIComponent(td.dataset.name);
-  const row = td.dataset.row;
-  const day = +td.dataset.day;
-  const v = state.data[name][row][day] || {g:0,b:0,w:0};
+  var name = decodeURIComponent(td.getAttribute('data-name'));
+  var row  = td.getAttribute('data-row');
+  var day  = +td.getAttribute('data-day');
+  var v = (state.data[name] && state.data[name][row] && state.data[name][row][day]) || {g:0,b:0,w:0};
   inG.value = v.g||0; inB.value = v.b||0; inW.value = v.w||0;
-  editorTitle.textContent = `Edit — ${name} • ${row} • Day ${day}`;
-  current = {name,row,day};
+  editorTitle.textContent = 'Edit — ' + name + ' • ' + row + ' • Day ' + day;
+  current = {name:name, row:row, day:day};
   renameTarget = null;
   placeEditorNear();
   inG.focus(); inG.select();
 }
 function openRenameFromName(td){
-  const name = decodeURIComponent(td.dataset.name);
-  current = {name,row:'MTD',day:1};
+  var name = decodeURIComponent(td.getAttribute('data-name'));
+  current = {name:name, row:'MTD', day:1};
   renameTarget = name;
   nameField.value = name;
-  editorTitle.textContent = `Rename — ${name}`;
+  editorTitle.textContent = 'Rename — ' + name;
   placeEditorNear();
   nameField.focus(); nameField.select();
 }
 
-document.getElementById('cancelEdit').onclick = ()=>{ editor.style.display='none'; renameTarget=null; };
+document.getElementById('cancelEdit').onclick = function(){ editor.style.display='none'; renameTarget=null; };
 
-document.getElementById('saveEdit').onclick = ()=>{
+document.getElementById('saveEdit').onclick = function(){
   if (!current) return;
+  if (!state.data[current.name]) state.data[current.name] = {MTD:{}, YTD:{}};
+  if (!state.data[current.name][current.row]) state.data[current.name][current.row] = {};
   state.data[current.name][current.row][current.day] = {
     g: Number(inG.value||0),
     b: Number(inB.value||0),
     w: Number(inW.value||0)
   };
-  save(); render(); editor.style.display='none';
+  save(false); render(); editor.style.display='none';
 };
 
-document.getElementById('addNameBtn').onclick = ()=>{
-  const nm = (nameField.value||'').trim();
+document.getElementById('addNameBtn').onclick = function(){
+  var nm = (nameField.value||'').trim();
   if (!nm) return;
-  if (state.names.includes(nm)) { alert('Name already exists.'); return; }
+  if (state.names.indexOf(nm) !== -1) { alert('Name already exists.'); return; }
   state.names.push(nm);
-  ensureSkeleton(); save(); render();
+  ensureSkeleton(); save(false); render();
   nameField.value = '';
 };
-document.getElementById('renameBtn').onclick = ()=>{
-  const nm = (nameField.value||'').trim();
-  const src = renameTarget || (current && current.name);
+document.getElementById('renameBtn').onclick = function(){
+  var nm = (nameField.value||'').trim();
+  var src = renameTarget || (current && current.name);
   if (!nm || !src) return;
-  if (state.names.includes(nm)) { alert('Name already exists.'); return; }
-  const idx = state.names.indexOf(src);
+  if (state.names.indexOf(nm) !== -1) { alert('Name already exists.'); return; }
+  var idx = state.names.indexOf(src);
   if (idx>=0){
     state.names[idx] = nm;
     state.data[nm] = state.data[src];
     delete state.data[src];
     if (current) current.name = nm;
     if (renameTarget) renameTarget = nm;
-    save(); render();
+    save(false); render();
     nameField.value = '';
   }
 };
 
 /* Month selector */
 (function initMonthUI(){
-  const months = Array.from({length:12}, (_,i)=> new Date(2000,i,1).toLocaleString(undefined,{month:'long'}));
-  monthSel.innerHTML = months.map((m,i)=>`<option value="${i}">${m}</option>`).join('');
+  var months=[], i; for(i=0;i<12;i++){ months.push(new Date(2000,i,1).toLocaleString(undefined,{month:'long'})); }
+  var opts=''; for(i=0;i<12;i++){ opts += '<option value="'+i+'">'+months[i]+'</option>'; }
+  monthSel.innerHTML = opts;
   monthSel.value = String(state.month);
   yearInput.value = String(state.year);
 })();
-document.getElementById('applyMonthBtn').onclick = ()=>{
-  const m = Number(monthSel.value||state.month);
-  const y = Number(yearInput.value||state.year);
-  if (Number.isFinite(m)) state.month = m;
-  if (Number.isFinite(y)) state.year = y;
-  ensureSkeleton(); save(); render(); renderAsOf();
+document.getElementById('applyMonthBtn').onclick = function(){
+  var m = Number(monthSel.value||state.month);
+  var y = Number(yearInput.value||state.year);
+  if (isFinite(m)) state.month = m;
+  if (isFinite(y)) state.year = y;
+  ensureSkeleton(); save(false); render(); renderAsOf();
 };
 
-/* Keyboard: Enter to save, Esc to cancel */
-window.addEventListener('keydown', (e)=>{
-  if (editor.style.display === 'block'){
-    if (e.key === 'Escape') editor.style.display = 'none';
-    if (e.key === 'Enter') document.getElementById('saveEdit').click();
-  }
-});
-
-/* ============ Boot + Live polling ============ */
+/* Boot + polling (JSONP) */
 renderAsOf();
 render();
 
 if (FEED_URL){
-  // Pull immediately, then poll
-  pullOnce().then(changed=>{ if (changed){ render(); renderAsOf(); } });
-  setInterval(async()=>{ const ok = await pullOnce(); if (ok){ render(); renderAsOf(); } }, POLL_MS);
+  pullOnce(function(changed){ if (changed){ render(); renderAsOf(); } });
+  setInterval(function(){ pullOnce(function(ok){ if (ok){ render(); renderAsOf(); } }); }, POLL_MS);
 }
 
-// Resize handling (different player layouts)
-window.addEventListener('resize', ()=>{ render(); });
+/* Resize */
+window.addEventListener('resize', function(){ render(); });
 </script>
 </body>
 </html>
