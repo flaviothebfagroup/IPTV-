@@ -15,49 +15,86 @@
 
 <style>
   /* =========================================================
-     Tokens (light default) + dark override
+     Tokens + gradient glass (same vibe as Home)
   ========================================================= */
   :root{
     --accent:#ff9500;
-    --fg:#111; --muted:#6e6e73; --bg:#ffffff;
-    --panel:#fff; --tile:#f6f6f8; --tileHover:#fff7ea;
-    --border:rgba(0,0,0,.14); --borderStrong:rgba(0,0,0,.28);
-    --shadow:0 14px 36px rgba(0,0,0,.08);
+
+    /* gradient (light) */
+    --bg1:#fff4e4; --bg2:#ffd293; --bg3:#ff9500;
+
+    --fg:#111; --muted:#6e6e73;
+
+    --panel:rgba(255,255,255,.58);
+    --tile:rgba(255,255,255,.46);
+    --tileHover:rgba(255,149,0,.08);
+
+    --border:rgba(15,23,42,.10);
+    --borderStrong:rgba(15,23,42,.20);
+    --shadow:0 14px 34px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.05);
+
+    --glass-blur:16px; --glass-sat:140%;
   }
   body.dark{
-    --bg:#0b0b0c; --fg:#f7f7f8; --muted:#a1a1a8;
-    --panel:#151517; --tile:#1a1a1d; --tileHover:#221e18;
-    --border:rgba(255,255,255,.16); --borderStrong:rgba(255,255,255,.36);
-    --shadow:0 18px 48px rgba(0,0,0,.45);
+    --bg1:#0b0b0c; --bg2:#0d1016; --bg3:#10141b;
+
+    --fg:#f7f7f8; --muted:#a1a1a8;
+
+    --panel:rgba(21,21,23,.56);
+    --tile:rgba(26,26,29,.50);
+    --tileHover:rgba(255,149,0,.10);
+
+    --border:rgba(255,255,255,.10);
+    --borderStrong:rgba(255,255,255,.20);
+    --shadow:0 18px 46px rgba(0,0,0,.36), 0 2px 8px rgba(0,0,0,.22);
+
+    --glass-blur:14px;
   }
 
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);
-    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
+  html,body{min-height:100%}
+  body{
+    margin:0;color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
+    background:transparent;
+  }
+  /* non-cropping gradient background */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:linear-gradient(180deg,var(--bg1) 0%, var(--bg2) 52%, var(--bg3) 100%);
+  }
   a{color:inherit;text-decoration:none}
 
   /* =========================================================
      Topbar (shared)
   ========================================================= */
-  .topbar{position:sticky;top:0;z-index:100;background:var(--panel);
+  .topbar{
+    position:sticky;top:0;z-index:200;background:var(--panel);
     border-bottom:1px solid var(--border);
-    padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
+    padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px;
+    backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+  }
   .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;position:relative}
   .brand{display:flex;align-items:center;gap:10px}
   .logo{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:#fff center/cover no-repeat}
   .logotxt{font-weight:900;letter-spacing:.2px}
 
   .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto}
-  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;color:inherit;font-weight:800;font-size:14px;line-height:1;white-space:nowrap}
-  .pill:hover{border-color:var(--accent)}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;color:inherit;font-weight:800;font-size:14px;line-height:1;white-space:nowrap;transition:border-color .18s ease, filter .18s ease}
+  .pill:hover{border-color:var(--accent);filter:brightness(1.04)}
   .pill.is-active{outline:2px solid var(--accent)}
   .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
 
   /* More (+) dropdown */
   .more{position:relative}
   #moreBtn .plus{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
-  #moreMenu{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
-    border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none}
+  #moreMenu{
+    position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
+    border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none;z-index:1200;
+    backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+  }
   #moreMenu.open{display:block}
   #moreMenu a{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px}
   #moreMenu a:hover{background:var(--tileHover)}
@@ -66,14 +103,23 @@
 
   /* Actions */
   .actions{display:flex;gap:8px;align-items:center}
-  .email{max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);
-    border:1.5px solid var(--borderStrong);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .chip{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1.5px solid var(--borderStrong);
-    background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
-  .chip:hover{border-color:var(--accent)}
+  .email{
+    max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);
+    border:1.5px solid var(--borderStrong);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+  }
+  .chip{
+    height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1.5px solid var(--borderStrong);
+    background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+    transition:transform .12s ease, filter .18s ease, border-color .18s ease;
+    backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+  }
+  .chip:hover{border-color:var(--accent);transform:translateY(-1px);filter:brightness(1.03)}
   .chip .ic{width:18px;height:18px;stroke-width:2}
   .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
-  /* Hamburger (orange lines, no border, centered) */
+  /* Hamburger */
   #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:42px;min-width:42px;padding:0;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
   #hamburger .ic{width:22px;height:22px;stroke:var(--accent);stroke-width:2.35}
 
@@ -83,12 +129,18 @@
     .email{display:none}
   }
 
-  /* Mobile sheet */
-  #sheet{position:fixed;inset:0;z-index:120;display:none}
+  /* =========================================================
+     Mobile sheet (outside header; high z-index)
+  ========================================================= */
+  #sheet{position:fixed;inset:0;z-index:1000;display:none}
   #sheet.open{display:block}
   #sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
-  .panel{position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:var(--panel);border-left:1px solid var(--border);
-    box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px}
+  .panel{
+    position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:var(--panel);border-left:1px solid var(--border);
+    box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px;
+    backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+  }
   .panel .row{display:flex;align-items:center;justify-content:space-between}
   .panel nav{display:grid;gap:8px}
   .panel nav a{justify-content:flex-start}
@@ -97,11 +149,28 @@
      Page UI
   ========================================================= */
   .wrap{max-width:1100px;margin:0 auto;padding:18px}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+  .card{
+    background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow);
+    backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+  }
   .muted{color:var(--muted);font-size:12px}
   .label{font-size:12px;color:var(--muted);margin-bottom:6px}
-  .input{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
-  .btn{height:34px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center}
+  .input{
+    width:100%;padding:12px;background:var(--tile);border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none;
+    box-shadow:0 1px 0 rgba(255,255,255,.45) inset;
+    backdrop-filter:blur(calc(var(--glass-blur) - 4px)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter:blur(calc(var(--glass-blur) - 4px)) saturate(var(--glass-sat));
+    transition:border-color .18s ease, filter .18s ease;
+  }
+  .input:focus{border-color:var(--accent);filter:brightness(1.02)}
+  .btn{
+    height:34px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;
+    transition:transform .1s ease, border-color .2s ease, box-shadow .2s ease, filter .18s ease;
+    backdrop-filter:blur(calc(var(--glass-blur) - 4px)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter:blur(calc(var(--glass-blur) - 4px)) saturate(var(--glass-sat));
+  }
+  .btn:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 8px 22px rgba(255,149,0,.15);filter:brightness(1.02)}
   .btn.solid{background:var(--accent);border-color:var(--accent);color:#000}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}
@@ -116,7 +185,7 @@
   .badge.err{border-color:#ef4444;color:#ef4444}
 
   /* Toast */
-  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:2000}
   .toast.show{opacity:1}
 </style>
 </head>
@@ -149,7 +218,6 @@
             <a class="is-active" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
             <a href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
             <a href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
-            <!-- Settings = sliders icon -->
             <a href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
           </div>
         </div>
@@ -167,40 +235,44 @@
         </button>
       </div>
     </div>
-
-    <!-- Mobile sheet -->
-    <div id="sheet" aria-hidden="true">
-      <div class="back"></div>
-      <aside class="panel" role="dialog" aria-modal="true" aria-label="Menu">
-        <div class="row">
-          <div class="brand"><span class="logo" id="brandLogoM"></span><span class="logotxt">BFA IPTV</span></div>
-          <button id="closeSheet" class="chip" aria-label="Close"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-        </div>
-        <nav>
-          <a class="pill" href="home.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
-          <a class="pill" href="dealerships.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
-          <a class="pill" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
-          <a class="pill" href="users.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
-          <div class="muted" style="padding:8px 2px 0">More</div>
-          <a class="pill" href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
-          <a class="pill" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
-          <a class="pill is-active" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
-          <a class="pill" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
-          <a class="pill" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
-          <a class="pill" href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
-          <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
-        </nav>
-      </aside>
-    </div>
   </header>
+
+  <!-- Mobile sheet (outside header so it overlays everything) -->
+  <div id="sheet" aria-hidden="true">
+    <div class="back"></div>
+    <aside class="panel" role="dialog" aria-modal="true" aria-label="Menu">
+      <div class="row">
+        <div class="brand"><span class="logo" id="brandLogoM"></span><span class="logotxt">BFA IPTV</span></div>
+        <button id="closeSheet" class="chip" aria-label="Close"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <nav>
+        <a class="pill" href="home.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
+        <a class="pill" href="dealerships.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
+        <a class="pill" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
+        <a class="pill" href="users.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
+        <div class="muted" style="padding:8px 2px 0">More</div>
+        <a class="pill" href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
+        <a class="pill" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
+        <a class="pill is-active" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
+        <a class="pill" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
+        <a class="pill" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
+        <a class="pill" href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
+        <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
+      </nav>
+    </aside>
+  </div>
 
   <!-- ===================================================== -->
   <div class="wrap">
     <div class="card">
-      <h2 style="margin:0 0 8px">Reminders (local)</h2>
-      <div class="muted" style="margin-bottom:8px">Stores in your browser only. Optional: auto-create dealership and first display.</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <div>
+          <h2 style="margin:0 0 4px">Reminders</h2>
+          <div class="muted" id="storeNote">Loading storage…</div>
+        </div>
+      </div>
 
-      <div class="row2">
+      <div class="row2" style="margin-top:8px">
         <div><div class="label">Date / time</div><input id="schWhen" class="input" type="datetime-local"/></div>
         <div><div class="label">Destination / address (optional)</div><input id="schDest" class="input" placeholder="Location / notes…"/></div>
       </div>
@@ -242,7 +314,7 @@
   const db=getDatabase(app);
 
   const $=s=>document.querySelector(s);
-  function toast(m){const t=document.querySelector('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+  function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 
   /* Logos */
   $('#brandLogo').style.backgroundImage=`url("${LOGO_URL}")`;
@@ -250,8 +322,8 @@
 
   /* Theme (dark class + icon) */
   const THEME_KEY='iptv_theme';
-  const themeBtn=document.getElementById('themeBtn');
-  const themeIcon=document.getElementById('themeIcon');
+  const themeBtn=$('#themeBtn');
+  const themeIcon=$('#themeIcon');
   const setThemeIcon=()=>{
     const dark=document.body.classList.contains('dark');
     themeIcon.innerHTML = dark
@@ -259,8 +331,7 @@
       : `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1.4-1.4M20.4 20.4 19 19M5 19l-1.4 1.4M20.4 3.6 19 5"/>`;
   };
   const saved=localStorage.getItem(THEME_KEY)||'light';
-  document.body.classList.toggle('dark', saved==='dark');
-  setThemeIcon();
+  document.body.classList.toggle('dark', saved==='dark'); setThemeIcon();
   themeBtn.addEventListener('click', ()=>{
     const toDark=!document.body.classList.contains('dark');
     document.body.classList.toggle('dark', toDark);
@@ -268,9 +339,9 @@
     setThemeIcon();
   });
 
-  /* “More” dropdown */
-  const moreBtn=document.getElementById('moreBtn');
-  const moreMenu=document.getElementById('moreMenu');
+  /* More dropdown + active mark */
+  const moreBtn=$('#moreBtn');
+  const moreMenu=$('#moreMenu');
   if(moreBtn){
     moreBtn.addEventListener('click',(e)=>{ e.preventDefault(); moreMenu.classList.toggle('open');});
     document.addEventListener('click',(e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn && !moreBtn.contains(e.target)){ moreMenu.classList.remove('open'); } },{capture:true});
@@ -281,30 +352,66 @@
 
   /* Mobile sheet */
   (()=>{
-    const sheet=document.getElementById('sheet');
+    const sheet=$('#sheet');
     const open=()=>{ sheet.classList.add('open'); document.body.style.overflow='hidden'; };
     const close=()=>{ sheet.classList.remove('open'); document.body.style.overflow=''; };
-    document.getElementById('hamburger').addEventListener('click', open);
-    document.getElementById('closeSheet').addEventListener('click', close);
+    $('#hamburger').addEventListener('click', open);
+    $('#closeSheet').addEventListener('click', close);
     sheet.querySelector('.back').addEventListener('click', close);
-    const mainOut=document.getElementById('signOutBtn');
-    const mobOut=document.getElementById('signOutBtnM');
+    const mainOut=$('#signOutBtn');
+    const mobOut=$('#signOutBtnM');
     if(mainOut && mobOut){ mobOut.addEventListener('click', ()=> mainOut.click()); }
   })();
 
   /* Auth */
-  document.getElementById('signOutBtn').addEventListener('click',()=>signOut(auth));
+  $('#signOutBtn').addEventListener('click',()=>signOut(auth));
   setPersistence(auth,browserLocalPersistence);
   onAuthStateChanged(auth,u=>{
     if(!u){ location.href='./home.html'; return; }
-    document.getElementById('adminEmail').textContent=u.email||u.uid;
+    $('#adminEmail').textContent=u.email||u.uid;
+    // after auth, load schedule
+    loadSchedule();
   });
 
-  /* ===== Schedule (localStorage) ===== */
+  /* ===== Schedule storage: DB first, local fallback ===== */
   const LS_SCH='iptv_admin_schedule';
-  let schedule=JSON.parse(localStorage.getItem(LS_SCH)||'[]');
-  function saveSchedule(){ localStorage.setItem(LS_SCH,JSON.stringify(schedule)); renderSchedule(); }
+  const DB_PATH='admin/schedule';
+  let schedule=[]; // array of items
 
+  async function loadSchedule(){
+    const note=$('#storeNote');
+    try{
+      const snap=await get(ref(db, DB_PATH));
+      if(snap.exists()){
+        const val=snap.val();
+        schedule = Array.isArray(val) ? val : Object.values(val||{});
+        note.textContent='Synced with Database (admin/schedule).';
+        renderSchedule();
+        return;
+      }
+    }catch(_){ /* ignore */ }
+    // fallback: local
+    schedule=JSON.parse(localStorage.getItem(LS_SCH)||'[]');
+    note.textContent='Stored locally (no DB permission).';
+    renderSchedule();
+  }
+
+  async function saveSchedule(){
+    const note=$('#storeNote');
+    // try DB first
+    try{
+      // store as array; if needed you can convert to keyed object
+      await set(ref(db, DB_PATH), schedule);
+      note.textContent='Synced with Database (admin/schedule).';
+    }catch(_){
+      // fallback to local
+      localStorage.setItem(LS_SCH, JSON.stringify(schedule));
+      note.textContent='Saved locally (no DB permission).';
+    }
+    renderSchedule();
+  }
+
+  /* ===== Render & helpers (unchanged logic) ===== */
   function relTime(ts){
     const d=new Date(ts).getTime(); const now=Date.now();
     const diff=d-now; const abs=Math.abs(diff);
@@ -331,7 +438,6 @@
       const isFuture = r.when && (new Date(r.when).getTime() > Date.now());
       const badgeClass = r.done ? 'ok' : (isFuture ? 'warn' : 'err');
 
-      // try to pull displayId from assets if present as "dealer • display"
       let displayId='';
       if(r.assets && r.assets.includes('•')){
         const parts=r.assets.split('•').map(s=>s.trim());
@@ -359,7 +465,6 @@
       ul.appendChild(li);
     });
 
-    // actions
     ul.querySelectorAll('[data-del]').forEach(b=>{
       b.addEventListener('click',()=>{ const idx=+b.dataset.del; schedule.splice(idx,1); saveSchedule(); });
     });
@@ -367,7 +472,6 @@
       b.addEventListener('click',()=>{ const idx=+b.dataset.toggle; schedule[idx].done=!schedule[idx].done; saveSchedule(); });
     });
   }
-  renderSchedule();
 
   // Show extra asset fields
   $('#schCreateAssets').addEventListener('change',e=>{ $('#schAssets').style.display=e.target.checked?'block':'none'; });
@@ -393,28 +497,32 @@
       if(!dId) dId=makeDealerId(dName);
 
       // Create dealership if missing
-      const exists=await get(ref(db,`dealershipPublic/${dId}`));
-      if(!exists.exists()){
-        await set(ref(db,`dealershipPublic/${dId}`),{name:dName||dId});
-        await set(ref(db,`dealership/${dId}`),{name:dName||dId,createdAt:Date.now(),createdBy:auth.currentUser?.email||'admin',displays:{}});
-      }
+      try{
+        const exists=await get(ref(db,`dealershipPublic/${dId}`));
+        if(!exists.exists()){
+          await set(ref(db,`dealershipPublic/${dId}`),{name:dName||dId});
+          await set(ref(db,`dealership/${dId}`),{name:dName||dId,createdAt:Date.now(),createdBy:auth.currentUser?.email||'admin',displays:{}});
+        }
 
-      // Create display (ID auto if empty)
-      if(!displayId){
-        const friendly=(await get(ref(db,`dealershipPublic/${dId}`))).val()?.name||dId;
-        const pref=initialsFromName(friendly);
-        const existing=await collectDisplays(dId);
-        displayId=`${pref}-${String(nextSuffix(existing,pref)).padStart(3,'0')}`;
-      }
-      await set(ref(db,`dealership/${dId}/displays/${displayId}`),true);
-      await update(ref(db,`displays/${displayId}`),{channel:1,volume:0,muted:true,dealership:dId,timestamp:Date.now()});
+        // Create display (ID auto if empty)
+        if(!displayId){
+          const friendly=(await get(ref(db,`dealershipPublic/${dId}`))).val()?.name||dId;
+          const pref=initialsFromName(friendly);
+          const existing=await collectDisplays(dId);
+          displayId=`${pref}-${String(nextSuffix(existing,pref)).padStart(3,'0')}`;
+        }
+        await set(ref(db,`dealership/${dId}/displays/${displayId}`),true);
+        await update(ref(db,`displays/${displayId}`),{channel:1,volume:0,muted:true,dealership:dId,timestamp:Date.now()});
 
-      assets=`${dId} • ${displayId}`;
-      $('#schDealerName').value='';$('#schDealerId').value='';$('#schDisplayId').value='';
+        assets=`${dId} • ${displayId}`;
+        $('#schDealerName').value='';$('#schDealerId').value='';$('#schDisplayId').value='';
+      }catch(e){
+        toast('Asset creation failed: '+(e?.message||e));
+      }
     }
 
     schedule.push({when,note,dest,assets,done:false});
-    saveSchedule();
+    await saveSchedule();
     $('#schWhen').value='';$('#schNote').value='';$('#schDest').value='';
     $('#schCreateAssets').checked=false;$('#schAssets').style.display='none';
     toast('Scheduled');
