@@ -26,7 +26,7 @@
       --bg-mid:#ffd293;
       --bg-end:#ff9500;
 
-      --fg:#111; 
+      --fg:#111;
       --muted:#6e6e73;
 
       /* glass surfaces */
@@ -49,7 +49,7 @@
       --bg-mid:#0d1016;
       --bg-end:#10141b;
 
-      --fg:#f7f7f8; 
+      --fg:#f7f7f8;
       --muted:#a1a1a8;
 
       --panel:rgba(21,21,23,.56);
@@ -144,19 +144,34 @@
       .email{display:none}
     }
 
-    /* Mobile sheet */
-    #sheet{position:fixed;inset:0;z-index:120;display:none}
+    /* =========================================================
+       Mobile sheet — moved OUTSIDE header and stacked on top
+    ========================================================= */
+    #sheet{
+      position:fixed; inset:0;
+      z-index:2147483647; /* sit above everything */
+      display:none;
+      contain:layout paint style;
+    }
     #sheet.open{display:block}
-    #sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
-    .panel{
-      position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:var(--panel);border-left:1px solid var(--border);
-      box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px;
+    #sheet .back{
+      position:absolute; inset:0; background:rgba(0,0,0,.42);
+      backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
+    }
+    #sheet .panel{
+      position:absolute; right:0; top:0; height:100%; width:min(86vw,360px);
+      background:var(--panel); border-left:1px solid var(--border);
+      box-shadow:var(--shadow); padding:16px; display:flex; flex-direction:column; gap:14px;
       backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
       -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      transform:translateX(100%); transition:transform .22s ease-out; will-change:transform;
+      overflow:auto;
     }
-    .panel .row{display:flex;align-items:center;justify-content:space-between}
-    .panel nav{display:grid;gap:8px}
-    .panel nav a{justify-content:flex-start}
+    body.dark #sheet .panel{ background:rgba(21,21,23,.9); border-left:1px solid rgba(255,255,255,.24); }
+    #sheet .panel .row{display:flex;align-items:center;justify-content:space-between}
+    #sheet .panel nav{display:grid;gap:8px}
+    #sheet .panel nav a{justify-content:flex-start}
+    #sheet.open .panel{ transform:translateX(0); }
 
     /* =========================================================
        Page UI — glass islands + soft controls
@@ -264,7 +279,6 @@
             <a href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
             <a href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
             <a href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
-            <!-- Settings = sliders icon -->
             <a href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
           </div>
         </div>
@@ -283,32 +297,32 @@
         </button>
       </div>
     </div>
-
-    <!-- Mobile sheet -->
-    <div id="sheet" aria-hidden="true">
-      <div class="back"></div>
-      <aside class="panel" role="dialog" aria-modal="true" aria-label="Menu">
-        <div class="row">
-          <div class="brand"><span class="logo" id="brandLogoM"></span><span class="logotxt">BFA IPTV</span></div>
-          <button id="closeSheet" class="chip" aria-label="Close"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-        </div>
-        <nav>
-          <a class="pill" href="home.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
-          <a class="pill" href="dealerships.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
-          <a class="pill" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
-          <a class="pill is-active" href="users.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
-          <div class="muted" style="padding:8px 2px 0">More</div>
-          <a class="pill" href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
-          <a class="pill" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
-          <a class="pill" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
-          <a class="pill" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
-          <a class="pill" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
-          <a class="pill" href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
-          <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
-        </nav>
-      </aside>
-    </div>
   </header>
+
+  <!-- ===== Mobile sheet (MOVED OUTSIDE HEADER) ===== -->
+  <div id="sheet" aria-hidden="true">
+    <div class="back"></div>
+    <aside class="panel" role="dialog" aria-modal="true" aria-label="Menu">
+      <div class="row">
+        <div class="brand"><span class="logo" id="brandLogoM"></span><span class="logotxt">BFA IPTV</span></div>
+        <button id="closeSheet" class="chip" aria-label="Close"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <nav>
+        <a class="pill" href="home.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
+        <a class="pill" href="dealerships.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
+        <a class="pill" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
+        <a class="pill is-active" href="users.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
+        <div class="muted" style="padding:8px 2px 0">More</div>
+        <a class="pill" href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
+        <a class="pill" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
+        <a class="pill" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
+        <a class="pill" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
+        <a class="pill" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
+        <a class="pill" href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
+        <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
+      </nav>
+    </aside>
+  </div>
 
   <!-- ===================================================== -->
   <div class="wrap">
@@ -492,7 +506,7 @@
       const mainOut = document.getElementById('signOutBtn');
       const mobOut  = document.getElementById('signOutBtnM');
       if(mainOut && mobOut){ mobOut.addEventListener('click', ()=> mainOut.click()); }
-    })();
+    })()
 
     /* Header actions */
     $('#reloadBtn').addEventListener('click', ()=> location.reload());
