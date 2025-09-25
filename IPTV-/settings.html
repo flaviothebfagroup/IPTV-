@@ -7,55 +7,88 @@
   <title>BFA IPTV — Settings</title>
 
   <style>
-    /* =========================================================
-       Tokens
-    ========================================================= */
+    /* ===================== Tokens (visual only) ===================== */
     :root{
       --accent:#ff9500;
-      --fg:#111; --muted:#6e6e73; --bg:#ffffff;
-      --panel:#fff; --tile:#f6f6f8; --tileHover:#fff7ea;
-      --border:rgba(0,0,0,.14); --borderStrong:rgba(0,0,0,.28);
-      --shadow:0 14px 36px rgba(0,0,0,.08);
+
+      /* gradient (light) */
+      --bg1:#fff4e4; --bg2:#ffd293; --bg3:#ff9500;
+
+      --fg:#111; --muted:#6e6e73;
+
+      --panel:rgba(255,255,255,.58);
+      --tile:rgba(255,255,255,.46);
+      --tileHover:rgba(255,149,0,.08);
+
+      --border:rgba(15,23,42,.10);
+      --borderStrong:rgba(15,23,42,.20);
+      --shadow:0 14px 34px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.05);
+
+      --glass-blur:16px; --glass-sat:140%;
+      --tileBorder:var(--border);
       --danger:#e11d48;
-      --tileBorder: var(--border);
     }
     body.dark{
-      --bg:#0b0b0c; --fg:#f7f7f8; --muted:#a1a1a8;
-      --panel:#151517; --tile:#1a1a1d; --tileHover:#221e18;
-      --border:rgba(255,255,255,.16); --borderStrong:rgba(255,255,255,.36);
-      --shadow:0 18px 48px rgba(0,0,0,.45);
-      --tileBorder: var(--border);
+      --bg1:#0b0b0c; --bg2:#0d1016; --bg3:#10141b;
+
+      --fg:#f7f7f8; --muted:#a1a1a8;
+
+      --panel:rgba(21,21,23,.56);
+      --tile:rgba(26,26,29,.50);
+      --tileHover:rgba(255,149,0,.10);
+
+      --border:rgba(255,255,255,.10);
+      --borderStrong:rgba(255,255,255,.20);
+      --shadow:0 18px 46px rgba(0,0,0,.36), 0 2px 8px rgba(0,0,0,.22);
+
+      --glass-blur:14px;
+      --tileBorder:var(--border);
     }
 
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--fg);
-      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
+    html,body{min-height:100%}
+    body{
+      margin:0;color:var(--fg);
+      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
+      background:transparent;
+    }
+    /* non-cropping gradient */
+    body::before{
+      content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background:linear-gradient(180deg,var(--bg1) 0%, var(--bg2) 52%, var(--bg3) 100%);
+    }
+
     a{color:inherit;text-decoration:none}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Courier New",monospace}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
     .muted{color:var(--muted);font-size:12px}
 
-    /* =========================================================
-       Topbar (same style as your other pages)
-    ========================================================= */
-    .topbar{position:sticky;top:0;z-index:100;background:var(--panel);
+    /* ===================== Topbar (shared) ===================== */
+    .topbar{
+      position:sticky;top:0;z-index:200;background:var(--panel);
       border-bottom:1px solid var(--border);
-      padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
+      padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
     .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;position:relative}
     .brand{display:flex;align-items:center;gap:10px}
     .logo{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:#fff center/cover no-repeat}
     .logotxt{font-weight:900;letter-spacing:.2px}
 
     .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;color:inherit;font-weight:800;font-size:14px;line-height:1;white-space:nowrap}
-    .pill:hover{border-color:var(--accent)}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;font-weight:800;font-size:14px;line-height:1;white-space:nowrap;transition:border-color .18s ease, filter .18s ease}
+    .pill:hover{border-color:var(--accent);filter:brightness(1.04)}
     .pill.is-active{outline:2px solid var(--accent)}
     .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
 
-    /* More (+) dropdown */
     .more{position:relative}
     #moreBtn .plus{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
-    #moreMenu{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
-      border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none}
+    #moreMenu{
+      position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
+      border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none;z-index:1200;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
     #moreMenu.open{display:block}
     #moreMenu a{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px}
     #moreMenu a:hover{background:var(--tileHover)}
@@ -63,11 +96,20 @@
     #moreMenu .ic{width:18px;height:18px;stroke-width:1.9}
 
     .actions{display:flex;gap:8px;align-items:center}
-    .email{max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);
-      border:1px solid var(--border);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .chip{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1.5px solid var(--borderStrong);
-      background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
-    .chip:hover{border-color:var(--accent)}
+    .email{
+      max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);
+      border:1.5px solid var(--borderStrong);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
+    .chip{
+      height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1.5px solid var(--borderStrong);
+      background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+      transition:transform .12s ease, filter .18s ease, border-color .18s ease;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
+    .chip:hover{border-color:var(--accent);transform:translateY(-1px);filter:brightness(1.03)}
     .chip .ic{width:18px;height:18px;stroke-width:2}
     .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
 
@@ -81,32 +123,53 @@
       .email{display:none}
     }
 
-    /* Mobile sheet */
-    #sheet{position:fixed;inset:0;z-index:120;display:none}
+    /* ===================== Mobile Sheet (moved OUTSIDE header) ===================== */
+    #sheet{position:fixed;inset:0;z-index:1000;display:none}
     #sheet.open{display:block}
     #sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
-    .panel{position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:var(--panel);border-left:1px solid var(--border);
-      box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px}
+    .panel{
+      position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:var(--panel);border-left:1px solid var(--border);
+      box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
     .panel .row{display:flex;align-items:center;justify-content:space-between}
     .panel nav{display:grid;gap:8px}
     .panel nav a{justify-content:flex-start}
 
-    /* =========================================================
-       Page styles (minimal settings)
-    ========================================================= */
+    /* ===================== Page UI ===================== */
     .wrap{max-width:1100px;margin:0 auto;padding:18px}
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow);margin-bottom:12px}
+    .card{
+      background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow);margin-bottom:12px;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
     .label{font-size:12px;color:var(--muted);margin-bottom:6px}
-    .input,textarea{width:100%;padding:12px;background:transparent;border:1px solid var(--tileBorder);border-radius:12px;color:var(--fg);font-size:14px;outline:none}
+    .input,textarea{
+      width:100%;padding:12px;background:transparent;border:1px solid var(--tileBorder);border-radius:12px;color:var(--fg);font-size:14px;outline:none;
+      background-color:var(--tile);
+      box-shadow:0 1px 0 rgba(255,255,255,.45) inset;
+      backdrop-filter:blur(calc(var(--glass-blur) - 4px)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(calc(var(--glass-blur) - 4px)) saturate(var(--glass-sat));
+      transition:border-color .18s ease, filter .18s ease;
+    }
+    .input:focus,textarea:focus{border-color:var(--accent);filter:brightness(1.02)}
     textarea{min-height:120px;resize:vertical}
-    .btn{height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--tileBorder);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:8px}
+    .btn{
+      height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--tileBorder);background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:8px;
+      transition:transform .12s ease, filter .18s ease, border-color .18s ease;
+      backdrop-filter:blur(calc(var(--glass-blur) - 4px)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(calc(var(--glass-blur) - 4px)) saturate(var(--glass-sat));
+    }
+    .btn:hover{transform:translateY(-1px);filter:brightness(1.03);border-color:var(--accent)}
     .btn.solid{background:var(--accent);border-color:var(--accent);color:#000}
     .btn.danger{border-color:rgba(225,29,72,.35);color:var(--danger);background:transparent}
+
     .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
     .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}
     @media (max-width:720px){.row2,.row3{grid-template-columns:1fr}}
 
-    /* Explorer list */
+    /* Explorer / table bits */
     .crumbs{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
     .crumbs a{padding:6px 10px;border:1px solid var(--tileBorder);border-radius:9999px}
     .crumbs a.active{border-color:var(--accent)}
@@ -118,7 +181,6 @@
     .row-actions{display:flex;gap:6px;flex-wrap:wrap}
     .badges{display:flex;gap:6px;align-items:center}
 
-    /* Minimal icon buttons with desktop labels */
     .iconbtn{height:36px;min-width:36px;padding:0 10px;border-radius:10px;border:1px solid var(--tileBorder);background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:8px}
     .iconbtn:hover{background:var(--tileHover)}
     .iconbtn.danger{color:var(--danger);border-color:rgba(225,29,72,.35)}
@@ -126,16 +188,23 @@
     .iconbtn .txt{display:none;margin-left:4px;font-weight:800;font-size:12px}
     @media (min-width:980px){ .iconbtn .txt{display:inline} }
 
-    /* Collapsible Legend */
+    /* Legend */
     details.legend{margin:8px 0} details.legend summary{cursor:pointer;font-weight:800}
     .legend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:8px}
     .legend-item{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border:1px solid var(--tileBorder);border-radius:12px;padding:10px}
 
-    .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;z-index:999}
+    /* Toast */
+    .toast{
+      position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
+      background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:1500;
+      box-shadow:0 10px 26px rgba(0,0,0,.18);
+      backdrop-filter:blur(calc(var(--glass-blur) - 6px)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(calc(var(--glass-blur) - 6px)) saturate(var(--glass-sat));
+    }
     .toast.show{opacity:1}
 
-    /* Move dialog */
-    .modal{position:fixed;inset:0;display:none;z-index:140}
+    /* Move dialog (used by explorer) */
+    .modal{position:fixed;inset:0;display:none;z-index:1100}
     .modal.open{display:block}
     .modal .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
     .modal .box{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,560px);max-height:80vh;overflow:auto;background:var(--panel);border:1px solid var(--tileBorder);border-radius:14px;box-shadow:var(--shadow);padding:12px}
@@ -155,7 +224,31 @@
   </style>
 </head>
 <body>
-  <!-- NAVBAR (same as other pages) -->
+  <!-- ======= MOBILE SHEET (outside header; high z-index) ======= -->
+  <div id="sheet" aria-hidden="true">
+    <div class="back"></div>
+    <aside class="panel" role="dialog" aria-modal="true" aria-label="Menu">
+      <div class="row">
+        <div class="brand"><span class="logo" id="brandLogoM"></span><span class="logotxt">BFA IPTV</span></div>
+        <button id="closeSheet" class="chip" aria-label="Close"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <nav>
+        <a class="pill" href="home.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
+        <a class="pill" href="dealerships.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
+        <a class="pill" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
+        <a class="pill" href="users.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
+        <div class="muted" style="padding:8px 2px 0">More</div>
+        <a class="pill" href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
+        <a class="pill" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
+        <a class="pill" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
+        <a class="pill" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
+        <a class="pill is-active" href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
+        <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
+      </nav>
+    </aside>
+  </div>
+
+  <!-- ======= NAVBAR ======= -->
   <header class="topbar">
     <div class="toprow">
       <a class="brand" href="home.html"><span class="logo" id="brandLogo"></span><span class="logotxt">BFA IPTV</span></a>
@@ -182,10 +275,9 @@
             <a href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
             <a href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
             <a href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
-            <a href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
             <a class="is-active" href="settings.html">
               <svg class="ic" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"/>
+                <path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/>
               </svg>
               Settings
             </a>
@@ -205,41 +297,10 @@
         </button>
       </div>
     </div>
-
-    <!-- Mobile sheet -->
-    <div id="sheet" aria-hidden="true">
-      <div class="back"></div>
-      <aside class="panel" role="dialog" aria-modal="true" aria-label="Menu">
-        <div class="row">
-          <div class="brand"><span class="logo" id="brandLogoM"></span><span class="logotxt">BFA IPTV</span></div>
-          <button id="closeSheet" class="chip" aria-label="Close"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-        </div>
-        <nav>
-          <a class="pill" href="home.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
-          <a class="pill" href="dealerships.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
-          <a class="pill" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
-          <a class="pill" href="users.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
-          <div class="muted" style="padding:8px 2px 0">More</div>
-          <a class="pill" href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
-          <a class="pill" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
-          <a class="pill" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
-          <a class="pill" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
-          <a class="pill" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
-          <a class="pill is-active" href="settings.html">
-            <svg class="ic" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"/>
-            </svg>
-            Settings
-          </a>
-          <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
-        </nav>
-      </aside>
-    </div>
   </header>
 
   <div class="wrap">
-
-    <!-- ===== Header & GitHub Connection ===== -->
+    <!-- ===== Settings cards / content (unchanged logic) ===== -->
     <div class="card">
       <h2 style="margin:0">Settings</h2>
       <div class="muted">Manage GitHub repo files, PRs, and utilities.</div>
@@ -261,12 +322,9 @@
       <div id="ghStatus" class="small mono muted" style="margin-top:6px"></div>
     </div>
 
-    <!-- ===== GitHub Explorer ===== -->
     <div class="card">
       <h3 style="margin:0 0 8px">GitHub Explorer</h3>
-
       <div class="crumbs" id="breadcrumbs" style="margin-bottom:8px"></div>
-
       <div class="toolbar" aria-label="Explorer toolbar">
         <button id="exUp" class="iconbtn" title="Up" aria-label="Up">
           <svg class="icon" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
@@ -281,7 +339,6 @@
           <span class="txt">Delete</span>
         </button>
         <button id="exMoveSel" class="iconbtn" title="Move" aria-label="Move">
-          <!-- 4-way arrows -->
           <svg class="icon" viewBox="0 0 24 24">
             <path d="M12 2v20"/><path d="M12 2l-3 3"/><path d="M12 2l3 3"/>
             <path d="M12 22l-3-3"/><path d="M12 22l3-3"/>
@@ -295,7 +352,7 @@
           <span class="txt">New file</span>
         </button>
         <button id="exNewFolder" class="iconbtn" title="New folder…" aria-label="New folder">
-          <svg class="icon" viewBox="0 0 24 24"><path d="M4 4h5l2 3h9v13H4z"/><path d="M10 12h6"/><path d="M13 9v6"/></svg>
+          <svg class="icon" viewBox="0 0 24 24"><path d="M4 4h5l2 3h9v13H4z"/></svg>
           <span class="txt">New folder</span>
         </button>
         <label class="iconbtn" title="Upload…" aria-label="Upload">
@@ -305,7 +362,6 @@
         </label>
       </div>
 
-      <!-- Icon legend -->
       <details class="legend">
         <summary>Icon legend</summary>
         <div id="legendGrid" class="legend-grid"></div>
@@ -314,7 +370,6 @@
       <div id="exTable"></div>
     </div>
 
-    <!-- ===== Inline Editor (drawer-style card) ===== -->
     <div id="editorCard" class="card editor" aria-hidden="true">
       <div class="path">
         <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
@@ -328,7 +383,6 @@
       </div>
     </div>
 
-    <!-- ===== Pull Requests ===== -->
     <div class="card">
       <h3 style="margin:0 0 8px">Open Pull Requests</h3>
       <div class="toolbar">
@@ -337,7 +391,6 @@
       <div id="prList"></div>
     </div>
 
-    <!-- ===== Central Config helper (read only) ===== -->
     <div class="card">
       <h3 style="margin:0 0 8px">Central Config Source</h3>
       <div class="row3">
@@ -358,7 +411,6 @@
       <textarea id="cfgView" class="input mono" style="margin-top:10px;display:none;height:220px" spellcheck="false"></textarea>
     </div>
 
-    <!-- ===== Delete Anonymous Users ===== -->
     <div class="card" id="purgeCard">
       <h3 style="margin:0 0 8px">Delete Anonymous Users</h3>
       <div class="muted">Two ways: <b>Cloud Shell (no deploy)</b> or <b>Direct (optional)</b>.</div>
@@ -368,7 +420,6 @@
         <button class="btn tab" data-tab="direct">Direct</button>
       </div>
 
-      <!-- Cloud Shell tab -->
       <div id="tab-shell">
         <div class="row3">
           <div><div class="label">Keep last N days (0 = ALL)</div><input id="purgeDays" class="input" type="number" min="0" step="1" value="0"/></div>
@@ -383,7 +434,6 @@
         <textarea id="purgeCmd" class="input mono" style="margin-top:10px;display:none;height:260px" spellcheck="false"></textarea>
       </div>
 
-      <!-- Direct tab -->
       <div id="tab-direct" style="display:none">
         <div class="row3">
           <div><div class="label">Function URL (https…/purgeAnonHttp)</div><input id="purgeUrl" class="input" placeholder="https://us-central1-iptv-bfa.cloudfunctions.net/purgeAnonHttp"></div>
@@ -398,10 +448,9 @@
         <div class="muted" style="margin-top:6px">URL/key are saved only in this browser (localStorage).</div>
       </div>
     </div>
-
   </div>
 
-  <!-- MOVE dialog -->
+  <!-- Move dialog -->
   <div id="moveModal" class="modal" aria-hidden="true">
     <div class="back"></div>
     <div class="box" role="dialog" aria-modal="true" aria-label="Move to folder">
@@ -421,6 +470,7 @@
   </div>
 
   <div id="toast" class="toast"></div>
+
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
