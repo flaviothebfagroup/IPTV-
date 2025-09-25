@@ -304,7 +304,6 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
   import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
   import { getDatabase, ref, get, set, update, query, orderByChild, equalTo, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-  //                                                                                 ^^^^^ add realtime listener
 
   /* Firebase */
   const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
@@ -367,77 +366,143 @@
   /* Auth */
   $('#signOutBtn').addEventListener('click',()=>signOut(auth));
 
-  let CURRENT_UID=null;
+  // ========= Shared schedule path (admins only, per your rules) =========
+  const DB_PATH='admin/quickLinks/schedule';
+  const LS_SCH='iptv_admin_schedule';
+
   let schedule=[];            // list of reminders
   let detachSchedule=null;    // unsubscribe handle
-
-  const LS_SCH='iptv_admin_schedule';
-  const userSchedulePath=()=> `user/${CURRENT_UID}/schedule`;  // <<<<<< matches your rules ("user", not "users")
+  let IS_ADMIN=false;
 
   setPersistence(auth,browserLocalPersistence);
-  onAuthStateChanged(auth,u=>{
+  onAuthStateChanged(auth, async (u)=>{
     if(!u){ location.href='./home.html'; return; }
     $('#adminEmail').textContent=u.email||u.uid;
-    CURRENT_UID=u.uid;
 
-    // start (or restart) live listener
-    startScheduleListener();
+    // Determine role
+    try{
+      const roleSnap = await get(ref(db, `user/${u.uid}/role`));
+      IS_ADMIN = (roleSnap.exists() && roleSnap.val()==='admin');
+    }catch(_){ IS_ADMIN=false; }
+
+    startScheduleListener(IS_ADMIN);
   });
 
   /* ===== Live sync + fallback ===== */
-  function startScheduleListener(){
+  function startScheduleListener(admin){
     const note=$('#storeNote');
-
-    // cleanup old listener (if switching account)
     if(detachSchedule){ detachSchedule(); detachSchedule=null; }
 
-    const r = ref(db, userSchedulePath());
-    const off = onValue(r, (snap)=>{
-      if(snap.exists()){
-        const val=snap.val();
-        schedule = Array.isArray(val) ? val : Object.values(val||{});
-        note.textContent='Synced with Database (per-user schedule).';
-      }else{
-        schedule = [];
-        note.textContent='Synced (empty).';
-      }
-      renderSchedule();
-    }, (err)=>{
-      // Permission denied -> fallback to local so UI still works
-      console.warn('DB read error; using local fallback', err?.message||err);
+    if(admin){
+      const r = ref(db, DB_PATH);
+      const off = onValue(r, (snap)=>{
+        if(snap.exists()){
+          const val=snap.val();
+          schedule = Array.isArray(val) ? val : Object.values(val||{});
+          note.textContent='Shared across admins (Database).';
+        }else{
+          schedule = [];
+          note.textContent='Shared across admins (empty).';
+        }
+        renderSchedule();
+      }, (err)=>{
+        console.warn('DB read error; using local fallback', err?.message||err);
+        schedule = JSON.parse(localStorage.getItem(LS_SCH)||'[]');
+        note.textContent='Saved locally (rules error).';
+        renderSchedule();
+      });
+      detachSchedule = ()=> off();
+    }else{
+      // Non-admin -> local only
       schedule = JSON.parse(localStorage.getItem(LS_SCH)||'[]');
-      note.textContent='Saved locally (no DB permission).';
+      note.textContent='Saved locally (not admin).';
       renderSchedule();
-    });
-
-    detachSchedule = ()=> off();
+    }
   }
 
   async function saveSchedule(){
     const note=$('#storeNote');
 
-    if(!CURRENT_UID){
-      // not authed yet; use local temp
-      localStorage.setItem(LS_SCH, JSON.stringify(schedule));
-      note.textContent='Saved locally (awaiting login).';
-      renderSchedule();
-      return;
+    if(IS_ADMIN){
+      try{
+        await set(ref(db, DB_PATH), schedule);
+        note.textContent='Shared across admins (Database).';
+        // onValue will re-render
+        return;
+      }catch(e){
+        console.warn('DB write error; saving local', e?.message||e);
+      }
     }
 
-    try{
-      // store as array under user/$uid/schedule
-      await set(ref(db, userSchedulePath()), schedule);
-      note.textContent='Synced with Database (per-user schedule).';
-      // no render call; onValue will update UI
-    }catch(e){
-      console.warn('DB write error; saving local', e?.message||e);
-      localStorage.setItem(LS_SCH, JSON.stringify(schedule));
-      note.textContent='Saved locally (no DB permission).';
-      renderSchedule();
-    }
+    // fallback/local
+    localStorage.setItem(LS_SCH, JSON.stringify(schedule));
+    if(IS_ADMIN) note.textContent='Saved locally (DB denied).'; else note.textContent='Saved locally (not admin).';
+    renderSchedule();
   }
 
-  /* ===== Render & helpers (unchanged logic) ===== */
+  /* ===== Calendar helpers ===== */
+  const pad2 = n => String(n).padStart(2,'0');
+  function toGoogleDateUTC(d){
+    // YYYYMMDDTHHMMSSZ
+    return d.getUTCFullYear()
+      + pad2(d.getUTCMonth()+1)
+      + pad2(d.getUTCDate())
+      + 'T'
+      + pad2(d.getUTCHours())
+      + pad2(d.getUTCMinutes())
+      + pad2(d.getUTCSeconds())
+      + 'Z';
+  }
+  function googleCalUrl({title, start, end, location, details}){
+    const base='https://calendar.google.com/calendar/render?action=TEMPLATE';
+    const params=new URLSearchParams({
+      text: title || 'Reminder',
+      dates: `${toGoogleDateUTC(start)}/${toGoogleDateUTC(end)}`,
+      details: details || '',
+      location: location || ''
+    });
+    return `${base}&${params.toString()}`;
+  }
+  function icsContent({title, start, end, location, details}){
+    const fmt=(d)=> d.getUTCFullYear()
+      + pad2(d.getUTCMonth()+1)
+      + pad2(d.getUTCDate())
+      + 'T'
+      + pad2(d.getUTCHours())
+      + pad2(d.getUTCMinutes())
+      + pad2(d.getUTCSeconds())
+      + 'Z';
+    const esc = (s)=> (s||'').replace(/([,;])/g,'\\$1').replace(/\n/g,'\\n');
+    const uid = `iptv-${Date.now()}-${Math.random().toString(36).slice(2)}@bfaitpv`;
+    return [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//BFA IPTV//Schedule//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'BEGIN:VEVENT',
+      `UID:${uid}`,
+      `DTSTAMP:${fmt(new Date())}`,
+      `DTSTART:${fmt(start)}`,
+      `DTEND:${fmt(end)}`,
+      `SUMMARY:${esc(title||'Reminder')}`,
+      location ? `LOCATION:${esc(location)}` : '',
+      details ? `DESCRIPTION:${esc(details)}` : '',
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].filter(Boolean).join('\r\n');
+  }
+  function downloadIcs(filename, content){
+    const blob=new Blob([content],{type:'text/calendar;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },0);
+  }
+
+  /* ===== Render & helpers (unchanged logic + calendar buttons) ===== */
   const mapLink=q=>`https://maps.google.com/?q=${encodeURIComponent(q)}`;
   const previewUrlForDisplayId=id=>`https://flaviothebfagroup.github.io/IPTV-/${encodeURIComponent(id)}.html`;
   function relTime(ts){
@@ -470,9 +535,16 @@
         displayId = parts[1] || '';
       }
 
+      // Calendar handlers (per item)
+      const startLocal = r.when ? new Date(r.when) : null;
+      const endLocal = startLocal ? new Date(startLocal.getTime()+60*60*1000) : null; // +1h default
+      const title = r.note || 'Reminder';
+      const location = r.dest || '';
+      const details = r.assets ? `Assets: ${r.assets}` : '';
+
       const li=document.createElement('li'); li.className='item';
       li.innerHTML=`
-        <div style="display:flex;flex-direction:column;gap:6px;min-width:240px">
+        <div style="display:flex;flex-direction:column;gap:6px;min-width:260px">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <b>${whenStr}</b>
             ${rel? `<span class="badge ${badgeClass}"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg>${rel}</span>`:''}
@@ -485,12 +557,34 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           ${r.dest? `<a class="btn" href="${mapLink(r.dest)}" target="_blank" rel="noopener">Map</a>`:''}
           ${displayId? `<a class="btn" href="${previewUrlForDisplayId(displayId)}" target="_blank" rel="noopener">Preview</a>`:''}
+          ${startLocal? `<a class="btn" data-gcal="${i}">Google Cal</a>`:''}
+          ${startLocal? `<button class="btn" data-ics="${i}">Apple / ICS</button>`:''}
           <button class="btn" data-toggle="${i}">${r.done?'Undone':'Done'}</button>
           <button class="btn" data-del="${i}">Delete</button>
         </div>`;
       ul.appendChild(li);
+
+      // Wire calendar clicks per item
+      if(startLocal){
+        const g = ul.querySelector(`[data-gcal="${i}"]`);
+        if(g){
+          const url = googleCalUrl({ title, start:startLocal, end:endLocal, location, details });
+          g.setAttribute('href', url);
+          g.setAttribute('target','_blank');
+          g.setAttribute('rel','noopener');
+        }
+        const b = ul.querySelector(`[data-ics="${i}"]`);
+        if(b){
+          b.addEventListener('click', ()=>{
+            const ics = icsContent({ title, start:startLocal, end:endLocal, location, details });
+            const safeTitle = title.replace(/[^a-z0-9-_]+/gi,'_').slice(0,40) || 'reminder';
+            downloadIcs(`${safeTitle}.ics`, ics);
+          });
+        }
+      }
     });
 
+    // actions
     ul.querySelectorAll('[data-del]').forEach(b=>{
       b.addEventListener('click',()=>{ const idx=+b.dataset.del; schedule.splice(idx,1); saveSchedule(); });
     });
