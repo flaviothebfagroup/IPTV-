@@ -369,23 +369,25 @@
   onAuthStateChanged(auth,u=>{
     if(!u){ location.href='./home.html'; return; }
     $('#adminEmail').textContent=u.email||u.uid;
-    // after auth, load schedule
+    CURRENT_UID = u.uid || 'anon';
     loadSchedule();
   });
 
-  /* ===== Schedule storage: DB first, local fallback ===== */
+  /* ===== Schedule storage: per-user DB (with local fallback) ===== */
   const LS_SCH='iptv_admin_schedule';
-  const DB_PATH='admin/schedule';
+  let CURRENT_UID=null;
+  const dbPath = () => `users/${CURRENT_UID}/schedule`;
+
   let schedule=[]; // array of items
 
   async function loadSchedule(){
     const note=$('#storeNote');
     try{
-      const snap=await get(ref(db, DB_PATH));
+      const snap=await get(ref(db, dbPath()));
       if(snap.exists()){
         const val=snap.val();
         schedule = Array.isArray(val) ? val : Object.values(val||{});
-        note.textContent='Synced with Database (admin/schedule).';
+        note.textContent='Synced with Database (your account).';
         renderSchedule();
         return;
       }
@@ -398,20 +400,87 @@
 
   async function saveSchedule(){
     const note=$('#storeNote');
-    // try DB first
     try{
-      // store as array; if needed you can convert to keyed object
-      await set(ref(db, DB_PATH), schedule);
-      note.textContent='Synced with Database (admin/schedule).';
+      await set(ref(db, dbPath()), schedule);
+      note.textContent='Synced with Database (your account).';
     }catch(_){
-      // fallback to local
       localStorage.setItem(LS_SCH, JSON.stringify(schedule));
       note.textContent='Saved locally (no DB permission).';
     }
     renderSchedule();
   }
 
-  /* ===== Render & helpers (unchanged logic) ===== */
+  /* ===== Calendar helpers ===== */
+  function toUtcStr(dtLocal){
+    // dtLocal = "YYYY-MM-DDTHH:mm" (from input)
+    const d=new Date(dtLocal);
+    const pad=n=>String(n).padStart(2,'0');
+    return d.getUTCFullYear()
+      + pad(d.getUTCMonth()+1)
+      + pad(d.getUTCDate())
+      + 'T'
+      + pad(d.getUTCHours())
+      + pad(d.getUTCMinutes())
+      + '00Z';
+  }
+  function addOneHourUtcStr(dtLocal){
+    const d=new Date(dtLocal);
+    d.setHours(d.getHours()+1);
+    const pad=n=>String(n).padStart(2,'0');
+    return d.getUTCFullYear()
+      + pad(d.getUTCMonth()+1)
+      + pad(d.getUTCDate())
+      + 'T'
+      + pad(d.getUTCHours())
+      + pad(d.getUTCMinutes())
+      + '00Z';
+  }
+  function googleCalLink({when,note,dest}){
+    const dates = `${toUtcStr(when)}/${addOneHourUtcStr(when)}`;
+    const params = new URLSearchParams({
+      action:'TEMPLATE',
+      text: note || 'Reminder',
+      details: dest ? `Location: ${dest}` : '',
+      location: dest || '',
+      dates
+    });
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  }
+  function icsContent({when,note,dest}){
+    const uid = 'bfa-' + Math.random().toString(36).slice(2) + '@iptv-bfa';
+    const dtstart = toUtcStr(when);
+    const dtend   = addOneHourUtcStr(when);
+    const esc = s => String(s||'').replace(/[\n\r]/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');
+    return [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//BFA IPTV//Schedule//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'BEGIN:VEVENT',
+      `UID:${uid}`,
+      `DTSTAMP:${toUtcStr(new Date().toISOString().slice(0,16))}`,
+      `DTSTART:${dtstart}`,
+      `DTEND:${dtend}`,
+      `SUMMARY:${esc(note||'Reminder')}`,
+      dest ? `LOCATION:${esc(dest)}` : '',
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].filter(Boolean).join('\r\n');
+  }
+  function downloadIcs(item){
+    const blob = new Blob([icsContent(item)], {type:'text/calendar'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safeTitle = (item.note||'Reminder').replace(/[^\w\-]+/g,'_').slice(0,40);
+    a.href = url;
+    a.download = `${safeTitle}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+  }
+
+  /* ===== Render & helpers (unchanged logic with calendar buttons) ===== */
   function relTime(ts){
     const d=new Date(ts).getTime(); const now=Date.now();
     const diff=d-now; const abs=Math.abs(diff);
@@ -459,17 +528,23 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           ${r.dest? `<a class="btn" href="${mapLink(r.dest)}" target="_blank" rel="noopener">Map</a>`:''}
           ${displayId? `<a class="btn" href="${previewUrlForDisplayId(displayId)}" target="_blank" rel="noopener">Preview</a>`:''}
+          <a class="btn" href="${googleCalLink(r)}" target="_blank" rel="noopener">Google Cal</a>
+          <button class="btn" data-ics="${i}">ICS</button>
           <button class="btn" data-toggle="${i}">${r.done?'Undone':'Done'}</button>
           <button class="btn" data-del="${i}">Delete</button>
         </div>`;
       ul.appendChild(li);
     });
 
+    // actions
     ul.querySelectorAll('[data-del]').forEach(b=>{
       b.addEventListener('click',()=>{ const idx=+b.dataset.del; schedule.splice(idx,1); saveSchedule(); });
     });
     ul.querySelectorAll('[data-toggle]').forEach(b=>{
       b.addEventListener('click',()=>{ const idx=+b.dataset.toggle; schedule[idx].done=!schedule[idx].done; saveSchedule(); });
+    });
+    ul.querySelectorAll('[data-ics]').forEach(b=>{
+      b.addEventListener('click',()=>{ const idx=+b.dataset.ics; const item=schedule[idx]; if(!item?.when) return toast('Missing date/time'); downloadIcs(item); });
     });
   }
 
@@ -496,7 +571,7 @@
 
       if(!dId) dId=makeDealerId(dName);
 
-      // Create dealership if missing
+      // Create dealership/display if needed
       try{
         const exists=await get(ref(db,`dealershipPublic/${dId}`));
         if(!exists.exists()){
@@ -504,7 +579,6 @@
           await set(ref(db,`dealership/${dId}`),{name:dName||dId,createdAt:Date.now(),createdBy:auth.currentUser?.email||'admin',displays:{}});
         }
 
-        // Create display (ID auto if empty)
         if(!displayId){
           const friendly=(await get(ref(db,`dealershipPublic/${dId}`))).val()?.name||dId;
           const pref=initialsFromName(friendly);
