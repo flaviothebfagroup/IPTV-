@@ -1,0 +1,375 @@
+
+
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Digital Signage — Player</title>
+  <style>
+    :root{ --bg:#000; --fg:#fff; --muted:#b3b3b3; --panel:rgba(255,255,255,.06); --border:rgba(255,255,255,.15); --accent:#ff9500; --ok:#22c55e; --err:#ef4444; }
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%}
+    body{ background:var(--bg); color:var(--fg); font-family: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; overflow:hidden; position:relative; }
+    .video-container{position:absolute; inset:0; background:#000}
+    video{width:100%; height:100%; object-fit:cover; background:#000}
+    .loading-overlay{ position:absolute; inset:0; background:rgba(0,0,0,.85); display:flex; align-items:center; justify-content:center; z-index:100; opacity:0; pointer-events:none; transition:opacity .25s; }
+    .loading-overlay.active{opacity:1; pointer-events:auto}
+    .spinner{ width:54px; height:54px; border-radius:50%; border:3px solid rgba(255,255,255,.15); border-top-color:#fff; animation:spin 1s linear infinite; }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .channel-info{ position:absolute; top:18px; left:18px; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:10px 14px; z-index:50; opacity:0; transform:translateY(-8px); transition:opacity .25s, transform .25s; }
+    .channel-info.show{opacity:1; transform:translateY(0)}
+    .channel-name{font-weight:800}
+    .channel-sub{font-size:12px; color:var(--muted); display:flex; gap:10px; align-items:center}
+    .live-dot{width:8px;height:8px;border-radius:50%; background:var(--accent); box-shadow:0 0 0 0 rgba(255,149,0,.7); animation:pulse 2s infinite}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,149,0,.7)} 70%{box-shadow:0 0 0 8px rgba(255,149,0,0)} 100%{box-shadow:0 0 0 0 rgba(255,149,0,0)}}
+    .status-bar{ position:absolute; right:18px; bottom:18px; display:flex; gap:10px; align-items:center; background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:8px 12px; font-size:12px; z-index:50; }
+    .status-dot{width:10px;height:10px;border-radius:50%; background:var(--ok)}
+    .status-dot.disconnected{background:var(--err)}
+    .divider{opacity:.45}
+    .display-id{ position:absolute; left:18px; bottom:18px; z-index:50; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:8px 12px; font-size:12px; color:#fff; }
+    .error-message{ position:absolute; inset:auto 50% 50% auto; transform:translate(50%,-50%); background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.4); color:#fff; padding:14px 18px; border-radius:14px; display:none; z-index:80; text-align:center; }
+    .error-message.show{display:block}
+    .error-title{font-weight:800; margin-bottom:4px; color:var(--err)}
+    .error-text{font-size:12px; color:#fff}
+    .transition-overlay{position:absolute; inset:0; background:#000; z-index:40; opacity:0; pointer-events:none; transition:opacity .25s}
+
+    /* ---------- Volume HUD: reliable auto-hide ---------- */
+    .volume-control{
+      position:absolute; left:50%; bottom:100px; transform:translateX(-50%);
+      display:flex; align-items:center; gap:12px; z-index:70;
+      background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:10px 12px;
+      opacity:0; pointer-events:none; transition:opacity .2s;
+    }
+    .volume-control.show{ opacity:1; pointer-events:auto; }
+    @keyframes hudInOut{
+      0%{opacity:0; transform:translateX(-50%) scale(.98)}
+      10%{opacity:1; transform:translateX(-50%) scale(1)}
+      85%{opacity:1}
+      100%{opacity:0}
+    }
+    .volume-control.autohide{ animation:hudInOut 1.8s ease forwards; }
+
+    .vol-btn{ width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:transparent; color:#fff; font-size:18px; cursor:pointer; }
+    .vol-track{width:160px; height:8px; border-radius:6px; background:rgba(255,255,255,.12); position:relative; overflow:hidden; border:1px solid var(--border)}
+    .vol-fill{position:absolute; left:0; top:0; bottom:0; width:0%; background:var(--accent)}
+    .vol-percent{font-weight:800; min-width:46px; text-align:right}
+    .vol-icon{width:22px;height:22px; display:block}
+    .bar{opacity:0; transition:opacity .15s}
+    .icon-muted .bar, .icon-level-0 .bar{opacity:0}
+    .icon-level-1 #bar1{opacity:1}
+    .icon-level-2 #bar1, .icon-level-2 #bar2{opacity:1}
+    .icon-level-3 #bar1, .icon-level-3 #bar2, #bar3{opacity:1}
+    .icon-muted #x1, .icon-muted #x2{opacity:1}
+    #x1,#x2{opacity:0; stroke:var(--err); stroke-width:2; stroke-linecap:round}
+    .volume-float{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,.92); border:1px solid var(--border); color:#fff; padding:26px 36px; border-radius:18px; font-weight:900; font-size:40px; z-index:90; animation:fadeHud 1.8s ease forwards; }
+    @keyframes fadeHud{0%{opacity:0; transform:translate(-50%,-50%) scale(.96)} 15%{opacity:1; transform:translate(-50%,-50%) scale(1)} 85%{opacity:1} 100%{opacity:0}}
+    @media (prefers-reduced-motion:reduce){ .transition-overlay,.channel-info,.loading-overlay,.volume-control.autohide{transition:none; animation:none} }
+  </style>
+
+
+  <div class="volume-control" id="volumeHud" aria-live="polite">
+    <button class="vol-btn" id="muteBtn" title="Mute/Unmute" aria-label="Mute/Unmute">
+      <svg id="volSvg" class="vol-icon icon-muted" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 10v4h4l5 4V6l-5 4H3Z"></path>
+        <path id="bar1" class="bar" d="M16 9a3 3 0 0 1 0 6"></path>
+        <path id="bar2" class="bar" d="M18.5 7a6 6 0 0 1 0 10"></path>
+        <path id="bar3" class="bar" d="M21 5a9 9 0 0 1 0 14"></path>
+        <line id="x1" x1="2" y1="2" x2="22" y2="22"></line>
+        <line id="x2" x1="22" y1="2" x2="2" y2="22"></line>
+      </svg>
+    </button>
+    <button class="vol-btn" id="volDown" title="Volume down" aria-label="Volume down">−</button>
+    <div class="vol-track"><div class="vol-fill" id="volFill"></div></div>
+    <button class="vol-btn" id="volUp" title="Volume up" aria-label="Volume up">+</button>
+    <div class="vol-percent" id="volPct">0%</div>
+  </div>
+
+  <div class="video-container">
+    <video id="videoPlayer" autoplay="" muted="" playsinline=""></video>
+  </div>
+
+  <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+  <div class="channel-info" id="channelInfo">
+    <div class="channel-name" id="chName">Channel</div>
+    <div class="channel-sub"><span class="live-dot"></span><span>LIVE • CH <span id="chNum">1</span></span></div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot" title="Connection"></div>
+    <span id="statusText">Connected</span>
+    <span class="divider">•</span>
+    <span id="clock">00:00</span>
+  </div>
+
+  <div class="display-id">Display: <b id="displayId">—</b></div>
+
+  <div class="error-message" id="errToast">
+    <div class="error-title">Stream Unavailable</div>
+    <div class="error-text" id="errText">Reconnecting…</div>
+  </div>
+
+  <div class="transition-overlay" id="fade"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
+
+  <script>
+    const CONFIG = {
+      displayId: 'TESTING-01',
+      dealershipId: '(DEALER-ID)',
+      dealershipName: 'admin',
+      channels: [
+        { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
+        { id:2, name:'Sports',   url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8', type:'hls' },
+        { id:3, name:'Cooking',   url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
+        { id:4, name:'Nature',   url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8', type:'hls' },
+        { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
+      ]
+    };
+
+    let hls=null;
+    window.currentChannel=1; window.currentVolume=0; window.isMuted=true; let lastVolume=50;
+    const $ = (id)=>document.getElementById(id);
+    let _hudTimer=null;
+
+    /* [ADDED] minimal state helper the Firebase module can call into */
+    window._playerState = {
+      onStatePush: null,
+      getSnapshot(){
+        return {
+          channel: window.currentChannel|0,
+          volume: window.currentVolume|0,
+          muted: !!window.isMuted,
+        };
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      $('displayId').textContent = CONFIG.displayId;
+      initVideo(); initVolumeUI(); tickClock(); setInterval(tickClock, 1000); loadChannel(1);
+
+      // Ensure HUD removes .show after animation fade-out
+      const hud = $('volumeHud');
+      hud.addEventListener('animationend', (e)=>{
+        if(e.animationName==='hudInOut'){
+          hud.classList.remove('autohide');
+          hud.classList.remove('show'); // guarantee it's hidden after cycle
+        }
+      });
+    });
+
+    function initVideo(){
+      const v=$('videoPlayer'); v.volume=0; v.muted=true;
+      v.addEventListener('loadstart', ()=> showLoading(true));
+      v.addEventListener('canplay',   ()=> showLoading(false));
+      v.addEventListener('stalled',   ()=> showLoading(true));
+      v.addEventListener('error',     onVideoError);
+      $('volUp').onclick   = ()=> volumeUp();
+      $('volDown').onclick = ()=> volumeDown();
+      $('muteBtn').onclick = ()=> toggleMute();
+    }
+    function initVolumeUI(){
+      const sv=localStorage.getItem('displayVolume'); const sm=localStorage.getItem('displayMuted');
+      if(sv!==null){ window.currentVolume=parseInt(sv,10); lastVolume=window.currentVolume||50; }
+      if(sm!==null){ window.isMuted=(sm==='true'); }
+      const v=$('videoPlayer'); v.volume=(window.currentVolume||0)/100; v.muted=!!window.isMuted; renderVolumeUI();
+    }
+    function renderVolumeUI(){
+      const pct=Math.max(0,Math.min(100,window.currentVolume|0));
+      $('volFill').style.width=pct+'%';
+      $('volPct').textContent=(window.isMuted||pct===0)?'0%':(pct+'%');
+      const cls=(window.isMuted||pct===0)?'icon-muted':(pct<30?'icon-level-1':pct<70?'icon-level-2':'icon-level-3');
+      // Robust class update across browsers
+      $('volSvg').setAttribute('class','vol-icon '+cls);
+    }
+
+    function showVolumeHudBubble(text){
+      const b=document.createElement('div'); b.className='volume-float'; b.textContent=text; document.body.appendChild(b);
+      setTimeout(()=>{ b.remove(); }, 1800);
+    }
+
+    // Reliable auto-hide: restart CSS animation every time.
+    function flashVolumeHud(){
+      const hud=$('volumeHud');
+      hud.classList.add('show');
+      hud.classList.remove('autohide'); // restart animation
+      void hud.offsetWidth;             // reflow to re-trigger
+      hud.classList.add('autohide');
+
+      clearTimeout(_hudTimer);
+      // Safety removal in case user prefers-reduced-motion disables animation
+      _hudTimer=setTimeout(()=>{ hud.classList.remove('autohide'); hud.classList.remove('show'); }, 1900);
+    }
+
+    function toggleMute(){ window.isMuted?mute():unmute(); }
+    function mute(){
+      const v=$('videoPlayer');
+      window.isMuted=true; v.muted=true;
+      localStorage.setItem('displayMuted','true');
+      renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble('MUTED');
+      if(window._playerState.onStatePush) window._playerState.onStatePush();
+    }
+    function unmute(){
+      const v=$('videoPlayer');
+      if(window.currentVolume===0){ window.currentVolume=lastVolume||50; v.volume=window.currentVolume/100; }
+      window.isMuted=false; v.muted=false; v.play().catch(()=>{});
+      localStorage.setItem('displayMuted','false');
+      renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble(`${window.currentVolume|0}%`);
+      if(window._playerState.onStatePush) window._playerState.onStatePush();
+    }
+    function setVolume(vol){
+      vol=Math.max(0,Math.min(100,vol|0));
+      const v=$('videoPlayer');
+      window.currentVolume=vol; if(vol>0) lastVolume=vol;
+      v.volume=vol/100;
+      if(vol===0){ window.isMuted=true; v.muted=true; localStorage.setItem('displayMuted','true'); }
+      localStorage.setItem('displayVolume',String(vol));
+      renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble(window.isMuted?'MUTED':`${vol}%`);
+      if(window._playerState.onStatePush) window._playerState.onStatePush();
+    }
+    function volumeUp(){ if(window.isMuted) unmute(); setVolume(window.currentVolume+10); }
+    function volumeDown(){ setVolume(window.currentVolume-10); }
+
+    function showError(msg){ $('errText').textContent=msg; $('errToast').classList.add('show'); }
+    function hideError(){ $('errToast').classList.remove('show'); }
+    function showLoading(f){ const el=$('loading'); if(f){ el.classList.add('active'); } else { el.classList.remove('active'); hideError(); } }
+    function setStatus(connected,msg){ const dot=$('statusDot'),txt=$('statusText'); dot.classList.toggle('disconnected',!connected); txt.textContent=connected?'Connected':('Disconnected'+(msg?` — ${msg}`:'')); }
+    function tickClock(){ $('clock').textContent=new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'}); }
+    function updateChannelInfo(ch){
+      $('chName').textContent=ch.name||('Channel '+ch.id);
+      $('chNum').textContent=ch.id;
+      const box=$('channelInfo'); box.classList.add('show'); clearTimeout(box._t); box._t=setTimeout(()=>box.classList.remove('show'),4000);
+    }
+    function onHlsError(evt,data){ if(!data||!data.fatal) return; showError('Stream error'); }
+    function onVideoError(){ showError('Playback error'); }
+
+    function loadChannel(n){
+      const ch=CONFIG.channels.find(c=>c.id===n); if(!ch) return;
+      const v=$('videoPlayer'); showLoading(true);
+      if(Hls.isSupported()){
+        if(hls){ try{hls.destroy();}catch(e){} hls=null; }
+        hls=new Hls({enableWorker:true,lowLatencyMode:true});
+        hls.attachMedia(v);
+        hls.loadSource(ch.url);
+        hls.on(Hls.Events.MANIFEST_PARSED,()=>{ v.play().then(()=>{ v.volume=window.currentVolume/100; v.muted=window.isMuted; showLoading(false); }).catch(()=>{}); });
+        hls.on(Hls.Events.ERROR,onHlsError);
+      } else if(v.canPlayType('application/vnd.apple.mpegurl')){
+        v.src=ch.url;
+        v.play().then(()=>{ v.volume=window.currentVolume/100; v.muted=window.isMuted; showLoading(false); }).catch(()=>{});
+      } else { showError('HLS not supported'); }
+      updateChannelInfo(ch); window.currentChannel=n;
+      if(window._playerState.onStatePush) window._playerState.onStatePush();
+    }
+
+    window.setStatus=setStatus;
+    window.applyVolumeSettings=function(volume,muted){
+      if(typeof volume==='number') setVolume(volume);
+      if(typeof muted==='boolean') muted?mute():unmute();
+    };
+  </script>
+
+  <!-- Firebase (module) for the player) -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+    const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
+
+    const EMBED=/\bembed=1\b/i.test(location.search)||(window.top!==window.self);
+    const app=initializeApp(firebaseConfig, EMBED?'embed':undefined);
+    const auth=getAuth(app); if(EMBED){ await setPersistence(auth,inMemoryPersistence); }
+    const db=getDatabase(app);
+
+    signInAnonymously(auth).catch(e=>{ console.error('[auth]',e); window.setStatus(false,'anon auth failed'); });
+
+    // [ADDED] DB helpers
+    let _dRef=null;
+    function dbRef(displayId){ if(!_dRef) _dRef = ref(db, `displays/${displayId}`); return _dRef; }
+    async function pushHeartbeat(displayId){
+      try{
+        const snap = window._playerState?.getSnapshot?.() || {};
+        await update(dbRef(displayId), {
+          lastSeenAt: Date.now(),
+          updatedAt: Date.now(),
+          channel: snap.channel,
+          volume: snap.volume,
+          muted: snap.muted
+        });
+      }catch(e){ /* swallow */ }
+    }
+    async function pushState(displayId, extra={}){
+      try{
+        const snap = window._playerState?.getSnapshot?.() || {};
+        await update(dbRef(displayId), {
+          channel: snap.channel,
+          volume: snap.volume,
+          muted: snap.muted,
+          dealership: CONFIG.dealershipId || CONFIG.dealershipName || '(unknown)',
+          timestamp: Date.now(),
+          updatedAt: Date.now(),
+          ...extra
+        });
+      }catch(e){ /* swallow */ }
+    }
+
+    // wire state pushes from UI code
+    window._playerState.onStatePush = ()=> {
+      if(!_currentDisplayId) return;
+      pushState(_currentDisplayId);
+    };
+
+    let _currentDisplayId = null;
+
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user) return;
+      const displayId = CONFIG.displayId;
+      const dealershipId = CONFIG.dealershipId || CONFIG.dealershipName || '(unknown)';
+      _currentDisplayId = displayId;
+
+      if(EMBED){
+        const dref=dbRef(displayId);
+        onValue(dref,(snap)=>{ const d=snap.val(); if(!d) return;
+          if(typeof d.channel==='number'&&d.channel!==window.currentChannel) window.loadChannel(d.channel);
+          if(d.volume!==undefined||d.muted!==undefined) window.applyVolumeSettings(d.volume,d.muted);
+          window.setStatus(true,''); },
+          (err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
+        pushHeartbeat(displayId);
+        return;
+      }
+
+      // bootstrap display record if missing
+      try{
+        const dRef=dbRef(displayId); const snap=await get(dRef);
+        if(!snap.exists()){
+          await update(dRef,{
+            channel:1, volume:50, muted:true,
+            dealership: dealershipId,
+            createdAt: Date.now(), updatedAt: Date.now(), lastSeenAt: Date.now(), timestamp: Date.now()
+          });
+        }else{
+          const v=snap.val()||{};
+          if(!v.dealership){ await update(dRef,{dealership:dealershipId}); }
+        }
+      }catch(e){}
+
+      // remote control listener
+      onValue(dbRef(displayId),(snap)=>{ const d=snap.val(); if(!d) return;
+        if(typeof d.channel==='number'&&d.channel!==window.currentChannel) window.loadChannel(d.channel);
+        if(d.volume!==undefined||d.muted!==undefined) window.applyVolumeSettings(d.volume,d.muted);
+        window.setStatus(true,''); },
+        (err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
+
+      // initial state + heartbeat loop
+      await pushState(displayId);
+      await pushHeartbeat(displayId);
+      setInterval(()=>pushHeartbeat(displayId),15000);
+
+      window.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') pushHeartbeat(displayId); });
+      window.addEventListener('online',  ()=>pushHeartbeat(displayId));
+      window.addEventListener('focus',   ()=>pushHeartbeat(displayId));
+      window.addEventListener('beforeunload', ()=>{ navigator.sendBeacon?.(
+        `${firebaseConfig.databaseURL.replace('.firebaseio.com','.firebaseio.com')}/`, ''
+      ); });
+    });
+  </script>
+
