@@ -382,7 +382,7 @@
     </div>
   </div>
 
-  <!-- ===== Player file template (YOUR ORIGINAL kept as-is) ===== -->
+ <!-- ===== Player file template (YOUR ORIGINAL kept as-is) ===== -->
 <template id="playerTemplate"><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -416,9 +416,23 @@
     .error-title{font-weight:800; margin-bottom:4px; color:var(--err)}
     .error-text{font-size:12px; color:#fff}
     .transition-overlay{position:absolute; inset:0; background:#000; z-index:40; opacity:0; pointer-events:none; transition:opacity .25s}
-    .transition-overlay.active{opacity:1}
-    .volume-control{ position:absolute; left:50%; bottom:100px; transform:translateX(-50%); display:flex; align-items:center; gap:12px; z-index:70; background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:10px 12px; opacity:0; pointer-events:none; transition:opacity .2s; }
-    .volume-control.show{opacity:1; pointer-events:auto}
+
+    /* ---------- Volume HUD: reliable auto-hide ---------- */
+    .volume-control{
+      position:absolute; left:50%; bottom:100px; transform:translateX(-50%);
+      display:flex; align-items:center; gap:12px; z-index:70;
+      background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:10px 12px;
+      opacity:0; pointer-events:none; transition:opacity .2s;
+    }
+    .volume-control.show{ opacity:1; pointer-events:auto; }
+    @keyframes hudInOut{
+      0%{opacity:0; transform:translateX(-50%) scale(.98)}
+      10%{opacity:1; transform:translateX(-50%) scale(1)}
+      85%{opacity:1}
+      100%{opacity:0}
+    }
+    .volume-control.autohide{ animation:hudInOut 1.8s ease forwards; }
+
     .vol-btn{ width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:transparent; color:#fff; font-size:18px; cursor:pointer; }
     .vol-track{width:160px; height:8px; border-radius:6px; background:rgba(255,255,255,.12); position:relative; overflow:hidden; border:1px solid var(--border)}
     .vol-fill{position:absolute; left:0; top:0; bottom:0; width:0%; background:var(--accent)}
@@ -433,7 +447,7 @@
     #x1,#x2{opacity:0; stroke:var(--err); stroke-width:2; stroke-linecap:round}
     .volume-float{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,.92); border:1px solid var(--border); color:#fff; padding:26px 36px; border-radius:18px; font-weight:900; font-size:40px; z-index:90; animation:fadeHud 1.8s ease forwards; }
     @keyframes fadeHud{0%{opacity:0; transform:translate(-50%,-50%) scale(.96)} 15%{opacity:1; transform:translate(-50%,-50%) scale(1)} 85%{opacity:1} 100%{opacity:0}}
-    @media (prefers-reduced-motion:reduce){ .transition-overlay,.channel-info,.loading-overlay{transition:none} }
+    @media (prefers-reduced-motion:reduce){ .transition-overlay,.channel-info,.loading-overlay,.volume-control.autohide{transition:none; animation:none} }
   </style>
 </head>
 <body>
@@ -486,7 +500,7 @@
   <script>
     const CONFIG = {
       displayId: '(NEW-CODE)',
-      dealershipId: '(DEALER-ID)',        // [ADDED] use an ID here to match analytics dealership filter
+      dealershipId: '(DEALER-ID)',
       dealershipName: '(NEW-NAME)',
       channels: [
         { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
@@ -504,7 +518,7 @@
 
     /* [ADDED] minimal state helper the Firebase module can call into */
     window._playerState = {
-      onStatePush: null,   // set by Firebase module
+      onStatePush: null,
       getSnapshot(){
         return {
           channel: window.currentChannel|0,
@@ -517,6 +531,15 @@
     document.addEventListener('DOMContentLoaded', ()=>{
       $('displayId').textContent = CONFIG.displayId;
       initVideo(); initVolumeUI(); tickClock(); setInterval(tickClock, 1000); loadChannel(1);
+
+      // Ensure HUD removes .show after animation fade-out
+      const hud = $('volumeHud');
+      hud.addEventListener('animationend', (e)=>{
+        if(e.animationName==='hudInOut'){
+          hud.classList.remove('autohide');
+          hud.classList.remove('show'); // guarantee it's hidden after cycle
+        }
+      });
     });
 
     function initVideo(){
@@ -537,20 +560,57 @@
     }
     function renderVolumeUI(){
       const pct=Math.max(0,Math.min(100,window.currentVolume|0));
-      $('volFill').style.width=pct+'%'; $('volPct').textContent=(window.isMuted||pct===0)?'0%':(pct+'%');
-      const cls=window.isMuted||pct===0?'icon-muted':pct<30?'icon-level-1':pct<70?'icon-level-2':'icon-level-3';
-      $('volSvg').className.baseVal='vol-icon '+cls;
+      $('volFill').style.width=pct+'%';
+      $('volPct').textContent=(window.isMuted||pct===0)?'0%':(pct+'%');
+      const cls=(window.isMuted||pct===0)?'icon-muted':(pct<30?'icon-level-1':pct<70?'icon-level-2':'icon-level-3');
+      // Robust class update across browsers
+      $('volSvg').setAttribute('class','vol-icon '+cls);
     }
+
     function showVolumeHudBubble(text){
       const b=document.createElement('div'); b.className='volume-float'; b.textContent=text; document.body.appendChild(b);
       setTimeout(()=>{ b.remove(); }, 1800);
     }
-    function flashVolumeHud(){ const hud=$('volumeHud'); hud.classList.add('show'); clearTimeout(_hudTimer); _hudTimer=setTimeout(()=>hud.classList.remove('show'), 1500); }
+
+    // Reliable auto-hide: restart CSS animation every time.
+    function flashVolumeHud(){
+      const hud=$('volumeHud');
+      hud.classList.add('show');
+      hud.classList.remove('autohide'); // restart animation
+      void hud.offsetWidth;             // reflow to re-trigger
+      hud.classList.add('autohide');
+
+      clearTimeout(_hudTimer);
+      // Safety removal in case user prefers-reduced-motion disables animation
+      _hudTimer=setTimeout(()=>{ hud.classList.remove('autohide'); hud.classList.remove('show'); }, 1900);
+    }
 
     function toggleMute(){ window.isMuted?mute():unmute(); }
-    function mute(){ const v=$('videoPlayer'); window.isMuted=true; v.muted=true; localStorage.setItem('displayMuted','true'); renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble('MUTED'); if(window._playerState.onStatePush) window._playerState.onStatePush(); } // [ADDED]
-    function unmute(){ const v=$('videoPlayer'); if(window.currentVolume===0){ window.currentVolume=lastVolume||50; v.volume=window.currentVolume/100; } window.isMuted=false; v.muted=false; v.play().catch(()=>{}); localStorage.setItem('displayMuted','false'); renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble(`${window.currentVolume|0}%`); if(window._playerState.onStatePush) window._playerState.onStatePush(); } // [ADDED]
-    function setVolume(vol){ vol=Math.max(0,Math.min(100,vol|0)); const v=$('videoPlayer'); window.currentVolume=vol; if(vol>0) lastVolume=vol; v.volume=vol/100; if(vol===0){ window.isMuted=true; v.muted=true; localStorage.setItem('displayMuted','true'); } localStorage.setItem('displayVolume',String(vol)); renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble(window.isMuted?'MUTED':`${vol}%`); if(window._playerState.onStatePush) window._playerState.onStatePush(); } // [ADDED]
+    function mute(){
+      const v=$('videoPlayer');
+      window.isMuted=true; v.muted=true;
+      localStorage.setItem('displayMuted','true');
+      renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble('MUTED');
+      if(window._playerState.onStatePush) window._playerState.onStatePush();
+    }
+    function unmute(){
+      const v=$('videoPlayer');
+      if(window.currentVolume===0){ window.currentVolume=lastVolume||50; v.volume=window.currentVolume/100; }
+      window.isMuted=false; v.muted=false; v.play().catch(()=>{});
+      localStorage.setItem('displayMuted','false');
+      renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble(`${window.currentVolume|0}%`);
+      if(window._playerState.onStatePush) window._playerState.onStatePush();
+    }
+    function setVolume(vol){
+      vol=Math.max(0,Math.min(100,vol|0));
+      const v=$('videoPlayer');
+      window.currentVolume=vol; if(vol>0) lastVolume=vol;
+      v.volume=vol/100;
+      if(vol===0){ window.isMuted=true; v.muted=true; localStorage.setItem('displayMuted','true'); }
+      localStorage.setItem('displayVolume',String(vol));
+      renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble(window.isMuted?'MUTED':`${vol}%`);
+      if(window._playerState.onStatePush) window._playerState.onStatePush();
+    }
     function volumeUp(){ if(window.isMuted) unmute(); setVolume(window.currentVolume+10); }
     function volumeDown(){ setVolume(window.currentVolume-10); }
 
@@ -559,7 +619,11 @@
     function showLoading(f){ const el=$('loading'); if(f){ el.classList.add('active'); } else { el.classList.remove('active'); hideError(); } }
     function setStatus(connected,msg){ const dot=$('statusDot'),txt=$('statusText'); dot.classList.toggle('disconnected',!connected); txt.textContent=connected?'Connected':('Disconnected'+(msg?` — ${msg}`:'')); }
     function tickClock(){ $('clock').textContent=new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'}); }
-    function updateChannelInfo(ch){ $('chName').textContent=ch.name||('Channel '+ch.id); $('chNum').textContent=ch.id; const box=$('channelInfo'); box.classList.add('show'); clearTimeout(box._t); box._t=setTimeout(()=>box.classList.remove('show'),4000); }
+    function updateChannelInfo(ch){
+      $('chName').textContent=ch.name||('Channel '+ch.id);
+      $('chNum').textContent=ch.id;
+      const box=$('channelInfo'); box.classList.add('show'); clearTimeout(box._t); box._t=setTimeout(()=>box.classList.remove('show'),4000);
+    }
     function onHlsError(evt,data){ if(!data||!data.fatal) return; showError('Stream error'); }
     function onVideoError(){ showError('Playback error'); }
 
@@ -578,14 +642,17 @@
         v.play().then(()=>{ v.volume=window.currentVolume/100; v.muted=window.isMuted; showLoading(false); }).catch(()=>{});
       } else { showError('HLS not supported'); }
       updateChannelInfo(ch); window.currentChannel=n;
-      if(window._playerState.onStatePush) window._playerState.onStatePush(); // [ADDED]
+      if(window._playerState.onStatePush) window._playerState.onStatePush();
     }
 
     window.setStatus=setStatus;
-    window.applyVolumeSettings=function(volume,muted){ if(typeof volume==='number') setVolume(volume); if(typeof muted==='boolean') muted?mute():unmute(); };
+    window.applyVolumeSettings=function(volume,muted){
+      if(typeof volume==='number') setVolume(volume);
+      if(typeof muted==='boolean') muted?mute():unmute();
+    };
   </script>
 
-  <!-- Firebase (module) for the player -->
+  <!-- Firebase (module) for the player) -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
@@ -609,7 +676,6 @@
         await update(dbRef(displayId), {
           lastSeenAt: Date.now(),
           updatedAt: Date.now(),
-          // include current state so analytics/remote always sees fresh numbers
           channel: snap.channel,
           volume: snap.volume,
           muted: snap.muted
@@ -623,8 +689,8 @@
           channel: snap.channel,
           volume: snap.volume,
           muted: snap.muted,
-          dealership: CONFIG.dealershipId || CONFIG.dealershipName || '(unknown)', // analytics expects "dealership"
-          timestamp: Date.now(),       // for compatibility with older readers
+          dealership: CONFIG.dealershipId || CONFIG.dealershipName || '(unknown)',
+          timestamp: Date.now(),
           updatedAt: Date.now(),
           ...extra
         });
@@ -652,8 +718,7 @@
           if(d.volume!==undefined||d.muted!==undefined) window.applyVolumeSettings(d.volume,d.muted);
           window.setStatus(true,''); },
           (err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
-        // even in embed, send a lightweight heartbeat so analytics can demo
-        pushHeartbeat(displayId); // [ADDED]
+        pushHeartbeat(displayId);
         return;
       }
 
@@ -667,7 +732,6 @@
             createdAt: Date.now(), updatedAt: Date.now(), lastSeenAt: Date.now(), timestamp: Date.now()
           });
         }else{
-          // ensure dealership is set
           const v=snap.val()||{};
           if(!v.dealership){ await update(dRef,{dealership:dealershipId}); }
         }
@@ -681,22 +745,21 @@
         (err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
 
       // initial state + heartbeat loop
-      await pushState(displayId);                      // [ADDED] snapshot now
-      await pushHeartbeat(displayId);                  // [ADDED] immediate beat
-      setInterval(()=>pushHeartbeat(displayId),15000); // [ADDED] every 15s
+      await pushState(displayId);
+      await pushHeartbeat(displayId);
+      setInterval(()=>pushHeartbeat(displayId),15000);
 
-      // be extra responsive
-      window.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') pushHeartbeat(displayId); }); // [ADDED]
-      window.addEventListener('online',  ()=>pushHeartbeat(displayId));  // [ADDED]
-      window.addEventListener('focus',   ()=>pushHeartbeat(displayId));  // [ADDED]
+      window.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') pushHeartbeat(displayId); });
+      window.addEventListener('online',  ()=>pushHeartbeat(displayId));
+      window.addEventListener('focus',   ()=>pushHeartbeat(displayId));
       window.addEventListener('beforeunload', ()=>{ navigator.sendBeacon?.(
-        `${firebaseConfig.databaseURL.replace('.firebaseio.com','.firebaseio.com')}/`, // noop ping
-        ''
-      ); }); // best-effort
+        `${firebaseConfig.databaseURL.replace('.firebaseio.com','.firebaseio.com')}/`, ''
+      ); });
     });
   </script>
 </body>
 </html></template>
+
 
 
   <div id="toast" class="toast"></div>
