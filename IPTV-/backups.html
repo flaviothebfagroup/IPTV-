@@ -3,7 +3,6 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <!-- Stop iOS from turning text into blue links -->
   <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
   <title>BFA IPTV — Backups</title>
 
@@ -16,52 +15,82 @@
 
   <style>
     /* =========================================================
-       Tokens (match Home)
+       Tokens + gradient glass (match Schedule/Home)
     ========================================================= */
     :root{
       --accent:#ff9500;
-      --fg:#111; --muted:#6e6e73; --bg:#ffffff;
-      --panel:#fff; --tile:#f6f6f8; --tileHover:#fff7ea;
-      --border:rgba(0,0,0,.14); --borderStrong:rgba(0,0,0,.28);
-      --shadow:0 14px 36px rgba(0,0,0,.08);
+
+      /* gradient (light) */
+      --bg1:#fff4e4; --bg2:#ffd293; --bg3:#ff9500;
+
+      --fg:#111; --muted:#6e6e73;
+
+      --panel:rgba(255,255,255,.58);
+      --tile:rgba(255,255,255,.46);
+      --tileHover:rgba(255,149,0,.08);
+
+      --border:rgba(15,23,42,.10); --borderStrong:rgba(15,23,42,.20);
+      --shadow:0 14px 34px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.05);
+
+      --glass-blur:16px; --glass-sat:140%;
     }
     body.dark{
-      --bg:#0b0b0c; --fg:#f7f7f8; --muted:#a1a1a8;
-      --panel:#151517; --tile:#1a1a1d; --tileHover:#221e18;
-      --border:rgba(255,255,255,.16); --borderStrong:rgba(255,255,255,.36);
-      --shadow:0 18px 48px rgba(0,0,0,.45);
+      --bg1:#0b0b0c; --bg2:#0d1016; --bg3:#10141b;
+
+      --fg:#f7f7f8; --muted:#a1a1a8;
+
+      --panel:rgba(21,21,23,.56);
+      --tile:rgba(26,26,29,.50);
+      --tileHover:rgba(255,149,0,.10);
+
+      --border:rgba(255,255,255,.10); --borderStrong:rgba(255,255,255,.20);
+      --shadow:0 18px 46px rgba(0,0,0,.36), 0 2px 8px rgba(0,0,0,.22);
+
+      --glass-blur:14px;
     }
 
     *{box-sizing:border-box;-webkit-text-size-adjust:100%}
-    body{margin:0;background:var(--bg);color:var(--fg);
-      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
+    html,body{min-height:100%}
+    body{
+      margin:0;color:var(--fg);
+      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
+      background:transparent;
+    }
+    /* non-cropping gradient background */
+    body::before{
+      content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background:linear-gradient(180deg,var(--bg1) 0%, var(--bg2) 52%, var(--bg3) 100%);
+    }
     a{color:inherit;text-decoration:none}
     a:visited{color:inherit}
-    /* iOS autolink hard override */
     a[x-apple-data-detectors], .x-apple-data-detectors,
     a[href^="tel"], a[href^="mailto"], a[href^="sms"]{ color:inherit !important; text-decoration:none !important; font-weight:inherit !important; }
 
     /* =========================================================
-       Topbar — SAME as Home (icons unchanged)
+       Topbar — glass
     ========================================================= */
-    .topbar{position:sticky;top:0;z-index:100;background:var(--panel);
+    .topbar{position:sticky;top:0;z-index:200;background:var(--panel);
       border-bottom:1px solid var(--border);
-      padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px}
+      padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));}
     .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;position:relative}
     .brand{display:flex;align-items:center;gap:10px}
     .logo{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:#fff center/cover no-repeat}
     .logotxt{font-weight:900;letter-spacing:.2px}
 
     .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;color:inherit;font-weight:800;font-size:14px;line-height:1;white-space:nowrap}
-    .pill:hover{border-color:var(--accent)}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;color:inherit;font-weight:800;font-size:14px;line-height:1;white-space:nowrap;transition:border-color .18s ease, filter .18s ease}
+    .pill:hover{border-color:var(--accent);filter:brightness(1.04)}
     .pill.is-active{outline:2px solid var(--accent)}
     .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
 
     .more{position:relative}
     #moreBtn .plus{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
     #moreMenu{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
-      border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none}
+      border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none;z-index:1200;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));}
     #moreMenu.open{display:block}
     #moreMenu a{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px}
     #moreMenu a:hover{background:var(--tileHover)}
@@ -70,21 +99,30 @@
 
     .actions{display:flex;gap:8px;align-items:center}
     .email{max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);
-      border:1px solid var(--border);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      border:1.5px solid var(--borderStrong);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));}
     .chip{height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1.5px solid var(--borderStrong);
-      background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
-    .chip:hover{border-color:var(--accent)}
+      background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+      transition:transform .12s ease, filter .18s ease, border-color .18s ease;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));}
+    .chip:hover{border-color:var(--accent);transform:translateY(-1px);filter:brightness(1.03)}
     .chip .ic{width:18px;height:18px;stroke-width:2}
     #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:42px;min-width:42px;padding:0;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
     #hamburger .ic{width:22px;height:22px;stroke:var(--accent);stroke-width:2.35}
     @media (max-width:920px){ .nav{display:none} #hamburger{display:inline-flex} .email{display:none} }
 
-    /* Mobile sheet (icons kept) */
-    #sheet{position:fixed;inset:0;z-index:120;display:none}
+    /* =========================================================
+       Mobile sheet — HIGH z-index, glass
+    ========================================================= */
+    #sheet{position:fixed;inset:0;z-index:1000;display:none}
     #sheet.open{display:block}
     #sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.28)}
     .panel{position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);background:var(--panel);border-left:1px solid var(--border);
-      box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px}
+      box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));}
     .panel .row{display:flex;align-items:center;justify-content:space-between}
     .panel nav{display:grid;gap:8px}
     .panel nav a{justify-content:flex-start;display:flex;align-items:center;gap:10px}
@@ -93,17 +131,20 @@
        Content
     ========================================================= */
     .wrap{max-width:1100px;margin:0 auto;padding:18px}
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow);
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));}
     .muted{color:var(--muted);font-size:12px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 
-    .input{height:42px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-size:15px}
-    .btn{height:42px;padding:0 16px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:900;cursor:pointer}
+    .input{height:42px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-size:15px;
+      box-shadow:0 1px 0 rgba(255,255,255,.45) inset;}
+    .btn{height:42px;padding:0 16px;border-radius:9999px;border:1px solid var(--border);background:var(--tile);color:var(--fg);font-weight:900;cursor:pointer;
+      backdrop-filter:blur(calc(var(--glass-blur)-4px)) saturate(var(--glass-sat));}
     .btn:hover{border-color:var(--accent)}
     .btnSolid{height:42px;padding:0 16px;border-radius:9999px;background:var(--accent);border:0;color:#000;font-weight:900;cursor:pointer}
     .btnDanger{height:42px;padding:0 16px;border-radius:9999px;border:1px solid #ff453a;background:transparent;color:#ff453a;font-weight:900;cursor:pointer}
 
-    /* Timeline + inline preview (stacked, no overlap) */
     .timeline{display:grid;gap:12px}
     .bcard{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border:1px solid var(--border);border-radius:16px;padding:12px;background:var(--tile)}
     .bmeta{display:flex;flex-direction:column;gap:4px}
@@ -117,7 +158,6 @@
     .previewWrap.open{display:block}
     .previewBox{margin:10px 0 0;border:1px solid var(--border);border-radius:14px;background:var(--panel);padding:12px}
 
-    /* Summary cards inside preview */
     .summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px}
     @media (max-width:720px){.summary{grid-template-columns:1fr}}
     .sumcard{border:1px solid var(--border);border-radius:12px;background:var(--tile);padding:12px}
@@ -128,7 +168,6 @@
     .stat{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--panel)}
     .stat b{font-weight:900;color:var(--accent)}
 
-    /* Names hierarchy */
     .group{border:1px solid var(--border);border-radius:12px;background:var(--tile);padding:12px;margin-top:8px}
     .ghead{display:flex;align-items:center;justify-content:space-between}
     .ghead h3{margin:0;font-size:14px;font-weight:900}
@@ -148,7 +187,6 @@
     .safety{display:flex;align-items:center;gap:8px;margin-top:6px}
     .searchRow{display:flex;gap:10px;align-items:center;margin-bottom:10px}
 
-    /* Undo + Toast */
     .undo{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--border);
       box-shadow:var(--shadow);border-radius:999px;padding:8px 12px;display:none;align-items:center;gap:10px;z-index:300}
     .undo.show{display:flex}
@@ -159,7 +197,7 @@
   </style>
 </head>
 <body>
-  <!-- NAVBAR (same as Home) -->
+  <!-- NAVBAR -->
   <header class="topbar">
     <div class="toprow">
       <a class="brand" href="home.html"><span class="logo" id="brandLogo"></span><span class="logotxt">BFA IPTV</span></a>
@@ -188,9 +226,7 @@
             <a href="backups.html" class="is-active"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
             <a href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
             <a href="settings.html">
-              <svg class="ic" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"/>
-              </svg>
+              <svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg>
               Settings
             </a>
           </div>
@@ -207,45 +243,45 @@
         <button id="hamburger" class="chip" aria-label="Menu">
           <svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
         </button>
-      </div>
-    </div>
-
-    <!-- Mobile sheet (icons kept) -->
-    <div id="sheet" aria-hidden="true">
-      <div class="back"></div>
-      <aside class="panel" role="dialog" aria-modal="true" aria-label="Menu">
-        <div class="row">
-          <div class="brand"><span class="logo" id="brandLogoM"></span><span class="logotxt">BFA IPTV</span></div>
-          <button id="closeSheet" class="chip" aria-label="Close"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-        </div>
-        <nav>
-          <a class="pill" href="home.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
-          <a class="pill" href="dealerships.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
-          <a class="pill" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
-          <a class="pill" href="users.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
-          <div class="muted" style="padding:8px 2px 0">More</div>
-          <a class="pill" href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
-          <a class="pill" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
-          <a class="pill" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
-          <a class="pill is-active" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
-          <a class="pill" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
-          <a class="pill" href="settings.html">
-            <svg class="ic" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"/>
-            </svg>
-            Settings
-          </a>
-          <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
-        </nav>
-      </aside>
     </div>
   </header>
+
+  <!-- Mobile sheet (outside header; high z-index) -->
+  <div id="sheet" aria-hidden="true">
+    <div class="back"></div>
+    <aside class="panel" role="dialog" aria-modal="true" aria-label="Menu">
+      <div class="row">
+        <div class="brand"><span class="logo" id="brandLogoM"></span><span class="logotxt">BFA IPTV</span></div>
+        <button id="closeSheet" class="chip" aria-label="Close"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <nav>
+        <a class="pill" href="home.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
+        <a class="pill" href="dealerships.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
+        <a class="pill" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
+        <a class="pill" href="users.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
+        <div class="muted" style="padding:8px 2px 0">More</div>
+        <a class="pill" href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
+        <a class="pill" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
+        <a class="pill" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
+        <a class="pill is-active" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
+        <a class="pill" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
+        <a class="pill" href="settings.html">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg>
+          Settings
+        </a>
+        <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
+      </nav>
+    </aside>
+  </div>
 
   <!-- ===================================================== -->
   <div class="wrap">
     <!-- Quick actions -->
     <div class="card" style="margin-bottom:12px">
-      <h2 style="margin:0 0 10px">Backups — Simple</h2>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <h2 style="margin:0 0 6px">Backups — Simple</h2>
+        <div class="muted" id="storeNote">Loading storage…</div>
+      </div>
       <div class="row">
         <button id="btnBackup" class="btnSolid">
           <svg class="ic" viewBox="0 0 24 24"><path d="M16.023 9.348a6 6 0 10-8.045 7.294"/><path d="M8.25 15.75H3.75m0 0v-4.5m0 4.5l3 3"/></svg>
@@ -259,14 +295,14 @@
         </button>
         <button id="btnClearAll" class="btnDanger">
           <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
-          Clear local
+          Clear list
         </button>
       </div>
       <label class="safety">
         <input id="safetyToggle" type="checkbox"> Safety mode (type <b>RESTORE</b> to confirm)
       </label>
       <div class="muted" style="margin-top:6px">
-        Backups are saved locally in this browser (you can also download them). Restores require admin login.
+        Backups are listed here (shared for admins). You can download any snapshot. Restores require admin login.
         An auto-backup is created <b>before</b> every restore.
       </div>
     </div>
@@ -294,8 +330,8 @@
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import { getDatabase, ref, get, set } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getDatabase, ref, get, set, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
     /* Firebase */
     const firebaseConfig = {
@@ -327,8 +363,8 @@
     const setThemeIcon = ()=>{
       const dark = document.body.classList.contains('dark');
       themeIcon.innerHTML = dark
-        ? `<path d="M21.752 15.002A9 9 0 118.998 2.248a7.5 7.5 0 1012.754 12.754z"/>`
-        : `<path d="M12 4.5v-2.25M12 21.75v-2.25M4.5 12H2.25M21.75 12H19.5M5.636 5.636L4.05 4.05M19.95 19.95l-1.586-1.586M5.636 18.364L4.05 19.95M19.95 4.05l-1.586 1.586"/><circle cx="12" cy="12" r="3.75"/>`;
+        ? `<path d="M21 12a9 9 0 1 1-9-9 6 6 0 0 0 9 9z"/>`
+        : `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1.4-1.4M20.4 20.4 19 19M5 19l-1.4 1.4M20.4 3.6 19 5"/>`;
     };
     const saved = localStorage.getItem(THEME_KEY) || 'light';
     document.body.classList.toggle('dark', saved==='dark');
@@ -364,29 +400,95 @@
       if(mainOut && mobOut){ mobOut.addEventListener('click', ()=> mainOut.click()); }
     })();
 
-    /* Auth (email display only) */
-    onAuthStateChanged(auth, async (user)=>{
-      if(!user){ $('#adminEmail').textContent=''; return; }
-      $('#adminEmail').textContent = user.email || user.uid;
-    });
+    /* Auth + role + shared storage */
     document.getElementById('signOutBtn').addEventListener('click', ()=>signOut(auth));
 
-    /* ===== Timeline storage ===== */
-    const LS_TIMELINE='iptv_backups_timeline_inline_v1';
-    const timeline = {
-      list(){ try{return JSON.parse(localStorage.getItem(LS_TIMELINE)||'[]')}catch{return []} },
-      save(arr){ localStorage.setItem(LS_TIMELINE, JSON.stringify(arr)); },
-      add(item){ const arr=this.list(); arr.push(item); arr.sort((a,b)=>b.ts-a.ts); this.save(arr); },
-      remove(id){ this.save(this.list().filter(x=>x.id!==id)); },
-      get(id){ return this.list().find(x=>x.id===id); }
-    };
+    const DB_PATH='admin/quickLinks/backupsTimeline'; // shared for admins per your rules
+    const LS_KEY='iptv_backups_timeline_inline_v1';  // fallback for non-admin
+    let IS_ADMIN=false;
+    let timelineArr=[];   // in-memory list
+    let detach=null;
+
+    const storeNote = document.getElementById('storeNote');
+
+    setPersistence(auth, browserLocalPersistence);
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ location.href='./home.html'; return; }
+      document.getElementById('adminEmail').textContent = user.email || user.uid;
+
+      // check role (allowed by rules to read own user node)
+      try{
+        const roleSnap = await get(ref(db, `user/${user.uid}/role`));
+        IS_ADMIN = roleSnap.exists() && roleSnap.val()==='admin';
+      }catch(_){ IS_ADMIN=false; }
+
+      startListener();
+    });
+
+    function startListener(){
+      if(detach){ detach(); detach=null; }
+      if(IS_ADMIN){
+        const r=ref(db, DB_PATH);
+        const off = onValue(r, (snap)=>{
+          if(snap.exists()){
+            const v=snap.val();
+            timelineArr = Array.isArray(v) ? v : Object.values(v||{});
+            storeNote.textContent='Shared across admins (Database).';
+          }else{
+            timelineArr = [];
+            storeNote.textContent='Shared across admins (empty).';
+          }
+          render();
+        }, (_err)=>{
+          timelineArr = readLocal();
+          storeNote.textContent='Saved locally (rules error).';
+          render();
+        });
+        detach = ()=> off();
+      }else{
+        timelineArr = readLocal();
+        storeNote.textContent='Saved locally (not admin).';
+        render();
+      }
+    }
+
+    async function saveTimeline(){
+      if(IS_ADMIN){
+        try{
+          await set(ref(db, DB_PATH), timelineArr);
+          storeNote.textContent='Shared across admins (Database).';
+          return;
+        }catch(e){
+          console.warn('DB write error, falling back to local:', e?.message||e);
+        }
+      }
+      writeLocal(timelineArr);
+      storeNote.textContent = IS_ADMIN ? 'Saved locally (DB denied).' : 'Saved locally (not admin).';
+      render();
+    }
+
+    /* Local helpers (fallback) */
+    const readLocal=()=>{ try{return JSON.parse(localStorage.getItem(LS_KEY)||'[]')}catch{return []}};
+    const writeLocal=(arr)=> localStorage.setItem(LS_KEY, JSON.stringify(arr));
+
+    /* Timeline ops */
+    function addRecord(rec){
+      timelineArr.push(rec);
+      timelineArr.sort((a,b)=> b.ts - a.ts);
+      return saveTimeline();
+    }
+    function removeRecord(id){
+      timelineArr = timelineArr.filter(x=>x.id!==id);
+      return saveTimeline();
+    }
+    function getRecord(id){ return timelineArr.find(x=>x.id===id); }
 
     function fmt(ts){ const d=new Date(ts); const z=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`; }
 
     /* Render + search */
     function render(){
       const q = ($('#searchInput').value||'').toLowerCase();
-      const list=timeline.list().filter(it=> (it.note||'').toLowerCase().includes(q) || (it.filename||'').toLowerCase().includes(q));
+      const list=(timelineArr||[]).filter(it=> (it.note||'').toLowerCase().includes(q) || (it.filename||'').toLowerCase().includes(q));
       $('#countTag').textContent=`${list.length} item${list.length!==1?'s':''}`;
       const box=$('#timeline'); box.innerHTML='';
       if(!list.length){ box.innerHTML='<div class="muted">No backups yet. Tap “One-Click Backup”.</div>'; return; }
@@ -484,10 +586,10 @@
     }
     document.getElementById('searchInput').addEventListener('input', render);
 
-    function dlBackup(id){ const it=timeline.get(id); if(!it) return; downloadFile(it.filename, JSON.stringify(it.payload,null,2)); }
-    function delBackup(id){
-      if(!confirm('Delete this backup from this browser?')) return;
-      timeline.remove(id); render(); toast('Deleted');
+    function dlBackup(id){ const it=getRecord(id); if(!it) return; downloadFile(it.filename, JSON.stringify(it.payload,null,2)); }
+    async function delBackup(id){
+      if(!confirm('Delete this backup from the list?')) return;
+      await removeRecord(id); render(); toast('Deleted');
     }
     function downloadFile(name, text){
       const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));
@@ -550,7 +652,7 @@
     }
 
     function renderPreviewInto(id){
-      const rec = timeline.get(id); if(!rec) return;
+      const rec = getRecord(id); if(!rec) return;
       const p = rec.payload || {}, d = p.data || {};
 
       // counts
@@ -583,20 +685,17 @@
 
     let openId=null;
     function openPreview(id, scroll=false){
-      // close others
       document.querySelectorAll('.previewWrap.open').forEach(el=> el.classList.remove('open'));
       const wrap = document.getElementById(`pv-${id}`);
       if(!wrap) return;
       renderPreviewInto(id);
       wrap.classList.add('open');
       openId=id;
-      if(scroll){
-        wrap.scrollIntoView({behavior:'smooth', block:'start'});
-      }
+      if(scroll){ wrap.scrollIntoView({behavior:'smooth', block:'start'}); }
     }
 
     async function doCompare(id){
-      const rec = timeline.get(id); if(!rec) return;
+      const rec = getRecord(id); if(!rec) return;
       const payload = rec.payload;
       const req = (path)=> get(ref(db,path)).then(s=>s.val()).catch(()=>null);
       const [dp, d, ds, us] = await Promise.all([
@@ -629,22 +728,21 @@
       };
     }
 
-    /* One-Click Backup -> add + open preview underneath */
+    /* One-Click Backup -> add + open preview + download */
     async function doSnapshot(){
       const payload = await fetchSnapshot(document.getElementById('noteInput').value||null);
       const id = crypto.randomUUID();
       const fn = `bfa-backup-${nowStamp()}.json`;
       const rec = { id, ts:Date.now(), note:payload.note||'', sections:payload.sections, filename:fn, payload };
-      timeline.add(rec); render(); toast('Backup saved locally');
-      // open new preview and offer download
+      await addRecord(rec); render(); toast('Backup saved to list');
       openPreview(id, true);
       downloadFile(fn, JSON.stringify(payload,null,2));
     }
 
-    /* Restore + Auto-backup + Undo + Safety mode */
+    /* Restore + Auto-backup + Undo */
     let lastAutoId=null;
     async function restoreBackup(id){
-      const it=timeline.get(id); if(!it) return;
+      const it=getRecord(id); if(!it) return;
       if(document.getElementById('safetyToggle').checked){
         const code = prompt('Type RESTORE to confirm:');
         if(code!=="RESTORE") return toast('Cancelled', true);
@@ -658,7 +756,7 @@
         const autoId = crypto.randomUUID();
         const autoFn = `bfa-autobackup-${nowStamp()}.json`;
         const autoRec = { id:autoId, ts:Date.now(), note:autoPayload.note, sections:autoPayload.sections, filename:autoFn, payload:autoPayload };
-        timeline.add(autoRec); render(); lastAutoId = autoId; showUndo();
+        await addRecord(autoRec); render(); lastAutoId = autoId; showUndo();
         // Restore
         const data=it.payload.data||{}; const writes=[];
         if(data.dealershipPublic!==undefined) writes.push(set(ref(db,'dealershipPublic'), data.dealershipPublic));
@@ -672,7 +770,7 @@
     }
 
     function showUndo(){ const b=document.getElementById('undoBanner'); b.classList.add('show'); setTimeout(()=>b.classList.remove('show'), 12000); }
-    document.getElementById('btnUndo').onclick=async()=>{ if(!lastAutoId) return; const rec = timeline.get(lastAutoId); if(!rec) return toast('Nothing to undo', true); try{
+    document.getElementById('btnUndo').onclick=async()=>{ if(!lastAutoId) return; const rec = getRecord(lastAutoId); if(!rec) return toast('Nothing to undo', true); try{
         const data=rec.payload.data||{}; const writes=[];
         if(data.dealershipPublic!==undefined) writes.push(set(ref(db,'dealershipPublic'), data.dealershipPublic));
         if(data.dealership!==undefined)      writes.push(set(ref(db,'dealership'), data.dealership));
@@ -692,15 +790,19 @@
         const txt=await f.text(); const payload=JSON.parse(txt);
         const id=crypto.randomUUID(); const ts=Date.now();
         const rec={id, ts, note: payload.note||'', sections:payload.sections||[], filename:f.name||`import-${nowStamp()}.json`, payload};
-        timeline.add(rec); render(); openPreview(id, true); toast('Added to timeline');
+        await addRecord(rec); render(); openPreview(id, true); toast('Added to list');
       }catch{ toast('Invalid JSON',true) }
     });
 
     // Buttons
     document.getElementById('btnBackup').onclick=()=>doSnapshot();
-    document.getElementById('btnClearAll').onclick=()=>{ if(confirm('Remove all backups stored in this browser?')){ localStorage.removeItem(LS_TIMELINE); render(); toast('Cleared'); } };
+    document.getElementById('btnClearAll').onclick=async()=>{
+      if(!confirm('Remove all backups from the list?')) return;
+      timelineArr=[]; await saveTimeline(); render(); toast('Cleared');
+    };
 
     // First paint
+    document.getElementById('searchInput').addEventListener('input', render);
     render();
   </script>
 </body>
