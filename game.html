@@ -3,86 +3,101 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Most Likely To — Party Game</title>
+<title>Most Likely — Spicy Edition</title>
 <style>
   :root{
-    --bg:#0b0b0c; --panel:#141416; --tile:#18181b; --fg:#fff; --muted:#a1a1aa;
-    --border:rgba(255,255,255,.10); --accent:#ff9500; --good:#22c55e; --bad:#ef4444;
-    --glass:rgba(255,255,255,.06);
+    --bg:#07080a; --grad1:#111827; --grad2:#0b0f1a;
+    --panel:#121318; --tile:#191a20; --fg:#fff; --muted:#b7bcc7;
+    --border:rgba(255,255,255,.14); --accent:#ff5d8f; --accent2:#ffb703; --ok:#22c55e;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{
-    margin:0; background: radial-gradient(1200px 800px at 20% -10%, #1b1b1f 0%, #0b0b0c 60%) fixed, var(--bg);
-    color:var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    margin:0; color:var(--fg); background:
+      radial-gradient(1200px 800px at 80% -10%, #1e1b4b 0%, transparent 60%),
+      radial-gradient(900px 600px at 10% 110%, #4c1d95 0%, transparent 60%),
+      linear-gradient(180deg,var(--grad1),var(--grad2));
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
   }
-  .app{max-width:940px; margin:0 auto; padding:16px 16px 48px}
-  header{display:flex; align-items:center; gap:12px; padding:10px 8px 18px;}
-  .logo{width:34px; height:34px; border-radius:10px; background:linear-gradient(180deg,var(--accent),#ffb357); display:grid; place-items:center; font-weight:800; color:#000;}
-  h1{font-size:20px; margin:0; letter-spacing:.2px}
+  .app{max-width:980px; margin:0 auto; padding:18px 16px 80px}
+  header{display:flex; align-items:center; gap:12px; padding:6px 6px 16px}
+  .logo{
+    width:40px;height:40px;border-radius:12px;
+    background: conic-gradient(from 210deg,#ff5d8f,#ffb703,#7c3aed,#ff5d8f);
+    display:grid;place-items:center;color:#0b0b0c;font-weight:900;letter-spacing:.4px;
+  }
+  h1{font-size:22px; margin:0}
+  .tiny{font-size:12px;color:var(--muted)}
   .panel{
-    background:var(--panel); border:1px solid var(--border);
-    border-radius:16px; padding:16px; box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    background: color-mix(in srgb, var(--panel) 90%, black 10%);
+    border:1px solid var(--border); border-radius:18px; padding:18px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.45);
     backdrop-filter: blur(10px);
   }
-  .row{display:flex; gap:12px; flex-wrap:wrap}
-  input, button, select{
-    appearance:none; border-radius:12px; border:1px solid var(--border); background:var(--tile);
-    color:var(--fg); padding:12px 14px; font-size:16px; outline:none;
+  .grid{display:grid; gap:14px}
+  @media(min-width:760px){ .grid.two{grid-template-columns:1fr 1fr} }
+  .title{font-size:20px;font-weight:800; letter-spacing:.2px}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+  input,button,select,label.toggle{
+    border-radius:14px; border:1px solid var(--border);
+    background:var(--tile); color:var(--fg);
   }
-  input::placeholder{color:var(--muted)}
-  button{cursor:pointer; border-color:transparent; background: linear-gradient(180deg,#2a2a2f, #1a1a1e);}
-  button.primary{background:linear-gradient(180deg,#ff9f1a,#ff7a00); color:#111; font-weight:700}
+  input,select{padding:14px 14px; font-size:18px; min-height:52px}
+  input::placeholder{color:#8e93a3}
+  button{
+    padding:14px 16px; font-size:18px; cursor:pointer; border-color:transparent;
+    background:linear-gradient(180deg,#23242c,#181a20); font-weight:700;
+  }
+  button.primary{
+    background:linear-gradient(180deg,#ff8ab1,#ff5d8f);
+    color:#1a0f13; border:1px solid rgba(255,255,255,.18);
+    text-shadow:0 1px 0 rgba(255,255,255,.35)
+  }
+  button.warn{background:linear-gradient(180deg,#ffd166,#ffb703); color:#201607}
   button.ghost{background:transparent; border:1px dashed var(--border); color:var(--muted)}
   .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
-  .chip{background:var(--glass); border:1px solid var(--border); padding:8px 12px; border-radius:999px; display:flex; gap:8px; align-items:center}
-  .chip b{font-weight:600}
-  .chip button{background:transparent; border:none; color:var(--muted); padding:0 2px; font-size:18px}
-  .grid{display:grid; gap:12px}
-  @media(min-width:720px){ .grid.two{grid-template-columns:1fr 1fr} }
-  .muted{color:var(--muted)}
-  .title{font-size:22px; font-weight:800; letter-spacing:.2px}
-  .story{font-size:18px; line-height:1.4; background:var(--tile); border:1px solid var(--border); border-radius:14px; padding:14px}
-  .question{font-size:20px; font-weight:700; margin-top:8px}
-  .players{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px}
+  .chip{background:#23242c; border:1px solid var(--border); padding:10px 12px; border-radius:999px; display:flex; gap:8px; align-items:center; font-size:16px}
+  .chip button{background:transparent; border:none; color:#9aa0ad; padding:0 2px; font-size:18px; cursor:pointer}
+  .sep{height:1px;background:var(--border); margin:12px 0}
+  label.toggle{
+    display:inline-flex; gap:10px; align-items:center; padding:10px 12px; color:#d0d5e1; background:#1a1b22;
+  }
+  .note{font-size:13px; color:#9aa0ad}
+  .big{font-size:22px}
+  /* Round UI */
+  .story{font-size:20px; line-height:1.45; background:#1a1b22; border:1px solid var(--border); border-radius:16px; padding:14px}
+  .question{font-size:22px; font-weight:800; margin-top:10px}
+  .players{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px}
   @media(min-width:560px){ .players{grid-template-columns:1fr 1fr 1fr} }
   .pbtn{
-    padding:14px; border-radius:12px; border:1px solid var(--border); background:linear-gradient(180deg,#1d1d21,#17171a);
-    display:flex; justify-content:space-between; align-items:center; gap:8px; font-weight:700;
+    min-height:64px; font-size:20px; padding:16px; border-radius:14px; border:1px solid var(--border);
+    background:linear-gradient(180deg,#21232a,#17181f); display:flex; justify-content:space-between; align-items:center;
   }
-  .pbtn small{color:var(--muted); font-weight:600}
+  .pbtn small{color:#a8aebd; font-weight:600; font-size:16px}
   .toolbar{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px}
   .winner{
-    padding:14px; border-radius:12px; background:linear-gradient(180deg, rgba(34,197,94,.2), rgba(34,197,94,.08));
-    border:1px solid rgba(34,197,94,.35);
+    padding:14px; border-radius:14px; background:linear-gradient(180deg, rgba(34,197,94,.2), rgba(34,197,94,.06));
+    border:1px solid rgba(34,197,94,.35); font-size:18px
   }
-  .scoreboard{margin-top:12px; border-top:1px solid var(--border); padding-top:12px}
-  .scores{display:grid; grid-template-columns:1fr 1fr; gap:8px}
-  @media(min-width:560px){ .scores{grid-template-columns:1fr 1fr 1fr 1fr} }
-  .score{
-    background:var(--tile); border:1px solid var(--border); border-radius:10px; padding:10px 12px; display:flex; justify-content:space-between;
-  }
-  .tiny{font-size:12px; color:var(--muted)}
-  .toggle{
-    display:inline-flex; gap:8px; align-items:center; padding:8px 10px; border-radius:999px;
-    border:1px solid var(--border); background:var(--glass); color:var(--muted)
-  }
-  .big{font-size:18px}
-  .sep{height:1px; background:var(--border); margin:12px 0}
-  .tip{font-size:13px; color:var(--muted)}
+  .scoreboard{margin-top:14px; border-top:1px solid var(--border); padding-top:14px}
+  .scores{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  @media(min-width:680px){ .scores{grid-template-columns:1fr 1fr 1fr 1fr} }
+  .score{background:#1a1b22; border:1px solid var(--border); border-radius:12px; padding:10px 12px; display:flex; justify-content:space-between; font-size:18px}
   .hidden{display:none !important}
-  .center{display:grid; place-items:center}
   .confetti{pointer-events:none; position:fixed; inset:0; overflow:hidden}
   .confetti i{position:absolute; width:10px; height:14px; border-radius:2px; opacity:.9}
+  /* Accessibility helpers */
+  .xl *{font-size: calc(1.12 * 1rem)}
 </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <div class="logo">ML</div>
+    <div class="logo">🔥</div>
     <div>
-      <h1>Most Likely — Party Game</h1>
-      <div class="tiny">Single-file preview. Enter names → Play → Vote → Winner + Scoreboard.</div>
+      <h1>Most Likely — Spicy Edition</h1>
+      <div class="tiny">Bigger buttons • High contrast • Chill / Spicy / 18+ decks</div>
     </div>
   </header>
 
@@ -92,28 +107,31 @@
       <div class="title">Players</div>
       <div class="row" style="margin-top:8px;">
         <input id="nameInput" type="text" placeholder="Type a name and press Add" onkeydown="if(event.key==='Enter') addPlayer()">
-        <button onclick="addPlayer()">Add</button>
+        <button class="primary" onclick="addPlayer()">Add</button>
+        <button class="ghost" onclick="demoFill()">Demo</button>
       </div>
       <div id="chips" class="chips"></div>
       <div class="sep"></div>
       <div class="row">
-        <label class="toggle"><input id="spice" type="checkbox" style="accent-color:var(--accent)"> Spicy prompts</label>
-        <label class="toggle"><input id="shortRounds" type="checkbox" style="accent-color:var(--accent)" checked> Quick rounds</label>
+        <label class="toggle"><input id="bigText" type="checkbox" style="accent-color:var(--accent2)"> Big text</label>
+        <label class="toggle"><input id="hideStory" type="checkbox" style="accent-color:var(--accent2)"> Question only</label>
       </div>
-      <div class="tip">Tip: 4–10 players is the sweet spot. You can delete a name by tapping ✕.</div>
     </div>
 
     <div>
-      <div class="title">How it works</div>
-      <ol class="muted" style="margin:10px 0 0 18px; line-height:1.55">
-        <li>I generate a short story and a “Who’s most likely to…” question.</li>
-        <li>Everyone votes on this phone by tapping a name (multiple taps allowed).</li>
-        <li>Tap <b>Reveal winner</b> → I crown the winner and add a funny ending.</li>
-      </ol>
+      <div class="title">Deck & Mode</div>
+      <div class="row" style="margin-top:8px;">
+        <select id="deck">
+          <option value="chill">Chill</option>
+          <option value="spicy">Spicy</option>
+          <option value="saucy" disabled>18+ Saucy (enable below)</option>
+        </select>
+        <label class="toggle"><input id="adultsOnly" type="checkbox" style="accent-color:var(--accent)"> All players are 18+</label>
+      </div>
+      <div class="note">The 18+ deck unlocks only if you confirm everyone is an adult. Content stays cheeky, not graphic.</div>
       <div class="sep"></div>
       <div class="row">
-        <button class="primary" onclick="startGame()">Start Game</button>
-        <button class="ghost" onclick="demoFill()">Demo Names</button>
+        <button class="warn" onclick="startGame()">Start Game</button>
       </div>
     </div>
   </section>
@@ -122,16 +140,17 @@
   <section id="round" class="panel hidden">
     <div class="row" style="justify-content:space-between; align-items:center;">
       <div class="title">Round <span id="roundNum">1</span></div>
-      <div class="tiny muted" id="modeHint">Mode: <b>Quick votes</b></div>
+      <div class="tiny" id="modeHint"></div>
     </div>
-    <div class="story" id="storyText"></div>
+
+    <div class="story" id="storyBox"></div>
     <div class="question" id="questionText"></div>
 
     <div class="players" id="playerButtons"></div>
 
     <div class="toolbar">
-      <button onclick="undoVote()">Undo last vote</button>
-      <button onclick="clearVotes()">Clear votes</button>
+      <button onclick="undoVote()">Undo vote</button>
+      <button onclick="clearVotes()">Clear</button>
       <button class="primary" onclick="reveal()">Reveal winner</button>
     </div>
 
@@ -153,297 +172,236 @@
 <div class="confetti" id="confetti"></div>
 
 <script>
-/* ---------------------------
-   Tiny state
---------------------------- */
+/* === State === */
 const state = {
   players: [],
   scores: new Map(),
   round: 1,
-  votes: [], // history of votes for undo
+  votes: [],
   voteCount: new Map(),
-  spicy:false,
-  quick:true,
-  lastWinner:null,
+  deck:'chill',
+  big:false,
+  hideStory:false,
   rngSeed: Date.now()%2147483647
 };
+function rand(){ state.rngSeed = (state.rngSeed * 48271) % 2147483647; return (state.rngSeed-1)/2147483646; }
+function choice(a){ return a[Math.floor(rand()*a.length)] }
 
-function rand(){ // deterministic-ish PRNG so both sides can reproduce if needed
-  state.rngSeed = (state.rngSeed * 48271) % 2147483647;
-  return (state.rngSeed-1)/2147483646;
-}
-function choice(arr){ return arr[Math.floor(rand()*arr.length)] }
-
-/* ---------------------------
-   Setup screen
---------------------------- */
-const nameInput = document.getElementById('nameInput');
-const chips = document.getElementById('chips');
-const spice = document.getElementById('spice');
-const shortRounds = document.getElementById('shortRounds');
-
-function renderChips(){
-  chips.innerHTML = '';
-  state.players.forEach((n,i)=>{
-    const el = document.createElement('div');
-    el.className='chip';
-    el.innerHTML = `<b>${escapeHtml(n)}</b><button title="Remove" onclick="removePlayer(${i})">✕</button>`;
-    chips.appendChild(el);
-  });
-}
-
-function addPlayer(){
-  const v = nameInput.value.trim();
-  if(!v) return;
-  if(state.players.includes(v)) { nameInput.value=''; return; }
-  state.players.push(v);
-  state.scores.set(v, state.scores.get(v)||0);
-  renderChips();
-  nameInput.value='';
-}
-function removePlayer(i){
-  const n = state.players[i];
-  state.players.splice(i,1);
-  state.scores.delete(n);
-  renderChips();
-}
-function demoFill(){
-  ['Alex','Maya','Jo','Pri','Sam','Nico'].forEach(n=>{
-    if(!state.players.includes(n)){
-      state.players.push(n); state.scores.set(n,0);
-    }
-  });
-  renderChips();
-}
-
-/* ---------------------------
-   Game flow
---------------------------- */
+/* === Elements === */
 const setup = document.getElementById('setup');
 const roundEl = document.getElementById('round');
-const storyText = document.getElementById('storyText');
+const chips = document.getElementById('chips');
+const nameInput = document.getElementById('nameInput');
+const adultsOnly = document.getElementById('adultsOnly');
+const deckSel = document.getElementById('deck');
+const storyBox = document.getElementById('storyBox');
 const questionText = document.getElementById('questionText');
 const playerButtons = document.getElementById('playerButtons');
 const roundNum = document.getElementById('roundNum');
 const winnerBlock = document.getElementById('winnerBlock');
 const scoresEl = document.getElementById('scores');
+const bigText = document.getElementById('bigText');
+const hideStory = document.getElementById('hideStory');
 const modeHint = document.getElementById('modeHint');
 
-function startGame(){
-  if(state.players.length<2){
-    alert('Add at least 2 players to start.');
-    return;
-  }
-  state.spicy = spice.checked;
-  state.quick = shortRounds.checked;
-  modeHint.innerHTML = `Mode: <b>${state.quick?'Quick votes':'Classic'}</b>`;
-  setup.classList.add('hidden');
-  roundEl.classList.remove('hidden');
-  state.round=1;
-  state.lastWinner=null;
-  nextRound(true);
+/* === Setup === */
+function renderChips(){
+  chips.innerHTML=''; state.players.forEach((n,i)=>{
+    const d=document.createElement('div'); d.className='chip';
+    d.innerHTML = `<b>${escapeHtml(n)}</b><button title="Remove" onclick="removePlayer(${i})">✕</button>`;
+    chips.appendChild(d);
+  });
+}
+function addPlayer(){
+  const v=nameInput.value.trim(); if(!v) return;
+  if(state.players.includes(v)) { nameInput.value=''; return; }
+  state.players.push(v); state.scores.set(v, state.scores.get(v)||0);
+  renderChips(); nameInput.value='';
+}
+function removePlayer(i){
+  const n=state.players[i]; state.players.splice(i,1); state.scores.delete(n); renderChips();
+}
+function demoFill(){
+  ['Alex','Maya','Jo','Pri','Sam','Nico'].forEach(n=>{ if(!state.players.includes(n)){ state.players.push(n); state.scores.set(n,0); }});
+  renderChips();
+}
+adultsOnly.addEventListener('change', ()=>{
+  deckSel.querySelector('option[value="saucy"]').disabled = !adultsOnly.checked;
+});
+
+/* === Deck content === */
+const places = ["a rooftop bar","a neon-lit club","a midnight beach","a karaoke room with sticky floors","a fancy hotel lobby","a crowded patio","a dimly lit speakeasy","an afterparty kitchen","a bonfire by the lake","a private hot tub"];
+const props  = ["a feather boa","sunglasses at night","a glittery hat","a half-melted popsicle","a heart-shaped balloon","a rogue confetti cannon","a suspiciously tiny towel","a lipstick-stained napkin","a squeaky rubber duck","a tray of mystery shots"];
+const beats  = [
+  "Golden hour fades into questionable decisions.",
+  "It’s way past midnight and confidence is at 120%.",
+  "Everyone’s phones are at 2%, but chaos is at 98%.",
+  "A DJ restarts the same song for the third time.",
+  "Security pretends not to notice. Heroes.",
+  "Someone whispers, “no regrets,” which is legally binding."
+];
+
+const chillQs = [
+  "start a slow clap that actually works",
+  "lead a singalong to the wrong lyrics",
+  "tell a story with wildly wrong facts but full confidence",
+  "organize a photo with 20 strangers",
+  "become best friends with the bartender in 3 minutes",
+  "start a dance circle and immediately forget their move",
+  "talk the group into a spontaneous road trip",
+  "mistake a stranger for an old friend and keep going",
+  "volunteer to be DJ and forget to unmute",
+  "give an inspirational speech about snacks"
+];
+
+const spicyQs = [
+  "send a flirty text to the wrong chat and double down",
+  "turn truth-or-dare into performance art",
+  "kiss someone on the cheek European-style and make it a trend",
+  "convince a stranger to rate their wink out of 10",
+  "win a dance-off with one scandalous move",
+  "pretend to be famous to skip a line",
+  "write their number on a napkin with a dramatic wink",
+  "start a rumor about themselves and fact-check it later",
+  "propose a make-believe couples game with strangers",
+  "create a fake secret handshake that becomes real"
+];
+
+const saucyQs18 = [
+  // cheeky but non-graphic, consent-y, adults only
+  "skinny-dip and call it a wellness ritual",
+  "suggest a game of “two truths, one spicy lie”",
+  "flirt their way into free dessert for the whole table",
+  "accidentally send a steamy voice note — then own it",
+  "start a dance where everyone has to copy their hips",
+  "win a lip-sync battle to an uncomfortably romantic song",
+  "ask the DJ for a ‘bedroom playlist’ like it’s normal",
+  "start a dare chain that escalates suspiciously fast",
+  "offer a ‘practice kiss’ tutorial (with consent forms, obviously)",
+  "suggest swapping an item of clothing ‘for the bit’"
+];
+
+function buildStoryAndQuestion(){
+  const place = choice(places), prop = choice(props), beat = choice(beats);
+  const deck = state.deck==='saucy' ? saucyQs18 : state.deck==='spicy' ? spicyQs : chillQs;
+  const q = choice(deck);
+  const story = `<b>Scene:</b> You’re at ${place}. ${beat} Someone appears with ${pref(prop)}.`;
+  return {story, question:q};
+}
+function buildEnding(winner){
+  const tags = [
+    `${winner} bows like this was planned all week.`,
+    `${winner} calls it “character development.”`,
+    `${winner} claims it was a social experiment and somehow you believe it.`,
+    `${winner} gets a random “you up?” text two minutes later.`,
+    `${winner} says “no cameras” then poses for three.`,
+    `${winner} receives a standing ovation from exactly one person. Iconic.`
+  ];
+  return choice(tags);
 }
 
-function resetVotes(){
-  state.votes = [];
-  state.voteCount = new Map(state.players.map(p=>[p,0]));
-  document.querySelectorAll('.pbtn small').forEach(s=>s.textContent='0');
-  winnerBlock.classList.add('hidden');
-  winnerBlock.innerHTML='';
+/* === Game flow === */
+function startGame(){
+  if(state.players.length<2){ alert('Add at least 2 players to start.'); return; }
+  const want = deckSel.value;
+  if(want==='saucy' && !adultsOnly.checked){ alert('18+ deck requires confirming all players are adults.'); return; }
+  state.deck = want;
+  state.big = bigText.checked;
+  state.hideStory = hideStory.checked;
+
+  document.body.classList.toggle('xl', state.big);
+
+  setup.classList.add('hidden');
+  roundEl.classList.remove('hidden');
+  state.round = 1;
+  nextRound(true);
+  modeHint.textContent = `Deck: ${state.deck === 'chill' ? 'Chill' : state.deck === 'spicy' ? 'Spicy' : '18+ Saucy'}`;
 }
 
 function buildPlayerButtons(){
   playerButtons.innerHTML='';
   state.players.forEach(p=>{
-    const btn = document.createElement('button');
-    btn.className='pbtn';
-    btn.onclick = ()=>vote(p, btn);
-    btn.innerHTML = `<span>${escapeHtml(p)}</span><small>0</small>`;
-    playerButtons.appendChild(btn);
+    const b=document.createElement('button'); b.className='pbtn'; b.onclick=()=>vote(p,b);
+    b.innerHTML=`<span>${escapeHtml(p)}</span><small>0</small>`;
+    playerButtons.appendChild(b);
   });
 }
-
-function vote(name, btn){
-  const c = (state.voteCount.get(name)||0)+1;
-  state.voteCount.set(name, c);
-  state.votes.push(name);
-  btn.querySelector('small').textContent = String(c);
-}
-
-function undoVote(){
-  const last = state.votes.pop();
-  if(!last) return;
-  const c = (state.voteCount.get(last)||0)-1;
-  state.voteCount.set(last, Math.max(0,c));
-  // update button counter
-  [...playerButtons.children].forEach(b=>{
-    const n = b.querySelector('span').textContent;
-    if(n===last) b.querySelector('small').textContent = String(Math.max(0,c));
-  });
-}
-
-function clearVotes(){
-  resetVotes();
-  // refresh buttons
+function resetVotes(){
+  state.votes=[]; state.voteCount=new Map(state.players.map(p=>[p,0]));
   [...playerButtons.children].forEach(b=>b.querySelector('small').textContent='0');
+  winnerBlock.classList.add('hidden'); winnerBlock.innerHTML='';
 }
+function vote(name, btn){
+  const c=(state.voteCount.get(name)||0)+1; state.voteCount.set(name,c);
+  state.votes.push(name); btn.querySelector('small').textContent=String(c);
+}
+function undoVote(){
+  const last=state.votes.pop(); if(!last) return;
+  const c=(state.voteCount.get(last)||0)-1; state.voteCount.set(last,Math.max(0,c));
+  [...playerButtons.children].forEach(b=>{
+    if(b.querySelector('span').textContent===last) b.querySelector('small').textContent=String(Math.max(0,c));
+  });
+}
+function clearVotes(){ resetVotes(); }
 
 function reveal(){
-  // find max
-  let max=-1, tops=[];
-  state.voteCount.forEach((v,k)=>{
-    if(v>max){ max=v; tops=[k]; }
-    else if(v===max){ tops.push(k); }
-  });
+  let max=-1,tops=[];
+  state.voteCount.forEach((v,k)=>{ if(v>max){max=v;tops=[k]} else if(v===max){tops.push(k)} });
   if(max<=0){ alert('No votes yet. Tap a name to vote.'); return; }
   const winner = choice(tops);
-  state.lastWinner = winner;
-  // score
-  state.scores.set(winner, (state.scores.get(winner)||0)+1);
+  state.scores.set(winner,(state.scores.get(winner)||0)+1);
   renderScores();
-  // ending
-  const ending = buildEnding(winner);
-  winnerBlock.innerHTML = `<div class="big">🏆 Winner: <b>${escapeHtml(winner)}</b> (${max} vote${max>1?'s':''})</div>
-  <div style="margin-top:6px">${ending}</div>`;
+  winnerBlock.innerHTML = `🏆 <b>${escapeHtml(winner)}</b> takes it with ${max} vote${max>1?'s':''}.<br>${buildEnding(winner)}`;
   winnerBlock.classList.remove('hidden');
-  burstConfetti();
+  confetti();
 }
-
 function nextRound(first=false){
-  if(!first){ state.round++; }
+  if(!first) state.round++;
   roundNum.textContent = state.round;
-  // new prompt
-  const {story, question} = buildStoryAndQuestion();
-  storyText.innerHTML = story;
+  const {story,question} = buildStoryAndQuestion();
+  storyBox.innerHTML = state.hideStory ? '<span class="tiny">Story hidden</span>' : story;
   questionText.textContent = 'Who is most likely to ' + question + '?';
-  // votes reset
-  buildPlayerButtons();
-  resetVotes();
-  // subtle scroll
-  window.scrollTo({top:0, behavior:'smooth'});
+  buildPlayerButtons(); resetVotes();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
-
 function endGame(){
-  const topScore = Math.max(...[...state.scores.values(),0]);
-  const champions = [...state.scores.entries()].filter(([_,v])=>v===topScore).map(([k])=>k);
-  const msg = topScore>0 ? `Winner${champions.length>1?'s':''}: ${champions.join(', ')} with ${topScore} point${topScore>1?'s':''}!` : 'No points scored!';
-  alert(msg);
+  const top = Math.max(...[...state.scores.values(),0]);
+  const champs = [...state.scores.entries()].filter(([_,v])=>v===top).map(([k])=>k);
+  alert(top>0?`Winner${champs.length>1?'s':''}: ${champs.join(', ')} with ${top} point${top>1?'s':''}!`:'No points scored!');
 }
 
-/* ---------------------------
-   Content engines
---------------------------- */
-
-const places = ["a rooftop bar","a karaoke room","a midnight beach","a crowded subway","a posh art gallery","a campsite in the rain","a festival food truck line","an escape room","a silent library","a hockey arena hallway"];
-const objects = ["a glittery cape","a squeaky shopping cart","a rubber duck","a mysterious briefcase","a giant foam finger","a broken umbrella","a bubble machine","a karaoke mic with 1% battery","a backpack full of popcorn","a disposable camera"];
-const verbs = ["sneaks","declares","accidentally livestreams","improvises","panics, then commits","whispers dramatically","trips, recovers, bows","stares into the distance","starts a slow clap","cracks a suspicious smile"];
-
-const baseQs = [
-  "start a spontaneous speech that somehow involves a potato",
-  "lead the group into the wrong venue with full confidence",
-  "volunteer to be a magician’s assistant and absolutely steal the show",
-  "convince a stranger they’re a long-lost cousin",
-  "turn a tiny inconvenience into a heroic quest",
-  "begin a dance battle against someone way too good",
-  "accidentally become the DJ for the night",
-  "talk their way into a VIP area like it’s nothing",
-  "organize the group… directly into chaos",
-  "attempt a backflip (and immediately reconsider)"
-];
-
-const spicyQs = [
-  "skinny-dip and call it a spiritual cleanse",
-  "kiss a stranger on the cheek European-style and make it a thing",
-  "flirt to get the entire table a discount",
-  "turn truth-or-dare into a TED Talk",
-  "send a risky text and then put the phone on airplane mode",
-  "win a dance-off by inventing a scandalous move",
-  "pretend to be famous to skip a line",
-  "write their number on a napkin with a dramatic wink",
-  "sing a love ballad to the wrong person",
-  "start a rumor and then fact-check it themselves"
-];
-
-function buildStoryAndQuestion(){
-  const place = choice(places);
-  const object = choice(objects);
-  const verb = choice(verbs);
-  const pool = state.spicy ? baseQs.concat(spicyQs) : baseQs;
-  const q = choice(pool);
-  const beat = choice([
-    `It’s way past midnight at ${place}.`,
-    `Early evening at ${place}.`,
-    `You’ve all somehow ended up at ${place}.`,
-    `Chaos hour at ${place}.`,
-    `Golden hour at ${place}.`
-  ]);
-  const flavor = choice([
-    `Someone ${verb} while holding ${pref(object)}.`,
-    `A phone camera turns on by accident. ${capitalize(verb)} ensues.`,
-    `Security looks confused. Honestly, same.`,
-    `The music cuts, but the drama does not.`,
-    `A spotlight appears from nowhere. Classic.`
-  ]);
-  const story = `<b>Scene:</b> ${beat} ${flavor}`;
-  return {story, question:q};
-}
-
-function buildEnding(winner){
-  const tags = [
-    `${winner} shrugs: “I was born for this arc.”`,
-    `Later, ${winner} signs one (1) autograph and frames it.`,
-    `${winner} claims it was performance art and starts charging admission.`,
-    `Somehow, ${winner} ends up trending in a city you aren’t in.`,
-    `${winner} bows three times. The third bow is unnecessary.`,
-    `A stranger says “iconic” and honestly they’re right, ${winner}.`
-  ];
-  return choice(tags);
-}
-
-/* ---------------------------
-   Scoreboard
---------------------------- */
+/* === Scoreboard === */
 function renderScores(){
-  const arr = [...state.scores.entries()].sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0]));
-  scoresEl.innerHTML='';
-  arr.forEach(([n,s])=>{
-    const d = document.createElement('div');
-    d.className='score';
-    d.innerHTML = `<span>${escapeHtml(n)}</span><b>${s}</b>`;
-    scoresEl.appendChild(d);
+  const arr=[...state.scores.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+  scoresEl.innerHTML=''; arr.forEach(([n,s])=>{
+    const d=document.createElement('div'); d.className='score';
+    d.innerHTML=`<span>${escapeHtml(n)}</span><b>${s}</b>`; scoresEl.appendChild(d);
   });
 }
 
-/* ---------------------------
-   Confetti (tiny)
---------------------------- */
-function burstConfetti(){
-  const host = document.getElementById('confetti');
-  for(let i=0;i<80;i++){
+/* === Confetti === */
+function confetti(){
+  const host=document.getElementById('confetti');
+  for(let i=0;i<90;i++){
     const p=document.createElement('i');
-    const x = Math.random()*100, y = -10;
-    p.style.left = x+'%'; p.style.top = y+'%';
+    p.style.left = (Math.random()*100)+'%';
+    p.style.top  = '-8%';
     p.style.background = `hsl(${Math.random()*360},90%,60%)`;
     const dur = 3+Math.random()*2;
     const rot = (Math.random()*720-360)+'deg';
     p.animate([
       {transform:`translate(-50%,0) rotate(0deg)`, opacity:1},
       {transform:`translate(${(Math.random()*120-60)}px, 110vh) rotate(${rot})`, opacity:1}
-    ], {duration: dur*1000, easing:'cubic-bezier(.2,.6,.2,1)'}).onfinish = ()=>p.remove();
+    ], {duration: dur*1000, easing:'cubic-bezier(.2,.6,.2,1)'}).onfinish=()=>p.remove();
     host.appendChild(p);
   }
 }
 
-/* ---------------------------
-   Helpers
---------------------------- */
+/* === Helpers === */
 function escapeHtml(s){ return s.replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
-function pref(word){ // a/an helper
-  return (/^[aeiou]/i.test(word)?'an ':'a ')+word;
-}
-function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function pref(word){ return (/^[aeiou]/i.test(word)?'an ':'a ')+word; }
 
-/* Render initial scoreboard blank */
+/* Init */
 renderScores();
 </script>
 </body>
