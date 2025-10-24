@@ -283,6 +283,39 @@
     const auth=getAuth(app); if(EMBED){ await setPersistence(auth,inMemoryPersistence); }
     const db=getDatabase(app);
 
+    // NEW — minimal helper: delete stale anon users for this display (>12h) using only get/ref/update
+    async function deleteStaleUsersForDisplay(db, displayId, keepUid, ttlMs = 12*60*60*1000){
+      try{
+        const allUsersSnap = await get(ref(db, 'user')); // no query helpers, simplest path
+        if (!allUsersSnap.exists()) return;
+
+        const cutoff = Date.now() - ttlMs;
+        const deletes = {};
+        allUsersSnap.forEach(child => {
+          const uid = child.key;
+          const u   = child.val() || {};
+          // only touch rows for this display
+          if (u?.name !== displayId) return;
+          // figure a timestamp to compare
+          const last = typeof u.updatedAt === 'number' ? u.updatedAt
+                     : typeof u.lastSeenAt === 'number' ? u.lastSeenAt
+                     : typeof u.createdAt === 'number' ? u.createdAt
+                     : 0;
+          // delete if not the current UID AND stale
+          if (uid !== keepUid && last <= cutoff) {
+            deletes[`user/${uid}`] = null; // null = delete in multipath update
+          }
+        });
+
+        if (Object.keys(deletes).length){
+          await update(ref(db), deletes);
+          console.log(`[TTL] Deleted ${Object.keys(deletes).length} stale user(s) for ${displayId}`);
+        }
+      }catch(e){
+        console.error('[TTL cleanup]', e);
+      }
+    }
+
     signInAnonymously(auth).catch(e=>{ console.error('[auth]',e); window.setStatus(false,'anon auth failed'); });
 
     onAuthStateChanged(auth, async (user)=>{
@@ -291,30 +324,35 @@
       const displayId = CONFIG.displayId;
       const dealershipId = CONFIG.dealershipName;   // must match 'displays/$id'.dealership
       const dRef = ref(db,`displays/${displayId}`);
+      const uRef = ref(db,`user/${user.uid}`);
 
-      // 1) Always ensure the device user profile has dealershipId (required by your rules)
+      // 1) Upsert device user profile (unchanged)
       try{
-        await update(ref(db,`user/${user.uid}`),{
+        const now = Date.now();
+        await update(uRef,{
           role:'device',
           name:displayId,
           dealershipId,                 // <-- critical for .write rule on displays/*
-          updatedAt:Date.now(),
-          createdAt:Date.now()
+          updatedAt:now,
+          createdAt:now
+          // (no new fields required)
         });
       }catch(e){ console.error('[user upsert]', e); }
 
-      // 2) Ensure the display doc exists with matching dealership (works even in EMBED)
+      // 1b) NEW: on boot, delete only old anon users for this display (12h TTL), keep current uid
+      await deleteStaleUsersForDisplay(db, displayId, user.uid);
+
+      // 2) Ensure the display doc exists with matching dealership (unchanged)
       try{
         const snap=await get(dRef);
         if(!snap.exists()){
           await update(dRef,{ channel:1, volume:50, muted:false, dealership:dealershipId, timestamp:Date.now() });
         }else if (!snap.val()?.dealership){
-          // backfill dealership if missing to satisfy future writes
           await update(dRef,{ dealership:dealershipId });
         }
       }catch(e){ console.error('[display upsert]', e); }
 
-      // 3) Bridge for local audio changes (only non-EMBED writes control state)
+      // 3) Bridge for local audio changes (unchanged)
       if (!EMBED) {
         window.onLocalAudioChange = async (vol, muted) => {
           try { await update(dRef, { volume: vol, muted }); } catch(e){}
@@ -323,7 +361,7 @@
         window.onLocalAudioChange = null;
       }
 
-      // 4) Realtime listener (same in both, read-only effects)
+      // 4) Realtime listener (unchanged)
       let lastApplied = { volume:null, muted:null, channel:null };
       onValue(dRef,(snap)=>{ const d=snap.val(); if(!d) return;
         if (typeof d.channel==='number' && d.channel!==lastApplied.channel){
@@ -341,9 +379,11 @@
         window.setStatus(true,'');
       }, (err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
 
-      // 5) Heartbeat (runs in BOTH modes)
+      // 5) Heartbeat (unchanged) — NEW: also keep current user fresh so it won't be purged
       const beat = async () => { try {
-        await update(dRef, { lastSeenAt: Date.now(), updatedAt: Date.now() });
+        const now = Date.now();
+        await update(dRef, { lastSeenAt: now, updatedAt: now });
+        await update(uRef, { updatedAt: now }); // NEW: refresh this user's timestamp
       } catch(e) { console.error('[heartbeat]', e); } };
       beat(); setInterval(beat, 15000);
     });
