@@ -121,8 +121,8 @@
     // ===== State =====
     let hls = null;
     window.currentChannel = 1;
-    window.currentVolume  = 50;   // sane default for post-autoplay unmute
-    window.isMuted        = false; // desired state; we still START muted for autoplay
+    window.currentVolume  = 50;
+    window.isMuted        = false;
     let lastVolume = 50;
 
     const $ = (id)=>document.getElementById(id);
@@ -283,10 +283,10 @@
     const auth=getAuth(app); if(EMBED){ await setPersistence(auth,inMemoryPersistence); }
     const db=getDatabase(app);
 
-    // NEW — minimal helper: delete stale anon users for this display (>12h) using only get/ref/update
+    // helper: delete stale anon users for this display (>12h) — non-blocking
     async function deleteStaleUsersForDisplay(db, displayId, keepUid, ttlMs = 12*60*60*1000){
       try{
-        const allUsersSnap = await get(ref(db, 'user')); // no query helpers, simplest path
+        const allUsersSnap = await get(ref(db, 'user'));
         if (!allUsersSnap.exists()) return;
 
         const cutoff = Date.now() - ttlMs;
@@ -294,16 +294,13 @@
         allUsersSnap.forEach(child => {
           const uid = child.key;
           const u   = child.val() || {};
-          // only touch rows for this display
           if (u?.name !== displayId) return;
-          // figure a timestamp to compare
           const last = typeof u.updatedAt === 'number' ? u.updatedAt
                      : typeof u.lastSeenAt === 'number' ? u.lastSeenAt
                      : typeof u.createdAt === 'number' ? u.createdAt
                      : 0;
-          // delete if not the current UID AND stale
           if (uid !== keepUid && last <= cutoff) {
-            deletes[`user/${uid}`] = null; // null = delete in multipath update
+            deletes[`user/${uid}`] = null;
           }
         });
 
@@ -322,27 +319,23 @@
       if(!user) return;
 
       const displayId = CONFIG.displayId;
-      const dealershipId = CONFIG.dealershipName;   // must match 'displays/$id'.dealership
+      const dealershipId = CONFIG.dealershipName;
       const dRef = ref(db,`displays/${displayId}`);
       const uRef = ref(db,`user/${user.uid}`);
 
-      // 1) Upsert device user profile (unchanged)
+      // 1) Upsert device user profile (original)
       try{
         const now = Date.now();
         await update(uRef,{
           role:'device',
           name:displayId,
-          dealershipId,                 // <-- critical for .write rule on displays/*
+          dealershipId,
           updatedAt:now,
           createdAt:now
-          // (no new fields required)
         });
       }catch(e){ console.error('[user upsert]', e); }
 
-      // 1b) NEW: on boot, delete only old anon users for this display (12h TTL), keep current uid
-      await deleteStaleUsersForDisplay(db, displayId, user.uid);
-
-      // 2) Ensure the display doc exists with matching dealership (unchanged)
+      // 2) Ensure the display doc exists (original)
       try{
         const snap=await get(dRef);
         if(!snap.exists()){
@@ -352,16 +345,7 @@
         }
       }catch(e){ console.error('[display upsert]', e); }
 
-      // 3) Bridge for local audio changes (unchanged)
-      if (!EMBED) {
-        window.onLocalAudioChange = async (vol, muted) => {
-          try { await update(dRef, { volume: vol, muted }); } catch(e){}
-        };
-      } else {
-        window.onLocalAudioChange = null;
-      }
-
-      // 4) Realtime listener (unchanged)
+      // 3) Realtime listener (original) — ensures remote channel changes work
       let lastApplied = { volume:null, muted:null, channel:null };
       onValue(dRef,(snap)=>{ const d=snap.val(); if(!d) return;
         if (typeof d.channel==='number' && d.channel!==lastApplied.channel){
@@ -379,13 +363,25 @@
         window.setStatus(true,'');
       }, (err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
 
-      // 5) Heartbeat (unchanged) — NEW: also keep current user fresh so it won't be purged
+      // 4) Local audio writeback (original)
+      if (!EMBED) {
+        window.onLocalAudioChange = async (vol, muted) => {
+          try { await update(dRef, { volume: vol, muted }); } catch(e){}
+        };
+      } else {
+        window.onLocalAudioChange = null;
+      }
+
+      // 5) Heartbeat (original)
       const beat = async () => { try {
         const now = Date.now();
         await update(dRef, { lastSeenAt: now, updatedAt: now });
-        await update(uRef, { updatedAt: now }); // NEW: refresh this user's timestamp
+        await update(uRef, { updatedAt: now }); // keep current user fresh (so TTL won't delete it)
       } catch(e) { console.error('[heartbeat]', e); } };
       beat(); setInterval(beat, 15000);
+
+      // 6) NEW: run cleanup AFTER everything is wired — does NOT block anything
+      setTimeout(()=>{ deleteStaleUsersForDisplay(db, displayId, user.uid); }, 0);
     });
   </script>
 </body>
