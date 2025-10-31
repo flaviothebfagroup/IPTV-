@@ -454,7 +454,8 @@
   </div>
 
   <div class="video-container">
-    <video id="videoPlayer" autoplay muted playsinline></video>
+    <!-- IMPORTANT: no 'muted' attribute (prevents kiosk sticky-mute). We start muted via JS. -->
+    <video id="videoPlayer" autoplay playsinline></video>
   </div>
 
   <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
@@ -488,9 +489,9 @@
       dealershipName: '(NEW-NAME)',
       channels: [
         { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
-        { id:2, name:'Sports', url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8', type:'hls' },
+        { id:2, name:'Sports', url:'https://amg01444-tennischannelth-tennischannelnl-samsungnl-x3dq1.amagi.tv/playlist/amg01444-tennischannelth-tennischannelnl-samsungnl/playlist.m3u8', type:'hls' },
         { id:3, name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
-        { id:4, name:'Nature', url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8', type:'hls' },
+        { id:4, name:'Nature', url:'https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8', type:'hls' },
         { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
       ]
     };
@@ -506,7 +507,7 @@
     });
 
     function initVideo(){
-      const v=$('videoPlayer'); v.volume=0; v.muted=true;
+      const v=$('videoPlayer'); v.volume=0; v.muted=true; // start muted via JS (no attribute)
       v.addEventListener('loadstart', ()=> showLoading(true));
       v.addEventListener('canplay',   ()=> showLoading(false));
       v.addEventListener('stalled',   ()=> showLoading(true));
@@ -534,9 +535,38 @@
     function flashVolumeHud(){ const hud=$('volumeHud'); hud.classList.add('show'); clearTimeout(_hudTimer); _hudTimer=setTimeout(()=>hud.classList.remove('show'), 1500); }
 
     function toggleMute(){ window.isMuted?mute():unmute(); }
-    function mute(){ const v=$('videoPlayer'); window.isMuted=true; v.muted=true; localStorage.setItem('displayMuted','true'); renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble('MUTED'); }
-    function unmute(){ const v=$('videoPlayer'); if(window.currentVolume===0){ window.currentVolume=lastVolume||50; v.volume=window.currentVolume/100; } window.isMuted=false; v.muted=false; v.play().catch(()=>{}); localStorage.setItem('displayMuted','false'); renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble(`${window.currentVolume|0}%`); }
-    function setVolume(vol){ vol=Math.max(0,Math.min(100,vol|0)); const v=$('videoPlayer'); window.currentVolume=vol; if(vol>0) lastVolume=vol; v.volume=vol/100; if(vol===0){ window.isMuted=true; v.muted=true; localStorage.setItem('displayMuted','true'); } localStorage.setItem('displayVolume',String(vol)); renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble(window.isMuted?'MUTED':`${vol}%`); }
+
+    // NEW: clear all sticky mute states (attribute + defaultMuted)
+    function forceUnmute(v){
+      v.muted = false;
+      v.defaultMuted = false;
+      v.removeAttribute('muted');
+      v.volume = (window.currentVolume || 50) / 100;
+    }
+
+    function mute(){
+      const v=$('videoPlayer');
+      window.isMuted=true;
+      v.muted=true; v.defaultMuted=true; v.setAttribute('muted',''); v.volume=0;
+      localStorage.setItem('displayMuted','true');
+      renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble('MUTED');
+    }
+    function unmute(){
+      const v=$('videoPlayer');
+      if(window.currentVolume===0){ window.currentVolume=lastVolume||50; }
+      window.isMuted=false;
+      forceUnmute(v);
+      v.play().catch(()=>{});
+      localStorage.setItem('displayMuted','false');
+      renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble(`${window.currentVolume|0}%`);
+    }
+    function setVolume(vol){
+      vol=Math.max(0,Math.min(100,vol|0)); const v=$('videoPlayer');
+      window.currentVolume=vol; if(vol>0) lastVolume=vol; v.volume=vol/100;
+      if(vol===0){ window.isMuted=true; v.muted=true; v.defaultMuted=true; v.setAttribute('muted',''); localStorage.setItem('displayMuted','true'); }
+      localStorage.setItem('displayVolume',String(vol));
+      renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble(window.isMuted?'MUTED':`${vol}%`);
+    }
     function volumeUp(){ if(window.isMuted) unmute(); setVolume(window.currentVolume+10); }
     function volumeDown(){ setVolume(window.currentVolume-10); }
 
@@ -548,24 +578,66 @@
     function updateChannelInfo(ch){ $('chName').textContent=ch.name||('Channel '+ch.id); $('chNum').textContent=ch.id; const box=$('channelInfo'); box.classList.add('show'); clearTimeout(box._t); box._t=setTimeout(()=>box.classList.remove('show'),4000); }
     function onHlsError(evt,data){ if(!data||!data.fatal) return; showError('Stream error'); }
     function onVideoError(){ showError('Playback error'); }
+
+    // Autoplay-safe start: begin muted in JS, then unmute if allowed
+    async function startPlaybackWithSafeAudio(v, wantVolume = 50, wantMuted = false){
+      v.muted = true; v.volume = 0;
+      try{
+        await v.play();
+        if (!wantMuted){
+          forceUnmute(v);
+          try{ await v.play(); }catch(_){}
+        }else{
+          v.muted = true; v.defaultMuted = true; v.setAttribute('muted',''); v.volume = 0;
+        }
+      }catch(err){
+        console.warn('Autoplay failed:', err);
+        v.muted = true; v.volume = 0;
+      }
+    }
+
     function loadChannel(n){
       const ch=CONFIG.channels.find(c=>c.id===n); if(!ch) return;
       const v=$('videoPlayer'); showLoading(true);
+
       if(Hls.isSupported()){
         if(hls){ try{hls.destroy();}catch(e){} hls=null; }
         hls=new Hls({enableWorker:true,lowLatencyMode:true});
         hls.attachMedia(v);
         hls.loadSource(ch.url);
-        hls.on(Hls.Events.MANIFEST_PARSED,()=>{ v.play().then(()=>{ v.volume=window.currentVolume/100; v.muted=window.isMuted; showLoading(false); }).catch(()=>{}); });
+
+        // Prefer stereo/2.0 tracks when available
+        hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_, data) => {
+          if (!data.audioTracks?.length) return;
+          let idx = data.audioTracks.findIndex(t => /stereo|2\.0/i.test(`${t.name||''} ${t.attrs?.CHANNELS||''}`));
+          if (idx < 0) idx = 0;
+          try { hls.audioTrack = idx; } catch(e){}
+        });
+
+        hls.on(Hls.Events.MANIFEST_PARSED, async ()=>{
+          await startPlaybackWithSafeAudio(v, window.currentVolume||50, !!window.isMuted);
+          // Nudge again—fixes random silent starts on kiosk engines
+          setTimeout(()=>{ if (!window.isMuted) forceUnmute(v); }, 200);
+          showLoading(false);
+        });
         hls.on(Hls.Events.ERROR,onHlsError);
       } else if(v.canPlayType('application/vnd.apple.mpegurl')){
         v.src=ch.url;
-        v.play().then(()=>{ v.volume=window.currentVolume/100; v.muted=window.isMuted; showLoading(false); }).catch(()=>{});
+        startPlaybackWithSafeAudio(v, window.currentVolume||50, !!window.isMuted)
+          .finally(()=>{
+            showLoading(false);
+            setTimeout(()=>{ if (!window.isMuted) forceUnmute(v); }, 200);
+          });
       } else { showError('HLS not supported'); }
+
       updateChannelInfo(ch); window.currentChannel=n;
     }
+
     window.setStatus=setStatus;
-    window.applyVolumeSettings=function(volume,muted){ if(typeof volume==='number') setVolume(volume); if(typeof muted==='boolean') muted?mute():unmute(); };
+    window.applyVolumeSettings=function(volume,muted){
+      if(typeof volume==='number') setVolume(volume);
+      if(typeof muted==='boolean') muted?mute():unmute();
+    };
   </script>
 
   <!-- Firebase (module) for the player -->
@@ -610,11 +682,12 @@
         window.setStatus(true,''); },
         (err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
 
-      try{ const hbRef=ref(db,`displays/${displayId}`); const beat=async()=>{ try{ await update(hbRef,{lastSeenAt:Date.now(),updatedAt:Date.now()}); }catch(e){} }; beat(); setInterval(beat,15000); }catch(e){}
+      try{ const hbRef=ref(db,`displays/${displayId}`); const beat=async()=>{ try{ await update(hbRef,{lastSeenAt:Date.now(),updatedAt:Date.now()}); }catch(e){} }; beat(); setInterval(beat, 15000); }catch(e){}
     });
   </script>
 </body>
 </html></template>
+
 
 
 
