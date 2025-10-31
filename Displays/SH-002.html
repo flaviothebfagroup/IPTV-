@@ -73,8 +73,8 @@
 
   <!-- Player -->
   <div class="video-container">
-    <!-- Keep muted attribute for autoplay on Chromium signage engines -->
-    <video id="videoPlayer" autoplay muted playsinline></video>
+    <!-- We start muted **via JS** for autoplay; no 'muted' attribute here to avoid sticky mute on kiosk engines -->
+    <video id="videoPlayer" autoplay playsinline></video>
   </div>
 
   <!-- UI bits -->
@@ -122,7 +122,7 @@
     let hls = null;
     window.currentChannel = 1;
     window.currentVolume  = 50;   // sane default for post-autoplay unmute
-    window.isMuted        = false; // desired state; we still START muted for autoplay
+    window.isMuted        = false; // desired state; we still START muted for autoplay (via JS)
     let lastVolume = 50;
 
     const $ = (id)=>document.getElementById(id);
@@ -171,27 +171,45 @@
     }
 
     function toggleMute(){ window.isMuted?mute():unmute(); }
+
+    // NEW: robust unmute that clears the sticky attribute/defaultMuted
+    function forceUnmute(v){
+      v.muted = false;
+      v.defaultMuted = false;
+      v.removeAttribute('muted');
+      v.volume = (window.currentVolume || 50) / 100;
+    }
+
     function mute(){
       const v=$('videoPlayer');
-      window.isMuted=true; v.muted=true;
+      window.isMuted=true;
+      v.muted=true;
+      v.defaultMuted=true;
+      v.setAttribute('muted','');
+      v.volume=0;
       localStorage.setItem('displayMuted','true');
       renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble('MUTED');
       if (window.onLocalAudioChange) window.onLocalAudioChange(window.currentVolume, window.isMuted);
     }
+
     function unmute(){
       const v=$('videoPlayer');
       if(window.currentVolume===0){ window.currentVolume=lastVolume||50; }
-      v.volume=window.currentVolume/100;
-      window.isMuted=false; v.muted=false;
+      window.isMuted=false;
+      forceUnmute(v);
       v.play().catch(()=>{});
       localStorage.setItem('displayMuted','false');
       renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble(`${window.currentVolume|0}%`);
       if (window.onLocalAudioChange) window.onLocalAudioChange(window.currentVolume, window.isMuted);
     }
+
     function setVolume(vol){
       vol=Math.max(0,Math.min(100,vol|0)); const v=$('videoPlayer');
       window.currentVolume=vol; if(vol>0) lastVolume=vol; v.volume=vol/100;
-      if(vol===0){ window.isMuted=true; v.muted=true; localStorage.setItem('displayMuted','true'); }
+      if(vol===0){
+        window.isMuted=true; v.muted=true; v.defaultMuted=true; v.setAttribute('muted','');
+        localStorage.setItem('displayMuted','true');
+      }
       localStorage.setItem('displayVolume',String(vol));
       renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble(window.isMuted?'MUTED':`${vol}%`);
       if (window.onLocalAudioChange) window.onLocalAudioChange(window.currentVolume, window.isMuted);
@@ -214,15 +232,16 @@
 
     // --- Autoplay-safe start ---
     async function startPlaybackWithSafeAudio(v, wantVolume = 50, wantMuted = false){
+      // Start muted purely in JS (no attribute), then optionally unmute
       v.muted = true; v.volume = 0;
       try{
         await v.play();
         if (!wantMuted){
-          v.volume = (wantVolume||50)/100;
-          v.muted  = false;
+          forceUnmute(v);
           try{ await v.play(); }catch(_){}
         }else{
-          v.muted = true; v.volume = 0;
+          v.muted = true; v.defaultMuted = true; v.setAttribute('muted','');
+          v.volume = 0;
         }
       }catch(err){
         console.warn('Autoplay failed:', err);
@@ -251,13 +270,18 @@
 
         hls.on(Hls.Events.MANIFEST_PARSED, async ()=>{
           await startPlaybackWithSafeAudio(v, window.currentVolume||50, !!window.isMuted);
+          // Nudge again after a tick—fixes random silent starts on kiosks
+          setTimeout(()=>{ if (!window.isMuted) forceUnmute(v); }, 200);
           showLoading(false);
         });
         hls.on(Hls.Events.ERROR,onHlsError);
       } else if(v.canPlayType('application/vnd.apple.mpegurl')){
         v.src=ch.url;
         startPlaybackWithSafeAudio(v, window.currentVolume||50, !!window.isMuted)
-          .finally(()=> showLoading(false));
+          .finally(()=>{
+            showLoading(false);
+            setTimeout(()=>{ if (!window.isMuted) forceUnmute(v); }, 200);
+          });
       } else { showError('HLS not supported'); }
 
       updateChannelInfo(ch); window.currentChannel=n;
