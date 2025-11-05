@@ -271,17 +271,16 @@
         }
         const { user } = cred;
 
-        // ------------------ NEW: link displays on user profile ------------------
-        // Read dealership displays and convert to { id: true } map
+        // ------ FIX: build displays map with STRING values (rules require isString) ------
         let displaysMap = {};
         try {
           const dSnap = await get(ref(db, `dealership/${dealershipId}/displays`));
           if (dSnap.exists()) {
             const val = dSnap.val();
             if (Array.isArray(val)) {
-              val.forEach(id => { if (id) displaysMap[id] = true; });
+              val.forEach(id => { if (id) displaysMap[id] = String(id); });
             } else {
-              Object.keys(val || {}).forEach(id => { displaysMap[id] = true; });
+              Object.keys(val || {}).forEach(id => { displaysMap[id] = String(id); });
             }
           }
         } catch (e) {
@@ -292,11 +291,11 @@
         if (Object.keys(displaysMap).length === 0) {
           const prefix = twoLetterPrefix(dealershipName || dealershipId);
           const firstId = `${prefix}-${String(1).padStart(3,'0')}`;
-          displaysMap[firstId] = true;
+          displaysMap[firstId] = firstId;  // <- string value
         }
-        // -----------------------------------------------------------------------
+        // -------------------------------------------------------------------------------
 
-        // Build profile WITHOUT role (keep your rules happy) and include displays map
+        // Build profile WITHOUT role (per rules) and include displays map
         const profile = {
           email,
           name,
