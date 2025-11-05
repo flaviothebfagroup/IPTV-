@@ -1,935 +1,336 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Signage - Live Stream Channels</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <!-- keep these first -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #000;
-            color: #fff;
-            overflow: hidden;
-            position: relative;
-            height: 100vh;
-            width: 100vw;
-        }
+  <!-- PWA + Icons -->
+  <link rel="manifest" href="/IPTV-/manifest.webmanifest">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png">
+  <link rel="apple-touch-icon" href="/IPTV-/icons/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="/IPTV-/icons/apple-touch-icon-120.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/IPTV-/icons/apple-touch-icon-152.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="/IPTV-/icons/apple-touch-icon-167.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/IPTV-/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="IPTV Remote">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
-        /* Video Container */
-        .video-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-        }
+  <title>IPTV — Create Account</title>
 
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            background: #000;
-        }
+  <style>
+    :root { --bg:#0b0b0c; --fg:#fff; --muted:#9a9aa0; --panel:#121214; --border:rgba(255,255,255,.14);
+            --accent:#ff9500; --tile:#17171a; --tileActive:#1d1d21; --shadow:0 18px 48px rgba(0,0,0,.45); }
+    body.light { --bg:#f5f5f7; --fg:#111; --muted:#6e6e73; --panel:#fff; --border:rgba(0,0,0,.12);
+                 --accent:#ff9500; --tile:#f2f2f7; --tileActive:#eaeaef; --shadow:0 14px 36px rgba(0,0,0,.10); }
 
-        /* Loading Spinner */
-        .loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-        }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%}
+    body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
+         display:flex;align-items:center;justify-content:center;padding:22px;transition:background .25s,color .25s}
 
-        .loading-overlay.active {
-            opacity: 1;
-            pointer-events: all;
-        }
+    .wrap{width:100%;max-width:420px}
+    .brand{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:16px}
+    .logo{width:110px;height:110px;background:var(--accent);
+      -webkit-mask:url('https://i.ibb.co/LzJwPhjg/ICON-IPTV.png') center/contain no-repeat;
+      mask:url('https://i.ibb.co/LzJwPhjg/ICON-IPTV.png') center/contain no-repeat}
+    .title{font-size:22px;font-weight:800;letter-spacing:.4px}
+    .subtitle{color:var(--muted);font-size:12px;letter-spacing:1px;text-transform:uppercase}
 
-        .spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:28px;padding:22px 18px 18px;box-shadow:var(--shadow)}
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+    .field{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+    .label{font-size:12px;color:var(--muted);letter-spacing:.5px}
+    .input, .select, .new-dealer{width:100%;padding:14px 14px;background:transparent;border:1px solid var(--border);
+       border-radius:14px;color:var(--fg);font-size:16px;text-align:center;outline:none;transition:border-color .18s, box-shadow .18s}
+    .input::placeholder,.new-dealer::placeholder{color:var(--muted)}
+    .input:focus,.select:focus,.new-dealer:focus{border-color:var(--accent); box-shadow:0 0 0 2px rgba(255,149,0,.25)}
+    .select{appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat:no-repeat;background-position:right 12px center;background-size:20px;padding-right:40px;color:var(--fg)}
+    .helper{margin:8px 0 14px;text-align:center;color:var(--muted);font-size:11px;letter-spacing:.8px;text-transform:uppercase}
 
-        /* Channel Info Overlay */
-        .channel-info {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6));
-            backdrop-filter: blur(20px);
-            padding: 15px 25px;
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 50;
-            opacity: 0;
-            transform: translateY(-20px);
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+    .btn{width:100%;padding:14px;background:var(--accent);color:#000;border:none;border-radius:9999px;font-size:16px;font-weight:800;cursor:pointer}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,0,0,.35);border-top-color:#000;border-radius:50%;
+             animation:spin .6s linear infinite;margin-left:10px;vertical-align:-2px}
+    @keyframes spin{to{transform:rotate(360deg)}}
 
-        .channel-info.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    .below{margin-top:16px;text-align:center;color:var(--muted);font-size:14px}
+    .below a{color:var(--fg);text-decoration:none;border-bottom:1px dashed var(--border)}
+    .toast{position:fixed;bottom:50px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 20px;border-radius:999px;
+           font-size:13px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;max-width:92vw;text-align:center}
+    .toast.show{opacity:1}
+    .toast.error{background:#ff453a;color:#fff}
 
-        .channel-name {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 5px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-        }
-
-        .channel-number {
-            font-size: 14px;
-            opacity: 0.8;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .live-indicator {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: #ff0000;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
-            50% { opacity: 0.7; box-shadow: 0 0 0 5px rgba(255, 0, 0, 0); }
-        }
-
-        /* Status Bar */
-        .status-bar {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(20px);
-            padding: 12px 20px;
-            border-radius: 100px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            z-index: 50;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            font-size: 13px;
-        }
-
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            background: #43e97b;
-            border-radius: 50%;
-            animation: statusPulse 3s infinite;
-        }
-
-        .status-dot.disconnected {
-            background: #f5576c;
-            animation: none;
-        }
-
-        @keyframes statusPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        /* Display ID Badge */
-        .display-id {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            padding: 10px 18px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: 600;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            opacity: 0.7;
-            transition: opacity 0.3s;
-        }
-
-        /* Error Message */
-        .error-message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(245, 87, 108, 0.1);
-            border: 1px solid rgba(245, 87, 108, 0.3);
-            padding: 20px 30px;
-            border-radius: 15px;
-            text-align: center;
-            display: none;
-            z-index: 200;
-        }
-
-        .error-message.show {
-            display: block;
-        }
-
-        .error-title {
-            font-size: 18px;
-            margin-bottom: 10px;
-            color: #f5576c;
-        }
-
-        .error-text {
-            font-size: 14px;
-            opacity: 0.8;
-        }
-
-        /* Channel Transition Effect */
-        .transition-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            z-index: 90;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-        }
-
-        .transition-overlay.active {
-            opacity: 1;
-        }
-
-        /* Volume Control Panel - FIXED VERSION */
-        .volume-control-panel {
-            position: fixed;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(20px);
-            padding: 15px 20px;
-            border-radius: 60px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            z-index: 1000;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: opacity 0.3s, transform 0.3s;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .volume-control-panel.show {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .volume-btn {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .volume-btn#muteToggle {
-            font-size: 20px;
-        }
-
-        .volume-btn#muteToggle.unmuted {
-            background: rgba(67, 233, 123, 0.2);
-            border-color: #43e97b;
-        }
-
-        .volume-bar {
-            width: 150px;
-            height: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .volume-level {
-            height: 100%;
-            background: linear-gradient(90deg, #43e97b, #38f9d7);
-            border-radius: 4px;
-            width: 0%;
-            transition: width 0.3s;
-            box-shadow: 0 0 10px rgba(67, 233, 123, 0.5);
-        }
-
-        .volume-percent {
-            position: absolute;
-            top: -25px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 12px;
-            font-weight: bold;
-            color: white;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 2px 8px;
-            border-radius: 4px;
-            white-space: nowrap;
-        }
-
-        /* Remote volume indicator */
-        .remote-volume-indicator {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 30px 50px;
-            border-radius: 20px;
-            font-size: 48px;
-            font-weight: bold;
-            z-index: 9999;
-            pointer-events: none;
-            animation: fadeInOut 2s ease;
-        }
-
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-            20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
-        }
-    </style>
+    .theme-note{display:block;text-align:center;margin-top:10px;color:var(--muted);font-size:11px}
+  </style>
 </head>
 <body>
-    <!-- Volume Control Panel -->
-    <div class="volume-control-panel" id="volumeControlPanel">
-        <button class="volume-btn" onclick="toggleMute()" id="muteToggle">
-            <span id="volumeIcon">Volume</span>
-        </button>
-        <button class="volume-btn" onclick="volumeDown()">
-            <span>−</span>
-        </button>
-        <div class="volume-bar">
-            <div class="volume-level" id="volumeLevel"></div>
-            <span class="volume-percent" id="volumePercent">0%</span>
-        </div>
-        <button class="volume-btn" onclick="volumeUp()">
-            <span>+</span>
-        </button>
-    </div>
-    
-    <!-- Video Container -->
-    <div class="video-container">
-        <video id="videoPlayer" autoplay muted playsinline></video>
+  <div class="wrap">
+    <div class="brand">
+      <div class="logo" role="img" aria-label="IPTV logo"></div>
+      <div class="title">Create your account</div>
+      <div class="subtitle">Access your dealership remotes</div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="spinner"></div>
+    <div class="card">
+      <div class="field">
+        <input id="email" class="input" type="email" placeholder="Email" autocomplete="email">
+      </div>
+      <div class="field">
+        <input id="password" class="input" type="password" placeholder="Password (6+ characters)" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <input id="name" class="input" type="text" placeholder="Your Name" autocomplete="name">
+      </div>
+
+      <div class="helper">Select Dealership</div>
+      <div class="field">
+        <select id="dealership" class="select">
+          <option value="">Loading dealerships...</option>
+        </select>
+      </div>
+
+      <!-- shown only if user chooses "Add New Dealership…" -->
+      <div class="field" id="newDealerWrap" style="display:none">
+        <input id="newDealership" class="new-dealer" type="text" placeholder="Enter Dealership Name">
+      </div>
+
+      <button id="signupBtn" class="btn" onclick="signUp()">CREATE ACCOUNT</button>
+      <small class="theme-note">Theme matches your remote (white/dark)</small>
     </div>
 
-    <!-- Channel Info -->
-    <div class="channel-info" id="channelInfo">
-        <div class="channel-name" id="channelName">News</div>
-        <div class="channel-number">
-            <span class="live-indicator"></span>
-            <span>LIVE • Channel <span id="channelNumber">1</span></span>
-        </div>
+    <div class="below">
+      Already have an account? <a href="https://flaviothebfagroup.github.io/IPTV-/remote-control.html">Sign in</a>
     </div>
+  </div>
 
-    <!-- Status Bar -->
-    <div class="status-bar">
-        <div class="status-dot" id="statusDot"></div>
-        <span id="statusText">Connected</span>
-        <span>•</span>
-        <span id="currentTime">00:00</span>
-    </div>
+  <div class="toast" id="toast"></div>
 
-    <!-- Display ID -->
-    <div class="display-id">
-        Display ID: <strong id="displayId">DISPLAY-001</strong>
-    </div>
+  <script>
+    // keep theme consistent with the remote
+    (function(){
+      const saved = localStorage.getItem('iptv_theme') || 'light';
+      document.body.classList.toggle('light', saved === 'light');
+    })();
+  </script>
 
-    <!-- Error Message -->
-    <div class="error-message" id="errorMessage">
-        <div class="error-title">Stream Unavailable</div>
-        <div class="error-text" id="errorText">Attempting to reconnect...</div>
-    </div>
+  <!-- Firebase + Logic -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import {
+      getAuth,
+      setPersistence, browserLocalPersistence,
+      signInAnonymously, EmailAuthProvider, linkWithCredential,
+      createUserWithEmailAndPassword
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getDatabase, ref, set, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    <!-- Transition Overlay -->
-    <div class="transition-overlay" id="transitionOverlay"></div>
+    // --- Firebase config ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+      authDomain: "iptv-bfa.firebaseapp.com",
+      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+      projectId: "iptv-bfa",
+      storageBucket: "iptv-bfa.firebasestorage.app",
+      messagingSenderId: "838790935867",
+      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    };
 
-    <!-- HLS.js for stream playback -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
-    
-    <script>
-        // ============================================
-        // CONFIGURATION - CHANGE FOR EACH DISPLAY
-        // ============================================
-        const CONFIG = {
-            displayId: '#test_table', // UNIQUE ID FOR EACH DISPLAY
-            apiEndpoint: 'https://iptv-bfa-default-rtdb.firebaseio.com/displays',
-            pollInterval: 2000,
-            useWebSocket: false,
-            dealershipName: 'BFA',
-            
-            // Channel definitions
-            channels: [
-                {
-                    id: 1,
-                    name: 'News',
-                    url: 'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8',
-                    type: 'hls'
-                },
-                {
-                    id: 2,
-                    name: 'Sports',
-                    url: 'http://fl5.moveonjoy.com/TSN_5/index.m3u8',
-                    type: 'hls'
-                },
-                {
-                    id: 3,
-                    name: 'Cooking',
-                    url: 'https://gusto-xumo.amagi.tv/playlist.m3u8',
-                    type: 'hls'
-                },
-                {
-                    id: 4,
-                    name: 'Nature',
-                    url: 'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8',
-                    type: 'hls'
-                },
-                {
-                    id: 5,
-                    name: 'Kids',
-                    url: 'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8',
-                    type: 'hls'
-                },
-                  {
-                    id: 6,
-                    name: 'music',
-                    url: 'https://lotus.stingray.com/manifest/ose-128ads-montreal/samsungtvplus/master.m3u8',
-                    type: 'hls'
-                },
-                {
-                    id: 7,
-                    name: 'movie',
-                    url: 'https://fl3.moveonjoy.com/CRAVE_2/index.m3u8',
-                    type: 'hls'
-                },
-                {
-                    id: 8,
-                    name: 'Game',
-                    url: 'https://a-cdn.klowdtv.com/live2/fntsy_720p/playlist.m3u8',
-                    type: 'hls'
-                },
-                {
-                    id: 9,
-                    name: 'Weather',
-                    url: 'http://cfd-v4-service-channel-stitcher-use1-1.prd.pluto.tv/stitch/hls/channel/63da370e2e477400081cf8b6livestitch/master.m3u8?appName=web&appVersion=unknown&clientTime=0&deviceDNT=0&deviceId=2c7c7782-35fc-11ef-a031-2b5d494037a2&deviceMake=Chrome&deviceModel=web&deviceType=web&deviceVersion=unknown&includeExtendedEvents=false&serverSideAds=false&sid=6b5c5f52-01b7-44d8-a06c-1f05f3169a75&profilesFromStream=true',
-                    type: 'hls'
-                },
-            ]
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
+
+    // ---------- helpers ----------
+    function showToast(message, type=''){
+      const t = document.getElementById('toast');
+      t.textContent = message;
+      t.className = 'toast show' + (type==='error' ? ' error' : '');
+      setTimeout(()=>t.classList.remove('show'), 2800);
+    }
+    function slugify(id){
+      return (id||'')
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g,'-')
+        .replace(/(^-|-$)/g,'');
+    }
+    function twoLetterPrefix(name){
+      const raw = (name||'').trim();
+      if(!raw) return 'DS';
+      let parts = raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g);
+      if(!parts || parts.length < 2) parts = raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g) || [];
+      let first = parts[0] || '', second = parts[1] || '';
+      let prefix = '';
+      if(first) prefix += first[0];
+      if(second) prefix += second[0];
+      if(prefix.length < 2 && first.length >= 2) prefix = first.slice(0,2);
+      return prefix.toUpperCase();
+    }
+
+    // ---------- load dealerships (read list) ----------
+    async function loadDealerships(){
+      const select = document.getElementById('dealership');
+      try{
+        const snap = await get(ref(db, 'dealershipPublic'));
+        select.innerHTML = '<option value="">Choose Dealership...</option>';
+
+        if (snap.exists()) {
+          const items = Object.entries(snap.val()).map(([id, v]) => ({ id, name: (v && v.name) ? v.name : id }));
+          items.sort((a,b) => a.name.localeCompare(b.name));
+          for (const {id, name} of items){
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = name;
+            select.appendChild(opt);
+          }
+        }
+
+        // Add "new" option (admin must finalize)
+        const add = document.createElement('option');
+        add.value = '__new__';
+        add.textContent = '➕ Add New Dealership…';
+        select.appendChild(add);
+      }catch(err){
+        console.warn('Could not load dealershipPublic:', err);
+        select.innerHTML = `
+          <option value="">(Ask admin to attach you later)</option>
+          <option value="__new__">➕ Add New Dealership…</option>
+        `;
+      }
+    }
+
+    // sign-in anonymously so reads are allowed by your root .read rule
+    (async ()=>{
+      try{
+        await setPersistence(auth, browserLocalPersistence);
+        if (!auth.currentUser) await signInAnonymously(auth);
+      }catch(e){ console.warn('Anonymous sign-in failed:', e); }
+      finally{ loadDealerships(); }
+    })();
+
+    // toggle input when user chooses "Add New Dealership…"
+    document.addEventListener('change', (e)=>{
+      if (e.target && e.target.id === 'dealership'){
+        const isNew = e.target.value === '__new__';
+        document.getElementById('newDealerWrap').style.display = isNew ? 'block' : 'none';
+        if (isNew) document.getElementById('newDealership').focus();
+      }
+    });
+
+    // enter to submit
+    ['email','password','name','newDealership'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') signUp(); });
+    });
+
+    // ---------- sign up ----------
+    window.signUp = async function(){
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const name = document.getElementById('name').value.trim();
+      const sel = document.getElementById('dealership').value;
+      const newName = (document.getElementById('newDealership').value || '').trim();
+
+      if(!email || !password || !name){ showToast('Please fill all fields','error'); return; }
+      if(password.length < 6){ showToast('Password must be 6+ characters','error'); return; }
+      if(!sel && !newName){ showToast('Choose a dealership','error'); return; }
+
+      // resolve dealershipId + name
+      let dealershipId = sel;
+      let dealershipName = '';
+      const creatingNew = (sel === '__new__');
+
+      if(creatingNew){
+        if(!newName){ showToast('Enter the new dealership name','error'); return; }
+        dealershipName = newName;
+        let candidate = slugify(newName) || 'dealership';
+        // Do NOT attempt to write dealershipPublic/dealership here (admin-only in your rules)
+        dealershipId = candidate;
+      } else {
+        dealershipId = sel;
+        const opt = document.querySelector(`#dealership option[value="${sel}"]`);
+        dealershipName = opt ? opt.textContent : sel;
+      }
+
+      const btn = document.getElementById('signupBtn');
+      btn.disabled = true; btn.innerHTML = 'CREATING<span class="spinner"></span>';
+
+      try{
+        // Upgrade anon → email/pass OR create if not anon
+        let cred;
+        if (auth.currentUser && auth.currentUser.isAnonymous) {
+          const c = EmailAuthProvider.credential(email, password);
+          cred = await linkWithCredential(auth.currentUser, c);
+        } else {
+          cred = await createUserWithEmailAndPassword(auth, email, password);
+        }
+        const { user } = cred;
+
+        // ------------------ NEW: link displays on user profile ------------------
+        // Read dealership displays and convert to { id: true } map
+        let displaysMap = {};
+        try {
+          const dSnap = await get(ref(db, `dealership/${dealershipId}/displays`));
+          if (dSnap.exists()) {
+            const val = dSnap.val();
+            if (Array.isArray(val)) {
+              val.forEach(id => { if (id) displaysMap[id] = true; });
+            } else {
+              Object.keys(val || {}).forEach(id => { displaysMap[id] = true; });
+            }
+          }
+        } catch (e) {
+          console.warn('Displays read failed (ok):', e);
+        }
+
+        // If none found, seed one like "XX-001" using your twoLetterPrefix()
+        if (Object.keys(displaysMap).length === 0) {
+          const prefix = twoLetterPrefix(dealershipName || dealershipId);
+          const firstId = `${prefix}-${String(1).padStart(3,'0')}`;
+          displaysMap[firstId] = true;
+        }
+        // -----------------------------------------------------------------------
+
+        // Build profile WITHOUT role (keep your rules happy) and include displays map
+        const profile = {
+          email,
+          name,
+          dealershipId,
+          dealershipName,
+          createdAt: Date.now(),
+          displays: displaysMap
         };
 
-        // ============================================
-        // GLOBAL VARIABLES
-        // ============================================
-        let currentChannel = 1;
-        let hls = null;
-        let retryCount = 0;
-        let maxRetries = 3;
-        let isTransitioning = false;
-        let currentVolume = 0;
-        let isMuted = true;
-        let lastVolume = 50;
+        // Write /user/{uid}
+        await set(ref(db, `user/${user.uid}`), profile);
 
-        // ============================================
-        // INITIALIZATION
-        // ============================================
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeDisplay();
-            initVolumeControl();
-            startClock();
-            loadChannel(1);
-            startPolling();
-        });
-
-        // Initialize display settings
-        function initializeDisplay() {
-            document.getElementById('displayId').textContent = CONFIG.displayId;
-            
-            const video = document.getElementById('videoPlayer');
-            video.volume = 0;
-            
-            video.addEventListener('loadstart', () => showLoading(true));
-            video.addEventListener('canplay', () => showLoading(false));
-            video.addEventListener('error', handleVideoError);
-            video.addEventListener('stalled', handleStalled);
+        if (creatingNew) {
+          showToast('Account created — ask an admin to add the new dealership.');
+        } else {
+          showToast('Account created!');
         }
 
-        // ============================================
-        // VOLUME CONTROL - FIXED VERSION
-        // ============================================
-        function initVolumeControl() {
-            const video = document.getElementById('videoPlayer');
-            
-            // Load saved preferences
-            const savedVolume = localStorage.getItem('displayVolume');
-            const savedMuted = localStorage.getItem('displayMuted');
-            
-            if (savedVolume !== null) {
-                currentVolume = parseInt(savedVolume);
-                lastVolume = currentVolume || 50;
-            }
-            
-            if (savedMuted !== null) {
-                isMuted = savedMuted === 'true';
-            }
-            
-            // Apply saved settings
-            video.volume = currentVolume / 100;
-            video.muted = isMuted;
-            updateVolumeDisplay();
-            
-            // FOR BRIGHTSIGN: No hover events needed since no mouse/keyboard
-            // Volume panel will only show when changed remotely
-        }
-
-        // Volume control functions
-        function toggleMute() {
-            if (isMuted) {
-                unmute();
-            } else {
-                mute();
-            }
-        }
-
-        function mute() {
-            const video = document.getElementById('videoPlayer');
-            isMuted = true;
-            video.muted = true;
-            updateVolumeDisplay();
-            localStorage.setItem('displayMuted', 'true');
-        }
-
-        function unmute() {
-            const video = document.getElementById('videoPlayer');
-            
-            if (currentVolume === 0) {
-                currentVolume = lastVolume || 50;
-            }
-            
-            isMuted = false;
-            video.muted = false;
-            video.volume = currentVolume / 100;
-            
-            video.play().catch(e => {
-                console.log('Unmute attempted - BrightSign should allow this');
-            });
-            
-            updateVolumeDisplay();
-            localStorage.setItem('displayMuted', 'false');
-        }
-
-        function volumeUp() {
-            currentVolume = Math.min(100, currentVolume + 10);
-            setVolume(currentVolume);
-            
-            if (currentVolume > 0 && isMuted) {
-                unmute();
-            }
-        }
-
-        function volumeDown() {
-            currentVolume = Math.max(0, currentVolume - 10);
-            setVolume(currentVolume);
-            
-            if (currentVolume === 0) {
-                isMuted = true;
-            }
-        }
-
-        function setVolume(volume) {
-            const video = document.getElementById('videoPlayer');
-            currentVolume = volume;
-            
-            if (volume > 0) {
-                lastVolume = volume;
-            }
-            
-            video.volume = volume / 100;
-            updateVolumeDisplay();
-            localStorage.setItem('displayVolume', volume);
-            
-            if (volume === 0) {
-                isMuted = true;
-                video.muted = true;
-            }
-        }
-
-        function updateVolumeDisplay() {
-            const volumeLevel = document.getElementById('volumeLevel');
-            const volumePercent = document.getElementById('volumePercent');
-            const volumeIcon = document.getElementById('volumeIcon');
-            const muteToggle = document.getElementById('muteToggle');
-            
-            if (volumeLevel) volumeLevel.style.width = currentVolume + '%';
-            if (volumePercent) volumePercent.textContent = currentVolume + '%';
-            
-            if (volumeIcon) {
-                if (isMuted || currentVolume === 0) {
-                    volumeIcon.textContent = '🔇';
-                    muteToggle.classList.remove('unmuted');
-                } else if (currentVolume < 30) {
-                    volumeIcon.textContent = '🔈';
-                    muteToggle.classList.add('unmuted');
-                } else if (currentVolume < 70) {
-                    volumeIcon.textContent = '🔉';
-                    muteToggle.classList.add('unmuted');
-                } else {
-                    volumeIcon.textContent = '🔊';
-                    muteToggle.classList.add('unmuted');
-                }
-            }
-        }
-
-        // ============================================
-        // CHANNEL LOADING
-        // ============================================
-        function loadChannel(channelNumber) {
-            if (isTransitioning) return;
-            
-            const channel = CONFIG.channels.find(ch => ch.id === channelNumber);
-            if (!channel) {
-                console.error('Channel not found:', channelNumber);
-                return;
-            }
-
-            console.log(`Loading channel ${channelNumber}: ${channel.name}`);
-            isTransitioning = true;
-            
-            const transitionOverlay = document.getElementById('transitionOverlay');
-            transitionOverlay.classList.add('active');
-            
-            setTimeout(() => {
-                currentChannel = channelNumber;
-                updateChannelInfo(channel);
-                
-                const video = document.getElementById('videoPlayer');
-                
-                if (Hls.isSupported()) {
-                    if (hls) {
-                        hls.destroy();
-                    }
-                    
-                    hls = new Hls({
-                        enableWorker: true,
-                        lowLatencyMode: true,
-                        backBufferLength: 90,
-                        maxBufferSize: 60 * 1000 * 1000,
-                        maxBufferLength: 30,
-                        manifestLoadingTimeOut: 10000,
-                        manifestLoadingMaxRetry: 3,
-                        levelLoadingTimeOut: 10000,
-                        levelLoadingMaxRetry: 4
-                    });
-                    
-                    hls.loadSource(channel.url);
-                    hls.attachMedia(video);
-                    
-                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                        video.play().then(() => {
-                            // Maintain volume settings
-                            video.volume = currentVolume / 100;
-                            video.muted = isMuted;
-                        }).catch(e => {
-                            console.log('Autoplay failed');
-                        });
-                    });
-                    
-                    hls.on(Hls.Events.ERROR, function(event, data) {
-                        handleHlsError(event, data);
-                    });
-                    
-                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                    video.src = channel.url;
-                    video.play().then(() => {
-                        video.volume = currentVolume / 100;
-                        video.muted = isMuted;
-                    }).catch(e => {
-                        console.log('Autoplay failed');
-                    });
-                } else {
-                    showError('HLS not supported on this device');
-                }
-                
-                setTimeout(() => {
-                    transitionOverlay.classList.remove('active');
-                    isTransitioning = false;
-                }, 300);
-                
-            }, 300);
-        }
-
-        function updateChannelInfo(channel) {
-            document.getElementById('channelName').textContent = channel.name;
-            document.getElementById('channelNumber').textContent = channel.id;
-            
-            const channelInfo = document.getElementById('channelInfo');
-            channelInfo.classList.add('show');
-            
-            setTimeout(() => {
-                channelInfo.classList.remove('show');
-            }, 5000);
-        }
-
-        // ============================================
-        // POLLING FOR REMOTE CONTROL
-        // ============================================
-        function startPolling() {
-            console.log('Starting polling for display:', CONFIG.displayId);
-            
-            setInterval(async () => {
-                try {
-                    const url = `https://iptv-bfa-default-rtdb.firebaseio.com/displays/${CONFIG.displayId}.json`;
-                    const response = await fetch(url);
-                    const data = await response.json();
-                    
-                    if (data) {
-                        // Check for channel change
-                        if (data.channel && data.channel !== currentChannel) {
-                            console.log('Channel change detected:', data.channel);
-                            loadChannel(data.channel);
-                        }
-                        
-                        // Check for volume change
-                        if (data.volume !== undefined || data.muted !== undefined) {
-                            applyVolumeSettings(data.volume, data.muted);
-                        }
-                        
-                        updateConnectionStatus(true);
-                    }
-                } catch (error) {
-                    console.error('Polling error:', error);
-                    updateConnectionStatus(false);
-                }
-            }, CONFIG.pollInterval);
-        }
-
-        // Apply volume settings from remote
-        function applyVolumeSettings(volume, muted) {
-            const video = document.getElementById('videoPlayer');
-            let volumeChanged = false;
-            
-            if (volume !== undefined && volume !== currentVolume) {
-                currentVolume = volume;
-                video.volume = volume / 100;
-                volumeChanged = true;
-                console.log('Volume set to:', volume + '%');
-            }
-            
-            if (muted !== undefined && muted !== isMuted) {
-                isMuted = muted;
-                volumeChanged = true;
-                
-                if (muted) {
-                    video.muted = true;
-                    console.log('Audio muted');
-                } else {
-                    video.muted = false;
-                    video.volume = currentVolume / 100;
-                    video.play().then(() => {
-                        console.log('Audio unmuted successfully at', currentVolume + '%');
-                    }).catch(e => {
-                        console.log('Unmute attempted - BrightSign should allow this');
-                    });
-                }
-            }
-            
-            if (volumeChanged) {
-                updateVolumeDisplay();
-                showVolumeIndicator();
-            }
-        }
-
-        // Show volume indicator when changed remotely
-        function showVolumeIndicator() {
-            // Remove any existing indicator
-            let indicator = document.querySelector('.remote-volume-indicator');
-            if (indicator) {
-                indicator.remove();
-            }
-            
-            // Create indicator text
-            let text = isMuted ? '🔇 Muted' : `🔊 ${currentVolume}%`;
-            
-            // Create new indicator
-            indicator = document.createElement('div');
-            indicator.className = 'remote-volume-indicator';
-            indicator.textContent = text;
-            document.body.appendChild(indicator);
-            
-            // Show the volume panel briefly
-            const panel = document.getElementById('volumeControlPanel');
-            panel.classList.add('show');
-            
-            // Hide both after 2 seconds
-            setTimeout(() => {
-                indicator.remove();
-                panel.classList.remove('show');
-            }, 2000);
-        }
-
-        // ============================================
-        // ERROR HANDLING
-        // ============================================
-        function handleHlsError(event, data) {
-            console.error('HLS Error:', data);
-            
-            if (data.fatal) {
-                switch(data.type) {
-                    case Hls.ErrorTypes.NETWORK_ERROR:
-                        console.log('Network error, attempting recovery...');
-                        if (retryCount < maxRetries) {
-                            retryCount++;
-                            setTimeout(() => {
-                                hls.startLoad();
-                            }, 2000);
-                        } else {
-                            showError('Network error - Unable to load stream');
-                        }
-                        break;
-                    case Hls.ErrorTypes.MEDIA_ERROR:
-                        console.log('Media error, attempting recovery...');
-                        hls.recoverMediaError();
-                        break;
-                    default:
-                        showError('Stream error - Attempting to reconnect');
-                        setTimeout(() => {
-                            loadChannel(currentChannel);
-                        }, 5000);
-                        break;
-                }
-            }
-        }
-
-        function handleVideoError(e) {
-            console.error('Video error:', e);
-            showError('Video playback error');
-            
-            setTimeout(() => {
-                loadChannel(currentChannel);
-            }, 5000);
-        }
-
-        function handleStalled() {
-            console.log('Stream stalled, buffering...');
-            showLoading(true);
-        }
-
-        // ============================================
-        // UI HELPERS
-        // ============================================
-        function showLoading(show) {
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            if (show) {
-                loadingOverlay.classList.add('active');
-            } else {
-                loadingOverlay.classList.remove('active');
-                hideError();
-            }
-        }
-
-        function showError(message) {
-            document.getElementById('errorText').textContent = message;
-            document.getElementById('errorMessage').classList.add('show');
-        }
-
-        function hideError() {
-            document.getElementById('errorMessage').classList.remove('show');
-        }
-
-        function updateConnectionStatus(connected) {
-            const statusDot = document.getElementById('statusDot');
-            const statusText = document.getElementById('statusText');
-            
-            if (connected) {
-                statusDot.classList.remove('disconnected');
-                statusText.textContent = 'Connected';
-            } else {
-                statusDot.classList.add('disconnected');
-                statusText.textContent = 'Disconnected';
-            }
-        }
-
-        function startClock() {
-            function updateTime() {
-                const now = new Date();
-                const time = now.toLocaleTimeString('en-US', { 
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    hour12: false 
-                });
-                document.getElementById('currentTime').textContent = time;
-            }
-            updateTime();
-            setInterval(updateTime, 1000);
-        }
-
-        // Handle page visibility (power saving)
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                if (hls) {
-                    hls.stopLoad();
-                }
-            } else {
-                if (hls) {
-                    hls.startLoad();
-                }
-            }
-        });
-
-        // BrightSign Detection
-        if (navigator.userAgent.includes('BrightSign')) {
-            console.log('BrightSign detected - optimizing for digital signage');
-            // BrightSign allows unmuted autoplay by default
-            setTimeout(() => {
-                const video = document.getElementById('videoPlayer');
-                if (currentVolume > 0 && !isMuted) {
-                    video.muted = false;
-                    video.volume = currentVolume / 100;
-                }
-            }, 2000);
-        }
-    </script>
+        btn.innerHTML = 'SUCCESS — OPENING REMOTE…';
+        setTimeout(()=>{ window.location.href = 'https://flaviothebfagroup.github.io/IPTV-/remote-control.html'; }, 1200);
+      }catch(error){
+        console.error('signup', error);
+        const map = {
+          'auth/operation-not-allowed':'Email & Password sign-in is disabled (enable in Firebase Auth).',
+          'auth/unauthorized-domain':'Domain not authorized in Firebase Auth settings.',
+          'auth/email-already-in-use':'Email already registered.',
+          'auth/weak-password':'Password too weak.',
+          'auth/invalid-email':'Invalid email address.'
+        };
+        const msg = map[error.code] || (`Signup failed: ${error.code || error.message || 'Unknown error'}`);
+        showToast(msg, 'error');
+        btn.disabled = false; btn.textContent = 'CREATE ACCOUNT';
+      }
+    };
+  </script>
 </body>
 </html>
