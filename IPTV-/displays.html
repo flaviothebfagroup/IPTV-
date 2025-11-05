@@ -692,6 +692,8 @@
           updatedAt:Date.now(),
           createdAt:Date.now()
         });
+        await update(ref(db, `${dealer}/displays/${displayId}`), true);
+
       }catch(e){}
 
       try{
@@ -699,6 +701,9 @@
         if(!snap.exists()){
           await update(dRef,{ channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() });
         }
+
+        try { await update(ref(db, `${dealershipName}/displays/${displayId}`), true); } catch(e) {}
+
       }catch(e){}
 
       /* Live controls listener */
@@ -745,6 +750,15 @@
     const app=initializeApp(firebaseConfig);
     const auth=getAuth(app);
     const db=getDatabase(app);
+
+    /* ---------- NEW helper: detect 'dealerships' vs 'dealership' base ---------- */
+    let DEALER_BASE_CACHE = null;
+    async function dealerBase() {
+      if (DEALER_BASE_CACHE) return DEALER_BASE_CACHE;
+      try { const s = await get(ref(db, 'dealerships')); if (s.exists()) return DEALER_BASE_CACHE = 'dealerships'; } catch {}
+      try { const s2 = await get(ref(db, 'dealership')); if (s2.exists()) return DEALER_BASE_CACHE = 'dealership'; } catch {}
+      return DEALER_BASE_CACHE = 'dealerships';
+    }
 
     const $=s=>document.querySelector(s);
     const $$=(s)=>Array.from(document.querySelectorAll(s));
@@ -1270,13 +1284,28 @@
       }catch(e){ console.error(e); toast('Failed to read player file (GH setup?)',true); }
     }
 
-    // ====== Delete display ======
+    // ====== Delete display (now also removes dealership link) ======
     async function deleteDisplayFlow(displayId){
       if(!confirm(`Delete display ${displayId} from Firebase?`)) return;
       try{
+        // read dealer id before deleting
+        let dealer = null;
+        try{
+          const dSnap = await get(ref(db, `displays/${displayId}/dealership`));
+          if (dSnap.exists()) dealer = dSnap.val();
+        }catch{}
+
         await remove(ref(db,`displays/${displayId}`));
+
+        // remove reverse link
+        if (dealer) {
+          const base = await dealerBase();
+          await remove(ref(db, `${base}/${dealer}/displays/${displayId}`));
+        }
+
         toast('Display removed from Firebase');
       }catch(e){ console.error(e); toast('Failed to remove from Firebase',true); }
+
       const gh=ghCfg();
       if(gh.token && confirm('Also delete the player file from GitHub?')){
         try{
@@ -1429,9 +1458,9 @@
     function pickSelectedOrDefault(){
       const list=(chSelectedList.length? chSelectedList.slice(0,5) : [
         {name:'News',url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8'},
-        {name:'Sports',url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8'},
+        {name:'Sports',url:'https://amg01444-tennischannelth-tennischannelnl-samsungnl-x3dq1.amagi.tv/playlist/amg01444-tennischannelth-tennischannelnl-samsungnl/playlist.m3u8'},
         {name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8'},
-        {name:'Nature',url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8'},
+        {name:'Nature',url:'https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8'},
         {name:'Kids',url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8'},
       ]);
       return list.map((c,i)=>({id:i+1,name:c.name||'Channel',url:c.url,type:'hls'}));
@@ -1446,6 +1475,11 @@
         const channels=pickSelectedOrDefault();
         await createOrUpdatePlayer(displayId, dealer, channels);
         await update(ref(db,`displays/${displayId}`),{dealership:dealer,channel:1,volume:50,muted:true,createdAt:Date.now(),updatedAt:Date.now()});
+
+        /* -------- NEW: also write reverse link under the dealership -------- */
+        const base = await dealerBase();
+        await set(ref(db, `${base}/${dealer}/displays/${displayId}`), true);
+
         toast(`TV ${displayId} added`);
         watchDisplays(dealer,true);
       }catch(e){ console.error(e); toast('Add failed',true); }
