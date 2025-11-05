@@ -1,335 +1,1516 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- keep these first -->
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
+  <title>BFA IPTV — Displays</title>
 
-  <!-- PWA + Icons -->
-  <link rel="manifest" href="/IPTV-/manifest.webmanifest">
-  <meta name="theme-color" content="#000000">
-  <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png">
-  <link rel="apple-touch-icon" href="/IPTV-/icons/apple-touch-icon.png">
-  <link rel="apple-touch-icon" sizes="120x120" href="/IPTV-/icons/apple-touch-icon-120.png">
-  <link rel="apple-touch-icon" sizes="152x152" href="/IPTV-/icons/apple-touch-icon-152.png">
-  <link rel="apple-touch-icon" sizes="167x167" href="/IPTV-/icons/apple-touch-icon-167.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/IPTV-/icons/apple-touch-icon.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="IPTV Remote">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <!-- PWA (optional) -->
+  <link rel="manifest" href="/IPTV-/manifest.webmanifest"/>
+  <meta name="theme-color" content="#ffffff"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png"/>
+  <link rel="apple-touch-icon" href="/IPTV-/icons/icon-192.png"/>
 
-  <title>IPTV — Create Account</title>
+  <!-- Video.js for the “Change Channel” modal preview -->
+  <link rel="stylesheet" href="https://vjs.zencdn.net/8.10.0/video-js.css">
+  <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
 
   <style>
-    :root { --bg:#0b0b0c; --fg:#fff; --muted:#9a9aa0; --panel:#121214; --border:rgba(255,255,255,.14);
-            --accent:#ff9500; --tile:#17171a; --tileActive:#1d1d21; --shadow:0 18px 48px rgba(0,0,0,.45); }
-    body.light { --bg:#f5f5f7; --fg:#111; --muted:#6e6e73; --panel:#fff; --border:rgba(0,0,0,.12);
-                 --accent:#ff9500; --tile:#f2f2f7; --tileActive:#eaeaef; --shadow:0 14px 36px rgba(0,0,0,.10); }
+    /* =========================================================
+       Tokens copied from Home (visual parity)
+    ========================================================= */
+    :root{
+      --accent:#ff9500;
 
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html,body{height:100%}
-    body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
-         display:flex;align-items:center;justify-content:center;padding:22px;transition:background .25s,color .25s}
+      --bg-start:#fff4e4;
+      --bg-mid:#ffd293;
+      --bg-end:#ff9500;
 
-    .wrap{width:100%;max-width:420px}
-    .brand{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:16px}
-    .logo{width:110px;height:110px;background:var(--accent);
-      -webkit-mask:url('https://i.ibb.co/LzJwPhjg/ICON-IPTV.png') center/contain no-repeat;
-      mask:url('https://i.ibb.co/LzJwPhjg/ICON-IPTV.png') center/contain no-repeat}
-    .title{font-size:22px;font-weight:800;letter-spacing:.4px}
-    .subtitle{color:var(--muted);font-size:12px;letter-spacing:1px;text-transform:uppercase}
+      --fg:#111;
+      --muted:#6e6e73;
 
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:28px;padding:22px 18px 18px;box-shadow:var(--shadow)}
+      --panel:rgba(255,255,255,.58);
+      --tile:rgba(255,255,255,.46);
+      --tileHover:rgba(255,149,0,.08);
 
-    .field{display:flex;flex-direction:column;gap:8px;margin:12px 0}
-    .label{font-size:12px;color:var(--muted);letter-spacing:.5px}
-    .input, .select, .new-dealer{width:100%;padding:14px 14px;background:transparent;border:1px solid var(--border);
-       border-radius:14px;color:var(--fg);font-size:16px;text-align:center;outline:none;transition:border-color .18s, box-shadow .18s}
-    .input::placeholder,.new-dealer::placeholder{color:var(--muted)}
-    .input:focus,.select:focus,.new-dealer:focus{border-color:var(--accent); box-shadow:0 0 0 2px rgba(255,149,0,.25)}
-    .select{appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat:no-repeat;background-position:right 12px center;background-size:20px;padding-right:40px;color:var(--fg)}
-    .helper{margin:8px 0 14px;text-align:center;color:var(--muted);font-size:11px;letter-spacing:.8px;text-transform:uppercase}
+      --border:rgba(15,23,42,.10);
+      --borderStrong:rgba(15,23,42,.18);
+      --shadow:0 14px 34px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.05);
 
-    .btn{width:100%;padding:14px;background:var(--accent);color:#000;border:none;border-radius:9999px;font-size:16px;font-weight:800;cursor:pointer}
-    .btn:disabled{opacity:.6;cursor:not-allowed}
-    .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,0,0,.35);border-top-color:#000;border-radius:50%;
-             animation:spin .6s linear infinite;margin-left:10px;vertical-align:-2px}
-    @keyframes spin{to{transform:rotate(360deg)}}
+      --glass-blur:16px;
+      --glass-sat:140%;
 
-    .below{margin-top:16px;text-align:center;color:var(--muted);font-size:14px}
-    .below a{color:var(--fg);text-decoration:none;border-bottom:1px dashed var(--border)}
-    .toast{position:fixed;bottom:50px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 20px;border-radius:999px;
-           font-size:13px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;max-width:92vw;text-align:center}
+      --ok:#22c55e;
+      --err:#ef4444;
+    }
+    body.dark{
+      --bg-start:#0b0c10;
+      --bg-mid:#0d1016;
+      --bg-end:#10141b;
+
+      --fg:#f7f7f8;
+      --muted:#a1a1a8;
+
+      --panel:rgba(21,21,23,.56);
+      --tile:rgba(26,26,29,.50);
+      --tileHover:rgba(255,149,0,.10);
+
+      --border:rgba(255,255,255,.10);
+      --borderStrong:rgba(255,255,255,.20);
+      --shadow:0 18px 46px rgba(0,0,0,.36), 0 2px 8px rgba(0,0,0,.22);
+
+      --glass-blur:14px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{min-height:100%}
+    body{
+      margin:0;color:var(--fg);
+      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
+      background:transparent; /* gradient via ::before */
+      line-height:1.35;
+    }
+    body::before{
+      content:"";
+      position:fixed; inset:0; z-index:-1; pointer-events:none;
+      background:linear-gradient(180deg,var(--bg-start) 0%, var(--bg-mid) 52%, var(--bg-end) 100%);
+    }
+    a{color:inherit;text-decoration:none}
+    .muted{color:var(--muted)}
+
+    /* =========================================================
+       Topbar (same as Home)
+    ========================================================= */
+    .topbar{
+      position:sticky;top:0;z-index:100;background:var(--panel);
+      border-bottom:1px solid var(--border);
+      padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
+    .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;position:relative}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:#fff center/cover no-repeat}
+    .logotxt{font-weight:900;letter-spacing:.2px}
+
+    .nav{display:flex;gap:10px;margin-left:auto;margin-right:auto}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;border:1px solid transparent;background:transparent;
+      color:inherit;font-weight:800;font-size:14px;line-height:1;white-space:nowrap;
+      transition:border-color .18s ease, filter .18s ease
+    }
+    .pill:hover{border-color:var(--accent);filter:brightness(1.04)}
+    .pill.is-active{outline:2px solid var(--accent)}
+    .ic{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none}
+
+    /* More (+) dropdown */
+    .more{position:relative}
+    #moreBtn .plus{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
+    #moreMenu{
+      position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:8px;min-width:230px;background:var(--panel);
+      border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
+    #moreMenu.open{display:block}
+    #moreMenu a{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px}
+    #moreMenu a:hover{background:var(--tileHover)}
+    #moreMenu a.is-active{outline:2px solid var(--accent)}
+    #moreMenu .ic{width:18px;height:18px;stroke-width:1.9}
+
+    /* Actions */
+    .actions{display:flex;gap:8px;align-items:center}
+    .email{
+      max-width:240px;padding:6px 10px;border-radius:9999px;background:var(--tile);
+      border:1px solid var(--border);color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
+    .chip{
+      height:34px;min-width:34px;padding:0 12px;border-radius:9999px;border:1.5px solid var(--borderStrong);
+      background:var(--tile);color:var(--fg);font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+      transition:transform .12s ease, filter .18s ease, border-color .18s ease;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
+    .chip:hover{border-color:var(--accent);transform:translateY(-1px);filter:brightness(1.03)}
+    .chip .ic{width:18px;height:18px;stroke-width:2}
+    .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
+    #hamburger{display:none;border:0;background:transparent;color:var(--accent);height:42px;min-width:42px;padding:0;align-items:center;justify-content:center;position:absolute;right:0;top:50%;transform:translateY(-50%)}
+    #hamburger .ic{width:22px;height:22px;stroke:var(--accent);stroke-width:2.35}
+
+    @media (max-width:920px){
+      .nav{display:none}
+      #hamburger{display:inline-flex}
+      .email{display:none}
+    }
+
+    /* =========================================================
+       Content
+    ========================================================= */
+    .wrap{max-width:1100px;margin:0 auto;padding:18px}
+    .card{
+      background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow);
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
+    .hstack{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+    .row3{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin:10px 0}
+    @media (max-width:840px){.row3{grid-template-columns:1fr}}
+    .label{font-size:12px;color:var(--muted);margin:0 0 6px}
+    .input,.select{
+      width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:14px;outline:none;
+      backdrop-filter:blur(calc(var(--glass-blur) - 2px)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(calc(var(--glass-blur) - 2px)) saturate(var(--glass-sat));
+    }
+    .input::placeholder{color:var(--muted)}
+    .btn{
+      height:34px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--tile);color:var(--fg);
+      font-weight:800;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;
+      backdrop-filter:blur(calc(var(--glass-blur) - 2px)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(calc(var(--glass-blur) - 2px)) saturate(var(--glass-sat));
+      transition:border-color .18s ease, filter .18s ease, transform .12s ease;
+    }
+    .btn:hover{border-color:var(--accent);transform:translateY(-1px);filter:brightness(1.03)}
+    .btn.solid{background:var(--accent);border-color:var(--accent);color:#000}
+    .btn.danger{border-color:#ff6b6b;color:#ff6b6b;background:transparent}
+    .btn .ic{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
+    .small{font-size:12px}
+
+    .list{margin:8px 0 0;padding:0;list-style:none}
+    .empty{padding:12px;border:1px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center;
+      backdrop-filter:blur(calc(var(--glass-blur) - 4px)) saturate(var(--glass-sat)); -webkit-backdrop-filter:blur(calc(var(--glass-blur) - 4px)) saturate(var(--glass-sat));
+    }
+    .item{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px;margin:8px 0;background:var(--tile);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap;
+      box-shadow:0 6px 18px rgba(15,23,42,.06);
+      backdrop-filter:blur(calc(var(--glass-blur) - 4px)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(calc(var(--glass-blur) - 4px)) saturate(var(--glass-sat));
+    }
+    .split{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .col{display:flex;flex-direction:column;gap:6px;min-width:220px}
+    .tag{padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:transparent;font-size:12px;color:var(--muted)}
+    .vol{display:flex;align-items:center;gap:8px}
+    .vol input[type="range"]{width:140px;accent-color:var(--accent)}
+    @media (max-width:560px){ .vol input[type="range"]{width:100%} }
+
+    a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+    /* Toast (same as Home) */
+    .toast{
+      position:fixed;bottom:26px;left:50%;transform:translateX(-50%);
+      background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:900;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999;
+      box-shadow:0 10px 26px rgba(0,0,0,.18);
+      backdrop-filter:blur(calc(var(--glass-blur) - 6px)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(calc(var(--glass-blur) - 6px)) saturate(var(--glass-sat));
+    }
     .toast.show{opacity:1}
-    .toast.error{background:#ff453a;color:#fff}
+    .toast.err{background:#ff453a;color:#fff}
 
-    .theme-note{display:block;text-align:center;margin-top:10px;color:var(--muted);font-size:11px}
+    /* ===== Mobile Sheet (same structure/behavior as Home) ===== */
+    #sheet{position:fixed; inset:0; z-index:99999; display:none; contain:layout paint style;}
+    #sheet.open{display:block}
+    #sheet .back{position:absolute; inset:0; background:rgba(0,0,0,.42); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);}
+    #sheet .panel{
+      position:absolute; right:0; top:0; height:100%; width:min(86vw,360px);
+      background:rgba(255,255,255,.9); border-left:1px solid rgba(15,23,42,.18); box-shadow:var(--shadow);
+      padding:16px; display:flex; flex-direction:column; gap:14px; overflow:auto; -webkit-overflow-scrolling:touch;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      transform:translateX(100%); transition:transform .22s ease-out; will-change:transform;
+    }
+    body.dark #sheet .panel{background:rgba(21,21,23,.9); border-left:1px solid rgba(255,255,255,.24);}
+    #sheet.open .panel{ transform:translateX(0); }
+    #sheet .panel .row{display:flex;align-items:center;justify-content:space-between}
+    #sheet .panel nav{display:grid;gap:8px}
+    #sheet .panel nav a{justify-content:flex-start}
+
+    /* ===== Unified 16:9 preview & subpanels ===== */
+    .previewArea{grid-column:1/-1;width:100%;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;margin-top:6px;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat)); -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));}
+    .preview-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+    .preview-shell{position:relative;width:100%;aspect-ratio:16/9;background:#000;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+    .preview-shell video,.preview-shell iframe{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0;background:#000}
+
+    .sub.channels{grid-column:1/-1;width:100%;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:6px;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat)); -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));}
+    .chgrid{display:grid;grid-template-columns:56px 1fr auto auto;gap:8px;align-items:center}
+    .chcell{font-size:12px;color:var(--muted);word-break:break-all}
+    .chname{font-weight:800;color:var(--fg);font-size:13px}
+    .badge{font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:999px;color:var(--muted)}
+
+    /* Channel picker (global) */
+    #chPicker .grid{display:grid;grid-template-columns:1fr;gap:8px}
+    #chList{max-height:320px;overflow:auto;border:1px solid var(--border);border-radius:12px;padding:6px;background:var(--tile);
+      backdrop-filter:blur(calc(var(--glass-blur) - 4px)) saturate(var(--glass-sat)); -webkit-backdrop-filter:blur(calc(var(--glass-blur) - 4px)) saturate(var(--glass-sat));}
+    .chrow{display:flex;gap:8px;align-items:flex-start;padding:8px;border-radius:10px}
+    .chrow:hover{background:var(--tileHover)}
+    .churl{font-size:12px;color:var(--muted);word-break:break-all}
+
+    /* Global test player (picker) */
+    #testWrap{display:none;margin-top:8px;border:1px dashed var(--border);border-radius:12px;padding:8px}
+    #testWrap video{width:100%;height:260px;background:#000;border-radius:10px;border:1px solid var(--border)}
+
+    /* ===== Change Channel Modal (Video.js) ===== */
+    #chgModal{position:fixed;inset:0;display:none;z-index:150}
+    #chgModal.open{display:block}
+    #chgModal .back{position:absolute;inset:0;background:rgba(0,0,0,.42)}
+    #chgModal .dlg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,880px);background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:12px;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat)); -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));}
+    #chgHead{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:8px}
+    #chgBody{display:grid;gap:10px}
+    .igroup{display:grid;gap:0;grid-template-columns:220px 1fr 120px;align-items:center;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+    .igroup>*{height:34px;border:0;border-radius:0}
+    .igroup>*+*{border-left:1px solid var(--border)}
+    #chgPlayerShell{position:relative;aspect-ratio:16/9;background:#000;border-radius:12px;border:1px solid var(--border);overflow:hidden}
+    .video-js{position:absolute!important;inset:0;width:100%!important;height:100%!important}
+    .video-js .vjs-control-bar{background:rgba(0,0,0,.33)}
+    .video-js .vjs-big-play-button{background:var(--accent);border:none;border-radius:10px}
   </style>
 </head>
 <body>
+  <header class="topbar">
+    <div class="toprow">
+      <a class="brand" href="home.html"><span class="logo" id="brandLogo"></span><span class="logotxt">BFA IPTV</span></a>
+      <nav class="nav" aria-label="Primary">
+        <a class="pill" href="home.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
+        <a class="pill" href="dealerships.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
+        <a class="pill is-active" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
+        <a class="pill" href="users.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
+        <div class="more">
+          <a id="moreBtn" class="pill" href="javascript:void(0)"><svg class="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> More</a>
+          <div id="moreMenu" role="menu" aria-label="More">
+            <a href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
+            <a href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
+            <a href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
+            <a href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
+            <a href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
+            <a href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="actions">
+        <span id="adminEmail" class="email"></span>
+        <button id="themeBtn" class="chip" title="Light/Dark"><svg id="themeIcon" class="ic" viewBox="0 0 24 24"></svg>Theme</button>
+        <button id="signOutBtn" class="chip">Sign out</button>
+        <button id="hamburger" class="chip" aria-label="Menu"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+      </div>
+    </div>
+  </header>
+
   <div class="wrap">
-    <div class="brand">
-      <div class="logo" role="img" aria-label="IPTV logo"></div>
-      <div class="title">Create your account</div>
-      <div class="subtitle">Access your dealership remotes</div>
+    <!-- Login -->
+    <div id="loginBox" class="card" style="max-width:520px;margin:40px auto;display:none">
+      <h2 style="margin:0 0 12px">Admin Sign In</h2>
+      <div class="row3" style="grid-template-columns:1fr 1fr auto">
+        <div><div class="label">Email</div><input id="email" class="input" type="email" placeholder="you@company.com" autocomplete="email"/></div>
+        <div><div class="label">Password</div><input id="password" class="input" type="password" placeholder="••••••••" autocomplete="current-password"/></div>
+        <div style="display:flex;align-items:end"><button id="loginBtn" class="btn solid" style="width:100%">Sign in</button></div>
+      </div>
+      <div class="hstack">
+        <button id="resetBtn" class="btn">Send reset link</button>
+        <span class="small muted">Requires <b>role:"admin"</b> in <code>/user/{uid}</code>.</span>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="field">
-        <input id="email" class="input" type="email" placeholder="Email" autocomplete="email">
-      </div>
-      <div class="field">
-        <input id="password" class="input" type="password" placeholder="Password (6+ characters)" autocomplete="new-password">
-      </div>
-      <div class="field">
-        <input id="name" class="input" type="text" placeholder="Your Name" autocomplete="name">
+    <!-- Displays -->
+    <div id="content" class="card" style="display:none">
+      <h2 style="margin:0 0 8px">Displays</h2>
+      <div class="muted small">New players are created at <code>/Displays/{displayId}.html</code> using your template.</div>
+
+      <div class="row3" style="margin:10px 0">
+        <div>
+          <div class="label">Dealership</div>
+          <select id="dealerForDisplays" class="select"><option value="">Select dealership…</option></select>
+        </div>
+        <div>
+          <div class="label">Optional display ID</div>
+          <input id="newDisplayId" class="input" placeholder="Auto if empty (e.g., GW-002)"/>
+        </div>
+        <div style="display:flex;align-items:end;gap:8px;flex-wrap:wrap">
+          <button id="addDisplayBtn" class="btn solid"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add TV</button>
+          <button id="ghSetupBtn" class="btn" title="Configure GitHub (owner/repo/branch/token)"><svg class="ic" viewBox="0 0 24 24"><path d="M12 1v4M12 19v4M4.22 4.22 7 7M17 17l2.78 2.78M1 12h4M19 12h4M4.22 19.78 7 17M17 7l2.78-2.78"/></svg> GH Setup</button>
+          <button id="ghResetBtn" class="btn" title="Clear saved GitHub config"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg> GH Reset</button>
+          <button id="chSetupBtn" class="btn" title="Configure Google Sheet for channels"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg> CH Setup</button>
+          <button id="chPickBtn" class="btn" title="Pick channels from the sheet"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Pick Channels</button>
+          <span id="chSelBadge" class="badge" style="display:none"></span>
+        </div>
       </div>
 
-      <div class="helper">Select Dealership</div>
-      <div class="field">
-        <select id="dealership" class="select">
-          <option value="">Loading dealerships...</option>
-        </select>
+      <!-- Channel picker panel (global) -->
+      <div id="chPicker" class="card" style="display:none; margin-top:8px">
+        <div class="grid">
+          <div class="hstack" style="justify-content:space-between">
+            <div class="label">Pick channels to embed</div>
+            <button id="chClose" class="btn"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg> Close</button>
+          </div>
+          <div class="hstack">
+            <input id="chSearch" class="input" placeholder="Search name or URL…"/>
+            <button id="chReload" class="btn"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M3 12a9 9 0 0 0 3 6.7L3 16"/></svg> Reload</button>
+            <button id="chClearSel" class="btn"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14"/></svg> Clear</button>
+            <button id="chApply" class="btn solid"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Use Selected</button>
+          </div>
+          <div id="chList"></div>
+
+          <!-- tiny test player -->
+          <div id="testWrap">
+            <div class="hstack" style="justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div class="small muted">Channel preview</div>
+              <button id="testStop" class="btn"><svg class="ic" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg> Stop</button>
+            </div>
+            <video id="testVideo" controls playsinline></video>
+          </div>
+
+          <div class="muted small">Tip: Select any; order is preserved. If you skip this, the default 5 stay.</div>
+        </div>
       </div>
 
-      <!-- shown only if user chooses "Add New Dealership…" -->
-      <div class="field" id="newDealerWrap" style="display:none">
-        <input id="newDealership" class="new-dealer" type="text" placeholder="Enter Dealership Name">
+      <div class="hstack" style="margin:8px 0">
+        <button id="bulkMute" class="btn"><svg class="ic" viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6l-5 4H3Z"/><path d="M19 9l-6 6M13 9l6 6"/></svg> Mute all</button>
+        <button id="bulkUnmute" class="btn"><svg class="ic" viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6l-5 4H3Z"/><path d="M16 8c1.5 1.2 2.4 2.9 2.4 4.9S17.5 16.6 16 17.8"/></svg> Unmute all</button>
+        <button id="bulkCh1" class="btn"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> All → CH1</button>
+        <button id="displaysReload" class="btn"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M3 12a9 9 0 0 0 3 6.7L3 16"/></svg> Reload</button>
+        <button id="manageUsers" class="btn" title="Open Users filtered to this dealership"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M5 22c0-4 3-7 7-7s7 3 7 7"/></svg> Manage Users</button>
       </div>
 
-      <button id="signupBtn" class="btn" onclick="signUp()">CREATE ACCOUNT</button>
-      <small class="theme-note">Theme matches your remote (white/dark)</small>
-    </div>
-
-    <div class="below">
-      Already have an account? <a href="https://flaviothebfagroup.github.io/IPTV-/remote-control.html">Sign in</a>
+      <ul id="displayList" class="list"></ul>
+      <div id="displayEmpty" class="empty" style="display:none">Pick a dealership to list TVs.</div>
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
+ <template id="playerTemplate"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+  <title>Digital Signage — Player</title>
+  <style>
+    :root{ --bg:#000; --fg:#fff; --muted:#b3b3b3; --panel:rgba(255,255,255,.06); --border:rgba(255,255,255,.15); --accent:#ff9500; --ok:#22c55e; --err:#ef4444; }
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%}
+    body{ background:var(--bg); color:var(--fg); font-family: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; overflow:hidden; position:relative; }
+    .video-container{position:absolute; inset:0; background:#000}
+    video{width:100%; height:100%; object-fit:cover; background:#000}
+    .loading-overlay{ position:absolute; inset:0; background:rgba(0,0,0,.85); display:flex; align-items:center; justify-content:center; z-index:100; opacity:0; pointer-events:none; transition:opacity .25s; }
+    .loading-overlay.active{opacity:1; pointer-events:auto}
+    .spinner{ width:54px; height:54px; border-radius:50%; border:3px solid rgba(255,255,255,.15); border-top-color:#fff; animation:spin 1s linear infinite; }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .channel-info{ position:absolute; top:18px; left:18px; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:10px 14px; z-index:50; opacity:0; transform:translateY(-8px); transition:opacity .25s, transform .25s; }
+    .channel-info.show{opacity:1; transform:translateY(0)}
+    .channel-name{font-weight:800}
+    .channel-sub{font-size:12px; color:var(--muted); display:flex; gap:10px; align-items:center}
+    .live-dot{width:8px;height:8px;border-radius:50%; background:var(--accent); box-shadow:0 0 0 0 rgba(255,149,0,.7); animation:pulse 2s infinite}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,149,0,.7)} 70%{box-shadow:0 0 0 8px rgba(255,149,0,0)} 100%{box-shadow:0 0 0 0 rgba(255,149,0,0)}}
+    .status-bar{ position:absolute; right:18px; bottom:18px; display:flex; gap:10px; align-items:center; background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:8px 12px; font-size:12px; z-index:50; }
+    .status-dot{width:10px;height:10px;border-radius:50%; background:var(--ok)}
+    .status-dot.disconnected{background:var(--err)}
+    .divider{opacity:.45}
+    .display-id{ position:absolute; left:18px; bottom:18px; z-index:50; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:8px 12px; font-size:12px; color:#fff; }
+    .error-message{ position:absolute; inset:auto 50% 50% auto; transform:translate(50%,-50%); background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.4); color:#fff; padding:14px 18px; border-radius:14px; display:none; z-index:80; text-align:center; }
+    .error-message.show{display:block}
+    .error-title{font-weight:800; margin-bottom:4px; color:var(--err)}
+    .error-text{font-size:12px; color:#fff}
+    .transition-overlay{position:absolute; inset:0; background:#000; z-index:40; opacity:0; pointer-events:none; transition:opacity .25s}
+    .transition-overlay.active{opacity:1}
+    .volume-control{ position:absolute; left:50%; bottom:100px; transform:translateX(-50%); display:flex; align-items:center; gap:12px; z-index:70; background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:10px 12px; opacity:0; pointer-events:none; transition:opacity .2s; }
+    .volume-control.show{opacity:1; pointer-events:auto}
+    .vol-btn{ width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:transparent; color:#fff; font-size:18px; cursor:pointer; }
+    .vol-track{width:160px; height:8px; border-radius:6px; background:rgba(255,255,255,.12); position:relative; overflow:hidden; border:1px solid var(--border)}
+    .vol-fill{position:absolute; left:0; top:0; bottom:0; width:0%; background:var(--accent)}
+    .vol-percent{font-weight:800; min-width:46px; text-align:right}
+    .vol-icon{width:22px;height:22px; display:block}
+    .bar{opacity:0; transition:opacity .15s}
+    .icon-muted .bar, .icon-level-0 .bar{opacity:0}
+    .icon-level-1 #bar1{opacity:1}
+    .icon-level-2 #bar1, .icon-level-2 #bar2{opacity:1}
+    .icon-level-3 #bar1, .icon-level-3 #bar2, #bar3{opacity:1}
+    .icon-muted #x1, .icon-muted #x2{opacity:1}
+    #x1,#x2{opacity:0; stroke:var(--err); stroke-width:2; stroke-linecap:round}
+    .volume-float{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,.92); border:1px solid var(--border); color:#fff; padding:26px 36px; border-radius:18px; font-weight:900; font-size:40px; z-index:90; animation:fadeHud 1.8s ease forwards; }
+    @keyframes fadeHud{0%{opacity:0; transform:translate(-50%,-50%) scale(.96)} 15%{opacity:1; transform:translate(-50%,-50%) scale(1)} 85%{opacity:1} 100%{opacity:0}}
+    @media (prefers-reduced-motion:reduce){ .transition-overlay,.channel-info,.loading-overlay{transition:none} }
+  </style>
+</head>
+<body>
+  <!-- Volume HUD -->
+  <div class="volume-control" id="volumeHud" aria-live="polite">
+    <button class="vol-btn" id="muteBtn" title="Mute/Unmute" aria-label="Mute/Unmute">
+      <svg id="volSvg" class="vol-icon icon-muted" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 10v4h4l5 4V6l-5 4H3Z"></path>
+        <path id="bar1" class="bar" d="M16 9a3 3 0 0 1 0 6"></path>
+        <path id="bar2" class="bar" d="M18.5 7a6 6 0 0 1 0 10"></path>
+        <path id="bar3" class="bar" d="M21 5a9 9 0 0 1 0 14"></path>
+        <line id="x1" x1="2" y1="2" x2="22" y2="22"></line>
+        <line id="x2" x1="22" y1="2" x2="2" y2="22"></line>
+      </svg>
+    </button>
+    <button class="vol-btn" id="volDown" title="Volume down" aria-label="Volume down">−</button>
+    <div class="vol-track"><div class="vol-fill" id="volFill"></div></div>
+    <button class="vol-btn" id="volUp" title="Volume up" aria-label="Volume up">+</button>
+    <div class="vol-percent" id="volPct">0%</div>
+  </div>
+
+  <!-- IMPORTANT: no `muted` attribute (prevents sticky-mute on kiosk engines) -->
+  <div class="video-container">
+    <video id="videoPlayer" autoplay playsinline></video>
+  </div>
+
+  <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+  <div class="channel-info" id="channelInfo">
+    <div class="channel-name" id="chName">Channel</div>
+    <div class="channel-sub"><span class="live-dot"></span><span>LIVE • CH <span id="chNum">1</span></span></div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot" title="Connection"></div>
+    <span id="statusText">Connected</span>
+    <span class="divider">•</span>
+    <span id="clock">00:00</span>
+  </div>
+
+  <div class="display-id">Display: <b id="displayId">—</b></div>
+
+  <div class="error-message" id="errToast">
+    <div class="error-title">Stream Unavailable</div>
+    <div class="error-text" id="errText">Reconnecting…</div>
+  </div>
+
+  <div class="transition-overlay" id="fade"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
 
   <script>
-    // keep theme consistent with the remote
-    (function(){
-      const saved = localStorage.getItem('iptv_theme') || 'light';
-      document.body.classList.toggle('light', saved === 'light');
-    })();
+    /* ================== CONFIG (Admin will inject) ================== */
+    const CONFIG = {
+      displayId: '(NEW-CODE)',
+      dealershipName: '(NEW-NAME)',
+      channels: [
+        { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
+        { id:2, name:'Sports', url:'https://amg01444-tennischannelth-tennischannelnl-samsungnl-x3dq1.amagi.tv/playlist/amg01444-tennischannelth-tennischannelnl-samsungnl/playlist.m3u8', type:'hls' },  // if page is HTTPS, this will be auto-upgraded
+        { id:3, name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
+        { id:4, name:'Nature', url:'https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8', type:'hls' },
+        { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
+      ]
+    };
+
+    /* ================== Player logic ================== */
+    let hls = null;
+    window.currentChannel = 1;
+    window.currentVolume  = 0;
+    window.isMuted        = true;
+    let   lastVolume      = 50;
+    const $ = (id)=>document.getElementById(id);
+    let _hudTimer=null;
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      $('displayId').textContent = CONFIG.displayId;
+      initVideo(); initVolumeUI(); tickClock(); setInterval(tickClock, 1000);
+      loadChannel(1);
+    });
+
+    function initVideo(){
+      const v=$('videoPlayer');
+      v.volume = 0;    // start silent to satisfy autoplay
+      v.muted  = true; // (but not via HTML attribute!)
+      v.addEventListener('loadstart', ()=> showLoading(true));
+      v.addEventListener('canplay',   ()=> showLoading(false));
+      v.addEventListener('stalled',   ()=> showLoading(true));
+      v.addEventListener('error',     onVideoError);
+      $('volUp').onclick   = ()=> volumeUp();
+      $('volDown').onclick = ()=> volumeDown();
+      $('muteBtn').onclick = ()=> toggleMute();
+    }
+
+    function initVolumeUI(){
+      const sv=localStorage.getItem('displayVolume');
+      const sm=localStorage.getItem('displayMuted');
+      if(sv!==null){ window.currentVolume=parseInt(sv,10); lastVolume=window.currentVolume||50; }
+      if(sm!==null){ window.isMuted=(sm==='true'); }
+      const v=$('videoPlayer'); v.volume=(window.currentVolume||0)/100; v.muted=!!window.isMuted; renderVolumeUI();
+    }
+
+    function renderVolumeUI(){
+      const pct=Math.max(0,Math.min(100,window.currentVolume|0));
+      $('volFill').style.width=pct+'%';
+      $('volPct').textContent=(window.isMuted||pct===0)?'0%':(pct+'%');
+      const cls=window.isMuted||pct===0?'icon-muted':pct<30?'icon-level-1':pct<70?'icon-level-2':'icon-level-3';
+      $('volSvg').className.baseVal='vol-icon '+cls;
+    }
+
+    function showVolumeHudBubble(text){
+      const b=document.createElement('div'); b.className='volume-float'; b.textContent=text; document.body.appendChild(b);
+      setTimeout(()=>{ b.remove(); }, 1800);
+    }
+    function flashVolumeHud(){ const hud=$('volumeHud'); hud.classList.add('show'); clearTimeout(_hudTimer); _hudTimer=setTimeout(()=>hud.classList.remove('show'), 1500); }
+
+    function toggleMute(){ window.isMuted ? mute() : unmute(); }
+
+    /* Hard unmute helper: clears any sticky-mute states on kiosk engines */
+    function forceUnmute(v){
+      v.muted = false;
+      v.defaultMuted = false;
+      v.removeAttribute('muted');
+      v.volume = (window.currentVolume || 50) / 100;
+    }
+
+    function mute(){
+      const v=$('videoPlayer');
+      window.isMuted=true;
+      v.muted=true;
+      localStorage.setItem('displayMuted','true');
+      renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble('MUTED');
+    }
+
+    function unmute(){
+      const v=$('videoPlayer');
+      if(window.currentVolume===0){ window.currentVolume=lastVolume||50; v.volume=window.currentVolume/100; }
+      window.isMuted=false;
+      forceUnmute(v);
+      v.play().catch(()=>{});
+      localStorage.setItem('displayMuted','false');
+      renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble(`${window.currentVolume|0}%`);
+    }
+
+    function setVolume(vol){
+      vol=Math.max(0,Math.min(100,vol|0));
+      const v=$('videoPlayer');
+      window.currentVolume=vol;
+      if(vol>0) lastVolume=vol;
+      v.volume=vol/100;
+      if(vol===0){ window.isMuted=true; v.muted=true; localStorage.setItem('displayMuted','true'); }
+      localStorage.setItem('displayVolume',String(vol));
+      renderVolumeUI(); flashVolumeHud(); showVolumeHudBubble(window.isMuted?'MUTED':`${vol}%`);
+    }
+    function volumeUp(){ if(window.isMuted) unmute(); setVolume(window.currentVolume+10); }
+    function volumeDown(){ setVolume(window.currentVolume-10); }
+
+    function showError(msg){ $('errText').textContent=msg; $('errToast').classList.add('show'); }
+    function hideError(){ $('errToast').classList.remove('show'); }
+    function showLoading(f){ const el=$('loading'); if(f){ el.classList.add('active'); } else { el.classList.remove('active'); hideError(); } }
+    function setStatus(connected,msg){ const dot=$('statusDot'),txt=$('statusText'); dot.classList.toggle('disconnected',!connected); txt.textContent=connected?'Connected':('Disconnected'+(msg?` — ${msg}`:'')); }
+    function tickClock(){ $('clock').textContent=new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'}); }
+    function updateChannelInfo(ch){ $('chName').textContent=ch.name||('Channel '+ch.id); $('chNum').textContent=ch.id; const box=$('channelInfo'); box.classList.add('show'); clearTimeout(box._t); box._t=setTimeout(()=>box.classList.remove('show'),4000); }
+    function onHlsError(evt,data){ if(!data||!data.fatal) return; showError('Stream error'); }
+    function onVideoError(){ showError('Playback error'); }
+
+    /* If page is HTTPS and a channel is HTTP, try https:// version to avoid mixed-content block */
+    function httpsify(u){
+      return (location.protocol === 'https:' && /^http:\/\//i.test(u)) ? u.replace(/^http:/i,'https:') : u;
+    }
+
+    function loadChannel(n){
+      const ch=CONFIG.channels.find(c=>c.id===n); if(!ch) return;
+      const v=$('videoPlayer'); showLoading(true);
+
+      if(Hls.isSupported()){
+        if(hls){ try{hls.destroy();}catch(e){} hls=null; }
+        hls=new Hls({enableWorker:true,lowLatencyMode:true});
+        hls.attachMedia(v);
+        hls.loadSource(httpsify(ch.url));
+
+        hls.on(Hls.Events.MANIFEST_PARSED, ()=>{
+          v.play().then(()=>{
+            v.volume = (window.currentVolume||0)/100;
+            v.muted  = !!window.isMuted;
+            /* Nudge once more so audio always comes alive after channel switch */
+            setTimeout(()=>{ if(!window.isMuted) forceUnmute(v); }, 200);
+            showLoading(false);
+          }).catch(()=>{});
+        });
+        hls.on(Hls.Events.ERROR,onHlsError);
+
+      } else if(v.canPlayType('application/vnd.apple.mpegurl')){
+        v.src=httpsify(ch.url);
+        v.play().then(()=>{
+          v.volume = (window.currentVolume||0)/100;
+          v.muted  = !!window.isMuted;
+          setTimeout(()=>{ if(!window.isMuted) forceUnmute(v); }, 200);
+          showLoading(false);
+        }).catch(()=>{});
+      } else {
+        showError('HLS not supported');
+      }
+
+      updateChannelInfo(ch);
+      window.currentChannel=n;
+    }
+
+    /* Expose for Firebase listener */
+    window.setStatus = setStatus;
+    window.loadChannel = loadChannel;
+    window.applyVolumeSettings = function(volume,muted){
+      if(typeof volume==='number') setVolume(volume);
+      if(typeof muted==='boolean') muted?mute():unmute();
+    };
   </script>
 
-  <!-- Firebase + Logic -->
+  <!-- Firebase (module) for the player) -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import {
-      getAuth,
-      setPersistence, browserLocalPersistence,
-      signInAnonymously, EmailAuthProvider, linkWithCredential,
-      createUserWithEmailAndPassword
-    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import { getDatabase, ref, set, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    // --- Firebase config ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
-      authDomain: "iptv-bfa.firebaseapp.com",
-      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
-      projectId: "iptv-bfa",
-      storageBucket: "iptv-bfa.firebasestorage.app",
-      messagingSenderId: "838790935867",
-      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
-    };
+    const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db   = getDatabase(app);
+    const EMBED = /\bembed=1\b/i.test(location.search) || (window.top !== window.self);
+    const app   = initializeApp(firebaseConfig, EMBED ? 'embed' : undefined);
+    const auth  = getAuth(app);
+    if(EMBED){ await setPersistence(auth, inMemoryPersistence); }
+    const db    = getDatabase(app);
 
-    // ---------- helpers ----------
-    function showToast(message, type=''){
-      const t = document.getElementById('toast');
-      t.textContent = message;
-      t.className = 'toast show' + (type==='error' ? ' error' : '');
-      setTimeout(()=>t.classList.remove('show'), 2800);
-    }
-    function slugify(id){
-      return (id||'')
-        .toString()
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g,'-')
-        .replace(/(^-|-$)/g,'');
-    }
-    function twoLetterPrefix(name){
-      const raw = (name||'').trim();
-      if(!raw) return 'DS';
-      let parts = raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g);
-      if(!parts || parts.length < 2) parts = raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g) || [];
-      let first = parts[0] || '', second = parts[1] || '';
-      let prefix = '';
-      if(first) prefix += first[0];
-      if(second) prefix += second[0];
-      if(prefix.length < 2 && first.length >= 2) prefix = first.slice(0,2);
-      return prefix.toUpperCase();
-    }
+    /* Anonymous auth + realtime wiring */
+    signInAnonymously(auth).catch(e=>{ console.error('[auth]',e); window.setStatus(false,'anon auth failed'); });
 
-    // ---------- load dealerships (read list) ----------
-    async function loadDealerships(){
-      const select = document.getElementById('dealership');
-      try{
-        const snap = await get(ref(db, 'dealershipPublic'));
-        select.innerHTML = '<option value="">Choose Dealership...</option>';
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user) return;
+      const displayId      = CONFIG.displayId;
+      const dealershipName = CONFIG.dealershipName;
 
-        if (snap.exists()) {
-          const items = Object.entries(snap.val()).map(([id, v]) => ({ id, name: (v && v.name) ? v.name : id }));
-          items.sort((a,b) => a.name.localeCompare(b.name));
-          for (const {id, name} of items){
-            const opt = document.createElement('option');
-            opt.value = id;
-            opt.textContent = name;
-            select.appendChild(opt);
-          }
-        }
-
-        // Add "new" option (admin must finalize)
-        const add = document.createElement('option');
-        add.value = '__new__';
-        add.textContent = '➕ Add New Dealership…';
-        select.appendChild(add);
-      }catch(err){
-        console.warn('Could not load dealershipPublic:', err);
-        select.innerHTML = `
-          <option value="">(Ask admin to attach you later)</option>
-          <option value="__new__">➕ Add New Dealership…</option>
-        `;
+      if(EMBED){
+        /* In-iframe preview: only listen; do not write user record */
+        const dref=ref(db,`displays/${displayId}`);
+        onValue(dref,(snap)=>{
+          const d=snap.val(); if(!d) return;
+          if(typeof d.channel==='number' && d.channel!==window.currentChannel) window.loadChannel(d.channel);
+          if(d.volume!==undefined || d.muted!==undefined) window.applyVolumeSettings(d.volume, d.muted);
+          window.setStatus(true,'');
+        },(err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
+        return;
       }
+
+      /* Register device (role=device) + seed display if missing */
+      try{
+        await update(ref(db,`user/${user.uid}`),{
+          role:'device',
+          name:displayId,
+          dealershipId:dealershipName,
+          updatedAt:Date.now(),
+          createdAt:Date.now()
+        });
+      }catch(e){}
+
+      try{
+        const dRef=ref(db,`displays/${displayId}`); const snap=await get(dRef);
+        if(!snap.exists()){
+          await update(dRef,{ channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() });
+        }
+      }catch(e){}
+
+      /* Live controls listener */
+      const dref=ref(db,`displays/${displayId}`);
+      onValue(dref,(snap)=>{
+        const d=snap.val(); if(!d) return;
+        if(typeof d.channel==='number' && d.channel!==window.currentChannel) window.loadChannel(d.channel);
+        if(d.volume!==undefined || d.muted!==undefined) window.applyVolumeSettings(d.volume, d.muted);
+        window.setStatus(true,'');
+      },(err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
+
+      /* Heartbeat */
+      try{
+        const hbRef=ref(db,`displays/${displayId}`);
+        const beat=async()=>{ try{ await update(hbRef,{ lastSeenAt:Date.now(), updatedAt:Date.now() }); }catch(e){} };
+        beat(); setInterval(beat, 15000);
+      }catch(e){}
+    });
+  </script>
+</body>
+</html>
+</template>
+
+
+
+
+  <div id="toast" class="toast"></div>
+
+  <!-- Hls.js for admin-side tiny preview -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
+
+  <!-- ===== Admin page logic ===== -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getDatabase, ref, get, set, update, remove, onValue, query, orderByChild, equalTo } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+    const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
+    const LOGO_URL="/IPTV-/icons/icon-512.png";
+
+    const DEFAULT_SHEET_ID='1Oh69mDuOCuy27YDYpInoVfcw3o4TlFutQEGYamBXSHE';
+    const DEFAULT_SHEET_GID='824459168';
+
+    const app=initializeApp(firebaseConfig);
+    const auth=getAuth(app);
+    const db=getDatabase(app);
+
+    /* ---------- NEW helper: detect 'dealerships' vs 'dealership' base ---------- */
+    let DEALER_BASE_CACHE = null;
+    async function dealerBase() {
+      if (DEALER_BASE_CACHE) return DEALER_BASE_CACHE;
+      try { const s = await get(ref(db, 'dealerships')); if (s.exists()) return DEALER_BASE_CACHE = 'dealerships'; } catch {}
+      try { const s2 = await get(ref(db, 'dealership')); if (s2.exists()) return DEALER_BASE_CACHE = 'dealership'; } catch {}
+      return DEALER_BASE_CACHE = 'dealerships';
     }
 
-    // sign-in anonymously so reads are allowed by your root .read rule
-    (async ()=>{
-      try{
-        await setPersistence(auth, browserLocalPersistence);
-        if (!auth.currentUser) await signInAnonymously(auth);
-      }catch(e){ console.warn('Anonymous sign-in failed:', e); }
-      finally{ loadDealerships(); }
+    const $=s=>document.querySelector(s);
+    const $$=(s)=>Array.from(document.querySelectorAll(s));
+    const debounce=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
+    function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+    function toast(msg,err=false){const t=$('#toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.classList.remove('show'),2400);}
+
+    // Preview state (keeps Live/CH preview open across re-renders)
+    const previewState = {}; // { [displayId]: { mode:'live'|'ch', ch?:number } }
+    const rememberPreview=(id,mode,ch)=>{ previewState[id]={mode, ch}; };
+    const forgetPreview=(id)=>{ delete previewState[id]; };
+
+    // URLs: try to auto-upgrade http->https when page is HTTPS
+    const isHttpsPage = location.protocol === 'https:';
+    function prepareUrlForSecureContext(url){
+      if(isHttpsPage && /^http:\/\//i.test(url)){
+        return { url:url.replace(/^http:/i,'https:'), upgraded:true, wasHttp:true };
+      }
+      return { url, upgraded:false, wasHttp:false };
+    }
+
+    // logos & theme
+    $('#brandLogo').style.backgroundImage=`url("${LOGO_URL}")`; const brandLogoM=document.getElementById('brandLogoM'); if(brandLogoM){ brandLogoM.style.backgroundImage=`url("${LOGO_URL}")`; }
+    const THEME_KEY='iptv_theme', themeBtn=document.getElementById('themeBtn'), themeIcon=document.getElementById('themeIcon');
+    const setThemeIcon=()=>{ const dark=document.body.classList.contains('dark'); themeIcon.innerHTML= dark? `<path d="M21 12a9 9 0 1 1-9-9 6 6 0 0 0 9 9z"/>` : `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1.4-1.4M20.4 20.4 19 19M5 19l-1.4 1.4M20.4 3.6 19 5"/>`; };
+    const saved=localStorage.getItem(THEME_KEY)||'light'; document.body.classList.toggle('dark',saved==='dark'); setThemeIcon();
+    themeBtn.addEventListener('click',()=>{ const toDark=!document.body.classList.contains('dark'); document.body.classList.toggle('dark',toDark); localStorage.setItem(THEME_KEY,toDark?'dark':'light'); setThemeIcon(); });
+
+    // more menu & mobile sheet
+    const moreBtn=document.getElementById('moreBtn'), moreMenu=document.getElementById('moreMenu');
+    if(moreBtn){
+      moreBtn.addEventListener('click',e=>{e.preventDefault();moreMenu.classList.toggle('open');});
+      document.addEventListener('click',e=>{if(!moreMenu.contains(e.target)&&e.target!==moreBtn&&!moreBtn.contains(e.target)){moreMenu.classList.remove('open');}}, {capture:true});
+      document.addEventListener('keydown',e=>{if(e.key==='Escape') moreMenu.classList.remove('open');});
+      const file=(location.pathname.split("/").pop()||"displays.html").toLowerCase();
+      moreMenu.querySelectorAll('a').forEach(a=>{const h=(a.getAttribute('href')||'').toLowerCase(); if(h===file){a.classList.add('is-active');}});
+    }
+
+    // ==== Mobile Sheet open/close (unchanged logic, element is now outside header) ====
+    (()=>{ 
+      const sheet=document.getElementById('sheet'); 
+      const open=()=>{sheet.classList.add('open');document.body.style.overflow='hidden';}; 
+      const close=()=>{sheet.classList.remove('open');document.body.style.overflow='';}; 
+      document.getElementById('hamburger').addEventListener('click',open); 
+      document.getElementById('closeSheet').addEventListener('click',close); 
+      sheet.querySelector('.back').addEventListener('click',close); 
+      const mainOut=document.getElementById('signOutBtn'); 
+      const mobOut=document.getElementById('signOutBtnM'); 
+      if(mainOut&&mobOut){mobOut.addEventListener('click',()=> mainOut.click());}
     })();
 
-    // toggle input when user chooses "Add New Dealership…"
-    document.addEventListener('change', (e)=>{
-      if (e.target && e.target.id === 'dealership'){
-        const isNew = e.target.value === '__new__';
-        document.getElementById('newDealerWrap').style.display = isNew ? 'block' : 'none';
-        if (isNew) document.getElementById('newDealership').focus();
+    // auth UI
+    document.getElementById('loginBtn').addEventListener('click',doLogin);
+    document.getElementById('resetBtn').addEventListener('click',async()=>{ const email=document.getElementById('email').value.trim(); if(!email) return toast('Enter email',true); try{ await sendPasswordResetEmail(auth,email); toast('Reset sent'); }catch(e){ console.error(e); toast('Reset failed',true);} });
+    document.getElementById('signOutBtn').addEventListener('click',()=>signOut(auth));
+    async function doLogin(){ const email=document.getElementById('email').value.trim(); const pass=document.getElementById('password').value; if(!email||!pass) return toast('Fill email & password',true); try{ await setPersistence(auth,browserLocalPersistence); await signInWithEmailAndPassword(auth,email,pass);}catch(e){console.error(e);toast('Sign-in failed',true);} }
+
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ $('#loginBox').style.display='block'; $('#content').style.display='none'; return; }
+      document.getElementById('adminEmail').textContent=user.email||user.uid;
+      try{ const snap=await get(ref(db,`user/${user.uid}`)); const u=snap.val()||{}; if(u.role!=='admin'){ $('#loginBox').style.display='none'; $('#content').style.display='none'; alert('Not authorized. Ask an admin to set your role to admin.'); return; } }catch(_){}
+      $('#loginBox').style.display='none'; $('#content').style.display='block';
+      await refreshDealers(); const did=new URL(location.href).searchParams.get('dealer')||''; if(did){ document.getElementById('dealerForDisplays').value=did; watchDisplays(did,true); }
+    });
+
+    async function refreshDealers(){
+      const sel=document.getElementById('dealerForDisplays'); sel.innerHTML='<option value="">Select dealership…</option>';
+      let map={}; try{ const pub=await get(ref(db,'dealershipPublic')); if(pub.exists()) map=pub.val(); }catch(e){}
+      if(!map||Object.keys(map).length===0){ try{ const d=await get(ref(db,'dealership')); if(d.exists()){ const raw=d.val(); for(const id of Object.keys(raw)) map[id]={name:raw[id]?.name||id}; } }catch(e){} }
+      Object.entries(map||{}).sort((a,b)=> (a[1]?.name||a[0]).localeCompare(b[1]?.name||b[0]) ).forEach(([id,v])=>{
+        const opt=document.createElement('option');
+        opt.value=id; opt.textContent=v?.name||id;
+        sel.appendChild(opt);
+      });
+    }
+
+    /* ========= Channel source (Google Sheet / JSON) ========= */
+    const CH_KEY='iptv_admin_ch';
+    function chCfg(){ try{return JSON.parse(localStorage.getItem(CH_KEY)||'{}');}catch{return{};} }
+    function saveChCfg(c){ localStorage.setItem(CH_KEY, JSON.stringify(c)); }
+    function normalizeSheetUrl(u){
+      if(!u) return '';
+      try{
+        if(/docs\.google\.com\/spreadsheets\/.*(export|gviz)/i.test(u)) return u;
+        const m = u.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+        const id = m ? m[1] : DEFAULT_SHEET_ID;
+        const url = new URL(u);
+        const gid = url.searchParams.get('gid') || DEFAULT_SHEET_GID;
+        return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&gid=${encodeURIComponent(gid)}&range=${encodeURIComponent('B2:C')}`;
+      }catch{
+        return `https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${encodeURIComponent(DEFAULT_SHEET_GID)}&range=${encodeURIComponent('B2:C')}`;
       }
+    }
+    async function fetchChannelSheet(){
+      const srcUrl = normalizeSheetUrl((chCfg().url||'').trim() ||
+        `https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${encodeURIComponent(DEFAULT_SHEET_GID)}&range=${encodeURIComponent('B2:C')}`
+      );
+      const r=await fetch(srcUrl,{cache:'no-store'});
+      if(!r.ok) throw new Error(`Fetch failed [${r.status}]`);
+      const txt=await r.text();
+
+      const rows=[]; let row=[],cur="",q=false;
+      for(let i=0;i<txt.length;i++){
+        const ch=txt[i],n=txt[i+1];
+        if(q){ if(ch=='"'&&n=='"'){cur+='"';i++;} else if(ch=='"'){q=false;} else cur+=ch; }
+        else { if(ch=='"'){q=true;} else if(ch==','){row.push(cur);cur="";} else if(ch=='\n'){row.push(cur);rows.push(row);row=[];cur="";} else if(ch!='\r'){cur+=ch;} }
+      }
+      if(cur.length||row.length){row.push(cur);rows.push(row);}
+      const out=[];
+      for(const r0 of rows){
+        const url=(r0[0]||'').trim(), name=(r0[1]||'').trim();
+        if(/^https?:\/\//i.test(url)) out.push({code:name||url,name:name||'Channel',url,type:'hls'});
+      }
+      return out;
+    }
+
+    // Global Picker (used for Add TV defaults)
+    let chSource=[], chSelectedCodes=new Set(), chSelectedList=[];
+    const chPickerEl = document.getElementById('chPicker');
+    const chListEl   = document.getElementById('chList');
+    const chBadge    = document.getElementById('chSelBadge');
+
+    function openPicker(){ chPickerEl.style.display='block'; }
+    function closePicker(){ chPickerEl.style.display='none'; }
+
+    function renderChannelList(){
+      const q=(document.getElementById('chSearch').value||'').trim().toLowerCase();
+      chListEl.innerHTML='';
+      const frag=document.createDocumentFragment();
+      const list = chSource.filter(r=>{
+        if(!q) return true;
+        return (r.name||'').toLowerCase().includes(q) || (r.url||'').toLowerCase().includes(q) || (r.code||'').toLowerCase().includes(q);
+      });
+      if(!list.length){
+        const div=document.createElement('div'); div.className='muted small'; div.style.padding='8px 4px';
+        div.textContent='No channels found. Reload or change your search.'; frag.appendChild(div);
+      }else{
+        list.forEach((r)=>{
+          const row=document.createElement('div');
+          row.className='chrow';
+          row.innerHTML=`<input type="checkbox" class="chk" ${chSelectedCodes.has(r.code)?'checked':''} />
+                         <div class="col" style="min-width:0">
+                           <div class="chname">${esc(r.name||'Channel')}</div>
+                           <div class="churl">${esc(r.url)}</div>
+                         </div>
+                         <button class="btn small prev"><svg class="ic" viewBox="0 0 24 24"><path d="M8 5v14l11-7-11-7z"/></svg> Preview</button>`;
+          const chk=row.querySelector('.chk');
+          chk.addEventListener('change',()=>{
+            if(chk.checked) chSelectedCodes.add(r.code); else chSelectedCodes.delete(r.code);
+            recomputeSelection();
+          });
+          row.querySelector('.prev').addEventListener('click',()=> testPlay(r.url));
+          frag.appendChild(row);
+        });
+      }
+      chListEl.appendChild(frag);
+      recomputeSelection();
+    }
+    function recomputeSelection(){
+      chSelectedList = Array.from(chSelectedCodes).map(code=> chSource.find(x=>x.code===code)).filter(Boolean);
+      const n=chSelectedList.length;
+      if(n>0){ chBadge.style.display='inline-block'; chBadge.textContent=`${n} selected`; } else { chBadge.style.display='none'; }
+    }
+    // Picker tiny preview (with HTTPS auto-upgrade)
+    function testPlay(url){
+      let {url:tryUrl, upgraded, wasHttp} = prepareUrlForSecureContext(url);
+      if (wasHttp && !upgraded) { toast('Blocked: HTTP stream on HTTPS page. Use an HTTPS channel URL.', true); return; }
+      if (wasHttp && upgraded) { toast('Tried HTTPS version of this HTTP stream…', false); }
+      const wrap=document.getElementById('testWrap'); const el=document.getElementById('testVideo'); wrap.style.display='block';
+      if(wrap._h){ try{wrap._h.destroy();}catch{} wrap._h=null; }
+      if(Hls.isSupported()){ const hls=new Hls({enableWorker:true}); hls.loadSource(tryUrl); hls.attachMedia(el); el.play().catch(()=>{}); wrap._h=hls; }
+      else { el.src=tryUrl; el.play().catch(()=>{}); }
+    }
+    function testStop(){ const wrap=document.getElementById('testWrap'); const el=document.getElementById('testVideo'); if(wrap._h){ try{wrap._h.destroy();}catch{} wrap._h=null; } el.pause(); el.removeAttribute('src'); el.load(); wrap.style.display='none'; }
+    document.getElementById('testStop').addEventListener('click',testStop);
+
+    document.getElementById('chSetupBtn').addEventListener('click',()=>{
+      const cur=chCfg().url||`https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/edit#gid=${DEFAULT_SHEET_GID}`;
+      const val=prompt('Paste your Google Sheet link (B=URL, C=Name, from row 2). You can paste any Sheets URL.', cur);
+      if(!val) return;
+      saveChCfg({url:val.trim()}); toast('Channel source saved'); 
     });
-
-    // enter to submit
-    ['email','password','name','newDealership'].forEach(id=>{
-      const el = document.getElementById(id);
-      if(el) el.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') signUp(); });
+    document.getElementById('chPickBtn').addEventListener('click',async()=>{
+      openPicker(); await reloadPicker();
     });
+    document.getElementById('chClose').addEventListener('click',closePicker);
+    document.getElementById('chReload').addEventListener('click',reloadPicker);
+    document.getElementById('chClearSel').addEventListener('click',()=>{ chSelectedCodes.clear(); recomputeSelection(); renderChannelList(); });
+    document.getElementById('chApply').addEventListener('click',()=>{
+      if(chSelectedList.length){ toast(`Will use ${chSelectedList.length} selected channels for NEW TVs.`); }
+      closePicker();
+    });
+    document.getElementById('chSearch').addEventListener('input',debounce(renderChannelList,150));
+    async function reloadPicker(){
+      try{ chSource = await fetchChannelSheet(); renderChannelList(); toast(`Loaded ${chSource.length} channels`); }
+      catch(e){ console.error(e); toast('Load failed',true); }
+    }
 
-    // ---------- sign up ----------
-    window.signUp = async function(){
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      const name = document.getElementById('name').value.trim();
-      const sel = document.getElementById('dealership').value;
-      const newName = (document.getElementById('newDealership').value || '').trim();
+    // ====== GitHub integration (create/edit/delete player files) ======
+    const GH_KEY='iptv_admin_gh';
+    function ghCfg(){ try{return JSON.parse(localStorage.getItem(GH_KEY)||'{}');}catch{return{};} }
+    function saveGhCfg(c){ localStorage.setItem(GH_KEY, JSON.stringify(c)); }
+    document.getElementById('ghSetupBtn').addEventListener('click',()=>{
+      const cur=ghCfg();
+      const owner=prompt('GitHub owner/org:', cur.owner||'');
+      if(!owner) return;
+      const repo =prompt('Repo name:', cur.repo||'');
+      if(!repo) return;
+      const branch=prompt('Branch (default main):', cur.branch||'main')||'main';
+      const basePath=prompt('Folder to save players (default Displays):', cur.basePath||'Displays')||'Displays';
+      const token=prompt('Personal Access Token (contents:read/write):', cur.token||'');
+      if(!token) return;
+      saveGhCfg({owner,repo,branch,basePath,token});
+      toast('GitHub saved');
+    });
+    document.getElementById('ghResetBtn').addEventListener('click',()=>{ localStorage.removeItem(GH_KEY); toast('GitHub config cleared'); });
 
-      if(!email || !password || !name){ showToast('Please fill all fields','error'); return; }
-      if(password.length < 6){ showToast('Password must be 6+ characters','error'); return; }
-      if(!sel && !newName){ showToast('Choose a dealership','error'); return; }
+    const b64=(s)=> btoa(unescape(encodeURIComponent(s)));
+    const unb64=(s)=> decodeURIComponent(escape(atob(s)));
 
-      // resolve dealershipId + name
-      let dealershipId = sel;
-      let dealershipName = '';
-      const creatingNew = (sel === '__new__');
+    async function ghGet(path){
+      const c=ghCfg(); if(!c.token) throw new Error('GH not configured');
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(c.branch)}`;
+      const r=await fetch(url,{headers:{Authorization:`Bearer ${c.token}`,'Accept':'application/vnd.github+json'}});
+      if(r.status===404) return null;
+      if(!r.ok) throw new Error('GH get failed');
+      return await r.json();
+    }
+    async function ghPut(path,content,message,sha){
+      const c=ghCfg(); if(!c.token) throw new Error('GH not configured');
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encodeURIComponent(path)}`;
+      const body={message,branch:c.branch,content:b64(content)}; if(sha) body.sha=sha;
+      const r=await fetch(url,{method:'PUT',headers:{Authorization:`Bearer ${c.token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify(body)});
+      if(!r.ok) throw new Error('GH put failed');
+      return await r.json();
+    }
+    async function ghDel(path,sha,message){
+      const c=ghCfg(); if(!c.token) throw new Error('GH not configured');
+      const url=`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encodeURIComponent(path)}`;
+      const body={message,branch:c.branch,sha};
+      const r=await fetch(url,{method:'DELETE',headers:{Authorization:`Bearer ${c.token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify(body)});
+      if(!r.ok) throw new Error('GH delete failed');
+      return await r.json();
+    }
 
-      if(creatingNew){
-        if(!newName){ showToast('Enter the new dealership name','error'); return; }
-        dealershipName = newName;
-        let candidate = slugify(newName) || 'dealership';
-        // Do NOT attempt to write dealershipPublic/dealership here (admin-only in your rules)
-        dealershipId = candidate;
+    function buildPlayerHtml(displayId, dealerName, channels){
+      const tpl=document.getElementById('playerTemplate').innerHTML;
+      const chanStr=channels.map((c,i)=>`        { id:${i+1}, name:'${(c.name||'Channel').replace(/'/g,"\\'")}',   url:'${(c.url||'').replace(/'/g,"\\'")}', type:'hls' }`).join(',\n');
+      return tpl.replace("displayId: '(NEW-CODE)'", `displayId: '${displayId}'`)
+                .replace("dealershipName: '(NEW-NAME)'", `dealershipName: '${dealerName}'`)
+                .replace(/channels:\s*\[[\s\S]*?\]/, `channels: [\n${chanStr}\n      ]`);
+    }
+    function parseChannelsFromPlayer(html){
+      const arr=[]; const re=/\{\s*id\s*:\s*(\d+)\s*,\s*name\s*:\s*'([^']*)'\s*,\s*url\s*:\s*'([^']*)'[\s\S]*?\}/g;
+      let m; while((m=re.exec(html))){ arr.push({id:parseInt(m[1],10),name:m[2],url:m[3],type:'hls'}); }
+      if(arr.length>=5) return arr.slice(0,5);
+      return [
+        {id:1,name:'News',url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8',type:'hls'},
+        {id:2,name:'Sports',url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8',type:'hls'},
+        {id:3,name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8',type:'hls'},
+        {id:4,name:'Nature',url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8',type:'hls'},
+        {id:5,name:'Kids',url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8',type:'hls'}
+      ];
+    }
+    async function createOrUpdatePlayer(displayId, dealerName, channels){
+      const gh=ghCfg(); if(!gh.token) throw new Error('GitHub not configured');
+      const path = `${gh.basePath||'Displays'}/${displayId}.html`;
+      const cur=await ghGet(path);
+      const html=buildPlayerHtml(displayId,dealerName,channels);
+      await ghPut(path, html, `[IPTV] ${cur?'Update':'Add'} ${displayId} player`, cur?.sha);
+      return `/${gh.basePath||'Displays'}/${displayId}.html`;
+    }
+
+    // ===== Displays list =====
+    const selDealer=document.getElementById('dealerForDisplays');
+    selDealer.addEventListener('change',()=>{ const v=selDealer.value||''; if(!v){ showEmpty(true); return; } watchDisplays(v,true); });
+    function showEmpty(f){ document.getElementById('displayEmpty').style.display=f?'block':'none'; }
+
+    let unSub=null;
+    function watchDisplays(dealerId){
+      if(unSub) { unSub(); unSub=null; }
+      const qy=query(ref(db,'displays'), orderByChild('dealership'), equalTo(dealerId));
+      const off=onValue(qy,(snap)=>{
+        const list=snap.exists()?snap.val():{};
+        renderDisplayList(list, dealerId);
+      });
+      unSub=off;
+      showEmpty(false);
+    }
+
+    // Build the Live embed URL (defaults to GH Pages)
+    function liveEmbedUrl(displayId){
+      const gh = ghCfg();
+      const owner = (gh.owner || 'flaviothebfagroup').trim();
+      const repo  = (gh.repo  || 'IPTV-').trim();
+      const folder = (gh.basePath && gh.basePath.trim())
+        ? `/${gh.basePath.trim().replace(/^\/|\/$/g,'')}`
+        : '/Displays';
+      const root  = `https://${owner}.github.io/${repo}`;
+      const ts    = Date.now();
+      return `${root}${folder}/${encodeURIComponent(displayId)}.html?embed=1&nocache=${ts}`;
+    }
+
+    /* ===== Unified 16:9 preview helpers (LIVE + CH) ===== */
+    function getRowPreviewBits(rowEl){
+      const area = rowEl.querySelector('.previewArea');
+      const shell = area.querySelector('[data-shell]');
+      const modeLabel = area.querySelector('[data-mode]');
+      const refreshBtn = area.querySelector('[data-refresh]');
+      const closeBtn   = area.querySelector('[data-close]');
+      return { area, shell, modeLabel, refreshBtn, closeBtn };
+    }
+    function clearShell(shell){
+      if (shell._hls) { try{ shell._hls.destroy(); }catch{} shell._hls = null; }
+      shell.innerHTML = '';
+    }
+    function playLiveInRow(rowEl, displayId){
+      const { area, shell, modeLabel, refreshBtn, closeBtn } = getRowPreviewBits(rowEl);
+      area.style.display = 'block';
+      modeLabel.textContent = '• Live';
+      clearShell(shell);
+      const iframe=document.createElement('iframe');
+      iframe.setAttribute('loading','lazy');
+      iframe.setAttribute('referrerpolicy','no-referrer');
+      iframe.setAttribute('sandbox','allow-scripts allow-same-origin allow-presentation allow-popups');
+      iframe.setAttribute('allow','autoplay; fullscreen; picture-in-picture');
+      iframe.src = liveEmbedUrl(displayId);
+      shell.appendChild(iframe);
+      refreshBtn.onclick = ()=>{ iframe.src = liveEmbedUrl(displayId); };
+      closeBtn.onclick   = ()=>{
+        iframe.src='about:blank';
+        clearShell(shell);
+        rowEl.querySelector('.previewArea').style.display='none';
+        forgetPreview(displayId);
+      };
+      rememberPreview(displayId,'live');
+    }
+    async function openChannelPreview(rowEl, displayId, n){
+      try{
+        const info=await fetchChannelInfoFromPlayer(displayId);
+        const ch=info.channels[n-1];
+        if(!ch||!ch.url) return toast('No URL for this slot',true);
+
+        const { area, shell, modeLabel, refreshBtn, closeBtn } = getRowPreviewBits(rowEl);
+        area.style.display='block';
+        modeLabel.textContent = `• CH${n}`;
+        clearShell(shell);
+
+        // video element
+        const v=document.createElement('video');
+        v.setAttribute('playsinline','');
+        v.setAttribute('controls','');
+        shell.appendChild(v);
+
+        let {url:playUrl, upgraded, wasHttp} = prepareUrlForSecureContext(ch.url);
+        if (wasHttp && upgraded) toast('Tried HTTPS version of this HTTP stream…', false);
+        if (wasHttp && !upgraded) { toast('Blocked: HTTP stream on HTTPS page. Use an HTTPS URL.', true); return; }
+
+        if (window.Hls && Hls.isSupported()){
+          const hls=new Hls({enableWorker:true});
+          hls.loadSource(playUrl);
+          hls.attachMedia(v);
+          shell._hls = hls;
+          v.play().catch(()=>{});
+        } else { v.src=playUrl; v.play().catch(()=>{}); }
+
+        refreshBtn.onclick = ()=> openChannelPreview(rowEl, displayId, n);
+        closeBtn.onclick = ()=>{
+          clearShell(shell);
+          area.style.display='none';
+          forgetPreview(displayId);
+        };
+        rememberPreview(displayId,'ch',n);
+      }catch(e){ console.error(e); toast('Read player file failed',true); }
+    }
+    function toggleInlinePreview(rowEl, displayId){
+      const area = rowEl.querySelector('.previewArea');
+      if (area.style.display==='block') {
+        const { shell } = getRowPreviewBits(rowEl);
+        clearShell(shell);
+        area.style.display='none';
+        forgetPreview(displayId);
       } else {
-        dealershipId = sel;
-        const opt = document.querySelector(`#dealership option[value="${sel}"]`);
-        dealershipName = opt ? opt.textContent : sel;
+        playLiveInRow(rowEl, displayId);
       }
+    }
 
-      const btn = document.getElementById('signupBtn');
-      btn.disabled = true; btn.innerHTML = 'CREATING<span class="spinner"></span>';
+    function renderDisplayList(map, dealerId){
+      const ul=document.getElementById('displayList'); ul.innerHTML='';
+      const ids=Object.keys(map||{}).sort();
+      if(ids.length===0){ showEmpty(true); return; }
+      showEmpty(false);
+      ids.forEach(id=>{
+        const d=map[id]||{};
+        const li=document.createElement('li'); li.className='item'; li.dataset.displayId=id;
+        li.innerHTML=`
+          <div class="col">
+            <div class="hstack">
+              <span class="tag">ID: ${esc(id)}</span>
+              <span class="tag ${d.lastSeenAt&&Date.now()-d.lastSeenAt<30000?'ok':''}">${d.lastSeenAt&&Date.now()-d.lastSeenAt<30000?'Online':'Offline'}</span>
+              <span class="tag">CH ${d.channel||1}</span>
+              <span class="tag">Vol ${d.volume??0}</span>
+            </div>
+            <div class="small muted">Updated ${new Date(d.updatedAt||d.timestamp||Date.now()).toLocaleString()}</div>
+          </div>
+          <div class="split">
+            <button class="btn" data-act="live" title="Live">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M8 5v14l11-7-11-7z"/></svg> Live
+            </button>
+            <button class="btn" data-act="chpanel" title="Channels">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg> Channels
+            </button>
+            <button class="btn danger" data-act="delete" title="Remove">
+              <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg> Remove
+            </button>
+            <div class="vol">
+              <input type="range" min="0" max="100" value="${d.volume??0}" />
+              <button class="btn" data-act="mute" title="Mute">
+                <svg class="ic" viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6l-5 4H3Z"/><path d="M19 9l-6 6M13 9l6 6"/></svg> Mute
+              </button>
+              <button class="btn" data-act="unmute" title="Unmute">
+                <svg class="ic" viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6l-5 4H3Z"/><path d="M16 8c1.5 1.2 2.4 2.9 2.4 4.9S17.5 16.6 16 17.8"/></svg> Unmute
+              </button>
+            </div>
+            <div class="hstack">
+              <button class="btn" data-act="ch" data-n="1">CH1</button>
+              <button class="btn" data-act="ch" data-n="2">CH2</button>
+              <button class="btn" data-act="ch" data-n="3">CH3</button>
+              <button class="btn" data-act="ch" data-n="4">CH4</button>
+              <button class="btn" data-act="ch" data-n="5">CH5</button>
+            </div>
+          </div>
+
+          <!-- Per-row Channels panel -->
+          <div class="sub channels" style="display:none">
+            <div class="chgrid">
+              <div class="chcell">CH1</div><div class="chcell name1">—</div><button class="btn small" data-prev="1"><svg class="ic" viewBox="0 0 24 24"><path d="M8 5v14l11-7-11-7z"/></svg> Preview</button><button class="btn small solid" data-change="1">Change</button>
+              <div class="chcell">CH2</div><div class="chcell name2">—</div><button class="btn small" data-prev="2"><svg class="ic" viewBox="0 0 24 24"><path d="M8 5v14l11-7-11-7z"/></svg> Preview</button><button class="btn small solid" data-change="2">Change</button>
+              <div class="chcell">CH3</div><div class="chcell name3">—</div><button class="btn small" data-prev="3"><svg class="ic" viewBox="0 0 24 24"><path d="M8 5v14l11-7-11-7z"/></svg> Preview</button><button class="btn small solid" data-change="3">Change</button>
+              <div class="chcell">CH4</div><div class="chcell name4">—</div><button class="btn small" data-prev="4"><svg class="ic" viewBox="0 0 24 24"><path d="M8 5v14l11-7-11-7z"/></svg> Preview</button><button class="btn small solid" data-change="4">Change</button>
+              <div class="chcell">CH5</div><div class="chcell name5">—</div><button class="btn small" data-prev="5"><svg class="ic" viewBox="0 0 24 24"><path d="M8 5v14l11-7-11-7z"/></svg> Preview</button><button class="btn small solid" data-change="5">Change</button>
+            </div>
+          </div>
+
+          <!-- Unified 16:9 preview area for LIVE and CH previews -->
+          <div class="previewArea" style="display:none">
+            <div class="preview-bar">
+              <span class="small muted">Preview — <b>${esc(id)}</b> <span class="small muted" data-mode></span></span>
+              <span style="margin-left:auto;display:flex;gap:6px;align-items:center">
+                <button class="btn" data-refresh title="Refresh">
+                  <svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M3 12a9 9 0 0 0 3 6.7L3 16"/></svg> Refresh
+                </button>
+                <button class="btn" data-close title="Close">
+                  <svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg> Close
+                </button>
+              </span>
+            </div>
+            <div class="preview-shell" data-shell></div>
+          </div>
+        `;
+        ul.appendChild(li);
+
+        // wire actions
+        li.querySelectorAll('button').forEach(b=>{
+          b.addEventListener('click', async ()=>{
+            const act=b.dataset.act;
+            if(act==='live'){ toggleInlinePreview(li,id); }
+            else if(act==='chpanel'){ await loadChannelNamesIntoPanel(li,id); const p=li.querySelector('.sub.channels'); p.style.display=p.style.display==='none'?'block':'none'; }
+            else if(act==='mute'){ await update(ref(db,`displays/${id}`),{muted:true,updatedAt:Date.now()}); }
+            else if(act==='unmute'){ await update(ref(db,`displays/${id}`),{muted:false,updatedAt:Date.now()}); }
+            else if(act==='ch'){ const n=parseInt(b.dataset.n,10); await update(ref(db,`displays/${id}`),{channel:n,updatedAt:Date.now()}); }
+            else if(act==='delete'){ await deleteDisplayFlow(id); }
+          });
+        });
+        li.querySelector('.vol input').addEventListener('input',debounce(async (e)=>{
+          await update(ref(db,`displays/${id}`),{volume:parseInt(e.target.value,10),updatedAt:Date.now()});
+        },200));
+
+        // per-slot channel preview -> unified area (open with helper)
+        li.querySelectorAll('[data-prev]').forEach(btn=>{
+          btn.addEventListener('click', ()=> openChannelPreview(li, id, parseInt(btn.dataset.prev,10)));
+        });
+        li.querySelectorAll('[data-change]').forEach(btn=>{
+          btn.addEventListener('click', ()=> openChangeModal(id, dealerId, parseInt(btn.dataset.change,10)));
+        });
+
+        // If this row had an open preview before re-render -> reopen it
+        const st = previewState[id];
+        if(st){
+          if(st.mode==='live') playLiveInRow(li, id);
+          else if(st.mode==='ch' && st.ch) openChannelPreview(li, id, st.ch);
+        }
+      });
+    }
+
+    async function fetchChannelInfoFromPlayer(displayId){
+      const gh=ghCfg(); if(!gh.token) throw new Error('GitHub not configured');
+      const path = `${gh.basePath||'Displays'}/${displayId}.html`;
+      const file=await ghGet(path);
+      let html=''; if(file && file.content){ html=unb64(file.content); }
+      const channels=parseChannelsFromPlayer(html);
+      return {path,html,channels,sha:file?.sha||null};
+    }
+
+    async function loadChannelNamesIntoPanel(li, displayId){
+      try{
+        const info=await fetchChannelInfoFromPlayer(displayId);
+        for(let i=1;i<=5;i++){
+          const el=li.querySelector(`.name${i}`);
+          const ch=info.channels[i-1];
+          if(ch){
+            el.textContent = `${ch.name} — `;
+            const s=document.createElement('span');
+            s.textContent='(see URL)';
+            s.style.textDecoration='underline';
+            s.style.cursor='help';
+            s.title=ch.url; // reveal only on hover
+            el.appendChild(s);
+          }else{
+            el.textContent='—';
+          }
+        }
+      }catch(e){ console.error(e); toast('Failed to read player file (GH setup?)',true); }
+    }
+
+    // ====== Delete display (now also removes dealership link) ======
+    async function deleteDisplayFlow(displayId){
+      if(!confirm(`Delete display ${displayId} from Firebase?`)) return;
+      try{
+        // read dealer id before deleting
+        let dealer = null;
+        try{
+          const dSnap = await get(ref(db, `displays/${displayId}/dealership`));
+          if (dSnap.exists()) dealer = dSnap.val();
+        }catch{}
+
+        await remove(ref(db,`displays/${displayId}`));
+
+        // remove reverse link
+        if (dealer) {
+          const base = await dealerBase();
+          await remove(ref(db, `${base}/${dealer}/displays/${displayId}`));
+        }
+
+        toast('Display removed from Firebase');
+      }catch(e){ console.error(e); toast('Failed to remove from Firebase',true); }
+
+      const gh=ghCfg();
+      if(gh.token && confirm('Also delete the player file from GitHub?')){
+        try{
+          const path = `${gh.basePath||'Displays'}/${displayId}.html`;
+          const cur=await ghGet(path);
+          await ghDel(path, cur?.sha, `[IPTV] Delete ${displayId} player`);
+          toast('GitHub file deleted');
+        }catch(e){ console.error(e); toast('GitHub delete failed',true); }
+      }
+    }
+
+    // ====== Change Channel Modal (Video.js) ======
+    let modal = null, modalPlayer=null, modalTargetDisplay='', modalTargetDealer='', modalTargetIndex=1, modalList=[];
+    function ensureModal(){
+      if(modal) return modal;
+      modal=document.createElement('div');
+      modal.id='chgModal';
+      modal.innerHTML=`
+        <div class="back"></div>
+        <div class="dlg">
+          <div id="chgHead">
+            <div class="label" id="chgTitle">Change channel</div>
+            <div class="hstack">
+              <button id="chgReload" class="btn"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M3 12a9 9 0 0 0 3 6.7L3 16"/></svg> Reload</button>
+              <button id="chgClose" class="btn"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg> Close</button>
+            </div>
+          </div>
+          <div id="chgBody">
+            <div class="igroup">
+              <input id="chgSearch" class="input" placeholder="Search…">
+              <select id="chgSelect"></select>
+              <button id="chgApply" class="btn solid"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Replace</button>
+            </div>
+            <div id="chgPlayerShell">
+              <video id="chgPlayer" class="video-js vjs-default-skin" playsinline controls preload="auto"></video>
+            </div>
+            <div class="small muted" id="chgMeta" title=""></div>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+      modal.querySelector('.back').addEventListener('click',closeChangeModal);
+      document.getElementById('chgClose').addEventListener('click',closeChangeModal);
+      document.getElementById('chgReload').addEventListener('click',loadModalList);
+      document.getElementById('chgSearch').addEventListener('input',debounce(()=>populateModalSelect(),150));
+      document.getElementById('chgSelect').addEventListener('change',()=> previewSelected());
+      document.getElementById('chgApply').addEventListener('click',applyChannelChange);
+
+      modalPlayer=videojs('chgPlayer',{html5:{vhs:{overrideNative:true}},controlBar:{volumePanel:{inline:false}}});
+      // click-to-copy on hidden URL label
+      document.getElementById('chgMeta').addEventListener('click',async (e)=>{
+        const txt=e.currentTarget.getAttribute('title')||'';
+        if(!txt) return;
+        try{ await navigator.clipboard.writeText(txt); toast('URL copied'); }catch{}
+      });
+    }
+    function openChangeModal(displayId, dealerId, idx){
+      ensureModal();
+      modalTargetDisplay=displayId; modalTargetDealer=dealerId; modalTargetIndex=idx;
+      document.getElementById('chgTitle').textContent=`Change channel CH${idx} — ${displayId}`;
+      document.getElementById('chgMeta').textContent='';
+      document.getElementById('chgMeta').title='';
+      modal.classList.add('open');
+      loadModalList();
+    }
+    function closeChangeModal(){
+      modal.classList.remove('open'); try{ modalPlayer.pause(); }catch{}
+    }
+    async function loadModalList(){
+      try{
+        modalList=await fetchChannelSheet();
+        populateModalSelect();
+        toast(`Loaded ${modalList.length} channels`);
+      }catch(e){ console.error(e); toast('Load failed',true); }
+    }
+    function populateModalSelect(){
+      const sel=document.getElementById('chgSelect'); const q=(document.getElementById('chgSearch').value||'').toLowerCase();
+      sel.innerHTML='';
+      const opt0=document.createElement('option'); opt0.value=''; opt0.textContent='Choose Channel'; sel.appendChild(opt0);
+      modalList.filter(c=> !q || (c.name||'').toLowerCase().includes(q) || (c.url||'').toLowerCase().includes(q)).forEach((c,i)=>{
+        const o=document.createElement('option'); o.value=String(i); o.textContent=`${i+1}. ${c.name||'Channel'}`; sel.appendChild(o);
+      });
+      document.getElementById('chgMeta').textContent='';
+      document.getElementById('chgMeta').title='';
+    }
+    function previewSelected(){
+      const sel=document.getElementById('chgSelect'); const i=parseInt(sel.value,10);
+      if(isNaN(i)) return;
+      const c=modalList[i];
+      // Hide URL visually, keep in title for hover + click-to-copy
+      const meta=document.getElementById('chgMeta');
+      meta.textContent='(see URL) — click to copy';
+      meta.title=c.url||'';
+      try{ modalPlayer.src({type:'application/x-mpegURL',src:c.url}); modalPlayer.play().catch(()=>{}); }catch{}
+    }
+    async function applyChannelChange(){
+      const sel=document.getElementById('chgSelect'); const i=parseInt(sel.value,10);
+      if(isNaN(i)) return toast('Pick a channel',true);
+      const chosen=modalList[i];
+      try{
+        const info=await fetchChannelInfoFromPlayer(modalTargetDisplay);
+        const arr=info.channels;
+        arr[modalTargetIndex-1] = {id:modalTargetIndex, name:chosen.name||'Channel', url:chosen.url, type:'hls'};
+        await createOrUpdatePlayer(modalTargetDisplay, modalTargetDealer, arr);
+        toast(`CH${modalTargetIndex} updated`);
+
+        // If device is currently on that channel, nudge to refresh and keep preview open
+        try{
+          const snap=await get(ref(db,`displays/${modalTargetDisplay}`));
+          const cur=snap.val()||{};
+          if(cur.channel===modalTargetIndex){
+            await update(ref(db,`displays/${modalTargetDisplay}`),{channel:1,updatedAt:Date.now()});
+            setTimeout(()=> update(ref(db,`displays/${modalTargetDisplay}`),{channel:modalTargetIndex,updatedAt:Date.now()}),800);
+          }
+        }catch{}
+
+        // Close only the modal, keep the inline preview open (state persists)
+        closeChangeModal();
+
+        // Reopen the CH preview immediately if it was open on this row
+        const st=previewState[modalTargetDisplay];
+        if(st && st.mode==='ch' && st.ch===modalTargetIndex){
+          const li=[...document.querySelectorAll('.item')].find(x=> x.dataset.displayId===modalTargetDisplay);
+          if(li) openChannelPreview(li, modalTargetDisplay, modalTargetIndex);
+        }
+
+        // Refresh channel names in that row
+        const li2=[...document.querySelectorAll('.item')].find(x=> x.dataset.displayId===modalTargetDisplay);
+        if(li2) loadChannelNamesIntoPanel(li2, modalTargetDisplay);
+
+      }catch(e){ console.error(e); toast('Update failed (check GH setup)',true); }
+    }
+
+    // ====== Bulk controls ======
+    document.getElementById('bulkMute').addEventListener('click',()=> bulkForDealer(async (id)=> update(ref(db,`displays/${id}`),{muted:true,updatedAt:Date.now()})));
+    document.getElementById('bulkUnmute').addEventListener('click',()=> bulkForDealer(async (id)=> update(ref(db,`displays/${id}`),{muted:false,updatedAt:Date.now()})));
+    document.getElementById('bulkCh1').addEventListener('click',()=> bulkForDealer(async (id)=> update(ref(db,`displays/${id}`),{channel:1,updatedAt:Date.now()})));
+    document.getElementById('displaysReload').addEventListener('click',()=>{ const v=selDealer.value||''; if(v) watchDisplays(v,true); });
+    document.getElementById('manageUsers').addEventListener('click',()=>{ const v=selDealer.value||''; if(v) location.href='users.html?dealer='+encodeURIComponent(v); });
+
+    async function bulkForDealer(fn){
+      const dealer=selDealer.value||''; if(!dealer) return;
+      const qy=query(ref(db,'displays'), orderByChild('dealership'), equalTo(dealer));
+      const snap=await get(qy); const map=snap.exists()?snap.val():{};
+      await Promise.all(Object.keys(map).map(id=> fn(id)));
+      toast('Applied');
+    }
+
+    // ===== Add TV =====
+    document.getElementById('addDisplayBtn').addEventListener('click',addDisplayFlow);
+    function pickSelectedOrDefault(){
+      const list=(chSelectedList.length? chSelectedList.slice(0,5) : [
+        {name:'News',url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8'},
+        {name:'Sports',url:'http://fl5.moveonjoy.com/TSN_5/index.m3u8'},
+        {name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8'},
+        {name:'Nature',url:'https://aegis-cloudfront-1.tubi.video/dc8bda97-ce9e-4091-b4e8-11254dea4da6/playlist.m3u8'},
+        {name:'Kids',url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8'},
+      ]);
+      return list.map((c,i)=>({id:i+1,name:c.name||'Channel',url:c.url,type:'hls'}));
+    }
+    async function addDisplayFlow(){
+      const dealer=selDealer.value||''; if(!dealer) return toast('Choose a dealership',true);
+      const idInput=(document.getElementById('newDisplayId').value||'').trim();
+      let displayId=idInput||await autoDisplayId(dealer);
+      const gh=ghCfg(); if(!gh.token) return toast('Do GH Setup first',true);
 
       try{
-        // Upgrade anon → email/pass OR create if not anon
-        let cred;
-        if (auth.currentUser && auth.currentUser.isAnonymous) {
-          const c = EmailAuthProvider.credential(email, password);
-          cred = await linkWithCredential(auth.currentUser, c);
-        } else {
-          cred = await createUserWithEmailAndPassword(auth, email, password);
-        }
-        const { user } = cred;
+        const channels=pickSelectedOrDefault();
+        await createOrUpdatePlayer(displayId, dealer, channels);
+        await update(ref(db,`displays/${displayId}`),{dealership:dealer,channel:1,volume:50,muted:true,createdAt:Date.now(),updatedAt:Date.now()});
 
-        // ------ FIX: build displays map with STRING values (rules require isString) ------
-        let displaysMap = {};
-        try {
-          const dSnap = await get(ref(db, `dealership/${dealershipId}/displays`));
-          if (dSnap.exists()) {
-            const val = dSnap.val();
-            if (Array.isArray(val)) {
-              val.forEach(id => { if (id) displaysMap[id] = String(id); });
-            } else {
-              Object.keys(val || {}).forEach(id => { displaysMap[id] = String(id); });
-            }
-          }
-        } catch (e) {
-          console.warn('Displays read failed (ok):', e);
-        }
+        /* -------- NEW: also write reverse link under the dealership -------- */
+        const base = await dealerBase();
+        await set(ref(db, `${base}/${dealer}/displays/${displayId}`), true);
 
-        // If none found, seed one like "XX-001" using your twoLetterPrefix()
-        if (Object.keys(displaysMap).length === 0) {
-          const prefix = twoLetterPrefix(dealershipName || dealershipId);
-          const firstId = `${prefix}-${String(1).padStart(3,'0')}`;
-          displaysMap[firstId] = firstId;  // <- string value
-        }
-        // -------------------------------------------------------------------------------
-
-        // Build profile WITHOUT role (per rules) and include displays map
-        const profile = {
-          email,
-          name,
-          dealershipId,
-          dealershipName,
-          createdAt: Date.now(),
-          displays: displaysMap
-        };
-
-        // Write /user/{uid}
-        await set(ref(db, `user/${user.uid}`), profile);
-
-        if (creatingNew) {
-          showToast('Account created — ask an admin to add the new dealership.');
-        } else {
-          showToast('Account created!');
-        }
-
-        btn.innerHTML = 'SUCCESS — OPENING REMOTE…';
-        setTimeout(()=>{ window.location.href = 'https://flaviothebfagroup.github.io/IPTV-/remote-control.html'; }, 1200);
-      }catch(error){
-        console.error('signup', error);
-        const map = {
-          'auth/operation-not-allowed':'Email & Password sign-in is disabled (enable in Firebase Auth).',
-          'auth/unauthorized-domain':'Domain not authorized in Firebase Auth settings.',
-          'auth/email-already-in-use':'Email already registered.',
-          'auth/weak-password':'Password too weak.',
-          'auth/invalid-email':'Invalid email address.'
-        };
-        const msg = map[error.code] || (`Signup failed: ${error.code || error.message || 'Unknown error'}`);
-        showToast(msg, 'error');
-        btn.disabled = false; btn.textContent = 'CREATE ACCOUNT';
-      }
-    };
+        toast(`TV ${displayId} added`);
+        watchDisplays(dealer,true);
+      }catch(e){ console.error(e); toast('Add failed',true); }
+    }
+    async function autoDisplayId(dealer){
+      const pref = dealer.replace(/[^A-Za-z0-9]/g,'').slice(0,2).toUpperCase()||'TV';
+      const qy=query(ref(db,'displays'), orderByChild('dealership'), equalTo(dealer));
+      const snap=await get(qy); const ids=snap.exists()?Object.keys(snap.val()):[];
+      let max=0; ids.forEach(id=>{ const m=id.match(/-(\d+)$/); if(m) max=Math.max(max,parseInt(m[1],10)); });
+      return `${pref}-${String(max+1).padStart(3,'0')}`;
+    }
   </script>
+
+  <!-- ===== Mobile sheet moved OUTSIDE header (same as Home) ===== -->
+  <div id="sheet" aria-hidden="true">
+    <div class="back"></div>
+    <aside class="panel" role="dialog" aria-modal="true" aria-label="Menu">
+      <div class="row">
+        <div class="brand"><span class="logo" id="brandLogoM"></span><span class="logotxt">BFA IPTV</span></div>
+        <button id="closeSheet" class="chip" aria-label="Close"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <nav>
+        <a class="pill" href="home.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>
+        <a class="pill" href="dealerships.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10"/></svg> Dealerships</a>
+        <a class="pill is-active" href="displays.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M7 19h10"/></svg> Displays</a>
+        <a class="pill" href="users.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 22c0-4 4-7 7-7s7 3 7 7"/></svg> Users</a>
+        <div class="muted" style="padding:8px 2px 0">More</div>
+        <a class="pill" href="links.html"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7L12.5 20"/></svg> Links</a>
+        <a class="pill" href="analytics.html"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v-5"/><path d="M12 18V6"/><path d="M17 13V8"/></svg> Analytics</a>
+        <a class="pill" href="schedule.html"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Schedule</a>
+        <a class="pill" href="backups.html"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg> Backups</a>
+        <a class="pill" href="remote-control.html"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M9 13h6"/></svg> Remote</a>
+        <a class="pill" href="settings.html"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10"/><circle cx="16" cy="7" r="2"/><path d="M20 17H10"/><circle cx="8" cy="17" r="2"/></svg> Settings</a>
+        <button id="signOutBtnM" class="chip" style="margin-top:8px">Sign out</button>
+      </nav>
+    </aside>
+  </div>
 </body>
 </html>
