@@ -103,7 +103,7 @@
   <!-- hls.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
 
-  <!-- ===== PLAYER LOGIC (non-module) ===== -->
+  <!-- ===== PLAYER LOGIC (visuals + local volume) ===== -->
   <script>
     const CONFIG = {
       displayId: 'BFA_PRINT',
@@ -268,22 +268,12 @@
     window.loadChannel = loadChannel;
   </script>
 
-  <!-- ===== FIREBASE MODULE: auth, DB, presence ===== -->
-  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import {
-      getAuth,
-      signInAnonymously,
-      onAuthStateChanged
-    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import {
-      getDatabase,
-      ref,
-      onValue,
-      update,
-      get
-    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+  <!-- ===== FIREBASE (COMPAT) AUTH + DB + PRESENCE ===== -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
+  <script>
     const firebaseConfig = {
       apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
       authDomain:"iptv-bfa.firebaseapp.com",
@@ -294,191 +284,185 @@
       appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"
     };
 
-    // Preview / iframe mode → read-only
     const EMBED = /\bembed=1\b/i.test(location.search) || (window.top !== window.self);
 
-    const app  = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db   = getDatabase(app);
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db   = firebase.database();
 
-    signInAnonymously(auth).catch(e=>{
+    auth.signInAnonymously().catch(e=>{
       console.error('[auth]', e.code, e.message);
       window.setStatus(false,'anon auth failed');
     });
 
-    onAuthStateChanged(auth, (user)=>{
+    auth.onAuthStateChanged(user=>{
       if (!user) return;
-
-      (async () => {
-        const displayId    = CONFIG.displayId;
-        const dealershipId = CONFIG.dealershipName;
-        const dRef         = ref(db, `displays/${displayId}`);
-
-        // ===== PREVIEW / EMBED MODE =====
-        if (EMBED) {
-          window.onLocalAudioChange = null; // don't write in preview
-
-          let lastApplied = { volume:null, muted:null, channel:null };
-
-          onValue(
-            dRef,
-            (snap)=>{
-              const d = snap.val();
-              if (!d) return;
-
-              if (typeof d.channel === 'number' && d.channel !== lastApplied.channel){
-                lastApplied.channel = d.channel;
-                window.loadChannel(d.channel);
-              }
-              if (typeof d.volume === 'number' && d.volume !== lastApplied.volume){
-                lastApplied.volume = d.volume;
-                window.applyVolumeSettings(d.volume, d.muted);
-              }
-              if (typeof d.muted === 'boolean' && d.muted !== lastApplied.muted){
-                lastApplied.muted = d.muted;
-                window.applyVolumeSettings(d.volume, d.muted);
-              }
-
-              window.setStatus(true,'Preview');
-            },
-            (err)=>{
-              console.error('[listener preview]', err);
-              window.setStatus(false,'listener error');
-            }
-          );
-
-          return; // stop here in preview mode
-        }
-
-        // ===== REAL DEVICE MODE =====
-        const presenceRef = ref(db, `onlineDisplays/${displayId}`); // change name if needed
-        const sessionId   = (crypto.randomUUID && crypto.randomUUID()) ||
-                            Math.random().toString(36).slice(2);
-        const now         = Date.now();
-
-        // 1) Device user profile (for your rules) – only for real players
-        try{
-          await update(ref(db, `user/${user.uid}`), {
-            role:        'device',
-            name:        displayId,
-            dealershipId,
-            updatedAt:   now,
-            createdAt:   now
-          });
-        }catch(e){
-          console.error('[user upsert]', e);
-        }
-
-        // 2) Ensure display document exists with base fields
-        let existing = null;
-        try{
-          const snap = await get(dRef);
-          existing   = snap.val() || {};
-
-          if (!snap.exists()) {
-            await update(dRef, {
-              channel:    1,
-              volume:     50,
-              muted:      false,
-              dealership: dealershipId,
-              previewUrl: existing.previewUrl ||
-                `https://flaviothebfagroup.github.io/IPTV-/Displays/${displayId}.html`,
-              timestamp:  now
-            });
-          } else if (!existing.dealership) {
-            await update(dRef, { dealership: dealershipId });
-          }
-        }catch(e){
-          console.error('[display upsert]', e);
-        }
-
-        // 3) Write login info into displays/{displayId}
-        try{
-          await update(dRef, {
-            lastLoginAt:   now,
-            lastSeenAt:    now,
-            lastSessionId: sessionId,
-            lastUser:      { uid: user.uid },
-            updatedAt:     now
-          });
-        }catch(e){
-          console.error('[display login meta]', e);
-        }
-
-        // 4) Presence node onlineDisplays/{displayId}
-        try{
-          await update(presenceRef, {
-            displayId,
-            uid:      user.uid,
-            sessionId,
-            loginAt:  now,
-            lastSeen: now
-          });
-        }catch(e){
-          console.error('[presence init]', e);
-        }
-
-        // 5) Local audio → DB
-        window.onLocalAudioChange = async (vol, muted)=>{
-          try{
-            await update(dRef, { volume: vol, muted });
-          }catch(e){
-            console.error('[audio update]', e);
-          }
-        };
-
-        // 6) Realtime listener for channel / volume / muted
-        let lastApplied = { volume:null, muted:null, channel:null };
-
-        onValue(
-          dRef,
-          (snap)=>{
-            const d = snap.val();
-            if (!d) return;
-
-            if (typeof d.channel === 'number' && d.channel !== lastApplied.channel){
-              lastApplied.channel = d.channel;
-              window.loadChannel(d.channel);
-            }
-            if (typeof d.volume === 'number' && d.volume !== lastApplied.volume){
-              lastApplied.volume = d.volume;
-              window.applyVolumeSettings(d.volume, d.muted);
-            }
-            if (typeof d.muted === 'boolean' && d.muted !== lastApplied.muted){
-              lastApplied.muted = d.muted;
-              window.applyVolumeSettings(d.volume, d.muted);
-            }
-
-            window.setStatus(true,'');
-          },
-          (err)=>{
-            console.error('[listener]', err);
-            window.setStatus(false,'listener error');
-          }
-        );
-
-        // 7) Heartbeat: keep lastSeenAt / updatedAt and presence.lastSeen fresh
-        const beat = async () => {
-          const ts = Date.now();
-          try{
-            await update(dRef, {
-              lastSeenAt: ts,
-              updatedAt:  ts
-            });
-            await update(presenceRef, {
-              lastSeen: ts
-            });
-          }catch(e){
-            console.error('[heartbeat]', e);
-          }
-        };
-
-        beat();
-        setInterval(beat, 15000);
-      })().catch(err => {
-        console.error('[onAuthStateChanged handler]', err);
+      handleUser(user).catch(err=>{
+        console.error('[handleUser]', err);
+        window.setStatus(false,'auth handler error');
       });
     });
+
+    async function handleUser(user){
+      const displayId    = CONFIG.displayId;
+      const dealershipId = CONFIG.dealershipName;
+      const dRef         = db.ref('displays/' + displayId);
+
+      // ===== PREVIEW / EMBED MODE → read-only =====
+      if (EMBED){
+        window.onLocalAudioChange = null;
+
+        let lastApplied = { volume:null, muted:null, channel:null };
+
+        dRef.on('value', snap=>{
+          const d = snap.val();
+          if (!d) return;
+
+          if (typeof d.channel === 'number' && d.channel !== lastApplied.channel){
+            lastApplied.channel = d.channel;
+            window.loadChannel(d.channel);
+          }
+          if (typeof d.volume === 'number' && d.volume !== lastApplied.volume){
+            lastApplied.volume = d.volume;
+            window.applyVolumeSettings(d.volume, d.muted);
+          }
+          if (typeof d.muted === 'boolean' && d.muted !== lastApplied.muted){
+            lastApplied.muted = d.muted;
+            window.applyVolumeSettings(d.volume, d.muted);
+          }
+
+          window.setStatus(true,'Preview');
+        }, err=>{
+          console.error('[listener preview]', err);
+          window.setStatus(false,'listener error');
+        });
+
+        return;
+      }
+
+      // ===== REAL DEVICE MODE =====
+      const userRef     = db.ref('user/' + user.uid);
+      const presenceRef = db.ref('onlineDisplays/' + displayId); // change name if needed
+      const now         = Date.now();
+      const sessionId   = (crypto.randomUUID && crypto.randomUUID()) ||
+                          Math.random().toString(36).slice(2);
+
+      // 1) device user profile (for your rules)
+      try{
+        await userRef.update({
+          role:        'device',
+          name:        displayId,
+          dealershipId,
+          updatedAt:   now,
+          createdAt:   now
+        });
+      }catch(e){
+        console.error('[user upsert]', e);
+      }
+
+      // 2) ensure display doc exists with base fields
+      let existing = {};
+      try{
+        const snap = await dRef.once('value');
+        existing   = snap.val() || {};
+
+        if (!snap.exists()){
+          await dRef.update({
+            channel:    1,
+            volume:     50,
+            muted:      false,
+            dealership: dealershipId,
+            previewUrl: existing.previewUrl ||
+              `https://flaviothebfagroup.github.io/IPTV-/${displayId}.html`,
+            timestamp:  now
+          });
+        } else if (!existing.dealership){
+          await dRef.update({ dealership: dealershipId });
+        }
+      }catch(e){
+        console.error('[display upsert]', e);
+      }
+
+      // 3) write login info into displays/{displayId}
+      try{
+        await dRef.update({
+          lastLoginAt:   now,
+          lastSeenAt:    now,
+          lastSessionId: sessionId,
+          lastUser:      { uid: user.uid },
+          updatedAt:     now
+        });
+      }catch(e){
+        console.error('[display login meta]', e);
+      }
+
+      // 4) presence node onlineDisplays/{displayId}
+      try{
+        await presenceRef.update({
+          displayId,
+          uid:      user.uid,
+          sessionId,
+          loginAt:  now,
+          lastSeen: now
+        });
+      }catch(e){
+        console.error('[presence init]', e);
+      }
+
+      // 5) local audio → DB
+      window.onLocalAudioChange = async (vol, muted)=>{
+        try{
+          await dRef.update({ volume: vol, muted });
+        }catch(e){
+          console.error('[audio update]', e);
+        }
+      };
+
+      // 6) realtime listener for channel / volume / muted
+      let lastApplied = { volume:null, muted:null, channel:null };
+
+      dRef.on('value', snap=>{
+        const d = snap.val();
+        if (!d) return;
+
+        if (typeof d.channel === 'number' && d.channel !== lastApplied.channel){
+          lastApplied.channel = d.channel;
+          window.loadChannel(d.channel);
+        }
+        if (typeof d.volume === 'number' && d.volume !== lastApplied.volume){
+          lastApplied.volume = d.volume;
+          window.applyVolumeSettings(d.volume, d.muted);
+        }
+        if (typeof d.muted === 'boolean' && d.muted !== lastApplied.muted){
+          lastApplied.muted = d.muted;
+          window.applyVolumeSettings(d.volume, d.muted);
+        }
+
+        window.setStatus(true,'');
+      }, err=>{
+        console.error('[listener]', err);
+        window.setStatus(false,'listener error');
+      });
+
+      // 7) heartbeat
+      const beat = async () => {
+        const ts = Date.now();
+        try{
+          await dRef.update({
+            lastSeenAt: ts,
+            updatedAt:  ts
+          });
+          await presenceRef.update({
+            lastSeen: ts
+          });
+        }catch(e){
+          console.error('[heartbeat]', e);
+        }
+      };
+
+      beat();
+      setInterval(beat, 15000);
+    }
   </script>
 </body>
 </html>
