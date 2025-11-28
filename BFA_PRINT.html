@@ -103,11 +103,11 @@
   <!-- hls.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
 
-  <!-- ===== PLAYER LOGIC (visuals + local volume) ===== -->
+  <!-- ===== PLAYER LOGIC (unchanged visuals + local audio) ===== -->
   <script>
     const CONFIG = {
-      displayId: 'BFA_PRINT',
-      dealershipName: 'BFA_PRINT',
+      displayId: 'PH-001',
+      dealershipName: 'PerformanceHyundai',
       channels: [
         { id:1, name:'News',            url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
         { id:2, name:'Tennis Channel S',url:'https://amg01444-tennischannelth-tennischannelnl-samsungnl-x3dq1.amagi.tv/playlist/amg01444-tennischannelth-tennischannelnl-samsungnl/playlist.m3u8', type:'hls' },
@@ -260,6 +260,7 @@
       updateChannelInfo(ch); window.currentChannel=n;
     }
 
+    // expose to Firebase script
     window.setStatus = setStatus;
     window.applyVolumeSettings = function(volume,muted){
       if(typeof volume==='number'){ setVolume(Number(volume)); }
@@ -268,12 +269,12 @@
     window.loadChannel = loadChannel;
   </script>
 
-  <!-- ===== FIREBASE (COMPAT) AUTH + DB + PRESENCE ===== -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <!-- ===== FIREBASE (MODULAR) – auth + DB + presence ===== -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-  <script>
     const firebaseConfig = {
       apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
       authDomain:"iptv-bfa.firebaseapp.com",
@@ -286,106 +287,78 @@
 
     const EMBED = /\bembed=1\b/i.test(location.search) || (window.top !== window.self);
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db   = firebase.database();
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
 
-    auth.signInAnonymously().catch(e=>{
+    // same simple anon sign-in as before
+    signInAnonymously(auth).catch(e=>{
       console.error('[auth]', e.code, e.message);
       window.setStatus(false,'anon auth failed');
     });
 
-    auth.onAuthStateChanged(user=>{
+    onAuthStateChanged(auth, (user)=>{
       if (!user) return;
-      handleUser(user).catch(err=>{
-        console.error('[handleUser]', err);
+      handleAuthedUser(user).catch(err=>{
+        console.error('[handleAuthedUser]', err);
         window.setStatus(false,'auth handler error');
       });
     });
 
-    async function handleUser(user){
+    async function handleAuthedUser(user){
       const displayId    = CONFIG.displayId;
       const dealershipId = CONFIG.dealershipName;
-      const dRef         = db.ref('displays/' + displayId);
+      const dRef         = ref(db, `displays/${displayId}`);
+      const now          = Date.now();
+      const sessionId    = (crypto.randomUUID && crypto.randomUUID()) ||
+                           Math.random().toString(36).slice(2);
 
-      // ===== PREVIEW / EMBED MODE → read-only =====
-      if (EMBED){
-        window.onLocalAudioChange = null;
-
-        let lastApplied = { volume:null, muted:null, channel:null };
-
-        dRef.on('value', snap=>{
-          const d = snap.val();
-          if (!d) return;
-
-          if (typeof d.channel === 'number' && d.channel !== lastApplied.channel){
-            lastApplied.channel = d.channel;
-            window.loadChannel(d.channel);
-          }
-          if (typeof d.volume === 'number' && d.volume !== lastApplied.volume){
-            lastApplied.volume = d.volume;
-            window.applyVolumeSettings(d.volume, d.muted);
-          }
-          if (typeof d.muted === 'boolean' && d.muted !== lastApplied.muted){
-            lastApplied.muted = d.muted;
-            window.applyVolumeSettings(d.volume, d.muted);
-          }
-
-          window.setStatus(true,'Preview');
-        }, err=>{
-          console.error('[listener preview]', err);
-          window.setStatus(false,'listener error');
-        });
-
-        return;
+      // Only real players create/update device user + presence
+      if (!EMBED) {
+        try{
+          await update(ref(db, `user/${user.uid}`), {
+            role:        'device',
+            name:        displayId,
+            dealershipId,
+            updatedAt:   now,
+            createdAt:   now
+          });
+        }catch(e){
+          console.error('[user upsert]', e);
+        }
       }
 
-      // ===== REAL DEVICE MODE =====
-      const userRef     = db.ref('user/' + user.uid);
-      const presenceRef = db.ref('onlineDisplays/' + displayId); // change name if needed
-      const now         = Date.now();
-      const sessionId   = (crypto.randomUUID && crypto.randomUUID()) ||
-                          Math.random().toString(36).slice(2);
-
-      // 1) device user profile (for your rules)
-      try{
-        await userRef.update({
-          role:        'device',
-          name:        displayId,
-          dealershipId,
-          updatedAt:   now,
-          createdAt:   now
-        });
-      }catch(e){
-        console.error('[user upsert]', e);
-      }
-
-      // 2) ensure display doc exists with base fields
+      // Ensure display doc exists + base fields
       let existing = {};
       try{
-        const snap = await dRef.once('value');
+        const snap = await get(dRef);
         existing   = snap.val() || {};
+        const updates = {};
 
-        if (!snap.exists()){
-          await dRef.update({
-            channel:    1,
-            volume:     50,
-            muted:      false,
-            dealership: dealershipId,
-            previewUrl: existing.previewUrl ||
-              `https://flaviothebfagroup.github.io/IPTV-/${displayId}.html`,
-            timestamp:  now
-          });
-        } else if (!existing.dealership){
-          await dRef.update({ dealership: dealershipId });
+        if (!snap.exists()) {
+          updates.channel    = 1;
+          updates.volume     = 50;
+          updates.muted      = false;
+          updates.dealership = dealershipId;
+          updates.previewUrl = `https://flaviothebfagroup.github.io/IPTV-/${displayId}.html`;
+          updates.timestamp  = now;
+        } else {
+          if (!existing.dealership) updates.dealership = dealershipId;
+          if (!existing.previewUrl) {
+            updates.previewUrl = `https://flaviothebfagroup.github.io/IPTV-/${displayId}.html`;
+          }
+        }
+
+        if (Object.keys(updates).length){
+          await update(dRef, updates);
         }
       }catch(e){
         console.error('[display upsert]', e);
       }
 
-      // 3) write login info into displays/{displayId}
+      // Login metadata on display node
       try{
-        await dRef.update({
+        await update(dRef, {
           lastLoginAt:   now,
           lastSeenAt:    now,
           lastSessionId: sessionId,
@@ -396,65 +369,76 @@
         console.error('[display login meta]', e);
       }
 
-      // 4) presence node onlineDisplays/{displayId}
-      try{
-        await presenceRef.update({
-          displayId,
-          uid:      user.uid,
-          sessionId,
-          loginAt:  now,
-          lastSeen: now
-        });
-      }catch(e){
-        console.error('[presence init]', e);
+      // Presence node (only real players)
+      let presenceRef = null;
+      if (!EMBED) {
+        presenceRef = ref(db, `onlineDisplays/${displayId}`); // change name if your tree is different
+        try{
+          await update(presenceRef, {
+            displayId,
+            uid:      user.uid,
+            sessionId,
+            loginAt:  now,
+            lastSeen: now
+          });
+        }catch(e){
+          console.error('[presence init]', e);
+        }
       }
 
-      // 5) local audio → DB
-      window.onLocalAudioChange = async (vol, muted)=>{
-        try{
-          await dRef.update({ volume: vol, muted });
-        }catch(e){
-          console.error('[audio update]', e);
-        }
-      };
+      // Local audio → DB (remote control still writes channel/volume/muted directly)
+      if (!EMBED) {
+        window.onLocalAudioChange = async (vol, muted)=>{
+          try{
+            await update(dRef, { volume: vol, muted });
+          }catch(e){
+            console.error('[audio update]', e);
+          }
+        };
+      } else {
+        window.onLocalAudioChange = null;
+      }
 
-      // 6) realtime listener for channel / volume / muted
+      // Realtime listener – this is what your remote control depends on
       let lastApplied = { volume:null, muted:null, channel:null };
+      onValue(
+        dRef,
+        (snap)=>{
+          const d = snap.val();
+          if (!d) return;
 
-      dRef.on('value', snap=>{
-        const d = snap.val();
-        if (!d) return;
+          if (typeof d.channel === 'number' && d.channel !== lastApplied.channel){
+            lastApplied.channel = d.channel;
+            window.loadChannel(d.channel);  // remote changing channel still works
+          }
+          if (typeof d.volume === 'number' && d.volume !== lastApplied.volume){
+            lastApplied.volume = d.volume;
+            window.applyVolumeSettings(d.volume, d.muted);
+          }
+          if (typeof d.muted === 'boolean' && d.muted !== lastApplied.muted){
+            lastApplied.muted = d.muted;
+            window.applyVolumeSettings(d.volume, d.muted);
+          }
 
-        if (typeof d.channel === 'number' && d.channel !== lastApplied.channel){
-          lastApplied.channel = d.channel;
-          window.loadChannel(d.channel);
+          window.setStatus(true, EMBED ? 'Preview' : '');
+        },
+        (err)=>{
+          console.error('[listener]', err);
+          window.setStatus(false,'listener error');
         }
-        if (typeof d.volume === 'number' && d.volume !== lastApplied.volume){
-          lastApplied.volume = d.volume;
-          window.applyVolumeSettings(d.volume, d.muted);
-        }
-        if (typeof d.muted === 'boolean' && d.muted !== lastApplied.muted){
-          lastApplied.muted = d.muted;
-          window.applyVolumeSettings(d.volume, d.muted);
-        }
+      );
 
-        window.setStatus(true,'');
-      }, err=>{
-        console.error('[listener]', err);
-        window.setStatus(false,'listener error');
-      });
-
-      // 7) heartbeat
+      // Heartbeat – updates lastSeenAt / updatedAt and onlineDisplays.lastSeen
       const beat = async () => {
         const ts = Date.now();
         try{
-          await dRef.update({
+          await update(dRef, {
             lastSeenAt: ts,
             updatedAt:  ts
           });
-          await presenceRef.update({
-            lastSeen: ts
-          });
+          if (presenceRef) {
+            await update(presenceRef, { lastSeen: ts });
+          }
         }catch(e){
           console.error('[heartbeat]', e);
         }
