@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>BFA — Multi Channel Wall (16:9)</title>
+
+  <!-- hls.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
+
+  <style>
+    :root{
+      --brand:#ff6a00; --brand-2:#e85f00;
+
+      --bg-start:#fefefe;
+      --bg-mid:#f3f6fb;
+      --bg-end:#ff6a00;
+
+      --fg:#0f172a;
+      --panel:rgba(255,255,255,.35);
+      --line:rgba(15,23,42,.08);
+      --muted:#9ca3af;
+
+      --glass-blur:14px;
+      --glass-sat:140%;
+      --elev-shadow:0 18px 40px rgba(15,23,42,.26);
+    }
+    [data-theme="dark"]{
+      --fg:#e8ecf1;
+      --bg-start:#020617;
+      --bg-mid:#020617;
+      --bg-end:#111827;
+
+      --panel:rgba(15,23,42,.6);
+      --line:rgba(148,163,184,.28);
+      --muted:#9ca3af;
+      --glass-blur:14px;
+      --glass-sat:140%;
+      --elev-shadow:0 18px 40px rgba(0,0,0,.75);
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      color:var(--fg);
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+      background:transparent;
+      overflow:hidden;
+    }
+    body::before{
+      content:"";
+      position:fixed; inset:0; z-index:-2; pointer-events:none;
+      background:radial-gradient(circle at top, var(--bg-mid) 0%, var(--bg-start) 26%, var(--bg-end) 100%);
+    }
+
+    .page{
+      position:relative;
+      width:100%;
+      height:100%;
+      padding:10px 12px 12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    /* HUD header */
+    .hud{
+      position:relative;
+      z-index:2;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      pointer-events:none;
+    }
+    .hud-left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .logo{
+      height:26px;
+      filter:drop-shadow(0 4px 10px rgba(0,0,0,.35));
+    }
+    .hud-title{
+      font-size:13px;
+      font-weight:700;
+      text-shadow:0 1px 3px rgba(0,0,0,.45);
+    }
+    .hud-sub{
+      font-size:11px;
+      color:var(--muted);
+      text-shadow:0 1px 3px rgba(0,0,0,.8);
+    }
+    .hud-right{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .chip{
+      pointer-events:auto;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:5px 10px;
+      font-size:11px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.4);
+      background:linear-gradient(120deg,rgba(15,23,42,.7),rgba(15,23,42,.3));
+      color:#f9fafb;
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+    }
+    .chip-dot{
+      width:8px;height:8px;border-radius:50%;background:#22c55e;
+      box-shadow:0 0 0 0 rgba(34,197,94,.55);
+      animation:pulse 1.6s infinite;
+    }
+    @keyframes pulse{
+      0%{box-shadow:0 0 0 0 rgba(34,197,94,.55);}
+      70%{box-shadow:0 0 0 10px rgba(34,197,94,0);}
+      100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}
+    }
+
+    .theme-toggle{
+      pointer-events:auto;
+      border-radius:999px;
+      padding:4px 9px;
+      font-size:11px;
+      border:1px solid rgba(148,163,184,.65);
+      background:rgba(15,23,42,.75);
+      color:#e5e7eb;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      cursor:pointer;
+    }
+    .theme-toggle span{opacity:.9}
+    .theme-toggle svg{width:14px;height:14px}
+
+    /* GRID WALL */
+    .wall{
+      position:relative;
+      z-index:1;
+      flex:1;
+      display:grid;
+      width:100%;
+      height:calc(100% - 40px);
+      grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+      grid-auto-rows:auto;
+      gap:10px;
+      align-items:center;
+      justify-items:center;
+    }
+
+    .tile{
+      position:relative;
+      width:100%;
+      aspect-ratio:16/9; /* 🔒 hard lock 16:9 */
+      border-radius:18px;
+      overflow:hidden;
+      background:#020617;
+      border:1px solid rgba(15,23,42,.65);
+      box-shadow:var(--elev-shadow);
+    }
+
+    .tile video{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      background:#000;
+      display:block;
+    }
+
+    .tile-hud-top{
+      position:absolute;
+      top:8px; left:8px; right:8px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:6px;
+      pointer-events:none;
+      z-index:2;
+    }
+    .name-pill{
+      font-size:12px;
+      font-weight:600;
+      padding:3px 8px;
+      border-radius:999px;
+      background:rgba(15,23,42,.85);
+      border:1px solid rgba(148,163,184,.7);
+      color:#f9fafb;
+      max-width:70%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      backdrop-filter:blur(8px);
+      -webkit-backdrop-filter:blur(8px);
+    }
+    .status-pill{
+      font-size:11px;
+      padding:3px 8px;
+      border-radius:999px;
+      background:rgba(15,23,42,.85);
+      border:1px solid rgba(148,163,184,.4);
+      color:var(--muted);
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+    }
+    .status-pill.ok{color:#22c55e;border-color:rgba(34,197,94,.6);}
+    .status-pill.err{color:#ef4444;border-color:rgba(239,68,68,.7);}
+    .status-dot{
+      width:7px;height:7px;border-radius:50%;
+      background:var(--muted);
+    }
+    .status-pill.ok .status-dot{background:#22c55e;}
+    .status-pill.err .status-dot{background:#ef4444;}
+
+    .tile-footer{
+      position:absolute;
+      left:0; right:0; bottom:0;
+      padding:6px 9px 7px;
+      font-size:11px;
+      color:var(--muted);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:6px;
+      background:linear-gradient(180deg,rgba(15,23,42,.0),rgba(3,7,18,.92));
+      border-top:1px solid rgba(15,23,42,.7);
+      pointer-events:none;
+      z-index:2;
+    }
+    .url{
+      max-width:80%;
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;
+      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      opacity:.9;
+    }
+    .mini-btn{
+      font-size:10px;
+      padding:3px 7px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.6);
+      background:transparent;
+      color:#e5e7eb;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      pointer-events:auto; /* button clickable */
+    }
+    .mini-btn:hover{
+      border-color:var(--brand);
+    }
+    .mini-btn svg{width:12px;height:12px}
+
+    @media (max-width:768px){
+      .page{padding:10px;}
+      .hud-title{font-size:12px;}
+      .hud-sub{display:none;}
+      .wall{height:calc(100% - 34px);}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- HUD -->
+    <header class="hud">
+      <div class="hud-left">
+        <img id="bfaLogo" class="logo" alt="BFA logo" />
+        <div>
+          <div class="hud-title">BFA — Multi Channel Wall</div>
+          <div class="hud-sub" id="hudInfo">Loading config…</div>
+        </div>
+      </div>
+      <div class="hud-right">
+        <button id="themeToggle" class="theme-toggle" type="button">
+          <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.5-7.5L16 6m-8 12-1.5 1.5M6 6 4.5 4.5M19.5 19.5 18 18"></path>
+          </svg>
+          <span id="themeLabel">Light</span>
+        </button>
+        <div class="chip">
+          <span class="chip-dot"></span>
+          <span id="chipText">Muted autoplay</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- WALL GRID -->
+    <main id="wall" class="wall"></main>
+  </div>
+
+  <script>
+    /*********** LOGO + THEME ***********/
+    const LOGO_PRIMARY="/IPTV-/icons/icon-192.png";
+    const FALLBACK_SVG='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="30" viewBox="0 0 120 30"><rect rx="7" width="120" height="30" fill="#ff6a00"/><text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial" font-weight="800" font-size="14" fill="#fff">BFA</text></svg>'
+    );
+    const logo=document.getElementById("bfaLogo");
+    logo.src=LOGO_PRIMARY;
+    logo.onerror=()=>{logo.onerror=null;logo.src=FALLBACK_SVG;};
+
+    const themeToggle=document.getElementById("themeToggle");
+    const themeLabel=document.getElementById("themeLabel");
+    const themeIcon=document.getElementById("themeIcon");
+
+    function applyTheme(mode){
+      const m=mode==="dark"?"dark":"light";
+      document.documentElement.setAttribute("data-theme",m);
+      localStorage.setItem("bfa_multi_wall_theme",m);
+      themeLabel.textContent = m === "dark" ? "Dark" : "Light";
+      if(m==="dark"){
+        themeIcon.innerHTML='<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+      }else{
+        themeIcon.innerHTML='<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.5-7.5L16 6m-8 12-1.5 1.5M6 6 4.5 4.5M19.5 19.5 18 18"></path>';
+      }
+    }
+    applyTheme(localStorage.getItem("bfa_multi_wall_theme") || "dark");
+    themeToggle.addEventListener("click",()=>{
+      const cur=document.documentElement.getAttribute("data-theme")==="dark"?"dark":"light";
+      applyTheme(cur==="dark"?"light":"dark");
+    });
+
+    /*********** CONFIG STORAGE ***********/
+    const STORAGE_KEY="bfa_multi_channels_v1";
+    const hudInfo=document.getElementById("hudInfo");
+    const wall=document.getElementById("wall");
+    const chipText=document.getElementById("chipText");
+
+    const DEFAULT_CHANNELS=[
+      {id:1,name:"News",url:"https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8"},
+      {id:2,name:"Tennis Channel S",url:"https://amg01444-tennischannelth-tennischannelnl-samsungnl-x3dq1.amagi.tv/playlist/amg01444-tennischannelth-tennischannelnl-samsungnl/playlist.m3u8"},
+      {id:3,name:"Cooking",url:"https://gusto-xumo.amagi.tv/playlist.m3u8"},
+      {id:4,name:"Love Nature",url:"https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8"},
+      {id:5,name:"Kids",url:"https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8"},
+      {id:6,name:"Extra Slot",url:""}
+    ];
+
+    function isUrl(u){return /^https?:\/\/\S+$/i.test((u||"").trim());}
+
+    function loadConfig(){
+      try{
+        const raw=localStorage.getItem(STORAGE_KEY);
+        if(!raw) return DEFAULT_CHANNELS.slice();
+        const arr=JSON.parse(raw);
+        if(!Array.isArray(arr)) return DEFAULT_CHANNELS.slice();
+        return arr.slice(0,32).map((c,i)=>({
+          id:(c && c.id) || i+1,
+          name:(c && c.name)||"",
+          url:(c && c.url)||""
+        }));
+      }catch{
+        return DEFAULT_CHANNELS.slice();
+      }
+    }
+
+    let channels = loadConfig();
+    let instances = new Map(); // videoEl -> { hls, id }
+
+    /*********** WALL BUILD ***********/
+    function destroyAll(){
+      instances.forEach(({hls})=>{
+        if(hls){ try{hls.destroy();}catch(e){} }
+      });
+      instances.clear();
+    }
+
+    function createTile(ch){
+      const tile=document.createElement("section");
+      tile.className="tile";
+
+      tile.innerHTML=`
+        <video muted playsinline autoplay data-chan-id="${ch.id}"></video>
+        <div class="tile-hud-top">
+          <div class="name-pill">${(ch.name||("Channel "+ch.id)).replace(/</g,"&lt;")}</div>
+          <div class="status-pill load" data-status>
+            <span class="status-dot"></span>
+            <span data-status-text>Loading…</span>
+          </div>
+        </div>
+        <div class="tile-footer">
+          <div class="url" title="${ch.url}">${ch.url}</div>
+          <button class="mini-btn" type="button" data-reload>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.13-3.36L23 10"></path>
+              <path d="M20.49 15a9 9 0 0 1-14.13 3.36L1 14"></path>
+            </svg>
+            <span>Reload</span>
+          </button>
+        </div>
+      `;
+
+      const video = tile.querySelector("video");
+      const statusPill = tile.querySelector("[data-status]");
+      const statusText = tile.querySelector("[data-status-text]");
+      const reloadBtn = tile.querySelector("[data-reload]");
+
+      const setStatus = (state,text)=>{
+        statusPill.classList.remove("ok","err","load");
+        if(state==="ok") statusPill.classList.add("ok");
+        else if(state==="err") statusPill.classList.add("err");
+        else statusPill.classList.add("load");
+        statusText.textContent=text;
+      };
+
+      const play = ()=>{
+        if(!isUrl(ch.url)){
+          setStatus("err","No URL");
+          return;
+        }
+        setStatus("load","Loading…");
+
+        const existing = instances.get(video);
+        if(existing && existing.hls){
+          try{existing.hls.destroy();}catch(e){}
+        }
+
+        if(window.Hls && Hls.isSupported()){
+          const hls=new Hls({enableWorker:true,lowLatencyMode:true});
+          instances.set(video,{hls,id:ch.id});
+
+          hls.attachMedia(video);
+          hls.loadSource(ch.url);
+
+          hls.on(Hls.Events.MANIFEST_PARSED,()=>{
+            video.muted=true;
+            video.play().then(()=>{
+              setStatus("ok","Playing");
+            }).catch(err=>{
+              console.warn("Autoplay blocked",ch.id,err);
+              setStatus("err","Autoplay blocked");
+            });
+          });
+
+          hls.on(Hls.Events.ERROR,(_,data)=>{
+            console.error("HLS error",ch.id,data);
+            if(data && data.fatal){
+              setStatus("err","Stream error");
+            }
+          });
+        }else if(video.canPlayType("application/vnd.apple.mpegurl")){
+          instances.set(video,{hls:null,id:ch.id});
+          video.src=ch.url;
+          video.muted=true;
+          video.play().then(()=>{
+            setStatus("ok","Playing");
+          }).catch(err=>{
+            console.warn("Autoplay blocked (native)",ch.id,err);
+            setStatus("err","Autoplay blocked");
+          });
+        }else{
+          setStatus("err","HLS not supported");
+        }
+
+        video.onerror=()=>setStatus("err","Video error");
+      };
+
+      reloadBtn.addEventListener("click",play);
+      play(); // initial
+
+      return tile;
+    }
+
+    function buildWall(){
+      destroyAll();
+      wall.innerHTML="";
+      const active = channels.filter(c=>isUrl(c.url));
+      if(!active.length){
+        hudInfo.textContent="No active channels. Use the admin URL to configure.";
+        return;
+      }
+      hudInfo.textContent=`Showing ${active.length} channel${active.length>1?'s':''}.`;
+      active.forEach(ch=>wall.appendChild(createTile(ch)));
+    }
+
+    /*********** INIT ***********/
+    channels = loadConfig();
+    buildWall();
+
+    chipText.textContent = "Muted autoplay • Reload after edits";
+
+    window.addEventListener("beforeunload",destroyAll);
+  </script>
+</body>
+</html>
