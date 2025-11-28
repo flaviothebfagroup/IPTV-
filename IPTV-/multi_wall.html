@@ -5,169 +5,182 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>BFA — Multi Channel Wall</title>
 
+  <!-- hls.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
 
   <style>
     :root{
-      --brand:#ff6a00;
-      --brand-2:#ff9500;
+      --brand:#ff6a00; --brand-2:#e85f00;
 
-      --bg-start:#fff7ef;
-      --bg-mid:#fdfaf7;
+      /* gradient stops (light) */
+      --bg-start:#fefefe;
+      --bg-mid:#f3f6fb;
       --bg-end:#ff6a00;
 
       --fg:#0f172a;
-      --panel:rgba(255,255,255,.80);
-      --line:rgba(15,23,42,.08);
-      --muted:#9ca3af;
+      --panel:rgba(255,255,255,.56);
+      --line:rgba(15,23,42,.06);
+      --muted:#64748b;
 
       --glass-blur:16px;
       --glass-sat:140%;
-      --elev-shadow:0 18px 40px rgba(15,23,42,.18), 0 2px 10px rgba(15,23,42,.08);
+      --elev-shadow:0 14px 34px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.05);
+      --elev-shadow-soft:0 10px 26px rgba(15,23,42,.06), 0 1px 4px rgba(15,23,42,.04);
+      --inset-soft:inset 0 1px 0 rgba(255,255,255,.65), inset 0 -1px 0 rgba(15,23,42,.06);
     }
     [data-theme="dark"]{
       --fg:#e8ecf1;
-      --bg-start:#030712;
-      --bg-mid:#020617;
-      --bg-end:#111827;
+      --bg-start:#0b0c10;
+      --bg-mid:#0d1016;
+      --bg-end:#10141b;
 
-      --panel:rgba(15,23,42,.82);
-      --line:rgba(148,163,184,.32);
-      --muted:#9ca3af;
-      --elev-shadow:0 18px 40px rgba(0,0,0,.8);
+      --panel:rgba(20,21,26,.55);
+      --line:rgba(255,255,255,.08);
+      --muted:#a8b0bc;
+      --glass-blur:14px; --glass-sat:140%;
+      --elev-shadow:0 12px 28px rgba(0,0,0,.32), 0 1px 2px rgba(0,0,0,.24);
+      --elev-shadow-soft:0 10px 20px rgba(0,0,0,.28), 0 1px 2px rgba(0,0,0,.2);
+      --inset-soft:inset 0 1px 0 rgba(255,255,255,.06), inset 0 -1px 0 rgba(0,0,0,.35);
     }
 
     *{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%}
     body{
-      color:var(--fg);
+      margin:0;color:var(--fg);
       font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
       background:transparent;
+      min-height:100vh;
       overflow:hidden;
     }
     body::before{
       content:"";
-      position:fixed;inset:0;z-index:-2;pointer-events:none;
-      background:linear-gradient(180deg,var(--bg-start) 0%,var(--bg-mid) 55%,var(--bg-end) 100%);
+      position:fixed; inset:0; z-index:-1; pointer-events:none;
+      background:linear-gradient(180deg, var(--bg-start) 0%, var(--bg-mid) 52%, var(--bg-end) 100%);
     }
 
     .page{
-      position:relative;
-      width:100%;
-      height:100%;
-      padding:10px 12px 12px;
+      max-width:1400px;
+      margin:10px auto;
+      padding:10px 12px 14px;
+      height:calc(100vh - 20px);
       display:flex;
       flex-direction:column;
       gap:10px;
     }
 
-    /* HUD header */
-    .hud{
-      position:relative;
-      z-index:2;
+    /* HEADER (same vibe as tester) */
+    .head{
       display:flex;
       align-items:center;
       justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
       gap:10px;
-      pointer-events:none;
     }
-    .hud-left{
-      display:flex;align-items:center;gap:10px;
-    }
-    .logo{
-      height:26px;
-      filter:drop-shadow(0 4px 10px rgba(0,0,0,.35));
-    }
-    .hud-title{
-      font-size:13px;
+    .logo{height:30px}
+    h1{
+      margin:0;
+      font-size:clamp(17px,3.8vw,21px);
       font-weight:800;
-      text-shadow:0 1px 3px rgba(0,0,0,.25);
     }
-    .hud-sub{
-      font-size:11px;
+    .sub{
       color:var(--muted);
-      text-shadow:0 1px 3px rgba(0,0,0,.5);
-    }
-    .hud-right{
-      display:flex;align-items:center;gap:8px;
+      font-size:12px;
     }
 
-    .chip{
-      pointer-events:auto;
+    .actions{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .theme-sel{
+      width:110px;
+      height:34px;
+      border-radius:18px;
+      border:1px solid var(--line);
+      background:var(--panel);
+      color:var(--fg);
+      font-size:12px;
+      box-shadow:var(--elev-shadow-soft);
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
+
+    .badge{
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:11px;
+      border:1px solid rgba(255,255,255,0.18);
+      background:rgba(15,23,42,0.7);
+      color:#e5e7eb;
       display:inline-flex;
       align-items:center;
       gap:6px;
-      padding:5px 10px;
-      font-size:11px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.7);
-      background:linear-gradient(120deg,rgba(255,255,255,.2),rgba(255,255,255,.5));
-      color:#111827;
-      backdrop-filter:blur(12px);
-      -webkit-backdrop-filter:blur(12px);
-      box-shadow:var(--elev-shadow);
+      box-shadow:0 8px 18px rgba(15,23,42,.35);
     }
-    [data-theme="dark"] .chip{
-      border-color:rgba(148,163,184,.7);
-      background:linear-gradient(120deg,rgba(15,23,42,.9),rgba(15,23,42,.7));
-      color:#e5e7eb;
-    }
-    .chip-dot{
-      width:8px;height:8px;border-radius:50%;background:#22c55e;
-      box-shadow:0 0 0 0 rgba(34,197,94,.55);
+    .dot{
+      width:9px;height:9px;border-radius:50%;
+      background:var(--brand);
+      box-shadow:0 0 0 0 rgba(255,149,0,0.5);
       animation:pulse 1.6s infinite;
     }
     @keyframes pulse{
-      0%{box-shadow:0 0 0 0 rgba(34,197,94,.55);}
-      70%{box-shadow:0 0 0 10px rgba(34,197,94,0);}
-      100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}
+      0%{box-shadow:0 0 0 0 rgba(255,149,0,0.6);}
+      70%{box-shadow:0 0 0 8px rgba(255,149,0,0);}
+      100%{box-shadow:0 0 0 0 rgba(255,149,0,0);}
     }
 
-    .theme-toggle{
-      pointer-events:auto;
-      border-radius:999px;
-      padding:4px 9px;
-      font-size:11px;
-      border:1px solid rgba(148,163,184,.65);
-      background:rgba(255,255,255,.4);
-      color:#111827;
-      display:inline-flex;
+    /* WALL CARD (big glass panel, inside tiles) */
+    .card{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:12px;
+      box-shadow:var(--elev-shadow);
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      min-height:0;
+    }
+    .card-header{
+      display:flex;
+      justify-content:space-between;
       align-items:center;
-      gap:6px;
-      cursor:pointer;
-      backdrop-filter:blur(10px);
-      -webkit-backdrop-filter:blur(10px);
+      gap:8px;
+      margin-bottom:8px;
     }
-    [data-theme="dark"] .theme-toggle{
-      background:rgba(15,23,42,.9);
-      color:#e5e7eb;
+    .card-title{
+      font-weight:700;
+      font-size:14px;
     }
-    .theme-toggle svg{width:14px;height:14px}
 
-    /* WALL GRID */
     .wall{
-      position:relative;
-      z-index:1;
       flex:1;
       display:grid;
-      width:100%;
-      height:calc(100% - 40px);
-      grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
-      grid-auto-rows:auto;
+      grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
       gap:10px;
-      align-items:center;
-      justify-items:center;
+      align-items:stretch;
+      justify-items:stretch;
+      min-height:0;
     }
 
+    /* TILE — 16:9 locked, dark video block */
     .tile{
       position:relative;
       width:100%;
-      aspect-ratio:16/9; /* 🔒 */
+      aspect-ratio:16 / 9;       /* 🔒 keep 16:9 */
+      background:#050816;
       border-radius:18px;
+      border:1px solid rgba(15,23,42,0.45);
       overflow:hidden;
-      background:#020617;
-      border:1px solid rgba(15,23,42,.45);
-      box-shadow:var(--elev-shadow);
+      box-shadow:var(--elev-shadow-soft);
     }
     .tile video{
       position:absolute;
@@ -179,36 +192,45 @@
       display:block;
     }
 
-    .tile-hud-top{
+    .tile-header{
       position:absolute;
-      top:8px;left:8px;right:8px;
-      display:flex;justify-content:space-between;align-items:center;
-      gap:6px;pointer-events:none;z-index:2;
+      top:8px; left:8px; right:8px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:6px;
+      pointer-events:none;
+      z-index:2;
     }
     .name-pill{
       font-size:12px;
       font-weight:600;
-      padding:3px 8px;
+      padding:4px 8px;
       border-radius:999px;
-      background:rgba(15,23,42,.85);
-      border:1px solid rgba(148,163,184,.7);
-      color:#f9fafb;
-      max-width:70%;
-      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+      background:rgba(15,15,15,0.8);
+      border:1px solid rgba(255,255,255,0.25);
       backdrop-filter:blur(8px);
       -webkit-backdrop-filter:blur(8px);
+      max-width:65%;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      overflow:hidden;
+      color:#f9fafb;
     }
     .status-pill{
       font-size:11px;
       padding:3px 8px;
       border-radius:999px;
-      background:rgba(15,23,42,.85);
-      border:1px solid rgba(148,163,184,.4);
+      background:rgba(15,15,15,0.85);
+      border:1px solid rgba(255,255,255,0.15);
       color:var(--muted);
-      display:inline-flex;align-items:center;gap:4px;
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
     }
-    .status-pill.ok{color:#22c55e;border-color:rgba(34,197,94,.6);}
-    .status-pill.err{color:#ef4444;border-color:rgba(239,68,68,.7);}
+    .status-pill.ok{color:#22c55e;border-color:rgba(34,197,94,0.5);}
+    .status-pill.err{color:#ef4444;border-color:rgba(239,68,68,0.6);}
+    .status-pill.load{color:var(--muted);}
     .status-dot{
       width:7px;height:7px;border-radius:50%;background:var(--muted);
     }
@@ -216,244 +238,969 @@
     .status-pill.err .status-dot{background:#ef4444;}
 
     .tile-footer{
-      position:absolute;left:0;right:0;bottom:0;
-      padding:6px 9px 7px;
+      position:absolute;
+      left:0;right:0;bottom:0;
+      padding:7px 10px 8px;
       font-size:11px;
       color:var(--muted);
-      display:flex;justify-content:space-between;align-items:center;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
       gap:6px;
-      background:linear-gradient(180deg,rgba(15,23,42,0),rgba(3,7,18,.96));
-      border-top:1px solid rgba(15,23,42,.7);
-      pointer-events:none;z-index:2;
+      background:radial-gradient(circle at top, rgba(15,23,42,0.94), rgba(0,0,0,1));
+      border-top:1px solid rgba(148,163,184,0.25);
+      z-index:2;
     }
     .url{
       max-width:80%;
-      overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
       font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
-      opacity:.9;
-    }
-    .mini-btn{
       font-size:10px;
-      padding:3px 7px;
+    }
+    .ctrl-button{
+      font-size:11px;
+      padding:4px 8px;
       border-radius:999px;
-      border:1px solid rgba(148,163,184,.6);
+      border:1px solid rgba(148,163,184,0.6);
       background:transparent;
       color:#e5e7eb;
+      box-shadow:none;
+      backdrop-filter:none;
+      -webkit-backdrop-filter:none;
       cursor:pointer;
-      display:inline-flex;align-items:center;gap:4px;
-      pointer-events:auto;
     }
-    .mini-btn svg{width:12px;height:12px}
-    .mini-btn:hover{border-color:var(--brand);}
+    .ctrl-button:hover{
+      border-color:var(--brand);
+    }
 
-    @media (max-width:768px){
-      .page{padding:10px;}
-      .hud-title{font-size:12px;}
-      .hud-sub{display:none;}
-      .wall{height:calc(100% - 34px);}
+    @media (max-width:700px){
+      .page{margin:0;max-width:none;height:100vh;}
+      .card{border-radius:0;}
     }
   </style>
 </head>
 <body>
   <div class="page">
-    <header class="hud">
-      <div class="hud-left">
+    <header class="head">
+      <div class="brand">
         <img id="bfaLogo" class="logo" alt="BFA logo" />
         <div>
-          <div class="hud-title">BFA — Multi Channel Wall</div>
-          <div class="hud-sub" id="hudInfo">Loading config…</div>
+          <h1>BFA — Multi Channel Wall</h1>
+          <div class="sub" id="wallSubtitle">Showing channels from local config (<code>bfa_multi_channels_v1</code>).</div>
         </div>
       </div>
-      <div class="hud-right">
-        <button id="themeToggle" class="theme-toggle" type="button">
-          <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="4"></circle>
-            <path d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.5-7.5L16 6m-8 12-1.5 1.5M6 6 4.5 4.5M19.5 19.5 18 18"></path>
-          </svg>
-          <span id="themeLabel">Light</span>
-        </button>
-        <div class="chip">
-          <span class="chip-dot"></span>
-          <span id="chipText">Muted autoplay • reload after edits</span>
+      <div class="actions">
+        <select id="themeSel" class="theme-sel" title="Theme">
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+        <div class="badge">
+          <span class="dot"></span>
+          <span id="badgeText">Muted autoplay • Viewer only</span>
         </div>
       </div>
     </header>
 
-    <main id="wall" class="wall"></main>
+    <section class="card">
+      <div class="card-header">
+        <div class="card-title">Wall preview</div>
+        <div class="sub" id="statusText">Loading channels…</div>
+      </div>
+      <div id="wall" class="wall"></div>
+    </section>
   </div>
 
   <script>
-    /*********** LOGO + THEME ***********/
-    const LOGO_PRIMARY="/IPTV-/icons/icon-192.png";
-    const FALLBACK_SVG='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(
+    /************* UTIL *************/
+    const isUrl = (u) => /^https?:\/\/\S+$/i.test((u || "").trim());
+
+    /************* THEME + LOGO (same as tester) *************/
+    const themeSel = document.getElementById("themeSel");
+    function applyTheme(mode){
+      const m = mode === "dark" ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", m);
+      themeSel.value = m;
+      localStorage.setItem("bfa_theme_multi_wall", m);
+    }
+    applyTheme(localStorage.getItem("bfa_theme_multi_wall") || "light");
+    themeSel.addEventListener("change",(e)=>applyTheme(e.target.value));
+
+    const LOGO_PRIMARY = "/IPTV-/icons/icon-192.png";
+    const FALLBACK_SVG = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
       '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="30" viewBox="0 0 120 30"><rect rx="7" width="120" height="30" fill="#ff6a00"/><text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial" font-weight="800" font-size="14" fill="#fff">BFA</text></svg>'
     );
-    const logo=document.getElementById("bfaLogo");
-    logo.src=LOGO_PRIMARY;
-    logo.onerror=()=>{logo.onerror=null;logo.src=FALLBACK_SVG;};
+    const logoEl = document.getElementById("bfaLogo");
+    logoEl.src = LOGO_PRIMARY;
+    logoEl.onerror = () => { logoEl.onerror = null; logoEl.src = FALLBACK_SVG; };
 
-    const themeToggle=document.getElementById("themeToggle");
-    const themeLabel=document.getElementById("themeLabel");
-    const themeIcon=document.getElementById("themeIcon");
+    /************* CHANNEL CONFIG (SHARED WITH EDITOR) *************/
+    const STORAGE_KEY = "bfa_multi_channels_v1";
 
-    function applyTheme(mode){
-      const m=mode==="dark"?"dark":"light";
-      document.documentElement.setAttribute("data-theme",m);
-      localStorage.setItem("bfa_multi_wall_theme",m);
-      themeLabel.textContent = m==="dark" ? "Dark" : "Light";
-      if(m==="dark"){
-        themeIcon.innerHTML='<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
-      }else{
-        themeIcon.innerHTML='<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.5-7.5L16 6m-8 12-1.5 1.5M6 6 4.5 4.5M19.5 19.5 18 18"></path>';
-      }
-    }
-    applyTheme(localStorage.getItem("bfa_multi_wall_theme") || "dark");
-    themeToggle.addEventListener("click",()=>{
-      const cur=document.documentElement.getAttribute("data-theme")==="dark"?"dark":"light";
-      applyTheme(cur==="dark"?"light":"dark");
-    });
-
-    /*********** CONFIG LOAD ***********/
-    const STORAGE_KEY="bfa_multi_channels_v1";
-    const hudInfo=document.getElementById("hudInfo");
-    const wall=document.getElementById("wall");
-
-    const DEFAULT_CHANNELS=[
-      {id:1,name:"News",url:"https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8"},
-      {id:2,name:"Tennis Channel S",url:"https://amg01444-tennischannelth-tennischannelnl-samsungnl-x3dq1.amagi.tv/playlist/amg01444-tennischannelth-tennischannelnl-samsungnl/playlist.m3u8"},
-      {id:3,name:"Cooking",url:"https://gusto-xumo.amagi.tv/playlist.m3u8"},
-      {id:4,name:"Love Nature",url:"https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8"},
-      {id:5,name:"Kids",url:"https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8"},
-      {id:6,name:"Extra Slot",url:""}
+    const DEFAULT_CHANNELS = [
+      { id:1, name:"News",   url:"https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8" },
+      { id:2, name:"Tennis Channel S", url:"https://amg01444-tennischannelth-tennischannelnl-samsungnl-x3dq1.amagi.tv/playlist/amg01444-tennischannelth-tennischannelnl-samsungnl/playlist.m3u8" },
+      { id:3, name:"Cooking", url:"https://gusto-xumo.amagi.tv/playlist.m3u8" },
+      { id:4, name:"Love Nature", url:"https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8" },
+      { id:5, name:"Kids", url:"https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8" },
+      { id:6, name:"Extra Slot", url:"" }
     ];
 
-    const isUrl=(u)=>/^https?:\/\/\S+$/i.test((u||"").trim());
-
-    function loadConfig(){
+    function loadChannelsFromStorage(){
       try{
-        const raw=localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(STORAGE_KEY);
         if(!raw) return DEFAULT_CHANNELS.slice();
-        const arr=JSON.parse(raw);
-        if(!Array.isArray(arr)) return DEFAULT_CHANNELS.slice();
-        return arr.slice(0,32).map((c,i)=>({
-          id:(c && c.id) || i+1,
-          name:(c && c.name) || "",
-          url:(c && c.url) || ""
+        const parsed = JSON.parse(raw);
+        if(!Array.isArray(parsed)) return DEFAULT_CHANNELS.slice();
+        // allow more than 6 here (wall can show as many as user adds via editor)
+        return parsed.slice(0, 32).map((c, i)=>({
+          id: (c && c.id) || (i+1),
+          name: (c && c.name) || "",
+          url: (c && c.url) || ""
         }));
       }catch{
         return DEFAULT_CHANNELS.slice();
       }
     }
 
-    let channels=loadConfig();
-    let instances=new Map();
+    /************* WALL + HLS *************/
+    const wallEl = document.getElementById("wall");
+    const statusText = document.getElementById("statusText");
+    const wallSubtitle = document.getElementById("wallSubtitle");
+    const instances = new Map(); // videoEl -> { hls, id }
 
-    /*********** WALL BUILD ***********/
-    function destroyAll(){
+    function destroyAllInstances(){
       instances.forEach(({hls})=>{
-        if(hls){try{hls.destroy();}catch(e){}}
+        if(hls){
+          try{hls.destroy();}catch(e){}
+        }
       });
       instances.clear();
     }
 
-    function createTile(ch){
-      const tile=document.createElement("section");
-      tile.className="tile";
-      tile.innerHTML=`
-        <video muted playsinline autoplay data-chan-id="${ch.id}"></video>
-        <div class="tile-hud-top">
-          <div class="name-pill">${(ch.name||("Channel "+ch.id)).replace(/</g,"&lt;")}</div>
+    function setStatusLabel(text){
+      statusText.textContent = text;
+    }
+
+    function createTile(channel){
+      const tile = document.createElement("section");
+      tile.className = "tile";
+
+      tile.innerHTML = `
+        <div class="tile-header">
+          <div class="name-pill">${channel.name || ("Channel " + channel.id)}</div>
           <div class="status-pill load" data-status>
             <span class="status-dot"></span>
             <span data-status-text>Loading…</span>
           </div>
         </div>
+        <video muted playsinline autoplay data-chan-id="${channel.id}"></video>
         <div class="tile-footer">
-          <div class="url" title="${ch.url}">${ch.url}</div>
-          <button class="mini-btn" type="button" data-reload>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="23 4 23 10 17 10"></polyline>
-              <polyline points="1 20 1 14 7 14"></polyline>
-              <path d="M3.51 9a9 9 0 0 1 14.13-3.36L23 10"></path>
-              <path d="M20.49 15a9 9 0 0 1-14.13 3.36L1 14"></path>
-            </svg>
-            <span>Reload</span>
-          </button>
+          <div class="url" title="${channel.url}">${channel.url}</div>
+          <button class="ctrl-button" type="button" data-reload>Reload</button>
         </div>
       `;
-      const video=tile.querySelector("video");
-      const statusPill=tile.querySelector("[data-status]");
-      const statusText=statusPill.querySelector("[data-status-text]");
-      const reloadBtn=tile.querySelector("[data-reload]");
 
-      const setStatus=(state,text)=>{
+      const video = tile.querySelector("video");
+      const statusPill = tile.querySelector("[data-status]");
+      const statusTextEl = tile.querySelector("[data-status-text]");
+      const reloadBtn = tile.querySelector("[data-reload]");
+
+      const setTileStatus = (state, text)=>{
         statusPill.classList.remove("ok","err","load");
-        if(state==="ok") statusPill.classList.add("ok");
-        else if(state==="err") statusPill.classList.add("err");
+        if(state === "ok") statusPill.classList.add("ok");
+        else if(state === "err") statusPill.classList.add("err");
         else statusPill.classList.add("load");
-        statusText.textContent=text;
+        statusTextEl.textContent = text;
       };
 
-      const play=()=>{
-        if(!isUrl(ch.url)){
-          setStatus("err","No URL");
+      const playChannel = ()=>{
+        if(!isUrl(channel.url)){
+          setTileStatus("err","No URL");
           return;
         }
-        setStatus("load","Loading…");
+        setTileStatus("load","Loading…");
 
-        const existing=instances.get(video);
+        const existing = instances.get(video);
         if(existing && existing.hls){
           try{existing.hls.destroy();}catch(e){}
         }
 
         if(window.Hls && Hls.isSupported()){
-          const hls=new Hls({enableWorker:true,lowLatencyMode:true});
-          instances.set(video,{hls,id:ch.id});
+          const hls = new Hls({ enableWorker:true, lowLatencyMode:true });
+          instances.set(video,{hls, id:channel.id});
           hls.attachMedia(video);
-          hls.loadSource(ch.url);
-          hls.on(Hls.Events.MANIFEST_PARSED,()=>{
-            video.muted=true;
-            video.play().then(()=>setStatus("ok","Playing"))
-              .catch(err=>{console.warn("Autoplay blocked",ch.id,err);setStatus("err","Autoplay blocked");});
+          hls.loadSource(channel.url);
+
+          hls.on(Hls.Events.MANIFEST_PARSED, ()=>{
+            video.muted = true;
+            video.play().then(()=>{
+              setTileStatus("ok","Playing");
+            }).catch(err=>{
+              console.warn("Autoplay blocked for channel", channel.id, err);
+              setTileStatus("err","Autoplay blocked");
+            });
           });
+
           hls.on(Hls.Events.ERROR,(_,data)=>{
-            console.error("HLS error",ch.id,data);
-            if(data && data.fatal) setStatus("err","Stream error");
+            console.error("HLS error for channel", channel.id, data);
+            if(data && data.fatal){
+              setTileStatus("err","Stream error");
+            }
           });
         }else if(video.canPlayType("application/vnd.apple.mpegurl")){
-          instances.set(video,{hls:null,id:ch.id});
-          video.src=ch.url;
-          video.muted=true;
-          video.play().then(()=>setStatus("ok","Playing"))
-            .catch(err=>{console.warn("Autoplay blocked (native)",ch.id,err);setStatus("err","Autoplay blocked");});
+          video.src = channel.url;
+          instances.set(video,{hls:null, id:channel.id});
+          video.muted = true;
+          video.play().then(()=>{
+            setTileStatus("ok","Playing");
+          }).catch(err=>{
+            console.warn("Autoplay blocked (native) channel", channel.id, err);
+            setTileStatus("err","Autoplay blocked");
+          });
         }else{
-          setStatus("err","HLS not supported");
+          setTileStatus("err","HLS not supported");
         }
 
-        video.onerror=()=>setStatus("err","Video error");
+        video.onerror = ()=> setTileStatus("err","Video error");
       };
 
-      reloadBtn.addEventListener("click",play);
-      play();
+      reloadBtn.addEventListener("click", playChannel);
+      playChannel();
       return tile;
     }
 
     function buildWall(){
-      destroyAll();
-      wall.innerHTML="";
-      const active=channels.filter(c=>isUrl(c.url));
-      if(!active.length){
-        hudInfo.textContent="No active channels. Use the editor page to configure, then reload.";
+      destroyAllInstances();
+      wallEl.innerHTML = "";
+
+      const all = loadChannelsFromStorage();
+      const active = all.filter(ch => isUrl(ch.url));
+      const total = all.length;
+      const activeCount = active.length;
+
+      if(!activeCount){
+        setStatusLabel("No active channels. Edit them in the Multi Channel Tester page.");
+        wallSubtitle.textContent = "No URLs found in localStorage yet.";
         return;
       }
-      hudInfo.textContent=`Showing ${active.length} channel${active.length>1?"s":""}.`;
-      active.forEach(ch=>wall.appendChild(createTile(ch)));
+
+      active.forEach(ch => wallEl.appendChild(createTile(ch)));
+
+      setStatusLabel(`Showing ${activeCount} channel${activeCount>1?'s':''} (from ${total} slots).`);
+      wallSubtitle.textContent = "Using config stored by your BFA — Multi Channel Tester page.";
     }
 
-    /*********** INIT ***********/
-    channels=loadConfig();
+    /************* INIT *************/
     buildWall();
-    window.addEventListener("beforeunload",destroyAll);
+    window.addEventListener("beforeunload", destroyAllInstances);
+  </script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>BFA — Multi Channel Tester</title>
+
+  <!-- hls.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
+
+  <style>
+    :root{
+      --brand:#ff6a00; --brand-2:#e85f00;
+
+      /* gradient stops (light) */
+      --bg-start:#fefefe;
+      --bg-mid:#f3f6fb;
+      --bg-end:#ff6a00;
+
+      --fg:#0f172a;
+      --panel:rgba(255,255,255,.56);
+      --line:rgba(15,23,42,.06);
+      --muted:#64748b;
+      --radius:18px; --btn-h:40px; --gap:14px;
+
+      --glass-blur:16px;
+      --glass-sat:140%;
+      --elev-shadow:0 14px 34px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.05);
+      --elev-shadow-soft:0 10px 26px rgba(15,23,42,.06), 0 1px 4px rgba(15,23,42,.04);
+      --inset-soft:inset 0 1px 0 rgba(255,255,255,.65), inset 0 -1px 0 rgba(15,23,42,.06);
+    }
+    [data-theme="dark"]{
+      --fg:#e8ecf1;
+      --bg-start:#0b0c10;
+      --bg-mid:#0d1016;
+      --bg-end:#10141b;
+
+      --panel:rgba(20,21,26,.55);
+      --line:rgba(255,255,255,.08);
+      --muted:#a8b0bc;
+      --glass-blur:14px; --glass-sat:140%;
+      --elev-shadow:0 12px 28px rgba(0,0,0,.32), 0 1px 2px rgba(0,0,0,.24);
+      --elev-shadow-soft:0 10px 20px rgba(0,0,0,.28), 0 1px 2px rgba(0,0,0,.2);
+      --inset-soft:inset 0 1px 0 rgba(255,255,255,.06), inset 0 -1px 0 rgba(0,0,0,.35);
+    }
+
+    *{box-sizing:border-box}
+    html,body{min-height:100%}
+    body{
+      margin:0;color:var(--fg);
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+      background:transparent;
+      min-height:100vh;
+    }
+    body::before{
+      content:"";
+      position:fixed; inset:0; z-index:-1; pointer-events:none;
+      background:linear-gradient(180deg, var(--bg-start) 0%, var(--bg-mid) 52%, var(--bg-end) 100%);
+    }
+
+    .page{max-width:1100px;margin:18px auto;padding:16px}
+    .stack>*+*{margin-top:var(--gap)}
+
+    .head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{height:30px}
+    h1{margin:0;font-size:clamp(18px,4.2vw,22px);font-weight:800}
+    .sub{color:var(--muted);font-size:12px}
+
+    .actions{display:flex;gap:8px;align-items:center}
+    .theme-sel{width:110px}
+
+    .badge{
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:12px;
+      border:1px solid rgba(255,255,255,0.18);
+      background:rgba(15,23,42,0.7);
+      color:#e5e7eb;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+    .dot{
+      width:9px;height:9px;border-radius:50%;
+      background:var(--brand);
+      box-shadow:0 0 0 0 rgba(255,149,0,0.5);
+      animation:pulse 1.6s infinite;
+    }
+    @keyframes pulse{
+      0%{box-shadow:0 0 0 0 rgba(255,149,0,0.6);}
+      70%{box-shadow:0 0 0 8px rgba(255,149,0,0);}
+      100%{box-shadow:0 0 0 0 rgba(255,149,0,0);}
+    }
+
+    .card{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:14px 14px 16px;
+      box-shadow:var(--elev-shadow);
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
+
+    .card-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      margin-bottom:10px;
+    }
+    .card-title{
+      font-weight:700;
+      font-size:14px;
+    }
+
+    button,input,select{
+      font-size:13px;
+      height:var(--btn-h);
+      padding:0 12px;
+      border-radius:18px;
+      border:1px solid var(--line);
+      background:var(--panel);
+      color:var(--fg);
+      outline:none;
+      -webkit-tap-highlight-color:transparent;
+      box-shadow:var(--elev-shadow-soft);
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
+    input[type="checkbox"]{
+      height:auto;
+      width:auto;
+      box-shadow:none;
+      padding:0;
+      margin:0;
+    }
+    button{
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      white-space:nowrap;
+    }
+    .btn{
+      background:linear-gradient(180deg,var(--brand),var(--brand-2));
+      color:#fff;
+      border-color:transparent;
+      box-shadow:0 8px 18px rgba(255,106,0,.18);
+    }
+    .btn-outline{
+      background:var(--panel);
+      border-color:rgba(255,149,0,.42);
+      color:var(--brand);
+    }
+    button:focus{outline:none}
+    button:focus:not(:focus-visible){outline:none}
+    button.btn,button.btn-outline{
+      transition:transform .12s ease, box-shadow .18s ease, filter .18s ease, background .18s ease;
+    }
+    button.btn:hover,button.btn-outline:hover{
+      transform:translateY(-1px);
+      filter:brightness(1.03);
+    }
+    button.btn:active,button.btn-outline:active{
+      transform:translateY(0);
+      filter:brightness(.985);
+    }
+
+    /* GRID */
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+      gap:12px;
+    }
+
+    /* 🔶 TILE: 16:9, with video filling it */
+    .tile{
+      position:relative;
+      background:#050816;
+      border-radius:16px;
+      border:1px solid rgba(15,23,42,0.45);
+      overflow:hidden;
+      box-shadow:var(--elev-shadow-soft);
+      aspect-ratio:16 / 9;   /* LOCKED 16:9 */
+    }
+    .tile video{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      background:#000;
+      display:block;
+    }
+
+    .tile-header{
+      position:absolute;
+      top:8px; left:8px; right:8px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:6px;
+      pointer-events:none;
+      z-index:1;
+    }
+    .name-pill{
+      font-size:12px;
+      font-weight:600;
+      padding:4px 8px;
+      border-radius:999px;
+      background:rgba(15,15,15,0.8);
+      border:1px solid rgba(255,255,255,0.25);
+      backdrop-filter:blur(8px);
+      -webkit-backdrop-filter:blur(8px);
+      max-width:65%;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      overflow:hidden;
+      color:#f9fafb;
+    }
+    .status-pill{
+      font-size:11px;
+      padding:3px 8px;
+      border-radius:999px;
+      background:rgba(15,15,15,0.85);
+      border:1px solid rgba(255,255,255,0.1);
+      color:var(--muted);
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+    }
+    .status-pill.ok{color:#22c55e;border-color:rgba(34,197,94,0.5);}
+    .status-pill.err{color:#ef4444;border-color:rgba(239,68,68,0.6);}
+    .status-pill.load{color:var(--muted);}
+    .status-dot{
+      width:7px;height:7px;border-radius:50%;background:var(--muted);
+    }
+    .status-pill.ok .status-dot{background:#22c55e;}
+    .status-pill.err .status-dot{background:#ef4444;}
+
+    .tile-footer{
+      position:absolute;
+      left:0;right:0;bottom:0;
+      padding:8px 10px;
+      font-size:11px;
+      color:var(--muted);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      background:radial-gradient(circle at top, rgba(15,23,42,0.9), rgba(0,0,0,0.95));
+      border-top:1px solid rgba(148,163,184,0.2);
+      z-index:1;
+    }
+    .url{
+      max-width:80%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-size:10px;
+    }
+    .ctrl-button{
+      font-size:11px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,0.6);
+      background:transparent;
+      color:#e5e7eb;
+      box-shadow:none;
+      backdrop-filter:none;
+      -webkit-backdrop-filter:none;
+    }
+    .ctrl-button:hover{
+      border-color:var(--brand);
+    }
+
+    /* CONFIG FORM */
+    .cfg-grid-header,
+    .cfg-row{
+      display:grid;
+      grid-template-columns:40px minmax(90px,160px) minmax(140px,1fr) 70px;
+      gap:8px;
+      align-items:center;
+    }
+    .cfg-grid-header{
+      font-size:11px;
+      color:var(--muted);
+      padding-bottom:4px;
+      border-bottom:1px solid rgba(148,163,184,0.25);
+      margin-bottom:6px;
+    }
+    .cfg-row + .cfg-row{
+      margin-top:6px;
+    }
+    .cfg-row input[type="text"]{
+      width:100%;
+      height:var(--btn-h);
+    }
+    .cfg-row .slot-label{
+      font-size:12px;
+      font-weight:600;
+    }
+    .cfg-row .enabled-cell{
+      display:flex;
+      align-items:center;
+      gap:4px;
+      font-size:11px;
+      color:var(--muted);
+    }
+
+    .cfg-help{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:6px;
+    }
+
+    .msg{
+      font-size:12px;
+      margin-top:6px;
+    }
+
+    @media (max-width:640px){
+      .cfg-grid-header{display:none;}
+      .cfg-row{
+        grid-template-columns:1fr;
+        border:1px solid rgba(148,163,184,0.3);
+        border-radius:14px;
+        padding:8px;
+      }
+      .cfg-row .slot-label{
+        margin-bottom:4px;
+      }
+      .cfg-row .enabled-cell{
+        justify-content:flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page stack">
+    <header class="head">
+      <div class="brand">
+        <img id="bfaLogo" class="logo" alt="BFA logo" />
+        <div>
+          <h1>BFA — Multi Channel Tester</h1>
+          <div class="sub">Test up to 6 IPTV channels side-by-side. Config stored locally (no Firebase).</div>
+        </div>
+      </div>
+      <div class="actions">
+        <select id="themeSel" class="theme-sel" title="Theme">
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+        <div class="badge">
+          <span class="dot"></span>
+          <span>Standalone sandbox</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- MULTI-CHANNEL GRID -->
+    <section class="card">
+      <div class="card-header">
+        <div class="card-title">Preview</div>
+        <div class="sub" id="statusText">Using local config.</div>
+      </div>
+      <div id="grid" class="grid"></div>
+    </section>
+
+    <!-- CONFIG "BACKEND" CARD -->
+    <section class="card">
+      <div class="card-header">
+        <div class="card-title">Channel configuration</div>
+        <button id="resetDefaults" class="btn-outline" type="button">Reset to defaults</button>
+      </div>
+      <p class="sub">Edit up to 6 channel slots. Only rows with a valid URL are used. Changes are saved to this browser via localStorage (<code>bfa_multi_channels_v1</code>).</p>
+
+      <div class="cfg-grid-header">
+        <div>#</div>
+        <div>Name</div>
+        <div>URL</div>
+        <div>Enabled</div>
+      </div>
+
+      <div id="cfgRows"></div>
+
+      <div class="cfg-help">
+        Tip: use this on your laptop to tweak channel names/URLs, the grid updates instantly.  
+        This page is completely separate from your production players.
+      </div>
+
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button id="saveBtn" class="btn" type="button">Save & Refresh Grid</button>
+        <button id="reloadBtn" class="btn-outline" type="button">Reload from storage</button>
+        <span id="saveMsg" class="msg"></span>
+      </div>
+    </section>
+
+    <div class="sub">Autoplay: all tiles start muted so browsers allow background playback.</div>
+  </div>
+
+  <script>
+    /************* SMALL UTILITIES *************/
+    const isUrl = (u) => /^https?:\/\/\S+$/i.test((u || "").trim());
+
+    /************* THEME + LOGO *************/
+    const themeSel = document.getElementById("themeSel");
+    function applyTheme(mode) {
+      const m = mode === "dark" ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", m);
+      themeSel.value = m;
+      localStorage.setItem("bfa_theme_multi", m);
+    }
+    applyTheme(localStorage.getItem("bfa_theme_multi") || "light");
+    themeSel.addEventListener("change", (e) => applyTheme(e.target.value));
+
+    const LOGO_PRIMARY = "/IPTV-/icons/icon-192.png";
+    const FALLBACK_SVG = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="30" viewBox="0 0 120 30"><rect rx="7" width="120" height="30" fill="#ff6a00"/><text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial" font-weight="800" font-size="14" fill="#fff">BFA</text></svg>'
+    );
+    const logoEl = document.getElementById("bfaLogo");
+    logoEl.src = LOGO_PRIMARY;
+    logoEl.onerror = () => { logoEl.onerror = null; logoEl.src = FALLBACK_SVG; };
+
+    /************* DEFAULT CHANNELS *************/
+    const DEFAULT_CHANNELS = [
+      {
+        id: 1,
+        name: "News",
+        url: "https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8",
+      },
+      {
+        id: 2,
+        name: "Tennis Channel S",
+        url: "https://amg01444-tennischannelth-tennischannelnl-samsungnl-x3dq1.amagi.tv/playlist/amg01444-tennischannelth-tennischannelnl-samsungnl/playlist.m3u8",
+      },
+      {
+        id: 3,
+        name: "Cooking",
+        url: "https://gusto-xumo.amagi.tv/playlist.m3u8",
+      },
+      {
+        id: 4,
+        name: "Love Nature",
+        url: "https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8",
+      },
+      {
+        id: 5,
+        name: "Kids",
+        url: "https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8",
+      },
+      {
+        id: 6,
+        name: "Extra Slot",
+        url: "",
+      }
+    ];
+
+    const STORAGE_KEY = "bfa_multi_channels_v1";
+
+    function loadChannelsFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return DEFAULT_CHANNELS.slice();
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return DEFAULT_CHANNELS.slice();
+        // Normalize & ensure max 6
+        return parsed.slice(0, 6).map((c, i) => ({
+          id: i + 1,
+          name: (c && c.name) || "",
+          url: (c && c.url) || "",
+        }));
+      } catch {
+        return DEFAULT_CHANNELS.slice();
+      }
+    }
+
+    function saveChannelsToStorage(chans) {
+      const sanitized = chans
+        .map((c, i) => ({ id: i + 1, name: c.name || "", url: c.url || "" }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+    }
+
+    /************* CONFIG "BACKEND" UI *************/
+    const cfgRowsContainer = document.getElementById("cfgRows");
+    const saveBtn = document.getElementById("saveBtn");
+    const reloadBtn = document.getElementById("reloadBtn");
+    const resetDefaultsBtn = document.getElementById("resetDefaults");
+    const saveMsg = document.getElementById("saveMsg");
+    const statusText = document.getElementById("statusText");
+
+    let currentChannels = loadChannelsFromStorage();
+
+    function renderConfigForm() {
+      cfgRowsContainer.innerHTML = "";
+      currentChannels.forEach((ch, index) => {
+        const row = document.createElement("div");
+        row.className = "cfg-row";
+        row.dataset.index = String(index);
+
+        row.innerHTML = `
+          <div class="slot-label">#${index + 1}</div>
+          <input type="text" class="cfg-name" placeholder="Channel name" value="${ch.name ? ch.name.replace(/"/g, "&quot;") : ""}">
+          <input type="text" class="cfg-url" placeholder="https://… (HLS .m3u8)" value="${ch.url ? ch.url.replace(/"/g, "&quot;") : ""}">
+          <label class="enabled-cell">
+            <input type="checkbox" class="cfg-enabled" ${isUrl(ch.url) ? "checked" : ""}>
+            <span>Use</span>
+          </label>
+        `;
+        cfgRowsContainer.appendChild(row);
+      });
+    }
+
+    function readConfigForm() {
+      const rows = Array.from(cfgRowsContainer.querySelectorAll(".cfg-row"));
+      const result = [];
+      rows.forEach((row, idx) => {
+        const nameInput = row.querySelector(".cfg-name");
+        const urlInput = row.querySelector(".cfg-url");
+        const enabledInput = row.querySelector(".cfg-enabled");
+        const name = nameInput.value.trim();
+        const url = urlInput.value.trim();
+        const enabled = enabledInput.checked && isUrl(url);
+        result.push({
+          id: idx + 1,
+          name,
+          url: enabled ? url : "", // if not enabled, treat as empty
+        });
+      });
+      return result;
+    }
+
+    saveBtn.addEventListener("click", () => {
+      const newCfg = readConfigForm();
+      currentChannels = newCfg;
+      saveChannelsToStorage(newCfg);
+      buildGrid();
+      saveMsg.textContent = "Saved and grid refreshed ✔";
+      setTimeout(() => (saveMsg.textContent = ""), 4000);
+    });
+
+    reloadBtn.addEventListener("click", () => {
+      currentChannels = loadChannelsFromStorage();
+      renderConfigForm();
+      buildGrid();
+      saveMsg.textContent = "Reloaded from storage.";
+      setTimeout(() => (saveMsg.textContent = ""), 3000);
+    });
+
+    resetDefaultsBtn.addEventListener("click", () => {
+      currentChannels = DEFAULT_CHANNELS.slice();
+      renderConfigForm();
+      buildGrid();
+      saveMsg.textContent = "Reset to defaults (not saved yet). Click “Save & Refresh Grid” to persist.";
+      setTimeout(() => (saveMsg.textContent = ""), 6000);
+    });
+
+    /************* GRID + HLS INSTANCES *************/
+    const gridEl = document.getElementById("grid");
+    const instances = new Map(); // videoEl -> { hls, id }
+
+    function setStatusLabel(text) {
+      statusText.textContent = text;
+    }
+
+    function createTile(channel) {
+      const tile = document.createElement("section");
+      tile.className = "tile";
+
+      tile.innerHTML = `
+        <div class="tile-header">
+          <div class="name-pill">${channel.name || ("Channel " + channel.id)}</div>
+          <div class="status-pill load" data-status>
+            <span class="status-dot"></span>
+            <span data-status-text>Loading…</span>
+          </div>
+        </div>
+        <video muted playsinline autoplay data-chan-id="${channel.id}"></video>
+        <div class="tile-footer">
+          <div class="url" title="${channel.url}">${channel.url}</div>
+          <button class="ctrl-button" type="button" data-reload>Reload</button>
+        </div>
+      `;
+
+      const video = tile.querySelector("video");
+      const statusPill = tile.querySelector("[data-status]");
+      const statusTextEl = tile.querySelector("[data-status-text]");
+      const reloadBtn = tile.querySelector("[data-reload]");
+
+      const setTileStatus = (state, text) => {
+        statusPill.classList.remove("ok", "err", "load");
+        if (state === "ok") statusPill.classList.add("ok");
+        else if (state === "err") statusPill.classList.add("err");
+        else statusPill.classList.add("load");
+        statusTextEl.textContent = text;
+      };
+
+      const playChannel = () => {
+        if (!isUrl(channel.url)) {
+          setTileStatus("err", "No URL");
+          return;
+        }
+        setTileStatus("load", "Loading…");
+
+        const existing = instances.get(video);
+        if (existing && existing.hls) {
+          try { existing.hls.destroy(); } catch (e) {}
+        }
+
+        if (window.Hls && Hls.isSupported()) {
+          const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+          instances.set(video, { hls, id: channel.id });
+
+          hls.attachMedia(video);
+          hls.loadSource(channel.url);
+
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            video.muted = true;
+            video.play().then(() => {
+              setTileStatus("ok", "Playing");
+            }).catch(err => {
+              console.warn("Autoplay blocked for channel", channel.id, err);
+              setTileStatus("err", "Autoplay blocked");
+            });
+          });
+
+          hls.on(Hls.Events.ERROR, (_, data) => {
+            console.error("HLS error for channel", channel.id, data);
+            if (data && data.fatal) {
+              setTileStatus("err", "Stream error");
+            }
+          });
+        } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+          video.src = channel.url;
+          instances.set(video, { hls: null, id: channel.id });
+          video.muted = true;
+          video.play().then(() => {
+            setTileStatus("ok", "Playing");
+          }).catch(err => {
+            console.warn("Autoplay blocked (native) channel", channel.id, err);
+            setTileStatus("err", "Autoplay blocked");
+          });
+        } else {
+          setTileStatus("err", "HLS not supported");
+        }
+
+        video.onerror = () => {
+          setTileStatus("err", "Video error");
+        };
+      };
+
+      reloadBtn.addEventListener("click", playChannel);
+
+      // Initial load
+      playChannel();
+
+      return tile;
+    }
+
+    function destroyAllInstances() {
+      instances.forEach(({ hls }) => {
+        if (hls) {
+          try { hls.destroy(); } catch (e) {}
+        }
+      });
+      instances.clear();
+    }
+
+    function buildGrid() {
+      destroyAllInstances();
+      gridEl.innerHTML = "";
+
+      const activeChannels = currentChannels.filter(ch => isUrl(ch.url));
+      const totalSlots = currentChannels.length;
+      const activeCount = activeChannels.length;
+
+      if (!activeCount) {
+        setStatusLabel("No enabled channels. Add URLs & click Save.");
+        return;
+      }
+
+      activeChannels.forEach(ch => {
+        gridEl.appendChild(createTile(ch));
+      });
+
+      if (activeCount === totalSlots) {
+        setStatusLabel(`Showing ${activeCount} channels (all slots in use).`);
+      } else {
+        setStatusLabel(`Showing ${activeCount} channel${activeCount>1?'s':''} out of ${totalSlots} slots.`);
+      }
+    }
+
+    window.addEventListener("beforeunload", () => {
+      destroyAllInstances();
+    });
+
+    /************* INIT *************/
+    renderConfigForm();
+    buildGrid();
   </script>
 </body>
 </html>
