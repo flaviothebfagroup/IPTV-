@@ -267,77 +267,168 @@
 
   <!-- Firebase (module) for the player) -->
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import {
+    getAuth,
+    signInAnonymously,
+    onAuthStateChanged,
+    setPersistence,
+    inMemoryPersistence
+  } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  import {
+    getDatabase,
+    ref,
+    onValue,
+    update,
+    get
+  } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-    const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
+  const firebaseConfig = {
+    apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+    authDomain: "iptv-bfa.firebaseapp.com",
+    databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+    projectId: "iptv-bfa",
+    storageBucket: "iptv-bfa.firebasestorage.app",
+    messagingSenderId: "838790935867",
+    appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+  };
 
-    const EMBED = /\bembed=1\b/i.test(location.search) || (window.top !== window.self);
-    const app   = initializeApp(firebaseConfig, EMBED ? 'embed' : undefined);
-    const auth  = getAuth(app);
-    if(EMBED){ await setPersistence(auth, inMemoryPersistence); }
-    const db    = getDatabase(app);
+  const EMBED =
+    /\bembed=1\b/i.test(location.search) || (window.top !== window.self);
 
-    /* Anonymous auth + realtime wiring */
-    signInAnonymously(auth).catch(e=>{ console.error('[auth]',e); window.setStatus(false,'anon auth failed'); });
+  const app = initializeApp(firebaseConfig, EMBED ? 'embed' : undefined);
+  const auth = getAuth(app);
+  if (EMBED) {
+    await setPersistence(auth, inMemoryPersistence);
+  }
+  const db = getDatabase(app);
 
-    onAuthStateChanged(auth, async (user)=>{
-      if(!user) return;
-      const displayId      = CONFIG.displayId;
-      const dealershipName = CONFIG.dealershipName;
+  signInAnonymously(auth).catch((e) => {
+    console.error('[auth]', e);
+    window.setStatus(false, 'anon auth failed');
+  });
 
-      if(EMBED){
-        /* In-iframe preview: only listen; do not write user record */
-        const dref=ref(db,`displays/${displayId}`);
-        onValue(dref,(snap)=>{
-          const d=snap.val(); if(!d) return;
-          if(typeof d.channel==='number' && d.channel!==window.currentChannel) window.loadChannel(d.channel);
-          if(d.volume!==undefined || d.muted!==undefined) window.applyVolumeSettings(d.volume, d.muted);
-          window.setStatus(true,'');
-        },(err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
-        return;
-      }
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) return;
 
-      /* Register device (role=device) + seed display if missing */
-      try{
-        await update(ref(db,`user/${user.uid}`),{
-          role:'device',
-          name:displayId,
-          dealershipId:dealershipName,
-          updatedAt:Date.now(),
-          createdAt:Date.now()
+    const displayId = CONFIG.displayId;
+    const dealershipId = CONFIG.dealershipName;
+
+    // Main display document (already in your code)
+    const dRef = ref(db, `displays/${displayId}`);
+
+    // NEW: presence / online status node (this is what your screenshot shows)
+    const presenceRef = ref(db, `onlineDisplays/${displayId}`);
+    const sessionId = (crypto.randomUUID && crypto.randomUUID()) ||
+      Math.random().toString(36).slice(2);
+    const now = Date.now();
+
+    // 1) Ensure device user profile exists (for your rules)
+    try {
+      await update(ref(db, `user/${user.uid}`), {
+        role: 'device',
+        name: displayId,
+        dealershipId,
+        updatedAt: now,
+        createdAt: now
+      });
+    } catch (e) {
+      console.error('[user upsert]', e);
+    }
+
+    // 2) Ensure the display doc exists
+    try {
+      const snap = await get(dRef);
+      if (!snap.exists()) {
+        await update(dRef, {
+          channel: 1,
+          volume: 50,
+          muted: false,
+          dealership: dealershipId,
+          timestamp: now
         });
-        await update(ref(db, `${dealer}/displays/${displayId}`), true);
+      } else if (!snap.val()?.dealership) {
+        await update(dRef, { dealership: dealershipId });
+      }
+    } catch (e) {
+      console.error('[display upsert]', e);
+    }
 
-      }catch(e){}
+    // 3) NEW: write initial presence node (this creates KF-001 / PH-001 tree)
+    try {
+      await update(presenceRef, {
+        displayId,
+        uid: user.uid,
+        sessionId,
+        loginAt: now,
+        lastSeen: now
+      });
+    } catch (e) {
+      console.error('[presence init]', e);
+    }
 
-      try{
-        const dRef=ref(db,`displays/${displayId}`); const snap=await get(dRef);
-        if(!snap.exists()){
-          await update(dRef,{ channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() });
+    // 4) Bridge for local audio changes (unchanged)
+    if (!EMBED) {
+      window.onLocalAudioChange = async (vol, muted) => {
+        try {
+          await update(dRef, { volume: vol, muted });
+        } catch (e) {}
+      };
+    } else {
+      window.onLocalAudioChange = null;
+    }
+
+    // 5) Realtime listener (unchanged)
+    let lastApplied = { volume: null, muted: null, channel: null };
+    onValue(
+      dRef,
+      (snap) => {
+        const d = snap.val();
+        if (!d) return;
+
+        if (typeof d.channel === 'number' && d.channel !== lastApplied.channel) {
+          lastApplied.channel = d.channel;
+          window.loadChannel(d.channel);
         }
 
-        try { await update(ref(db, `${dealershipName}/displays/${displayId}`), true); } catch(e) {}
+        if (typeof d.volume === 'number' && d.volume !== lastApplied.volume) {
+          lastApplied.volume = d.volume;
+          window.applyVolumeSettings(d.volume, d.muted);
+        }
 
-      }catch(e){}
+        if (typeof d.muted === 'boolean' && d.muted !== lastApplied.muted) {
+          lastApplied.muted = d.muted;
+          window.applyVolumeSettings(d.volume, d.muted);
+        }
 
-      /* Live controls listener */
-      const dref=ref(db,`displays/${displayId}`);
-      onValue(dref,(snap)=>{
-        const d=snap.val(); if(!d) return;
-        if(typeof d.channel==='number' && d.channel!==window.currentChannel) window.loadChannel(d.channel);
-        if(d.volume!==undefined || d.muted!==undefined) window.applyVolumeSettings(d.volume, d.muted);
-        window.setStatus(true,'');
-      },(err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
+        window.setStatus(true, '');
+      },
+      (err) => {
+        console.error('[listener]', err);
+        window.setStatus(false, 'listener error');
+      }
+    );
 
-      /* Heartbeat */
-      try{
-        const hbRef=ref(db,`displays/${displayId}`);
-        const beat=async()=>{ try{ await update(hbRef,{ lastSeenAt:Date.now(), updatedAt:Date.now() }); }catch(e){} };
-        beat(); setInterval(beat, 15000);
-      }catch(e){}
-    });
-  </script>
+    // 6) Heartbeat: update both displays/* and onlineDisplays/* (lastSeen)
+    const beat = async () => {
+      const ts = Date.now();
+      try {
+        await update(dRef, {
+          lastSeenAt: ts,
+          updatedAt: ts
+        });
+        await update(presenceRef, {
+          lastSeen: ts
+        });
+      } catch (e) {
+        console.error('[heartbeat]', e);
+      }
+    };
+
+    beat();
+    setInterval(beat, 15000);
+  });
+</script>
+
 
 
