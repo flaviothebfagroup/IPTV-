@@ -3,121 +3,80 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>BFA — Multi Channel Tester</title>
+  <title>BFA — Multi Channel Editor</title>
 
-  <!-- hls.js -->
+  <!-- hls.js for the preview grid -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
 
   <style>
     :root{
-      --brand:#ff6a00; --brand-2:#e85f00;
+      --brand:#ff6a00;
+      --brand-2:#ff9500;
 
-      /* gradient stops (light) */
-      --bg-start:#fefefe;
-      --bg-mid:#f3f6fb;
+      --bg-start:#fff7ef;
+      --bg-mid:#fdfaf7;
       --bg-end:#ff6a00;
 
       --fg:#0f172a;
-      --panel:rgba(255,255,255,.56);
-      --line:rgba(15,23,42,.06);
+      --panel:rgba(255,255,255,.80);
+      --line:rgba(15,23,42,.08);
       --muted:#64748b;
-      --radius:18px; --btn-h:40px; --gap:14px;
 
       --glass-blur:16px;
       --glass-sat:140%;
-      --elev-shadow:0 14px 34px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.05);
+      --elev-shadow:0 14px 34px rgba(15,23,42,.12), 0 2px 8px rgba(15,23,42,.06);
       --elev-shadow-soft:0 10px 26px rgba(15,23,42,.06), 0 1px 4px rgba(15,23,42,.04);
       --inset-soft:inset 0 1px 0 rgba(255,255,255,.65), inset 0 -1px 0 rgba(15,23,42,.06);
     }
     [data-theme="dark"]{
       --fg:#e8ecf1;
-      --bg-start:#0b0c10;
-      --bg-mid:#0d1016;
-      --bg-end:#10141b;
+      --bg-start:#020617;
+      --bg-mid:#020617;
+      --bg-end:#111827;
 
-      --panel:rgba(20,21,26,.55);
-      --line:rgba(255,255,255,.08);
-      --muted:#a8b0bc;
-      --glass-blur:14px; --glass-sat:140%;
-      --elev-shadow:0 12px 28px rgba(0,0,0,.32), 0 1px 2px rgba(0,0,0,.24);
-      --elev-shadow-soft:0 10px 20px rgba(0,0,0,.28), 0 1px 2px rgba(0,0,0,.2);
+      --panel:rgba(15,23,42,.82);
+      --line:rgba(148,163,184,.32);
+      --muted:#9ca3af;
+
+      --glass-blur:16px;
+      --glass-sat:140%;
+      --elev-shadow:0 16px 40px rgba(0,0,0,.7);
+      --elev-shadow-soft:0 10px 26px rgba(0,0,0,.5), 0 1px 4px rgba(0,0,0,.35);
       --inset-soft:inset 0 1px 0 rgba(255,255,255,.06), inset 0 -1px 0 rgba(0,0,0,.35);
     }
 
-    *{box-sizing:border-box}
+    *{box-sizing:border-box;margin:0;padding:0}
     html,body{min-height:100%}
     body{
-      margin:0;color:var(--fg);
+      color:var(--fg);
       font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
       background:transparent;
       min-height:100vh;
     }
     body::before{
       content:"";
-      position:fixed; inset:0; z-index:-1; pointer-events:none;
-      background:linear-gradient(180deg, var(--bg-start) 0%, var(--bg-mid) 52%, var(--bg-end) 100%);
+      position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background:linear-gradient(180deg,var(--bg-start) 0%,var(--bg-mid) 55%,var(--bg-end) 100%);
     }
 
     .page{max-width:1100px;margin:18px auto;padding:16px}
-    .stack>*+*{margin-top:var(--gap)}
+    .stack>*+*{margin-top:14px}
 
-    .head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .head{
+      display:flex;align-items:center;justify-content:space-between;
+      flex-wrap:wrap;gap:12px;
+    }
     .brand{display:flex;align-items:center;gap:10px}
     .logo{height:30px}
-    h1{margin:0;font-size:clamp(18px,4.2vw,22px);font-weight:800}
+    h1{margin:0;font-size:clamp(18px,4vw,22px);font-weight:800}
     .sub{color:var(--muted);font-size:12px}
 
     .actions{display:flex;gap:8px;align-items:center}
-    .theme-sel{width:110px}
+    .theme-sel{width:110px;height:34px;font-size:13px}
 
-    .badge{
-      padding:4px 10px;
-      border-radius:999px;
-      font-size:12px;
-      border:1px solid rgba(255,255,255,0.18);
-      background:rgba(15,23,42,0.7);
-      color:#e5e7eb;
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-    }
-    .dot{
-      width:9px;height:9px;border-radius:50%;
-      background:var(--brand);
-      box-shadow:0 0 0 0 rgba(255,149,0,0.5);
-      animation:pulse 1.6s infinite;
-    }
-    @keyframes pulse{
-      0%{box-shadow:0 0 0 0 rgba(255,149,0,0.6);}
-      70%{box-shadow:0 0 0 8px rgba(255,149,0,0);}
-      100%{box-shadow:0 0 0 0 rgba(255,149,0,0);}
-    }
-
-    .card{
-      background:var(--panel);
-      border:1px solid var(--line);
-      border-radius:22px;
-      padding:14px 14px 16px;
-      box-shadow:var(--elev-shadow);
-      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
-      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
-    }
-
-    .card-header{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:8px;
-      margin-bottom:10px;
-    }
-    .card-title{
-      font-weight:700;
-      font-size:14px;
-    }
-
-    button,input,select{
+    button,input{
       font-size:13px;
-      height:var(--btn-h);
+      height:38px;
       padding:0 12px;
       border-radius:18px;
       border:1px solid var(--line);
@@ -130,11 +89,8 @@
       -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
     }
     input[type="checkbox"]{
-      height:auto;
-      width:auto;
-      box-shadow:none;
-      padding:0;
-      margin:0;
+      height:auto;width:auto;box-shadow:none;padding:0;margin:0;
+      backdrop-filter:none;-webkit-backdrop-filter:none;
     }
     button{
       cursor:pointer;
@@ -146,17 +102,14 @@
     }
     .btn{
       background:linear-gradient(180deg,var(--brand),var(--brand-2));
-      color:#fff;
-      border-color:transparent;
-      box-shadow:0 8px 18px rgba(255,106,0,.18);
+      color:#fff;border-color:transparent;
+      box-shadow:0 8px 18px rgba(255,106,0,.28);
     }
     .btn-outline{
       background:var(--panel);
-      border-color:rgba(255,149,0,.42);
+      border-color:rgba(255,149,0,.5);
       color:var(--brand);
     }
-    button:focus{outline:none}
-    button:focus:not(:focus-visible){outline:none}
     button.btn,button.btn-outline{
       transition:transform .12s ease, box-shadow .18s ease, filter .18s ease, background .18s ease;
     }
@@ -169,168 +122,176 @@
       filter:brightness(.985);
     }
 
-    /* GRID */
-    .grid{
+    .badge{
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:11px;
+      border:1px solid rgba(255,255,255,.5);
+      background:linear-gradient(120deg,rgba(255,255,255,.12),rgba(255,255,255,.35));
+      color:#111827;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      box-shadow:var(--elev-shadow-soft);
+    }
+    [data-theme="dark"] .badge{
+      background:linear-gradient(120deg,rgba(15,23,42,.9),rgba(15,23,42,.7));
+      color:#e5e7eb;
+      border-color:rgba(148,163,184,.7);
+    }
+    .dot{
+      width:8px;height:8px;border-radius:50%;background:#22c55e;
+      box-shadow:0 0 0 0 rgba(34,197,94,.55);
+      animation:pulse 1.6s infinite;
+    }
+    @keyframes pulse{
+      0%{box-shadow:0 0 0 0 rgba(34,197,94,.55);}
+      70%{box-shadow:0 0 0 10px rgba(34,197,94,0);}
+      100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}
+    }
+
+    .card{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:14px 14px 16px;
+      box-shadow:var(--elev-shadow);
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
+    .card-header{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:8px;margin-bottom:8px;
+    }
+    .card-title{font-size:14px;font-weight:700}
+
+    /* CONFIG TABLE */
+    .cfg-grid-header,
+    .cfg-row{
+      display:grid;
+      grid-template-columns:40px minmax(120px,160px) minmax(160px,1fr) 80px;
+      gap:8px;
+      align-items:center;
+    }
+    .cfg-grid-header{
+      font-size:11px;color:var(--muted);
+      padding-bottom:4px;border-bottom:1px solid rgba(148,163,184,.28);
+      margin-bottom:6px;
+    }
+    .cfg-row + .cfg-row{margin-top:6px}
+    .cfg-row .slot-label{font-size:12px;font-weight:600}
+    .cfg-row input[type="text"]{width:100%}
+    .cfg-row .enabled-cell{
+      display:flex;align-items:center;gap:4px;
+      font-size:11px;color:var(--muted);
+    }
+
+    .msg{font-size:12px;margin-top:6px}
+
+    /* PREVIEW GRID */
+    .preview-grid{
       display:grid;
       grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-      gap:12px;
+      gap:10px;
+      margin-top:8px;
     }
 
     .tile{
       position:relative;
-      background:#050816;
-      border-radius:16px;
-      border:1px solid rgba(15,23,42,0.45);
+      width:100%;
+      aspect-ratio:16/9;
+      border-radius:18px;
       overflow:hidden;
+      background:#020617;
+      border:1px solid rgba(15,23,42,.4);
       box-shadow:var(--elev-shadow-soft);
     }
     .tile video{
+      position:absolute;
+      inset:0;
       width:100%;
-      height:180px;
+      height:100%;
       object-fit:cover;
       background:#000;
       display:block;
     }
-    @media (min-width:1024px){
-      .tile video{height:210px;}
-    }
-
-    .tile-header{
+    .tile-hud-top{
       position:absolute;
-      top:8px; left:8px; right:8px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:6px;
-      pointer-events:none;
+      top:6px;left:6px;right:6px;
+      display:flex;justify-content:space-between;align-items:center;
+      gap:6px;pointer-events:none;z-index:2;
     }
     .name-pill{
-      font-size:12px;
-      font-weight:600;
-      padding:4px 8px;
-      border-radius:999px;
-      background:rgba(15,15,15,0.8);
-      border:1px solid rgba(255,255,255,0.25);
-      backdrop-filter:blur(8px);
-      -webkit-backdrop-filter:blur(8px);
-      max-width:65%;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-      overflow:hidden;
-      color:#f9fafb;
-    }
-    .status-pill{
       font-size:11px;
+      font-weight:600;
       padding:3px 8px;
       border-radius:999px;
-      background:rgba(15,15,15,0.85);
-      border:1px solid rgba(255,255,255,0.1);
-      color:var(--muted);
-      display:inline-flex;
-      align-items:center;
-      gap:4px;
+      background:rgba(15,23,42,.85);
+      border:1px solid rgba(148,163,184,.7);
+      color:#f9fafb;
+      max-width:70%;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+      backdrop-filter:blur(8px);
+      -webkit-backdrop-filter:blur(8px);
     }
-    .status-pill.ok{color:#22c55e;border-color:rgba(34,197,94,0.5);}
-    .status-pill.err{color:#ef4444;border-color:rgba(239,68,68,0.6);}
-    .status-pill.load{color:var(--muted);}
+    .status-pill{
+      font-size:10px;
+      padding:3px 7px;
+      border-radius:999px;
+      background:rgba(15,23,42,.85);
+      border:1px solid rgba(148,163,184,.4);
+      color:var(--muted);
+      display:inline-flex;align-items:center;gap:4px;
+    }
+    .status-pill.ok{color:#22c55e;border-color:rgba(34,197,94,.6);}
+    .status-pill.err{color:#ef4444;border-color:rgba(239,68,68,.7);}
     .status-dot{
-      width:7px;height:7px;border-radius:50%;background:var(--muted);
+      width:7px;height:7px;border-radius:50%;
+      background:var(--muted);
     }
     .status-pill.ok .status-dot{background:#22c55e;}
     .status-pill.err .status-dot{background:#ef4444;}
 
     .tile-footer{
-      padding:8px 10px;
-      font-size:11px;
+      position:absolute;left:0;right:0;bottom:0;
+      padding:5px 8px 6px;
+      font-size:10px;
       color:var(--muted);
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      background:radial-gradient(circle at top, rgba(15,23,42,0.9), rgba(0,0,0,0.95));
-      border-top:1px solid rgba(148,163,184,0.2);
+      display:flex;justify-content:space-between;align-items:center;
+      gap:4px;
+      background:linear-gradient(180deg,rgba(15,23,42,0),rgba(3,7,18,.95));
+      border-top:1px solid rgba(15,23,42,.7);
+      pointer-events:none;z-index:2;
     }
     .url{
-      max-width:80%;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
+      max-width:78%;
+      overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
       font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
-      font-size:10px;
+      opacity:.9;
     }
-    .ctrl-button{
-      font-size:11px;
-      padding:4px 8px;
+    .mini-btn{
+      font-size:10px;
+      padding:3px 7px;
       border-radius:999px;
-      border:1px solid rgba(148,163,184,0.6);
+      border:1px solid rgba(148,163,184,.6);
       background:transparent;
       color:#e5e7eb;
-      box-shadow:none;
-      backdrop-filter:none;
-      -webkit-backdrop-filter:none;
+      cursor:pointer;
+      display:inline-flex;align-items:center;gap:4px;
+      pointer-events:auto;
     }
-    .ctrl-button:hover{
-      border-color:var(--brand);
-    }
-
-    /* CONFIG FORM */
-    .cfg-grid-header,
-    .cfg-row{
-      display:grid;
-      grid-template-columns:40px minmax(90px,160px) minmax(140px,1fr) 70px;
-      gap:8px;
-      align-items:center;
-    }
-    .cfg-grid-header{
-      font-size:11px;
-      color:var(--muted);
-      padding-bottom:4px;
-      border-bottom:1px solid rgba(148,163,184,0.25);
-      margin-bottom:6px;
-    }
-    .cfg-row + .cfg-row{
-      margin-top:6px;
-    }
-    .cfg-row input[type="text"]{
-      width:100%;
-      height:var(--btn-h);
-    }
-    .cfg-row .slot-label{
-      font-size:12px;
-      font-weight:600;
-    }
-    .cfg-row .enabled-cell{
-      display:flex;
-      align-items:center;
-      gap:4px;
-      font-size:11px;
-      color:var(--muted);
-    }
-
-    .cfg-help{
-      font-size:11px;
-      color:var(--muted);
-      margin-top:6px;
-    }
-
-    .msg{
-      font-size:12px;
-      margin-top:6px;
-    }
+    .mini-btn svg{width:12px;height:12px}
+    .mini-btn:hover{border-color:var(--brand);}
 
     @media (max-width:640px){
       .cfg-grid-header{display:none;}
       .cfg-row{
         grid-template-columns:1fr;
-        border:1px solid rgba(148,163,184,0.3);
-        border-radius:14px;
+        border-radius:16px;
+        border:1px solid rgba(148,163,184,.3);
         padding:8px;
       }
-      .cfg-row .slot-label{
-        margin-bottom:4px;
-      }
-      .cfg-row .enabled-cell{
-        justify-content:flex-start;
-      }
+      .cfg-row .slot-label{margin-bottom:4px}
     }
   </style>
 </head>
@@ -340,361 +301,293 @@
       <div class="brand">
         <img id="bfaLogo" class="logo" alt="BFA logo" />
         <div>
-          <h1>BFA — Multi Channel Tester</h1>
-          <div class="sub">Test up to 6 IPTV channels side-by-side. Config stored locally (no Firebase).</div>
+          <h1>BFA — Multi Channel Editor</h1>
+          <div class="sub">Edit channel names & URLs, preview multiple feeds, save to local config.</div>
         </div>
       </div>
       <div class="actions">
-        <select id="themeSel" class="theme-sel" title="Theme">
+        <select id="themeSel" class="theme-sel">
           <option value="light">Light</option>
           <option value="dark">Dark</option>
         </select>
         <div class="badge">
           <span class="dot"></span>
-          <span>Standalone sandbox</span>
+          <span>Local only (no Firebase)</span>
         </div>
       </div>
     </header>
 
-    <!-- MULTI-CHANNEL GRID -->
-    <section class="card">
-      <div class="card-header">
-        <div class="card-title">Preview</div>
-        <div class="sub" id="statusText">Using local config.</div>
-      </div>
-      <div id="grid" class="grid"></div>
-    </section>
-
-    <!-- CONFIG "BACKEND" CARD -->
+    <!-- CONFIG CARD -->
     <section class="card">
       <div class="card-header">
         <div class="card-title">Channel configuration</div>
-        <button id="resetDefaults" class="btn-outline" type="button">Reset to defaults</button>
+        <button id="resetDefaults" class="btn-outline" type="button">Reset defaults</button>
       </div>
-      <p class="sub">Edit up to 6 channel slots. Only rows with a valid URL are used. Changes are saved to this browser via localStorage (<code>bfa_multi_channels_v1</code>).</p>
+      <p class="sub">
+        Configure up to 12 channels. Only rows with a valid URL are used.
+        This writes to <code>bfa_multi_channels_v1</code> in <strong>localStorage</strong>.
+      </p>
 
       <div class="cfg-grid-header">
         <div>#</div>
         <div>Name</div>
         <div>URL</div>
-        <div>Enabled</div>
+        <div>Use</div>
       </div>
-
       <div id="cfgRows"></div>
 
-      <div class="cfg-help">
-        Tip: use this on your laptop to tweak channel names/URLs, the grid updates instantly.  
-        This page is completely separate from your production players.
-      </div>
-
-      <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button id="saveBtn" class="btn" type="button">Save & Refresh Grid</button>
+      <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <button id="saveBtn" class="btn" type="button">Save & update preview</button>
         <button id="reloadBtn" class="btn-outline" type="button">Reload from storage</button>
         <span id="saveMsg" class="msg"></span>
       </div>
     </section>
 
-    <div class="sub">Autoplay: all tiles start muted so browsers allow background playback.</div>
+    <!-- PREVIEW CARD -->
+    <section class="card">
+      <div class="card-header">
+        <div class="card-title">Preview grid</div>
+        <div class="sub" id="previewInfo">Loading…</div>
+      </div>
+      <div id="previewGrid" class="preview-grid"></div>
+    </section>
+
+    <div class="sub">Open the wall URL (viewer page) on your 1920×1080 screen. It will read the same localStorage config.</div>
   </div>
 
   <script>
-    /************* SMALL UTILITIES *************/
-    const isUrl = (u) => /^https?:\/\/\S+$/i.test((u || "").trim());
-
     /************* THEME + LOGO *************/
-    const themeSel = document.getElementById("themeSel");
-    function applyTheme(mode) {
-      const m = mode === "dark" ? "dark" : "light";
-      document.documentElement.setAttribute("data-theme", m);
-      themeSel.value = m;
-      localStorage.setItem("bfa_theme_multi", m);
+    const themeSel=document.getElementById("themeSel");
+    function applyTheme(mode){
+      const m=mode==="dark"?"dark":"light";
+      document.documentElement.setAttribute("data-theme",m);
+      localStorage.setItem("bfa_multi_editor_theme",m);
+      themeSel.value=m;
     }
-    applyTheme(localStorage.getItem("bfa_theme_multi") || "light");
-    themeSel.addEventListener("change", (e) => applyTheme(e.target.value));
+    applyTheme(localStorage.getItem("bfa_multi_editor_theme") || "light");
+    themeSel.addEventListener("change",(e)=>applyTheme(e.target.value));
 
-    const LOGO_PRIMARY = "/IPTV-/icons/icon-192.png";
-    const FALLBACK_SVG = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+    const LOGO_PRIMARY="/IPTV-/icons/icon-192.png";
+    const FALLBACK_SVG='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(
       '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="30" viewBox="0 0 120 30"><rect rx="7" width="120" height="30" fill="#ff6a00"/><text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial" font-weight="800" font-size="14" fill="#fff">BFA</text></svg>'
     );
-    const logoEl = document.getElementById("bfaLogo");
-    logoEl.src = LOGO_PRIMARY;
-    logoEl.onerror = () => { logoEl.onerror = null; logoEl.src = FALLBACK_SVG; };
+    const logo=document.getElementById("bfaLogo");
+    logo.src=LOGO_PRIMARY;
+    logo.onerror=()=>{logo.onerror=null;logo.src=FALLBACK_SVG;};
 
-    /************* DEFAULT CHANNELS *************/
-    const DEFAULT_CHANNELS = [
-      {
-        id: 1,
-        name: "News",
-        url: "https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8",
-      },
-      {
-        id: 2,
-        name: "Tennis Channel S",
-        url: "https://amg01444-tennischannelth-tennischannelnl-samsungnl-x3dq1.amagi.tv/playlist/amg01444-tennischannelth-tennischannelnl-samsungnl/playlist.m3u8",
-      },
-      {
-        id: 3,
-        name: "Cooking",
-        url: "https://gusto-xumo.amagi.tv/playlist.m3u8",
-      },
-      {
-        id: 4,
-        name: "Love Nature",
-        url: "https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8",
-      },
-      {
-        id: 5,
-        name: "Kids",
-        url: "https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8",
-      },
-      {
-        id: 6,
-        name: "Extra Slot",
-        url: "",
-      }
+    /************* CONFIG STORAGE *************/
+    const STORAGE_KEY="bfa_multi_channels_v1";
+    const DEFAULT_CHANNELS=[
+      {id:1,name:"News",url:"https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8"},
+      {id:2,name:"Tennis Channel S",url:"https://amg01444-tennischannelth-tennischannelnl-samsungnl-x3dq1.amagi.tv/playlist/amg01444-tennischannelth-tennischannelnl-samsungnl/playlist.m3u8"},
+      {id:3,name:"Cooking",url:"https://gusto-xumo.amagi.tv/playlist.m3u8"},
+      {id:4,name:"Love Nature",url:"https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8"},
+      {id:5,name:"Kids",url:"https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8"},
+      {id:6,name:"Extra Slot",url:""},
+      {id:7,name:"Slot 7",url:""},
+      {id:8,name:"Slot 8",url:""},
+      {id:9,name:"Slot 9",url:""},
+      {id:10,name:"Slot 10",url:""},
+      {id:11,name:"Slot 11",url:""},
+      {id:12,name:"Slot 12",url:""}
     ];
 
-    const STORAGE_KEY = "bfa_multi_channels_v1";
+    const isUrl=(u)=>/^https?:\/\/\S+$/i.test((u||"").trim());
 
-    function loadChannelsFromStorage() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return DEFAULT_CHANNELS.slice();
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return DEFAULT_CHANNELS.slice();
-        // Normalize & ensure max 6
-        return parsed.slice(0, 6).map((c, i) => ({
-          id: i + 1,
-          name: (c && c.name) || "",
-          url: (c && c.url) || "",
-        }));
-      } catch {
+    function loadChannelsFromStorage(){
+      try{
+        const raw=localStorage.getItem(STORAGE_KEY);
+        if(!raw) return DEFAULT_CHANNELS.slice();
+        const arr=JSON.parse(raw);
+        if(!Array.isArray(arr)) return DEFAULT_CHANNELS.slice();
+        const base=DEFAULT_CHANNELS.slice();
+        arr.slice(0,base.length).forEach((c,i)=>{
+          if(!c) return;
+          base[i]={id:i+1,name:c.name||"",url:c.url||""};
+        });
+        return base;
+      }catch{
         return DEFAULT_CHANNELS.slice();
       }
     }
-
-    function saveChannelsToStorage(chans) {
-      const sanitized = chans
-        .map((c, i) => ({ id: i + 1, name: c.name || "", url: c.url || "" }));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+    function saveChannelsToStorage(chans){
+      const sanitized=chans.map((c,i)=>({id:i+1,name:c.name||"",url:c.url||""}));
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(sanitized));
     }
 
-    /************* CONFIG "BACKEND" UI *************/
-    const cfgRowsContainer = document.getElementById("cfgRows");
-    const saveBtn = document.getElementById("saveBtn");
-    const reloadBtn = document.getElementById("reloadBtn");
-    const resetDefaultsBtn = document.getElementById("resetDefaults");
-    const saveMsg = document.getElementById("saveMsg");
-    const statusText = document.getElementById("statusText");
+    let channels=loadChannelsFromStorage();
 
-    let currentChannels = loadChannelsFromStorage();
+    /************* CONFIG FORM *************/
+    const cfgRows=document.getElementById("cfgRows");
+    const saveBtn=document.getElementById("saveBtn");
+    const reloadBtn=document.getElementById("reloadBtn");
+    const resetBtn=document.getElementById("resetDefaults");
+    const saveMsg=document.getElementById("saveMsg");
 
-    function renderConfigForm() {
-      cfgRowsContainer.innerHTML = "";
-      currentChannels.forEach((ch, index) => {
-        const row = document.createElement("div");
-        row.className = "cfg-row";
-        row.dataset.index = String(index);
-
-        row.innerHTML = `
-          <div class="slot-label">#${index + 1}</div>
-          <input type="text" class="cfg-name" placeholder="Channel name" value="${ch.name ? ch.name.replace(/"/g, "&quot;") : ""}">
-          <input type="text" class="cfg-url" placeholder="https://… (HLS .m3u8)" value="${ch.url ? ch.url.replace(/"/g, "&quot;") : ""}">
+    function renderConfigForm(){
+      cfgRows.innerHTML="";
+      channels.forEach((ch,i)=>{
+        const row=document.createElement("div");
+        row.className="cfg-row";
+        row.dataset.index=String(i);
+        row.innerHTML=`
+          <div class="slot-label">#${i+1}</div>
+          <input type="text" class="cfg-name" placeholder="Channel name" value="${(ch.name||"").replace(/"/g,"&quot;")}">
+          <input type="text" class="cfg-url" placeholder="https://… (HLS .m3u8)" value="${(ch.url||"").replace(/"/g,"&quot;")}">
           <label class="enabled-cell">
-            <input type="checkbox" class="cfg-enabled" ${isUrl(ch.url) ? "checked" : ""}>
+            <input type="checkbox" class="cfg-enabled" ${isUrl(ch.url)?"checked":""}>
             <span>Use</span>
           </label>
         `;
-        cfgRowsContainer.appendChild(row);
+        cfgRows.appendChild(row);
       });
     }
 
-    function readConfigForm() {
-      const rows = Array.from(cfgRowsContainer.querySelectorAll(".cfg-row"));
-      const result = [];
-      rows.forEach((row, idx) => {
-        const nameInput = row.querySelector(".cfg-name");
-        const urlInput = row.querySelector(".cfg-url");
-        const enabledInput = row.querySelector(".cfg-enabled");
-        const name = nameInput.value.trim();
-        const url = urlInput.value.trim();
-        const enabled = enabledInput.checked && isUrl(url);
-        result.push({
-          id: idx + 1,
-          name,
-          url: enabled ? url : "", // if not enabled, treat as empty
-        });
+    function readConfigForm(){
+      const rows=[...cfgRows.querySelectorAll(".cfg-row")];
+      return rows.map((row,i)=>{
+        const name=row.querySelector(".cfg-name").value.trim();
+        const url=row.querySelector(".cfg-url").value.trim();
+        const enabled=row.querySelector(".cfg-enabled").checked && isUrl(url);
+        return {id:i+1,name,url:enabled?url:""};
       });
-      return result;
     }
 
-    saveBtn.addEventListener("click", () => {
-      const newCfg = readConfigForm();
-      currentChannels = newCfg;
-      saveChannelsToStorage(newCfg);
-      buildGrid();
-      saveMsg.textContent = "Saved and grid refreshed ✔";
-      setTimeout(() => (saveMsg.textContent = ""), 4000);
+    saveBtn.addEventListener("click",()=>{
+      channels=readConfigForm();
+      saveChannelsToStorage(channels);
+      buildPreview();
+      saveMsg.textContent="Saved & preview refreshed ✔";
+      setTimeout(()=>saveMsg.textContent="",4000);
     });
 
-    reloadBtn.addEventListener("click", () => {
-      currentChannels = loadChannelsFromStorage();
+    reloadBtn.addEventListener("click",()=>{
+      channels=loadChannelsFromStorage();
       renderConfigForm();
-      buildGrid();
-      saveMsg.textContent = "Reloaded from storage.";
-      setTimeout(() => (saveMsg.textContent = ""), 3000);
+      buildPreview();
+      saveMsg.textContent="Reloaded from storage.";
+      setTimeout(()=>saveMsg.textContent="",3000);
     });
 
-    resetDefaultsBtn.addEventListener("click", () => {
-      currentChannels = DEFAULT_CHANNELS.slice();
+    resetBtn.addEventListener("click",()=>{
+      channels=DEFAULT_CHANNELS.slice();
       renderConfigForm();
-      buildGrid();
-      saveMsg.textContent = "Reset to defaults (not saved yet). Click “Save & Refresh Grid” to persist.";
-      setTimeout(() => (saveMsg.textContent = ""), 6000);
+      buildPreview();
+      saveMsg.textContent="Reset to defaults (not saved yet). Click Save to persist.";
+      setTimeout(()=>saveMsg.textContent="",6000);
     });
 
-    /************* GRID + HLS INSTANCES *************/
-    const gridEl = document.getElementById("grid");
-    const instances = new Map(); // videoEl -> { hls, id }
+    /************* PREVIEW GRID (HLS) *************/
+    const previewGrid=document.getElementById("previewGrid");
+    const previewInfo=document.getElementById("previewInfo");
+    let instances=new Map(); // video -> {hls,id}
 
-    function setStatusLabel(text) {
-      statusText.textContent = text;
+    function destroyAll(){
+      instances.forEach(({hls})=>{
+        if(hls){try{hls.destroy();}catch(e){}}
+      });
+      instances.clear();
     }
 
-    function createTile(channel) {
-      const tile = document.createElement("section");
-      tile.className = "tile";
-
-      tile.innerHTML = `
-        <div class="tile-header">
-          <div class="name-pill">${channel.name || ("Channel " + channel.id)}</div>
+    function createTile(ch){
+      const tile=document.createElement("section");
+      tile.className="tile";
+      tile.innerHTML=`
+        <video muted playsinline autoplay data-chan-id="${ch.id}"></video>
+        <div class="tile-hud-top">
+          <div class="name-pill">${(ch.name||("Channel "+ch.id)).replace(/</g,"&lt;")}</div>
           <div class="status-pill load" data-status>
             <span class="status-dot"></span>
             <span data-status-text>Loading…</span>
           </div>
         </div>
-        <video muted playsinline autoplay data-chan-id="${channel.id}"></video>
         <div class="tile-footer">
-          <div class="url" title="${channel.url}">${channel.url}</div>
-          <button class="ctrl-button" type="button" data-reload>Reload</button>
+          <div class="url" title="${ch.url}">${ch.url}</div>
+          <button class="mini-btn" type="button" data-reload>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.13-3.36L23 10"></path>
+              <path d="M20.49 15a9 9 0 0 1-14.13 3.36L1 14"></path>
+            </svg>
+            <span>Reload</span>
+          </button>
         </div>
       `;
+      const video=tile.querySelector("video");
+      const statusPill=tile.querySelector("[data-status]");
+      const statusText=statusPill.querySelector("[data-status-text]");
+      const reloadBtn=tile.querySelector("[data-reload]");
 
-      const video = tile.querySelector("video");
-      const statusPill = tile.querySelector("[data-status]");
-      const statusTextEl = tile.querySelector("[data-status-text]");
-      const reloadBtn = tile.querySelector("[data-reload]");
-
-      const setTileStatus = (state, text) => {
-        statusPill.classList.remove("ok", "err", "load");
-        if (state === "ok") statusPill.classList.add("ok");
-        else if (state === "err") statusPill.classList.add("err");
+      const setStatus=(state,text)=>{
+        statusPill.classList.remove("ok","err","load");
+        if(state==="ok") statusPill.classList.add("ok");
+        else if(state==="err") statusPill.classList.add("err");
         else statusPill.classList.add("load");
-        statusTextEl.textContent = text;
+        statusText.textContent=text;
       };
 
-      const playChannel = () => {
-        if (!isUrl(channel.url)) {
-          setTileStatus("err", "No URL");
+      const play=()=>{
+        if(!isUrl(ch.url)){
+          setStatus("err","No URL");
           return;
         }
-        setTileStatus("load", "Loading…");
+        setStatus("load","Loading…");
 
-        const existing = instances.get(video);
-        if (existing && existing.hls) {
-          try { existing.hls.destroy(); } catch (e) {}
+        const existing=instances.get(video);
+        if(existing && existing.hls){
+          try{existing.hls.destroy();}catch(e){}
         }
 
-        if (window.Hls && Hls.isSupported()) {
-          const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
-          instances.set(video, { hls, id: channel.id });
-
+        if(window.Hls && Hls.isSupported()){
+          const hls=new Hls({enableWorker:true,lowLatencyMode:true});
+          instances.set(video,{hls,id:ch.id});
           hls.attachMedia(video);
-          hls.loadSource(channel.url);
-
-          hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            video.muted = true;
-            video.play().then(() => {
-              setTileStatus("ok", "Playing");
-            }).catch(err => {
-              console.warn("Autoplay blocked for channel", channel.id, err);
-              setTileStatus("err", "Autoplay blocked");
-            });
+          hls.loadSource(ch.url);
+          hls.on(Hls.Events.MANIFEST_PARSED,()=>{
+            video.muted=true;
+            video.play().then(()=>setStatus("ok","Playing"))
+              .catch(err=>{console.warn("Autoplay blocked",ch.id,err);setStatus("err","Autoplay blocked");});
           });
-
-          hls.on(Hls.Events.ERROR, (_, data) => {
-            console.error("HLS error for channel", channel.id, data);
-            if (data && data.fatal) {
-              setTileStatus("err", "Stream error");
-            }
+          hls.on(Hls.Events.ERROR,(_,data)=>{
+            console.error("HLS error",ch.id,data);
+            if(data && data.fatal) setStatus("err","Stream error");
           });
-        } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-          video.src = channel.url;
-          instances.set(video, { hls: null, id: channel.id });
-          video.muted = true;
-          video.play().then(() => {
-            setTileStatus("ok", "Playing");
-          }).catch(err => {
-            console.warn("Autoplay blocked (native) channel", channel.id, err);
-            setTileStatus("err", "Autoplay blocked");
-          });
-        } else {
-          setTileStatus("err", "HLS not supported");
+        }else if(video.canPlayType("application/vnd.apple.mpegurl")){
+          instances.set(video,{hls:null,id:ch.id});
+          video.src=ch.url;
+          video.muted=true;
+          video.play().then(()=>setStatus("ok","Playing"))
+            .catch(err=>{console.warn("Autoplay blocked (native)",ch.id,err);setStatus("err","Autoplay blocked");});
+        }else{
+          setStatus("err","HLS not supported");
         }
 
-        video.onerror = () => {
-          setTileStatus("err", "Video error");
-        };
+        video.onerror=()=>setStatus("err","Video error");
       };
 
-      reloadBtn.addEventListener("click", playChannel);
-
-      // Initial load
-      playChannel();
-
+      reloadBtn.addEventListener("click",play);
+      play();
       return tile;
     }
 
-    function destroyAllInstances() {
-      instances.forEach(({ hls }) => {
-        if (hls) {
-          try { hls.destroy(); } catch (e) {}
-        }
-      });
-      instances.clear();
-    }
-
-    function buildGrid() {
-      destroyAllInstances();
-      gridEl.innerHTML = "";
-
-      const activeChannels = currentChannels.filter(ch => isUrl(ch.url));
-      const totalSlots = currentChannels.length;
-      const activeCount = activeChannels.length;
-
-      if (!activeCount) {
-        setStatusLabel("No enabled channels. Add URLs & click Save.");
+    function buildPreview(){
+      destroyAll();
+      previewGrid.innerHTML="";
+      const active=channels.filter(c=>isUrl(c.url));
+      if(!active.length){
+        previewInfo.textContent="No active channels. Fill URLs and check Use, then Save.";
         return;
       }
-
-      activeChannels.forEach(ch => {
-        gridEl.appendChild(createTile(ch));
-      });
-
-      if (activeCount === totalSlots) {
-        setStatusLabel(`Showing ${activeCount} channels (all slots in use).`);
-      } else {
-        setStatusLabel(`Showing ${activeCount} channel${activeCount>1?'s':''} out of ${totalSlots} slots.`);
-      }
+      previewInfo.textContent=`Previewing ${active.length} channel${active.length>1?"s":""}.`;
+      active.forEach(ch=>previewGrid.appendChild(createTile(ch)));
     }
 
-    window.addEventListener("beforeunload", () => {
-      destroyAllInstances();
-    });
+    window.addEventListener("beforeunload",destroyAll);
 
     /************* INIT *************/
     renderConfigForm();
-    buildGrid();
+    buildPreview();
   </script>
 </body>
 </html>
