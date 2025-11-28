@@ -284,26 +284,26 @@
   } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
   const firebaseConfig = {
-    apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
-    authDomain: "iptv-bfa.firebaseapp.com",
-    databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
-    projectId: "iptv-bfa",
-    storageBucket: "iptv-bfa.firebasestorage.app",
-    messagingSenderId: "838790935867",
-    appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+    authDomain:"iptv-bfa.firebaseapp.com",
+    databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",
+    projectId:"iptv-bfa",
+    storageBucket:"iptv-bfa.firebasestorage.app",
+    messagingSenderId:"838790935867",
+    appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"
   };
 
-  const EMBED =
-    /\bembed=1\b/i.test(location.search) || (window.top !== window.self);
+  // preview/iframe mode → read-only, don’t spam /user or presence
+  const EMBED = /\bembed=1\b/i.test(location.search) || (window.top !== window.self);
 
-  const app = initializeApp(firebaseConfig, EMBED ? 'embed' : undefined);
+  const app  = initializeApp(firebaseConfig, EMBED ? 'embed' : undefined);
   const auth = getAuth(app);
   if (EMBED) {
     await setPersistence(auth, inMemoryPersistence);
   }
   const db = getDatabase(app);
 
-  signInAnonymously(auth).catch((e) => {
+  signInAnonymously(auth).catch(e => {
     console.error('[auth]', e);
     window.setStatus(false, 'anon auth failed');
   });
@@ -311,75 +311,128 @@
   onAuthStateChanged(auth, async (user) => {
     if (!user) return;
 
-    const displayId = CONFIG.displayId;
+    const displayId    = CONFIG.displayId;
     const dealershipId = CONFIG.dealershipName;
+    const dRef         = ref(db, `displays/${displayId}`);
 
-    // Main display document (already in your code)
-    const dRef = ref(db, `displays/${displayId}`);
+    // ===== PREVIEW / EMBED MODE (iframe or ?embed=1) =====
+    if (EMBED) {
+      window.onLocalAudioChange = null; // no writes in preview
 
-    // NEW: presence / online status node (this is what your screenshot shows)
-    const presenceRef = ref(db, `onlineDisplays/${displayId}`);
-    const sessionId = (crypto.randomUUID && crypto.randomUUID()) ||
-      Math.random().toString(36).slice(2);
-    const now = Date.now();
+      let lastApplied = { volume:null, muted:null, channel:null };
 
-    // 1) Ensure device user profile exists (for your rules)
+      onValue(
+        dRef,
+        (snap) => {
+          const d = snap.val();
+          if (!d) return;
+
+          if (typeof d.channel === 'number' && d.channel !== lastApplied.channel) {
+            lastApplied.channel = d.channel;
+            window.loadChannel(d.channel);
+          }
+          if (typeof d.volume === 'number' && d.volume !== lastApplied.volume) {
+            lastApplied.volume = d.volume;
+            window.applyVolumeSettings(d.volume, d.muted);
+          }
+          if (typeof d.muted === 'boolean' && d.muted !== lastApplied.muted) {
+            lastApplied.muted = d.muted;
+            window.applyVolumeSettings(d.volume, d.muted);
+          }
+
+          window.setStatus(true, 'Preview');
+        },
+        (err) => {
+          console.error('[listener preview]', err);
+          window.setStatus(false, 'listener error');
+        }
+      );
+
+      return; // stop here in preview mode (no /user, no presence)
+    }
+
+    // ===== REAL DEVICE MODE =====
+
+    const presenceRef = ref(db, `onlineDisplays/${displayId}`); // change name if your tree is different
+    const sessionId   = (crypto.randomUUID && crypto.randomUUID()) ||
+                        Math.random().toString(36).slice(2);
+    const now         = Date.now();
+
+    // 1) Ensure device user profile exists (needed for your rules)
     try {
       await update(ref(db, `user/${user.uid}`), {
-        role: 'device',
-        name: displayId,
+        role:        'device',
+        name:        displayId,
         dealershipId,
-        updatedAt: now,
-        createdAt: now
+        updatedAt:   now,
+        createdAt:   now
       });
     } catch (e) {
       console.error('[user upsert]', e);
     }
 
-    // 2) Ensure the display doc exists
+    // 2) Ensure display doc exists and has base fields
+    let existing = null;
     try {
       const snap = await get(dRef);
+      existing   = snap.val() || {};
+
       if (!snap.exists()) {
         await update(dRef, {
-          channel: 1,
-          volume: 50,
-          muted: false,
+          channel:    1,
+          volume:     50,
+          muted:      false,
           dealership: dealershipId,
-          timestamp: now
+          // if admin didn’t already set previewUrl, create a default one:
+          previewUrl: existing.previewUrl ||
+            `https://flaviothebfagroup.github.io/IPTV-/${displayId}.html`,
+          timestamp:  now
         });
-      } else if (!snap.val()?.dealership) {
+      } else if (!existing.dealership) {
         await update(dRef, { dealership: dealershipId });
       }
     } catch (e) {
       console.error('[display upsert]', e);
     }
 
-    // 3) NEW: write initial presence node (this creates KF-001 / PH-001 tree)
+    // 3) Write login info into displays/{displayId}
+    try {
+      await update(dRef, {
+        lastLoginAt:   now,
+        lastSeenAt:    now,
+        lastSessionId: sessionId,
+        lastUser:      { uid: user.uid },
+        updatedAt:     now
+      });
+    } catch (e) {
+      console.error('[display login meta]', e);
+    }
+
+    // 4) Presence node like the KF-001 / PH-001 screenshot
     try {
       await update(presenceRef, {
         displayId,
-        uid: user.uid,
+        uid:      user.uid,
         sessionId,
-        loginAt: now,
+        loginAt:  now,
         lastSeen: now
       });
     } catch (e) {
       console.error('[presence init]', e);
     }
 
-    // 4) Bridge for local audio changes (unchanged)
-    if (!EMBED) {
-      window.onLocalAudioChange = async (vol, muted) => {
-        try {
-          await update(dRef, { volume: vol, muted });
-        } catch (e) {}
-      };
-    } else {
-      window.onLocalAudioChange = null;
-    }
+    // 5) Local audio changes → update DB
+    window.onLocalAudioChange = async (vol, muted) => {
+      try {
+        await update(dRef, { volume: vol, muted });
+      } catch (e) {
+        console.error('[audio update]', e);
+      }
+    };
 
-    // 5) Realtime listener (unchanged)
-    let lastApplied = { volume: null, muted: null, channel: null };
+    // 6) Realtime listener (same as preview, but for devices)
+    let lastApplied = { volume:null, muted:null, channel:null };
+
     onValue(
       dRef,
       (snap) => {
@@ -390,12 +443,10 @@
           lastApplied.channel = d.channel;
           window.loadChannel(d.channel);
         }
-
         if (typeof d.volume === 'number' && d.volume !== lastApplied.volume) {
           lastApplied.volume = d.volume;
           window.applyVolumeSettings(d.volume, d.muted);
         }
-
         if (typeof d.muted === 'boolean' && d.muted !== lastApplied.muted) {
           lastApplied.muted = d.muted;
           window.applyVolumeSettings(d.volume, d.muted);
@@ -409,13 +460,14 @@
       }
     );
 
-    // 6) Heartbeat: update both displays/* and onlineDisplays/* (lastSeen)
+    // 7) Heartbeat: update lastSeenAt / updatedAt in displays
+    //    and lastSeen in onlineDisplays
     const beat = async () => {
       const ts = Date.now();
       try {
         await update(dRef, {
           lastSeenAt: ts,
-          updatedAt: ts
+          updatedAt:  ts
         });
         await update(presenceRef, {
           lastSeen: ts
@@ -429,6 +481,7 @@
     setInterval(beat, 15000);
   });
 </script>
+
 
 
 
