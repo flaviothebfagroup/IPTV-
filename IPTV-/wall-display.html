@@ -1,740 +1,940 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BFA IPTV — Monitor Wall</title>
+  <meta charset="UTF-8" />
+  <title>BFA — IPTV Wall</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 
-<style>
-  :root{
-    --brand:#ff6a00;
-    --brand2:#ff9330;
-    --fg:#0f172a;
-    --muted:#64748b;
-  }
+  <!-- hls.js for BrightSign/Chromium engines that support MSE -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
 
-  *{box-sizing:border-box;margin:0;padding:0;}
-  html,body{
-    width:100%;
-    height:100%;
-    overflow:hidden;
-    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    color:var(--fg);
-    background:#050816;
-  }
+  <style>
+    :root{
+      --brand:#ff6a00;
+      --brand2:#e85f00;
 
-  /* Background tuned for 1920×1080 but responsive */
-  body{
-    background:
-      radial-gradient(circle at -10% 0%, #fff1d9 0%, #ffcb83 18%, transparent 35%),
-      radial-gradient(circle at 110% 0%, #ffc0ca 0%, #ff8994 22%, transparent 45%),
-      radial-gradient(circle at 8% 110%, #ffefcf 0%, #ffd098 20%, transparent 45%),
-      radial-gradient(circle at 85% 120%, #ffb964 0%, #ff6a00 35%, #050816 70%);
-    background-color:#050816;
-  }
+      --bg-start:#fefefe;
+      --bg-mid:#f3f6fb;
+      --bg-end:#ff6a00;
 
-  .frame{
-    position:relative;
-    width:100%;
-    height:100%;
-    padding:16px;          /* slightly tighter */
-  }
+      --fg:#0f172a;
+      --muted:#64748b;
 
-  .shell{
-    position:relative;
-    width:100%;
-    height:100%;
-    border-radius:28px;
-    background:linear-gradient(145deg,rgba(255,255,255,.90),rgba(246,248,255,.88));
-    box-shadow:
-      0 28px 80px rgba(15,23,42,.75),
-      0 0 0 1px rgba(255,255,255,.80);
-    padding:12px 18px 12px; /* slightly tighter */
-    display:flex;
-    flex-direction:column;
-  }
+      --panel:rgba(255,255,255,.68);
+      --panel-soft:rgba(255,255,255,.90);
+      --line:rgba(15,23,42,.08);
 
-  /* HEADER */
+      --radius-lg:26px;
+      --radius-md:20px;
 
-  .shell-header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:16px;
-    margin-bottom:8px;    /* was 12 */
-  }
+      --glass-blur:18px;
+      --glass-sat:150%;
 
-  .brand-left{
-    display:flex;
-    align-items:center;
-    gap:14px;
-    min-width:0;
-  }
+      --shadow-strong:0 22px 64px rgba(15,23,42,.16);
+      --shadow-soft:0 14px 40px rgba(15,23,42,.14);
+      --inset-soft:inset 0 1px 0 rgba(255,255,255,.65), inset 0 -1px 0 rgba(148,163,184,.32);
+    }
 
-  .logo-wrap{
-    width:56px;
-    height:56px;
-    border-radius:24px;
-    background:linear-gradient(145deg,#ffdfb9,#ff6a00);
-    box-shadow:
-      0 18px 40px rgba(15,23,42,.55),
-      inset 0 1px 0 rgba(255,255,255,.8);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-  }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;
+      color:var(--fg);
+      background:transparent;
+      overflow:hidden;
+    }
 
-  .logo{
-    width:36px;
-    height:36px;
-    border-radius:16px;
-    background:#ffffff;
-    box-shadow:0 10px 26px rgba(0,0,0,.55);
-  }
+    /* background */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:-2;
+      background:
+        radial-gradient(circle at -10% -10%, rgba(255,149,0,.45), transparent 55%),
+        radial-gradient(circle at 110% 110%, rgba(255,149,0,.35), transparent 55%),
+        linear-gradient(180deg, var(--bg-start), var(--bg-mid), var(--bg-end));
+    }
+    body::after{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:-1;
+      background:linear-gradient(135deg, rgba(255,255,255,.8), rgba(255,255,255,.4));
+      pointer-events:none;
+    }
 
-  .brand-text{
-    min-width:0;
-  }
-  .brand-title{
-    font-size:20px;
-    font-weight:800;
-    color:#020617;
-    letter-spacing:.02em;
-  }
-  .brand-sub{
-    font-size:12px;
-    color:var(--muted);
-    margin-top:3px;
-  }
+    .page{
+      max-width:1680px;
+      height:100%;
+      margin:0 auto;
+      padding:18px 24px;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
 
-  .status-pill{
-    padding:6px 13px;
-    border-radius:999px;
-    background:linear-gradient(135deg,#020617,#111827);
-    color:#e5e7eb;
-    font-size:11px;
-    display:inline-flex;
-    align-items:center;
-    gap:7px;
-    box-shadow:0 18px 40px rgba(15,23,42,.8);
-  }
-  .status-dot{
-    width:9px;
-    height:9px;
-    border-radius:999px;
-    background:#22c55e;
-  }
+    /* top bar */
+    .top-bar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:0;
+    }
+    .logo-shell{
+      width:42px;
+      height:42px;
+      border-radius:18px;
+      background:#ffffff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 18px 40px rgba(15,23,42,.28);
+      flex-shrink:0;
+    }
+    .logo-shell img{
+      width:26px;
+      height:26px;
+      object-fit:contain;
+      display:block;
+    }
+    .title-block{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+    }
+    h1{
+      font-size:20px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      white-space:nowrap;
+    }
+    .subtitle{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
 
-  .layout{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    gap:8px;          /* was 12 */
-    min-height:0;
-  }
+    .status-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 14px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.4);
+      background:radial-gradient(circle at top left, rgba(255,255,255,.96), rgba(248,250,252,.94));
+      box-shadow:0 13px 32px rgba(148,163,184,.3);
+      font-size:12px;
+    }
+    .status-dot{
+      width:9px;
+      height:9px;
+      border-radius:999px;
+      background:#22c55e;
+      box-shadow:0 0 0 0 rgba(34,197,94,.4);
+      animation:pulse 1.8s infinite;
+    }
+    @keyframes pulse{
+      0%{box-shadow:0 0 0 0 rgba(34,197,94,.45);}
+      70%{box-shadow:0 0 0 10px rgba(34,197,94,0);}
+      100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}
+    }
 
-  /* HERO (top) */
+    .layout{
+      flex:1;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
 
-  .hero-wrap{
-    flex:1;
-    min-height:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-  }
+    /* HERO CARD */
+    .hero-card{
+      position:relative;
+      flex:1;
+      min-height:0;
+      border-radius:var(--radius-lg);
+      background:var(--panel);
+      border:1px solid var(--line);
+      box-shadow:var(--shadow-strong), var(--inset-soft);
+      padding:12px 14px 14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
 
-  .hero-card{
-    width:100%;
-    max-width:1100px;   /* smaller so 16:9 fits above dock */
-    border-radius:22px;
-    background:#020617;
-    box-shadow:
-      0 20px 60px rgba(15,23,42,.70),
-      0 0 0 1px rgba(15,23,42,.9);
-    overflow:hidden;
-    position:relative;
-  }
+    .hero-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:6px 8px;
+      border-radius:999px;
+      background:#ffffff;
+      border:1px solid rgba(148,163,184,.4);
+      box-shadow:0 12px 26px rgba(148,163,184,.35);
+    }
+    .hero-name{
+      font-size:14px;
+      font-weight:700;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      max-width:40%;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .hero-meta{
+      font-size:11px;
+      color:var(--muted);
+      margin-left:auto;
+      margin-right:6px;
+      white-space:nowrap;
+    }
+    .hero-tag{
+      font-size:10px;
+      text-transform:uppercase;
+      letter-spacing:.14em;
+      padding:4px 11px;
+      border-radius:999px;
+      background:linear-gradient(135deg,var(--brand),var(--brand2));
+      color:#111827;
+      font-weight:700;
+      border:1px solid rgba(255,255,255,.8);
+      box-shadow:0 10px 24px rgba(248,113,22,.55);
+      flex-shrink:0;
+    }
 
-  .hero-16x9{
-    position:relative;
-    width:100%;
-    height:0;
-    padding-top:56.25%; /* 16:9 */
-  }
+    .hero-shell{
+      position:relative;
+      flex:1;
+      min-height:0;
+      margin-top:4px;
+      border-radius:22px;
+      overflow:hidden;
+      background:#000;
+      box-shadow:var(--shadow-soft);
+    }
+    .hero-frame{
+      position:relative;
+      width:100%;
+      padding-top:56.25%; /* 16:9 */
+      background:#000;
+    }
+    .hero-frame video{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      background:#000;
+    }
 
-  .hero-16x9 video{
-    position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    background:#000;
-    display:block;
-  }
+    .hero-banner{
+      position:absolute;
+      left:16px;
+      right:16px;
+      bottom:14px;
+      border-radius:16px;
+      padding:8px 12px;
+      font-size:11px;
+      color:#374151;
+      background:rgba(255,255,255,.96);
+      border:1px solid rgba(148,163,184,.6);
+      box-shadow:0 14px 30px rgba(148,163,184,.5);
+      display:none;
+    }
 
-  .hero-bar{
-    position:absolute;
-    left:0;
-    right:0;
-    bottom:0;
-    padding:9px 13px 10px;
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-end;
-    font-size:11px;
-    color:#e5e7eb;
-    background:linear-gradient(180deg,rgba(15,23,42,0) 0%,rgba(15,23,42,.60) 42%,rgba(15,23,42,.96) 100%);
-  }
+    /* DOCK */
+    .dock-card{
+      border-radius:var(--radius-md);
+      background:var(--panel-soft);
+      border:1px solid var(--line);
+      box-shadow:var(--shadow-soft), var(--inset-soft);
+      padding:10px 12px 10px;
+      backdrop-filter:blur(16px) saturate(150%);
+      -webkit-backdrop-filter:blur(16px) saturate(150%);
+    }
+    .dock-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      margin-bottom:8px;
+    }
+    .dock-title{
+      font-size:13px;
+      font-weight:600;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+    }
+    .dock-summary{
+      font-size:11px;
+      color:var(--muted);
+    }
 
-  .hero-left{
-    max-width:70%;
-  }
-  .hero-kicker{
-    font-size:10px;
-    text-transform:uppercase;
-    letter-spacing:.16em;
-    color:#cbd5f5;
-    margin-bottom:3px;
-  }
-  .hero-name{
-    font-size:15px;
-    font-weight:800;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-  .hero-meta{
-    margin-top:3px;
-    font-size:11px;
-    color:#e5e7eb;
-    opacity:.88;
-  }
+    .dock-grid{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:flex-start;
+    }
 
-  .hero-tag{
-    padding:6px 11px;
-    border-radius:999px;
-    background:linear-gradient(135deg,#f97316,#fb923c);
-    color:#111827;
-    font-size:11px;
-    font-weight:600;
-    box-shadow:
-      0 18px 40px rgba(15,23,42,.9),
-      0 0 0 1px rgba(248,250,252,.7);
-  }
+    .tile{
+      position:relative;
+      display:inline-block;
+      border-radius:18px;
+      border:1px solid rgba(148,163,184,.55);
+      background:radial-gradient(circle at top left, rgba(255,255,255,.98), rgba(248,250,252,.98));
+      box-shadow:0 12px 26px rgba(148,163,184,.45);
+      padding:0;
+      min-width:210px;
+      max-width:240px;
+      flex:1 1 210px;
+      cursor:pointer;
+      overflow:hidden;
+      transition:transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+    }
+    .tile:focus{outline:none}
+    .tile:focus-visible{
+      outline:2px solid rgba(59,130,246,.8);
+      outline-offset:2px;
+    }
+    .tile.active{
+      transform:translateY(-2px);
+      border-color:rgba(255,149,0,.9);
+      box-shadow:0 16px 40px rgba(248,113,22,.5);
+    }
 
-  /* DOCK */
+    .tile-inner{
+      position:relative;
+      width:100%;
+      border-radius:18px;
+      overflow:hidden;
+      background:#000;
+    }
+    .tile-inner::before{
+      content:"";
+      display:block;
+      padding-top:56.25%; /* 16:9 */
+    }
+    .tile-inner video{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      background:#000;
+      transition:opacity .16s ease;
+    }
 
-  .dock-card{
-    border-radius:22px;
-    background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(248,245,240,.98));
-    box-shadow:
-      0 16px 40px rgba(148,163,184,.6),
-      0 0 0 1px rgba(255,255,255,.9);
-    padding:8px 10px 9px;  /* slightly tighter */
-  }
+    /* When tile is ON AIR (selected in hero), hide the mini video
+       and show a liquid-glass card instead of a black rectangle. */
+    .tile.on-air{
+      background:radial-gradient(circle at top left, rgba(255,255,255,.98), rgba(248,250,252,.98));
+      border-color:rgba(255,149,0,.85);
+      box-shadow:0 18px 40px rgba(248,113,22,.55);
+    }
+    .tile.on-air .tile-inner{
+      background:linear-gradient(135deg, rgba(255,255,255,.98), rgba(248,250,252,.96));
+    }
+    .tile.on-air .tile-inner video{
+      opacity:0;
+    }
 
-  .dock-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    font-size:12px;
-    color:var(--muted);
-    margin-bottom:6px;
-  }
+    .tile-overlay{
+      position:absolute;
+      left:8px;
+      right:8px;
+      bottom:8px;
+      border-radius:999px;
+      padding:4px 8px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:6px;
+      background:rgba(255,255,255,.95);
+      border:1px solid rgba(148,163,184,.7);
+      box-shadow:0 8px 18px rgba(148,163,184,.6);
+      backdrop-filter:blur(12px) saturate(160%);
+      -webkit-backdrop-filter:blur(12px) saturate(160%);
+    }
+    .tile-name{
+      font-size:11px;
+      font-weight:600;
+      max-width:70%;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .tile-status{
+      font-size:10px;
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid rgba(156,163,175,.9);
+      background:rgba(249,250,251,.98);
+      color:#4b5563;
+      white-space:nowrap;
+    }
+    .tile-status.ok{
+      border-color:rgba(34,197,94,.85);
+      color:#166534;
+      background:rgba(220,252,231,.98);
+    }
+    .tile-status.error{
+      border-color:rgba(248,113,113,.9);
+      color:#b91c1c;
+      background:rgba(254,226,226,.98);
+    }
+    .tile-status.idle{
+      border-color:rgba(156,163,175,.9);
+      color:#374151;
+    }
+    .tile-status.onair{
+      border-color:rgba(255,149,0,.95);
+      color:#92400e;
+      background:linear-gradient(135deg, rgba(255,237,213,.98), rgba(255,255,255,.98));
+    }
 
-  .dock-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-    grid-auto-rows:1fr;
-    gap:7px;
-  }
+    /* ON-AIR glass overlay */
+    .onair-badge{
+      position:absolute;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      pointer-events:none;
+      background:radial-gradient(circle at top, rgba(255,255,255,.3), rgba(148,163,184,.75));
+      backdrop-filter:blur(14px) saturate(180%);
+      -webkit-backdrop-filter:blur(14px) saturate(180%);
+    }
+    .tile.on-air .onair-badge{
+      display:flex;
+    }
+    .onair-logo{
+      width:30px;
+      height:30px;
+      border-radius:14px;
+      background:#ffffff;
+      color:var(--brand);
+      font-size:13px;
+      font-weight:800;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 16px 40px rgba(148,163,184,.8);
+      margin-bottom:6px;
+    }
+    .onair-text{
+      font-size:10px;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      color:#111827;
+    }
 
-  .tile{
-    position:relative;
-    border-radius:16px;
-    background:#020617;
-    box-shadow:0 12px 30px rgba(15,23,42,.55);
-    border:1px solid rgba(15,23,42,.85);
-    overflow:hidden;
-    cursor:pointer;
-    -webkit-tap-highlight-color:transparent;
-    transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
-  }
-
-  .tile-inner{
-    position:relative;
-    width:100%;
-    height:0;
-    padding-top:56.25%; /* 16:9 thumbnails */
-  }
-
-  .tile video{
-    position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    background:#000;
-    display:block;
-  }
-
-  .tile-overlay{
-    position:absolute;
-    left:0;
-    right:0;
-    bottom:0;
-    padding:5px 8px;
-    font-size:10px;
-    color:#e5e7eb;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.90) 60%,rgba(0,0,0,.97) 100%);
-  }
-
-  .tile-name{
-    font-weight:600;
-    max-width:70%;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-
-  .tile-status{
-    font-size:10px;
-    opacity:.9;
-  }
-  .tile-status.error{color:#fecaca;}
-  .tile-status.idle{color:#9ca3af;}
-  .tile-status.ok{color:#bbf7d0;}
-
-  /* ACTIVE DOCK TILE */
-
-  .tile.active{
-    transform:translateY(-3px) scale(1.04);
-    border-color:rgba(255,149,0,.95);
-    box-shadow:
-      0 18px 44px rgba(15,23,42,.85),
-      0 0 0 1px rgba(251,146,60,.9);
-  }
-
-  .hint{
-    margin-top:2px;
-    font-size:11px;
-    color:var(--muted);
-    text-align:right;
-  }
-
-  .banner{
-    position:absolute;
-    left:50%;
-    bottom:16px;
-    transform:translateX(-50%);
-    padding:7px 14px;
-    border-radius:999px;
-    background:rgba(239,68,68,.96);
-    color:#fff;
-    font-size:11px;
-    box-shadow:0 18px 40px rgba(0,0,0,.85);
-    display:none;
-  }
-
-  @media (max-width:1100px){
-    .frame{padding:10px;}
-    .shell{border-radius:18px;padding:10px 10px 12px;}
-    .shell-header{flex-direction:column;align-items:flex-start;gap:8px;}
-  }
-</style>
+    @media (max-width:900px){
+      .page{padding:14px 10px;}
+      .hero-card{border-radius:22px;}
+      .dock-card{border-radius:18px;}
+    }
+  </style>
 </head>
 <body>
-<div class="frame">
-  <div class="shell">
-    <header class="shell-header">
-      <div class="brand-left">
-        <div class="logo-wrap">
-          <img class="logo" src="/IPTV-/icons/icon-192.png" alt="BFA logo"
-     onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2236%22 height=%2236%22 viewBox=%220 0 38 38%22%3E%3Crect width=%2238%22 height=%2238%22 rx=%2216%22 fill=%22%23ffffff%22/%3E%3Ctext x=%2250%25%22 y=%2255%25%22 text-anchor=%22middle%22 font-size=%2213%22 font-family=%22system-ui%22 font-weight=%22800%22 fill=%22%23ff6a00%22%3EBFA%3C/text%3E%3C/svg%3E';">
-
+  <div class="page">
+    <header class="top-bar">
+      <div class="brand">
+        <div class="logo-shell">
+          <img id="bfaLogo" src="/IPTV-/icons/icon-192.png" alt="BFA logo" />
         </div>
-        <div class="brand-text">
-          <div class="brand-title">BFA IPTV — Monitor Wall</div>
-          <div class="brand-sub"></div>
+        <div class="title-block">
+          <h1>BFA · IPTV Wall</h1>
+          <div class="subtitle">Multi-channel health · 16:9 hero + dock</div>
         </div>
       </div>
       <div class="status-pill">
-        <span class="status-dot" id="statusDot"></span>
-        <span id="statusText">Starting…</span>
+        <div id="statusDot" class="status-dot"></div>
+        <div id="statusText">Initializing…</div>
       </div>
     </header>
 
-    <section class="layout">
+    <main class="layout">
       <!-- HERO -->
-      <div class="hero-wrap">
-        <div class="hero-card">
-          <div class="hero-16x9">
-            <video id="heroVideo" autoplay muted playsinline></video>
-            <div class="hero-bar">
-              <div class="hero-left">
-                <div class="hero-kicker">Now showing</div>
-                <div id="heroName" class="hero-name">—</div>
-                <div id="heroMeta" class="hero-meta">Loading…</div>
-              </div>
-              <div id="heroTag" class="hero-tag">LIVE</div>
-            </div>
-          </div>
+      <section class="hero-card">
+        <div class="hero-header">
+          <div id="heroName" class="hero-name">Loading channel…</div>
+          <div id="heroMeta" class="hero-meta">Preparing stream</div>
+          <div id="heroTag" class="hero-tag">LIVE · 0/0</div>
         </div>
-      </div>
+
+        <div class="hero-shell">
+          <div class="hero-frame">
+            <video id="heroVideo" muted autoplay playsinline></video>
+          </div>
+          <div id="heroBanner" class="hero-banner"></div>
+        </div>
+      </section>
 
       <!-- DOCK -->
-      <div class="dock-card">
+      <section class="dock-card">
         <div class="dock-header">
-          <span>Channel dock</span>
-          <span id="dockSummary"></span>
+          <div class="dock-title">Channel dock</div>
+          <div id="dockSummary" class="dock-summary">0 channels configured</div>
         </div>
         <div id="dockGrid" class="dock-grid"></div>
-      </div>
-
-      <div class="hint">
-        If BrightSign struggles, reduce channels or set PLAY_DOCK_VIDEOS = false so only the hero decodes.
-      </div>
-    </section>
+      </section>
+    </main>
   </div>
 
-  <div id="banner" class="banner"></div>
-</div>
-
-<script>
-  /* ===== CONFIG ===== */
-  var CONFIG = {
-    ROTATE_SECONDS: 20,
-    PLAY_DOCK_VIDEOS: true,   // keep true if you want dock motion
-    channels: [
-      {
-        name: "News",
-        url: "https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8"
-        // previewUrl: "https://...lower-res.m3u8"  // OPTIONAL: lower-res dock feed
-      },
-      {
+  <script>
+    /* ========= SIMPLE CONFIG =========
+       - Edit channels here and republish.
+       - previewUrl is OPTIONAL (lower-res for dock).
+       - MAX_PREVIEW_STREAMS: how many dock tiles actually play.
+         (For heavy BrightSign models you can reduce this to 4.)
+    */
+    var CONFIG = {
+      ROTATE_SECONDS: 25,      // auto-rotate hero; 0 = no auto-rotate
+      MAX_PREVIEW_STREAMS: 9,  // how many dock streams actually play
+      channels: [
+        {
+          name: "News",
+          url: "https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8"
+        },
+        {
+          name: "Tennis Channel S",
+          url: "https://amg01444-tennischannelth-tennischannelnl-samsungnl-x3dq1.amagi.tv/playlist/amg01444-tennischannelth-tennischannelnl-samsungnl/playlist.m3u8"
+        },
+        {
       name: "TSN 5",
         url: "https://fl31.moveonjoy.com/TSN_5/index.m3u8"
       },
-      {
-        name: "Tennis Channel S",
-        url: "https://amg01444-tennischannelth-tennischannelnl-samsungnl-x3dq1.amagi.tv/playlist/amg01444-tennischannelth-tennischannelnl-samsungnl/playlist.m3u8"
-      },
-      {
-        name: "Cooking",
-        url: "https://gusto-xumo.amagi.tv/playlist.m3u8"
-      },
-      {
-        name: "Love Nature",
-        url: "https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8"
-      },
-      {
-        name: "Kids",
-        url: "https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8"
-      }
-      // add more channels if you like; previewUrl is optional
-    ]
-  };
+        {
+          name: "Cooking",
+          url: "https://gusto-xumo.amagi.tv/playlist.m3u8"
+        },
+        {
+          name: "Love Nature",
+          url: "https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8"
+        },
+        {
+          name: "Kids",
+          url: "https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8"
+        }
+        // add more channels here if you want (up to 9 is reasonable)
+      ]
+    };
 
-  /* ===== RUNTIME (BrightSign-safe JS) ===== */
+    /* ========= LOGO FALLBACK ========= */
+    (function(){
+      var logo = document.getElementById("bfaLogo");
+      if(!logo) return;
+      logo.onerror = function(){
+        logo.onerror = null;
+        logo.src =
+          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E" +
+          "%3Crect width='40' height='40' rx='18' fill='%23ffffff'/%3E" +
+          "%3Ctext x='50%25' y='54%25' text-anchor='middle' font-size='13' font-family='system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif' font-weight='800' fill='%23ff6a00'%3EBFA%3C/text%3E" +
+          "%3C/svg%3E";
+      };
+    })();
 
-  function isUrl(u){
-    return /^https?:\/\/\S+$/i.test((u || "").replace(/\s+/g,""));
-  }
-
-  var heroVideo   = document.getElementById("heroVideo");
-  var heroNameEl  = document.getElementById("heroName");
-  var heroMetaEl  = document.getElementById("heroMeta");
-  var heroTagEl   = document.getElementById("heroTag");
-  var statusDot   = document.getElementById("statusDot");
-  var statusText  = document.getElementById("statusText");
-  var bannerEl    = document.getElementById("banner");
-  var dockGrid    = document.getElementById("dockGrid");
-  var dockSummary = document.getElementById("dockSummary");
-
-  var CHANNELS    = [];
-  var heroIndex   = 0;
-  var rotateTimer = null;
-
-  // one entry per dock tile: { video, statusEl, index, active }
-  var dockEntries = [];
-
-  function showBanner(msg){
-    bannerEl.textContent = msg;
-    bannerEl.style.display = "block";
-  }
-  function hideBanner(){
-    bannerEl.style.display = "none";
-  }
-
-  function setStatus(ok, msg){
-    statusDot.style.backgroundColor = ok ? "#22c55e" : "#ef4444";
-    statusText.textContent = msg;
-  }
-
-  // Attach a URL to a <video> with native HLS (BrightSign-safe)
-  function attachNative(video, url, stateCb){
-    video.src = "";
-    video.load();
-    video.muted = true;
-    video.autoplay = true;
-    video.playsInline = true;
-
-    if(!isUrl(url)){
-      if(stateCb){ stateCb("error","No URL"); }
-      return;
+    /* ========= HELPERS ========= */
+    function $(id){ return document.getElementById(id); }
+    function isUrl(u){
+      if(!u) return false;
+      u = String(u).trim();
+      return /^https?:\/\/\S+$/i.test(u);
     }
 
-    url = url.replace(/\s+/g,"");
-    video.src = url;
+    var heroVideo   = $("heroVideo");
+    var heroNameEl  = $("heroName");
+    var heroMetaEl  = $("heroMeta");
+    var heroTagEl   = $("heroTag");
+    var heroBanner  = $("heroBanner");
+    var statusDot   = $("statusDot");
+    var statusText  = $("statusText");
+    var dockGrid    = $("dockGrid");
+    var dockSummary = $("dockSummary");
 
-    var started = false;
+    var CHANNELS    = [];
+    var dockEntries = []; // { video, statusEl, tile, hls, playing }
+    var heroIndex   = 0;
+    var heroHls     = null;
+    var rotateTimer = null;
 
-    video.onplaying = function(){
-      if(!started){
+    function setStatus(ok,msg){
+      statusDot.style.backgroundColor = ok ? "#22c55e" : "#ef4444";
+      statusText.textContent = msg;
+    }
+
+    function showBanner(msg){
+      heroBanner.textContent = msg;
+      heroBanner.style.display = "block";
+    }
+    function hideBanner(){
+      heroBanner.style.display = "none";
+    }
+
+    /* ========= STREAM ATTACH (HLS + FALLBACK) ========= */
+
+    function cleanVideo(video){
+      if(!video) return;
+      try{
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+      }catch(e){}
+      video.muted = true;
+      video.autoplay = true;
+      video.playsInline = true;
+    }
+
+    function attachStream(video, url, isHero, onState, oldHlsRef){
+      cleanVideo(video);
+
+      url = (url || "").trim();
+      if(!isUrl(url)){
+        if(onState) onState("error","No URL");
+        return null;
+      }
+
+      var hlsInst = null;
+      var started = false;
+
+      function handleOk(){
+        if(started) return;
         started = true;
-        if(stateCb){ stateCb("ok","LIVE"); }
+        if(onState) onState("ok","LIVE");
       }
-    };
 
-    video.onerror = function(){
-      if(stateCb){ stateCb("error","Error"); }
-    };
-
-    var p = null;
-    try{ p = video.play(); }catch(e){}
-
-    if(p && typeof p.then === "function"){
-      p.then(function(){
-        if(!started && stateCb){ stateCb("ok","LIVE"); }
-      }).catch(function(){
-        if(stateCb){ stateCb("idle","Tap"); }
-      });
-    }
-  }
-
-  /* ---- Dock helpers ---- */
-
-  function getDockUrl(idx){
-    var ch = CHANNELS[idx];
-    if(ch.previewUrl && isUrl(ch.previewUrl)){ return ch.previewUrl; }
-    return ch.url;
-  }
-
-  function startDockStream(idx){
-    if(!CONFIG.PLAY_DOCK_VIDEOS){ return; }
-    var entry = dockEntries[idx];
-    if(!entry || entry.active){ return; }
-
-    var ch = CHANNELS[idx];
-    var url = getDockUrl(idx);
-
-    attachNative(entry.video, url, function(state,label){
-      var statusEl = entry.statusEl;
-      if(!statusEl){ return; }
-
-      if(state === "ok"){
-        statusEl.textContent = "LIVE";
-        statusEl.className   = "tile-status ok";
-      }else if(state === "idle"){
-        statusEl.textContent = "Tap";
-        statusEl.className   = "tile-status idle";
-      }else if(state === "error"){
-        statusEl.textContent = "Error";
-        statusEl.className   = "tile-status error";
-      }
-    });
-
-    entry.active = true;
-  }
-
-  function stopDockStream(idx, reason){
-    var entry = dockEntries[idx];
-    if(!entry || !entry.active){ return; }
-
-    try{
-      entry.video.pause();
-      entry.video.removeAttribute("src");
-      entry.video.load();
-    }catch(e){}
-
-    entry.active = false;
-
-    if(entry.statusEl){
-      entry.statusEl.textContent = reason || "On air ↑";
-      entry.statusEl.className   = "tile-status idle";
-    }
-  }
-
-  /* ---- Hero ---- */
-
-  function loadHero(idx){
-    if(!CHANNELS.length){ return; }
-    if(idx < 0){ idx = 0; }
-    if(idx >= CHANNELS.length){ idx = 0; }
-    heroIndex = idx;
-
-    var ch = CHANNELS[idx];
-    heroNameEl.textContent = ch.name || ("Channel " + (idx+1));
-    heroMetaEl.textContent = "Loading…";
-    heroTagEl.textContent  = "LIVE · " + (idx+1) + "/" + CHANNELS.length;
-
-    // update dock tile active state
-    var tiles = dockGrid.getElementsByClassName("tile");
-    var i;
-    for(i=0;i<tiles.length;i++){
-      if(parseInt(tiles[i].getAttribute("data-index"),10) === idx){
-        if(tiles[i].className.indexOf("active") === -1){
-          tiles[i].className += " active";
-        }
-      }else{
-        tiles[i].className = tiles[i].className.replace(/\s*active/g,"");
-      }
-    }
-
-    hideBanner();
-
-    // full-quality stream for hero
-    attachNative(heroVideo, ch.url, function(state,label){
-      if(state === "ok"){
-        heroMetaEl.textContent = "LIVE · native HLS";
-        setStatus(true,"Streaming " + (idx+1) + "/" + CHANNELS.length);
-      }else if(state === "idle"){
-        heroMetaEl.textContent = "Tap to start (desktop).";
-        showBanner("On BrightSign the hero should auto-play. If not, reduce channels.");
-      }else if(state === "error"){
-        heroMetaEl.textContent = "Stream error.";
-        setStatus(false,"Stream error on channel " + (idx+1));
-        showBanner("Stream error — check URL or codec.");
-      }
-    });
-
-    // hero should NOT play in dock: stop its preview stream
-    stopDockStream(idx, "On air ↑");
-
-    // make sure other dock tiles have their preview playing
-    if(CONFIG.PLAY_DOCK_VIDEOS){
-      for(i=0;i<CHANNELS.length;i++){
-        if(i === idx){ continue; }
-        startDockStream(i);
-      }
-    }
-
-    restartRotation();
-  }
-
-  function restartRotation(){
-    if(rotateTimer){
-      clearInterval(rotateTimer);
-    }
-    if(CHANNELS.length <= 1){
-      return;
-    }
-    var delayMs = (CONFIG.ROTATE_SECONDS || 20) * 1000;
-    rotateTimer = setInterval(function(){
-      var next = heroIndex + 1;
-      if(next >= CHANNELS.length){ next = 0; }
-      loadHero(next);
-    }, delayMs);
-  }
-
-  /* ---- Dock build ---- */
-
-  function buildDock(){
-    dockGrid.innerHTML = "";
-    dockEntries = [];
-
-    var i;
-    for(i=0;i<CHANNELS.length;i++){
-      (function(idx){
-        var ch = CHANNELS[idx];
-        var tile  = document.createElement("button");
-        tile.type = "button";
-        tile.className = "tile";
-        tile.setAttribute("data-index", String(idx));
-
-        var inner = document.createElement("div");
-        inner.className = "tile-inner";
-
-        var v = document.createElement("video");
-        v.autoplay = true;
-        v.muted    = true;
-        v.playsInline = true;
-
-        var overlay = document.createElement("div");
-        overlay.className = "tile-overlay";
-
-        var nameEl = document.createElement("div");
-        nameEl.className = "tile-name";
-        nameEl.textContent = ch.name || ("Ch " + (idx+1));
-
-        var statusEl = document.createElement("div");
-        statusEl.className = "tile-status idle";
-        statusEl.textContent = CONFIG.PLAY_DOCK_VIDEOS ? "Loading…" : "Select";
-
-        overlay.appendChild(nameEl);
-        overlay.appendChild(statusEl);
-        inner.appendChild(v);
-        inner.appendChild(overlay);
-        tile.appendChild(inner);
-        dockGrid.appendChild(tile);
-
-        dockEntries[idx] = {
-          video: v,
-          statusEl: statusEl,
-          index: idx,
-          active: false
-        };
-
-        if(CONFIG.PLAY_DOCK_VIDEOS){
-          startDockStream(idx);
+      if(window.Hls && Hls.isSupported()){
+        if(oldHlsRef && oldHlsRef.destroy){
+          try{ oldHlsRef.destroy(); }catch(e){}
         }
 
-        tile.onclick = function(){
-          loadHero(idx);
+        hlsInst = new Hls({
+          enableWorker:true,
+          lowLatencyMode:false,
+          backBufferLength:30
+        });
+
+        hlsInst.attachMedia(video);
+        hlsInst.on(Hls.Events.MEDIA_ATTACHED,function(){
+          try{ hlsInst.loadSource(url); }catch(e){}
+        });
+
+        hlsInst.on(Hls.Events.MANIFEST_PARSED,function(){
+          var p;
+          try{
+            p = video.play();
+          }catch(e){}
+          if(p && p.then){
+            p.then(function(){ handleOk(); })
+             .catch(function(){ if(onState) onState("idle","Tap"); });
+          }else{
+            handleOk();
+          }
+        });
+
+        hlsInst.on(Hls.Events.ERROR,function(evt,data){
+          if(!data || !data.fatal) return;
+          if(onState) onState("error","Error");
+        });
+
+      } else {
+        // Native HLS (e.g., Safari, some BrightSign builds)
+        video.src = url;
+
+        video.onplaying = function(){ handleOk(); };
+        video.onerror   = function(){
+          if(onState) onState("error","Error");
         };
-      })(i);
+
+        var p2;
+        try{
+          p2 = video.play();
+        }catch(e){}
+        if(p2 && p2.then){
+          p2.then(function(){ handleOk(); })
+             .catch(function(){ if(onState) onState("idle","Tap"); });
+        }
+      }
+
+      return hlsInst;
     }
 
-    dockSummary.textContent = CHANNELS.length + " channel" + (CHANNELS.length>1 ? "s" : "") + " configured";
-  }
+    /* ========= DOCK LOGIC ========= */
 
-  /* ---- Init ---- */
+    function buildDock(){
+      dockGrid.innerHTML = "";
+      dockEntries = [];
 
-  function init(){
-    var raw = CONFIG.channels || [];
-    var cleaned = [];
-    var i;
-    for(i=0;i<raw.length;i++){
-      if(raw[i] && isUrl(raw[i].url)){
+      var maxPlay = Math.min(CONFIG.MAX_PREVIEW_STREAMS || 9, CHANNELS.length);
+
+      for(var i=0;i<CHANNELS.length;i++){
+        (function(idx){
+          var ch = CHANNELS[idx];
+
+          var tile = document.createElement("button");
+          tile.type = "button";
+          tile.className = "tile";
+          tile.setAttribute("data-index", String(idx));
+
+          var inner = document.createElement("div");
+          inner.className = "tile-inner";
+
+          var v = document.createElement("video");
+          v.muted = true;
+          v.autoplay = true;
+          v.playsInline = true;
+
+          var overlay = document.createElement("div");
+          overlay.className = "tile-overlay";
+
+          var nameEl = document.createElement("div");
+          nameEl.className = "tile-name";
+          nameEl.textContent = ch.name;
+
+          var statusEl = document.createElement("div");
+          statusEl.className = "tile-status idle";
+          statusEl.textContent = idx < maxPlay ? "Loading…" : "Idle";
+
+          overlay.appendChild(nameEl);
+          overlay.appendChild(statusEl);
+          inner.appendChild(v);
+          inner.appendChild(overlay);
+          tile.appendChild(inner);
+
+          // ON AIR badge (only shows for current hero)
+          var onair = document.createElement("div");
+          onair.className = "onair-badge";
+          onair.innerHTML =
+            "<div class='onair-logo'>BFA</div>" +
+            "<div class='onair-text'>ON AIR</div>";
+          tile.appendChild(onair);
+
+          dockGrid.appendChild(tile);
+
+          dockEntries[idx] = {
+            video: v,
+            statusEl: statusEl,
+            tile: tile,
+            hls: null,
+            playing: false
+          };
+
+          // start preview only for first MAX_PREVIEW_STREAMS
+          if(idx < maxPlay){
+            startDockStream(idx);
+          }
+
+          tile.onclick = function(){
+            loadHero(idx);
+          };
+        })(i);
+      }
+
+      dockSummary.textContent =
+        CHANNELS.length + " channel" + (CHANNELS.length>1?"s":"") + " configured";
+    }
+
+    function startDockStream(idx){
+      var entry = dockEntries[idx];
+      if(!entry || entry.playing) return;
+
+      var ch = CHANNELS[idx];
+      var url = ch.previewUrl && isUrl(ch.previewUrl) ? ch.previewUrl : ch.url;
+
+      entry.hls = attachStream(
+        entry.video,
+        url,
+        false,
+        function(state,msg){
+          if(!entry.statusEl) return;
+          if(state === "ok"){
+            entry.statusEl.textContent = "LIVE";
+            entry.statusEl.className   = "tile-status ok";
+          }else if(state === "idle"){
+            entry.statusEl.textContent = "Tap";
+            entry.statusEl.className   = "tile-status idle";
+          }else if(state === "error"){
+            entry.statusEl.textContent = "Error";
+            entry.statusEl.className   = "tile-status error";
+          }
+        },
+        entry.hls
+      );
+
+      entry.playing = true;
+    }
+
+    function stopDockStream(idx){
+      var entry = dockEntries[idx];
+      if(!entry) return;
+
+      entry.playing = false;
+
+      if(entry.hls && entry.hls.destroy){
+        try{ entry.hls.destroy(); }catch(e){}
+        entry.hls = null;
+      }
+      try{
+        entry.video.pause();
+        entry.video.removeAttribute("src");
+        entry.video.load();
+      }catch(e){}
+
+      if(entry.statusEl){
+        entry.statusEl.textContent = "On air";
+        entry.statusEl.className   = "tile-status onair";
+      }
+      if(entry.tile && entry.tile.className.indexOf("on-air") === -1){
+        entry.tile.className += " on-air";
+      }
+    }
+
+    /* ========= HERO LOGIC ========= */
+
+    function loadHero(idx){
+      if(!CHANNELS.length) return;
+      if(idx < 0) idx = 0;
+      if(idx >= CHANNELS.length) idx = 0;
+      heroIndex = idx;
+
+      var ch = CHANNELS[idx];
+
+      heroNameEl.textContent = ch.name;
+      heroMetaEl.textContent = "Loading…";
+      heroTagEl.textContent  = "LIVE · " + (idx+1) + "/" + CHANNELS.length;
+
+      // highlight / active tile
+      var tiles = dockGrid.getElementsByClassName("tile");
+      for(var i=0;i<tiles.length;i++){
+        var t   = tiles[i];
+        var tid = parseInt(t.getAttribute("data-index"),10);
+        t.className = t.className.replace(/\s*active/g,"").replace(/\s*on-air/g,"");
+        if(tid === idx){
+          if(t.className.indexOf("active") === -1) t.className += " active";
+        }
+      }
+
+      hideBanner();
+
+      heroHls = attachStream(
+        heroVideo,
+        ch.url,
+        true,
+        function(state,msg){
+          if(state === "ok"){
+            heroMetaEl.textContent = "LIVE · native/JS HLS";
+            setStatus(true,"Streaming channel " + (idx+1) + "/" + CHANNELS.length);
+          }else if(state === "idle"){
+            heroMetaEl.textContent = "Autoplay blocked (browser).";
+            showBanner("If this is on a desktop browser, click play. On BrightSign it should start automatically.");
+          }else if(state === "error"){
+            heroMetaEl.textContent = "Stream error.";
+            setStatus(false,"Error on channel " + (idx+1));
+            showBanner("Stream error — check URL / HLS compatibility.");
+          }
+        },
+        heroHls
+      );
+
+      // Stop preview for hero tile (freeze + ON AIR badge)
+      stopDockStream(idx);
+
+      // restart previews on others up to MAX_PREVIEW_STREAMS
+      var maxPlay = Math.min(CONFIG.MAX_PREVIEW_STREAMS || 9, CHANNELS.length);
+      var used = 0;
+      for(var j=0;j<CHANNELS.length;j++){
+        if(j === idx) continue;
+        if(used < maxPlay - 1){ // -1 because hero "uses" one slot
+          startDockStream(j);
+          used++;
+        }else{
+          // stop if previously running
+          var entry = dockEntries[j];
+          if(entry && entry.playing){
+            if(entry.hls && entry.hls.destroy){
+              try{ entry.hls.destroy(); }catch(e){}
+              entry.hls = null;
+            }
+            try{
+              entry.video.pause();
+              entry.video.removeAttribute("src");
+              entry.video.load();
+            }catch(e){}
+            entry.playing = false;
+            if(entry.statusEl){
+              entry.statusEl.textContent = "Idle";
+              entry.statusEl.className   = "tile-status idle";
+            }
+          }
+        }
+      }
+
+      restartRotation();
+    }
+
+    function restartRotation(){
+      if(rotateTimer){
+        clearInterval(rotateTimer);
+        rotateTimer = null;
+      }
+      var sec = Number(CONFIG.ROTATE_SECONDS || 0);
+      if(sec <= 0 || CHANNELS.length <= 1) return;
+
+      rotateTimer = setInterval(function(){
+        var next = heroIndex + 1;
+        if(next >= CHANNELS.length) next = 0;
+        loadHero(next);
+      }, sec * 1000);
+    }
+
+    /* ========= INIT ========= */
+
+    function init(){
+      // Clean channels
+      var raw = CONFIG.channels || [];
+      var cleaned = [];
+      for(var i=0;i<raw.length;i++){
+        var c = raw[i];
+        if(!c || !isUrl(c.url)) continue;
         cleaned.push({
-          name: raw[i].name || ("Channel " + (cleaned.length+1)),
-          url:  raw[i].url,
-          previewUrl: raw[i].previewUrl || ""
+          name: c.name || ("Channel " + (cleaned.length+1)),
+          url: c.url.trim(),
+          previewUrl: c.previewUrl || ""
         });
       }
+      CHANNELS = cleaned;
+
+      if(!CHANNELS.length){
+        setStatus(false,"No valid channels");
+        showBanner("No channels configured. Edit CONFIG.channels at the top of this file and republish.");
+        return;
+      }
+
+      setStatus(true,"Loaded " + CHANNELS.length + " channel" + (CHANNELS.length>1?"s":""));
+      buildDock();
+      loadHero(0);
     }
-    CHANNELS = cleaned;
 
-    if(!CHANNELS.length){
-      setStatus(false,"No valid channels in CONFIG");
-      showBanner("Add at least one valid m3u8 URL in CONFIG.channels.");
-      return;
+    if(document.readyState === "loading"){
+      document.addEventListener("DOMContentLoaded", init);
+    }else{
+      init();
     }
-
-    setStatus(true,"Initialized " + CHANNELS.length + " channel(s)");
-    buildDock();
-    loadHero(0);
-  }
-
-  if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", init);
-  }else{
-    init();
-  }
-</script>
-
+  </script>
 </body>
 </html>
