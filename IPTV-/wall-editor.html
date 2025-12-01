@@ -246,237 +246,256 @@
   </div>
 
   <script>
-    // ---- CONFIG ----
-    // PASTE YOUR WEB APP URL HERE:
-    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxDqMW48Yrkt-m942pipz7HtMOk0lwJp8O_LQHIQR-OM06sytw9U-HNQIrbpOjS4VQS/exec';
-    
+  // ===== CONFIG =====
+  const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxDqMW48Yrkt-m942pipz7HtMOk0lwJp8O_LQHIQR-OM06sytw9U-HNQIrbpOjS4VQS/exec';
 
-    // ---- LOGO ----
-    (function(){
-      const LOGO_PRIMARY = '/IPTV-/icons/icon-192.png';
-      const FALLBACK = 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="30" viewBox="0 0 120 30"><rect rx="7" width="120" height="30" fill="#ff6a00"/><text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial" font-weight="800" font-size="14" fill="#fff">BFA</text></svg>');
-      const logo = document.getElementById('bfaLogo');
-      logo.src = LOGO_PRIMARY;
-      logo.onerror = function(){ logo.onerror=null; logo.src = FALLBACK; };
-    })();
+  // Grid presets: cols, rows, total slots
+  const GRID_PRESETS = [
+    { id: '2x2', label: '2 × 2 (4 screens)',  cols: 2, rows: 2, slots: 4 },
+    { id: '3x2', label: '3 × 2 (6 screens)',  cols: 3, rows: 2, slots: 6 },
+    { id: '4x3', label: '4 × 3 (12 screens)', cols: 4, rows: 3, slots: 12 },
+    { id: '5x3', label: '5 × 3 (15 screens)', cols: 5, rows: 3, slots: 15 },
+    { id: '6x4', label: '6 × 4 (24 screens)', cols: 6, rows: 4, slots: 24 }
+  ];
 
-    // ---- ELEMENTS ----
-    const sheetIdEl        = document.getElementById('sheetId');
-    const gridPresetEl     = document.getElementById('gridPreset');
-    const gridInfoEl       = document.getElementById('gridInfo');
-    const slotsBody        = document.getElementById('slotsBody');
-    const loadListBtn      = document.getElementById('loadListBtn');
-    const listStatusEl     = document.getElementById('listStatus');
-    const saveBtn          = document.getElementById('saveBtn');
-    const reloadLayoutBtn  = document.getElementById('reloadLayoutBtn');
-    const saveMsgEl        = document.getElementById('saveMsg');
+  // ===== DOM SHORTCUTS =====
+  const gridSelect   = document.getElementById('gridSelect');     // <select> for grid
+  const slotsContainer = document.getElementById('slotsContainer'); // where rows go
+  const loadBtn      = document.getElementById('loadBtn');        // "Load channel list"
+  const saveBtn      = document.getElementById('saveBtn');        // "Save layout to backend"
+  const reloadBtn    = document.getElementById('reloadBtn');      // "Reload layout"
+  const statusMsg    = document.getElementById('statusMsg');      // small text message
+  const channelCountText = document.getElementById('channelCountText'); // "Channel list: X..."
 
-    // ---- STATE ----
-    let channels = [];  // [{url,name}]
-    let cols = 2;
-    let rows = 2;
+  let allChannels = [];   // from backend (fn=list)
+  let currentPreset = GRID_PRESETS[1]; // default 3x2 like your screenshot
 
-    // ---- HELPERS ----
-    function isUrl(u){ return /^https?:\/\/\S+$/i.test((u||'').trim()); }
+  // ===== UTIL =====
+  function showStatus(text, isError = false) {
+    statusMsg.textContent = text || '';
+    statusMsg.style.color = isError ? '#b91c1c' : '#0f172a';
+  }
 
-    function showSaveMsg(msg, ok){
-      saveMsgEl.textContent = msg || '';
-      saveMsgEl.className = 'msg ' + (ok ? 'msg-ok' : 'msg-err');
-      if(msg){
-        setTimeout(()=>{ saveMsgEl.textContent=''; saveMsgEl.className='msg'; }, 5000);
+  function setChannelCount(n) {
+    if (!channelCountText) return;
+    if (!n) {
+      channelCountText.textContent = 'Channel list not loaded yet.';
+    } else {
+      channelCountText.textContent = `Channel list: ${n} channel(s) loaded.`;
+    }
+  }
+
+  function getPresetByColsRows(cols, rows) {
+    return GRID_PRESETS.find(p => p.cols === cols && p.rows === rows) || GRID_PRESETS[1];
+  }
+
+  // ===== BUILD GRID ROWS =====
+  function buildSlotRows(preset) {
+    slotsContainer.innerHTML = '';
+    if (!preset) preset = currentPreset;
+
+    for (let i = 1; i <= preset.slots; i++) {
+      const row = document.createElement('div');
+      row.className = 'slot-row';
+      row.dataset.slot = String(i);
+
+      row.innerHTML = `
+        <div class="slot-index">${i}</div>
+        <div class="slot-select-wrap">
+          <select class="slot-select">
+            <option value="">— Empty —</option>
+          </select>
+        </div>
+        <div class="slot-url">
+          <input class="slot-url-input" type="text" readonly placeholder="Preview URL" />
+        </div>
+      `;
+
+      slotsContainer.appendChild(row);
+    }
+
+    // Fill dropdowns with channel list
+    populateSelectsFromChannels();
+  }
+
+  function populateSelectsFromChannels() {
+    const rows = Array.from(slotsContainer.querySelectorAll('.slot-row'));
+    rows.forEach(row => {
+      const select = row.querySelector('.slot-select');
+      const urlInput = row.querySelector('.slot-url-input');
+
+      // Clear and re-add options
+      const prevValue = select.value;
+      select.innerHTML = '<option value="">— Empty —</option>';
+
+      allChannels.forEach(ch => {
+        const opt = document.createElement('option');
+        opt.value = ch.id;
+        opt.textContent = `${ch.id} — ${ch.name || 'Channel ' + ch.id}`;
+        select.appendChild(opt);
+      });
+
+      // Event: update URL preview on change
+      select.addEventListener('change', () => {
+        const id = Number(select.value || '0');
+        const ch = allChannels.find(c => c.id === id);
+        urlInput.value = ch ? ch.url : '';
+      });
+
+      // Keep previously selected value if still valid
+      if (prevValue) {
+        select.value = prevValue;
+        const id = Number(prevValue);
+        const ch = allChannels.find(c => c.id === id);
+        urlInput.value = ch ? ch.url : '';
       }
-    }
+    });
+  }
 
-    function updateGridFromPreset(){
-      const val = gridPresetEl.value || '2x2';
-      const parts = val.split('x');
-      cols = parseInt(parts[0],10) || 2;
-      rows = parseInt(parts[1],10) || 2;
-      const slots = cols * rows;
-      gridInfoEl.textContent = `${cols} × ${rows} = ${slots} slots`;
-      buildSlotsTable(slots);
-    }
+  // ===== LOAD CHANNEL LIST FROM BACKEND (fn=list) =====
+  async function loadChannelList() {
+    showStatus('Loading channel list…');
+    setChannelCount(0);
 
-    function buildSlotsTable(slots){
-      slotsBody.innerHTML = '';
-      for(let i=1;i<=slots;i++){
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="slot-col">${i}</td>
-          <td>
-            <select class="slot-select" data-slot="${i}">
-              <option value="">(empty)</option>
-            </select>
-          </td>
-          <td class="url-cell"><span class="slot-url" data-slot-url="${i}" style="font-family:ui-monospace,Menlo,Monaco,Consolas,'Courier New',monospace;font-size:11px;opacity:.8"></span></td>
-        `;
-        slotsBody.appendChild(tr);
-      }
-      // populate selects with channels
-      refreshChannelOptionsInSlots();
+    try {
+      const res = await fetch(WEBAPP_URL + '?fn=list', { cache: 'no-store' });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Backend error');
+      allChannels = Array.isArray(data.channels) ? data.channels : [];
+      setChannelCount(allChannels.length);
+      populateSelectsFromChannels();
+      showStatus('Channel list loaded ✔');
+    } catch (err) {
+      console.error(err);
+      showStatus('Error loading channel list.', true);
     }
+  }
 
-    function refreshChannelOptionsInSlots(){
-      const selects = document.querySelectorAll('.slot-select');
-      selects.forEach(sel=>{
-        const current = sel.value;
-        sel.innerHTML = '<option value="">(empty)</option>';
-        channels.forEach((ch, idx)=>{
-          const opt = document.createElement('option');
-          opt.value = String(idx);
-          opt.textContent = (idx+1)+' — '+(ch.name || ch.url);
-          sel.appendChild(opt);
-        });
-        // keep previous selection if possible
-        if(current && Number(current) < channels.length){
-          sel.value = current;
+  // ===== LOAD EXISTING WALL LAYOUT (fn=getwall) =====
+  async function loadLayoutFromBackend() {
+    showStatus('Loading layout…');
+
+    try {
+      const res = await fetch(WEBAPP_URL + '?fn=getwall', { cache: 'no-store' });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Backend error');
+
+      const cols = Number(data.cols) || 3;
+      const rows = Number(data.rows) || 2;
+      const tiles = Array.isArray(data.tiles) ? data.tiles : [];
+
+      currentPreset = getPresetByColsRows(cols, rows);
+      gridSelect.value = currentPreset.id;
+      buildSlotRows(currentPreset);
+
+      // Apply tile mapping {slot, channelId}
+      const slotMap = new Map();
+      tiles.forEach(t => {
+        if (t && t.slot && t.channelId) {
+          slotMap.set(Number(t.slot), Number(t.channelId));
         }
       });
 
-      // hook up URL preview
-      selects.forEach(sel=>{
-        sel.addEventListener('change', ()=>{
-          const slot = sel.getAttribute('data-slot');
-          const urlSpan = document.querySelector('[data-slot-url="'+slot+'"]');
-          const idx = Number(sel.value);
-          urlSpan.textContent = (sel.value!=='' && channels[idx]) ? channels[idx].url : '';
-        });
-        // trigger once
-        sel.dispatchEvent(new Event('change'));
-      });
-    }
-
-    function fetchJson(url, options){
-      return fetch(url, options || {}).then(res=>{
-        if(!res.ok) throw new Error('HTTP '+res.status);
-        return res.json();
-      });
-    }
-
-    function loadChannelList(){
-      const id = sheetIdEl.value.trim();
-      if(!id){
-        listStatusEl.textContent = 'Channel list: missing Sheet ID.';
-        return Promise.resolve();
-      }
-      listStatusEl.textContent = 'Channel list: loading…';
-      const url = WEBAPP_URL + '?fn=list';
-      return fetchJson(url).then(data=>{
-        if(!data.ok) throw new Error(data.error || 'list failed');
-        channels = data.channels || [];
-        listStatusEl.textContent = `Channel list: ${channels.length} channel(s) loaded.`;
-        refreshChannelOptionsInSlots();
-      }).catch(err=>{
-        console.log(err);
-        listStatusEl.textContent = 'Channel list: error loading.';
-      });
-    }
-
-    function loadLayout(){
-      const url = WEBAPP_URL + '?fn=getwall';
-      return fetchJson(url).then(data=>{
-        if(!data.ok) throw new Error(data.error || 'getWall failed');
-        if(data.cols && data.rows){
-          cols = Number(data.cols) || cols;
-          rows = Number(data.rows) || rows;
-          const presetStr = cols+'x'+rows;
-          if([...gridPresetEl.options].some(o=>o.value === presetStr)){
-            gridPresetEl.value = presetStr;
-          }
+      const rowsDom = Array.from(slotsContainer.querySelectorAll('.slot-row'));
+      rowsDom.forEach(row => {
+        const slot = Number(row.dataset.slot);
+        const chId = slotMap.get(slot);
+        const select = row.querySelector('.slot-select');
+        const urlInput = row.querySelector('.slot-url-input');
+        if (chId) {
+          select.value = chId;
+          const ch = allChannels.find(c => c.id === chId);
+          urlInput.value = ch ? ch.url : '';
         }
-        updateGridFromPreset();
-        // apply tile mapping
-        const tiles = Array.isArray(data.tiles) ? data.tiles : [];
-        const selects = document.querySelectorAll('.slot-select');
-        tiles.forEach(t=>{
-          const slot = Number(t.slot);
-          if(!slot) return;
-          const sel = [...selects].find(s=>Number(s.getAttribute('data-slot'))===slot);
-          if(!sel) return;
-          const idx = channels.findIndex(ch => ch.url === t.url);
-          if(idx>=0){
-            sel.value = String(idx);
-            sel.dispatchEvent(new Event('change'));
-          }
-        });
-        showSaveMsg('Layout loaded from backend.', true);
-      }).catch(err=>{
-        console.log(err);
-        showSaveMsg('Error loading layout.', false);
       });
-    }
 
-    function collectLayoutFromUI(){
-      const tiles = [];
-      const selects = document.querySelectorAll('.slot-select');
-      selects.forEach(sel=>{
-        if(sel.value==='') return;
-        const idx = Number(sel.value);
-        const slot = Number(sel.getAttribute('data-slot'));
-        const ch = channels[idx];
-        if(!ch || !ch.url) return;
-        tiles.push({
-          slot,
-          name: ch.name || ('Channel '+(idx+1)),
-          url: ch.url
-        });
-      });
-      return { cols, rows, tiles };
+      showStatus('Layout loaded ✔');
+    } catch (err) {
+      console.error(err);
+      showStatus('Could not load existing layout (will start fresh).', true);
     }
+  }
 
-    function saveLayout(){
-      const payload = collectLayoutFromUI();
-      if(!payload.tiles.length){
-        showSaveMsg('Nothing to save (all slots empty).', false);
-        return;
-      }
-      showSaveMsg('Saving…', true);
-      fetchJson(WEBAPP_URL+'?fn=setwall', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
+  // ===== SAVE LAYOUT (fn=setwall) – CORS-SAFE FIX =====
+  async function saveLayoutToBackend() {
+    // Gather from grid
+    const rowsDom = Array.from(slotsContainer.querySelectorAll('.slot-row'));
+    const tiles = [];
+
+    rowsDom.forEach(row => {
+      const slot = Number(row.dataset.slot);
+      const select = row.querySelector('.slot-select');
+      const chId = Number(select.value || '0');
+      if (!chId) return;
+      tiles.push({ slot, channelId: chId });
+    });
+
+    const payload = {
+      cols: currentPreset.cols,
+      rows: currentPreset.rows,
+      tiles
+    };
+
+    showStatus('Saving layout…');
+
+    try {
+      // IMPORTANT PART: text/plain to avoid preflight / CORS issues
+      const res = await fetch(WEBAPP_URL + '?fn=setwall', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
-      }).then(data=>{
-        if(!data.ok) throw new Error(data.error || 'setWall failed');
-        showSaveMsg('Layout saved. Wall will follow this grid.', true);
-      }).catch(err=>{
-        console.log(err);
-        showSaveMsg('Error saving layout.', false);
       });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        throw new Error(data && data.error ? data.error : 'Backend error');
+      }
+
+      showStatus('Layout saved ✔ Wall will follow this layout.');
+      return true;
+    } catch (err) {
+      console.error(err);
+      showStatus('Error saving layout.', true);
+      return false;
     }
+  }
 
-    // ---- EVENTS ----
-    gridPresetEl.addEventListener('change', ()=>{
-      updateGridFromPreset();
+  // ===== EVENT WIRING =====
+  // Populate grid dropdown options (if not already in HTML)
+  if (gridSelect && !gridSelect.options.length) {
+    GRID_PRESETS.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.label;
+      gridSelect.appendChild(opt);
     });
+  }
 
-    loadListBtn.addEventListener('click', ()=>{
-      loadChannelList();
+  if (gridSelect) {
+    gridSelect.addEventListener('change', () => {
+      const id = gridSelect.value;
+      const preset = GRID_PRESETS.find(p => p.id === id) || GRID_PRESETS[1];
+      currentPreset = preset;
+      buildSlotRows(preset);
     });
+  }
 
-    saveBtn.addEventListener('click', saveLayout);
-    reloadLayoutBtn.addEventListener('click', ()=>{
-      loadLayout();
-    });
+  if (loadBtn) loadBtn.addEventListener('click', loadChannelList);
+  if (saveBtn) saveBtn.addEventListener('click', saveLayoutToBackend);
+  if (reloadBtn) reloadBtn.addEventListener('click', loadLayoutFromBackend);
 
-    // ---- INIT ----
-    (function init(){
-      // optional: remember sheet ID in localStorage
-      try{
-        const stored = localStorage.getItem('bfa_wall_sheet_id');
-        if(stored) sheetIdEl.value = stored;
-      }catch(e){}
-      sheetIdEl.addEventListener('change', ()=>{
-        try{
-          localStorage.setItem('bfa_wall_sheet_id', sheetIdEl.value.trim());
-        }catch(e){}
-      });
+  // ===== INITIALISE ON PAGE LOAD =====
+  (async function init() {
+    // Default preset
+    gridSelect.value = currentPreset.id;
+    buildSlotRows(currentPreset);
 
-      updateGridFromPreset();
-      // Load channels then layout
-      loadChannelList().then(loadLayout);
-    })();
-  </script>
+    // Load channels first, then layout
+    await loadChannelList();
+    await loadLayoutFromBackend();
+  })();
+</script>
+
 </body>
 </html>
  
