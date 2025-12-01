@@ -3,24 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BFA IPTV — Rotating Channel Wall</title>
+<title>BFA IPTV — Hero + Dock Monitor Wall</title>
 
-<!-- hls.js for BrightSign / Chromium -->
+<!-- hls.js -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 
 <style>
   :root{
     --brand:#ff6a00;
     --brand2:#e85f00;
-    --bg-soft:#fff7ef;
     --fg:#0f172a;
     --muted:#94a3b8;
 
     --shell-radius:30px;
-    --card-radius:24px;
+    --card-radius:22px;
 
-    --shadow-strong:0 26px 70px rgba(15,23,42,.55);
-    --shadow-soft:0 18px 44px rgba(15,23,42,.22);
+    --shadow-strong:0 32px 80px rgba(15,23,42,.55);
+    --shadow-soft:0 18px 44px rgba(15,23,42,.25);
     --shadow-inner:inset 0 1px 0 rgba(255,255,255,.55),
                     inset 0 -1px 0 rgba(15,23,42,.15);
   }
@@ -35,7 +34,7 @@
     color:var(--fg);
   }
 
-  /* Full-screen soft orange background for 1920x1080 */
+  /* Soft orange background tuned for 1920×1080 */
   body{
     background:
       radial-gradient(circle at top left,#ffe8cc 0%,#ffd29c 22%,#ff9b42 46%,#ff6a00 60%,#130912 100%);
@@ -48,16 +47,15 @@
     padding:22px;
   }
 
-  /* Main neumorphic shell, centred for TV */
   .shell{
     position:relative;
     width:100%;
     height:100%;
     border-radius:var(--shell-radius);
-    background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(255,255,255,.82));
+    background:linear-gradient(145deg,rgba(255,255,255,.95),rgba(255,255,255,.84));
     box-shadow:
-      0 34px 80px rgba(15,23,42,.55),
-      0 0 0 1px rgba(255,255,255,.65);
+      0 34px 90px rgba(15,23,42,.55),
+      0 0 0 1px rgba(255,255,255,.7);
     padding:18px 22px 20px;
     display:flex;
     flex-direction:column;
@@ -136,16 +134,15 @@
     100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}
   }
 
-  /* LAYOUT: hero + dock */
   .layout{
     flex:1;
     min-height:0;
     display:flex;
     flex-direction:column;
-    gap:16px;
+    gap:14px;
   }
 
-  /* HERO VIDEO (16:9) */
+  /* HERO (16:9) */
   .hero-wrap{
     flex:1;
     min-height:0;
@@ -169,9 +166,8 @@
     position:relative;
     width:100%;
     height:0;
-    padding-top:56.25%; /* 16:9, safe for BrightSign */
+    padding-top:56.25%; /* strict 16:9 */
   }
-
   .hero-16x9 video{
     position:absolute;
     inset:0;
@@ -193,7 +189,7 @@
     color:#f9fafb;
     font-size:12px;
   }
-  .hero-channel{
+  .hero-name{
     font-weight:700;
     max-width:60%;
     white-space:nowrap;
@@ -206,72 +202,111 @@
     opacity:.9;
   }
 
-  /* DOCK */
-  .dock{
+  /* DOCK — ALL CHANNELS 16:9 */
+  .dock-shell{
+    border-radius:var(--card-radius);
+    background:linear-gradient(145deg,#fdf5ee,#f8ece2);
+    box-shadow:
+      0 16px 36px rgba(15,23,42,.24),
+      var(--shadow-inner);
+    padding:10px 10px 12px;
+    border:1px solid rgba(15,23,42,.08);
+  }
+
+  .dock-title{
+    font-size:12px;
+    font-weight:600;
+    color:var(--muted);
+    margin:0 2px 8px;
     display:flex;
+    justify-content:space-between;
     align-items:center;
-    justify-content:center;
+  }
+  .dock-title span:last-child{
+    font-weight:500;
+  }
+
+  .dock{
+    display:grid;
     gap:10px;
-    padding:6px 2px 2px;
+    grid-auto-rows:1fr;
+    /* For 1920×1080 this gives 4–5 tiles per row nicely */
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
   }
 
   .dock-item{
-    flex:1 1 0;
-    max-width:180px;
-    min-width:110px;
-    height:68px;
+    position:relative;
     border-radius:18px;
-    border:none;
-    outline:none;
+    background:radial-gradient(circle at top,#020617,#020617);
+    box-shadow:var(--shadow-soft);
+    border:1px solid rgba(15,23,42,.7);
+    overflow:hidden;
     cursor:pointer;
-    background:linear-gradient(145deg,#fdf5ee,#f7ebe0);
-    box-shadow:
-      0 10px 22px rgba(15,23,42,.15),
-      var(--shadow-inner);
-    padding:8px 10px;
-    display:flex;
-    flex-direction:column;
-    align-items:flex-start;
-    justify-content:space-between;
-    text-align:left;
     -webkit-tap-highlight-color:transparent;
-    transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
+    transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
   }
-  .dock-item-label{
-    font-size:12px;
+
+  .dock-item-inner{
+    position:relative;
+    width:100%;
+    height:0;
+    padding-top:56.25%; /* 16:9 */
+  }
+
+  .dock-item video{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    background:#000;
+    display:block;
+  }
+
+  .dock-overlay{
+    position:absolute;
+    left:0;right:0;bottom:0;
+    padding:6px 9px;
+    background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.85) 60%,rgba(0,0,0,.98) 100%);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:10px;
+    color:#e5e7eb;
+  }
+  .dock-name{
     font-weight:600;
-    color:#0f172a;
-    max-width:100%;
+    max-width:70%;
     white-space:nowrap;
     text-overflow:ellipsis;
     overflow:hidden;
   }
-  .dock-item-sub{
-    font-size:11px;
-    color:var(--muted);
+  .dock-status{
+    font-size:10px;
+    color:#cbd5f5;
+    opacity:.9;
   }
+  .dock-status.err{color:#fecaca;}
+  .dock-status.idle{color:#9ca3af;}
 
   .dock-item-active{
     transform:translateY(-4px) scale(1.04);
-    background:linear-gradient(145deg,#fffcf6,#ffe1c4);
+    border-color:rgba(255,149,0,.9);
     box-shadow:
-      0 18px 38px rgba(15,23,42,.28),
-      0 0 0 1px rgba(255,149,0,.7);
-  }
-  .dock-item-active .dock-item-label{
-    color:#b45309;
+      0 20px 40px rgba(15,23,42,.32),
+      0 0 0 1px rgba(255,149,0,.6);
   }
 
-  .dock-item:focus-visible{
-    box-shadow:
-      0 0 0 2px rgba(56,189,248,.9),
-      0 12px 26px rgba(15,23,42,.22);
+  .hint{
+    margin-top:4px;
+    font-size:11px;
+    color:var(--muted);
+    text-align:right;
   }
 
-  /* Small global error banner */
   .err-banner{
     position:absolute;
-    left:50%;bottom:28px;
+    left:50%;bottom:24px;
     transform:translateX(-50%);
     background:rgba(239,68,68,.96);
     color:#fff;
@@ -300,8 +335,8 @@
                onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2238%22 height=%2238%22 viewBox=%220 0 38 38%22%3E%3Crect width=%2238%22 height=%2238%22 rx=%2214%22 fill=%22%23ff6a00%22/%3E%3Ctext x=%2250%25%22 y=%2255%25%22 text-anchor=%22middle%22 font-size=%2213%22 font-family=%22system-ui%22 font-weight=%22800%22 fill=%22%23fff%22%3EBFA%3C/text%3E%3C/svg%3E';">
         </div>
         <div class="brand-text">
-          <div class="brand-title">BFA IPTV — Rotating Channel Wall</div>
-          <div class="brand-sub">Hero rotates through all channels · dock shows what’s coming next</div>
+          <div class="brand-title">BFA IPTV — Hero + Dock Monitor Wall</div>
+          <div class="brand-sub">All channels play in the dock • Hero auto-rotates (16:9 everywhere)</div>
         </div>
       </div>
       <div class="pill">
@@ -317,15 +352,23 @@
           <div class="hero-16x9">
             <video id="heroVideo" autoplay muted playsinline></video>
             <div class="hero-overlay">
-              <div class="hero-channel" id="heroName">—</div>
-              <div class="hero-meta" id="heroMeta">…</div>
+              <div class="hero-name" id="heroName">—</div>
+              <div class="hero-meta" id="heroMeta">Loading…</div>
             </div>
           </div>
         </div>
       </div>
 
       <!-- DOCK -->
-      <div class="dock" id="dock"></div>
+      <div class="dock-shell">
+        <div class="dock-title">
+          <span>Channel dock</span>
+          <span id="dockSummary"></span>
+        </div>
+        <div id="dock" class="dock"></div>
+      </div>
+
+      <div class="hint">If BrightSign struggles, try fewer channels or lower-bitrate streams, but the layout stays the same.</div>
     </section>
   </div>
 
@@ -334,10 +377,10 @@
 
 <script>
   // ===============================
-  // 1) SIMPLE CONFIG — EDIT ONLY HERE
+  // 1) SIMPLE CONFIG — CHANGE ONLY HERE
   // ===============================
   const CONFIG = {
-    ROTATE_SECONDS: 30, // how long each channel stays full-screen
+    ROTATE_SECONDS: 25, // change hero channel every N seconds
     channels: [
       {
         name: "News",
@@ -346,10 +389,6 @@
       {
         name: "Tennis Channel S",
         url: "https://amg01444-tennischannelth-tennischannelnl-samsungnl-x3dq1.amagi.tv/playlist/amg01444-tennischannelth-tennischannelnl-samsungnl/playlist.m3u8"
-      },
-      {
-        name: "TSN 5",
-        url: "https://fl31.moveonjoy.com/TSN_5/index.m3u8"
       },
       {
         name: "Cooking",
@@ -363,25 +402,32 @@
         name: "Kids",
         url: "https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8"
       },
-      // Add more if you want (any number), the dock + rotation will handle it:
+            {
+      name: "TSN 5",
+        url: "https://fl31.moveonjoy.com/TSN_5/index.m3u8"
+      },
+      // You can add more, it will still be 16:9 and play them all:
       // { name:"Channel 6", url:"https://..." },
       // { name:"Channel 7", url:"https://..." },
-      // ...
     ]
   };
 
-  const isUrl = u => /^https?:\/\/\S+$/i.test((u||'').trim());
+  // ===============================
+  // 2) RUNTIME CODE
+  // ===============================
+  const isUrl       = u => /^https?:\/\/\S+$/i.test((u||'').trim());
+  const statusLabel = document.getElementById('statusLabel');
+  const errBanner   = document.getElementById('errBanner');
+  const dock        = document.getElementById('dock');
+  const dockSummary = document.getElementById('dockSummary');
 
   const heroVideo   = document.getElementById('heroVideo');
   const heroNameEl  = document.getElementById('heroName');
   const heroMetaEl  = document.getElementById('heroMeta');
-  const dockEl      = document.getElementById('dock');
-  const statusLabel = document.getElementById('statusLabel');
-  const errBanner   = document.getElementById('errBanner');
 
   let CHANNELS = [];
-  let hls = null;
-  let currentIndex = 0;
+  let heroIndex = 0;
+  let heroHls   = null;
   let rotateTimer = null;
 
   function showBanner(msg){
@@ -392,151 +438,227 @@
     errBanner.style.display = 'none';
   }
 
-  function updateDockActive(){
-    const items = dockEl.querySelectorAll('.dock-item');
-    items.forEach((btn, i)=>{
-      if(i === currentIndex) btn.classList.add('dock-item-active');
-      else btn.classList.remove('dock-item-active');
-    });
-  }
+  // Attach HLS to a dock video (this plays all channels)
+  function attachDockStream(video, url, statusEl){
+    statusEl.textContent = 'Loading…';
+    statusEl.className = 'dock-status';
 
-  function attachStreamToHero(url){
-    // Clean previous
-    hideBanner();
-    heroVideo.src = '';
-    heroVideo.muted = true;
-    heroVideo.autoplay = true;
-    heroVideo.playsInline = true;
-
-    if (hls) {
-      try { hls.destroy(); } catch(e){}
-      hls = null;
-    }
-
-    if (!isUrl(url)) {
-      heroMetaEl.textContent = 'No URL';
-      showBanner('Invalid URL for this channel.');
+    if (!isUrl(url)){
+      statusEl.textContent = 'No URL';
+      statusEl.classList.add('err');
       return;
     }
 
-    // Hls.js path
-    if (window.Hls && Hls.isSupported()) {
-      hls = new Hls({ enableWorker:true, lowLatencyMode:true });
+    if (window.Hls && Hls.isSupported()){
+      const hls = new Hls({
+        enableWorker:true,
+        lowLatencyMode:false
+      });
       hls.loadSource(url);
-      hls.attachMedia(heroVideo);
+      hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        heroVideo.play().then(()=>{
-          heroMetaEl.textContent = 'LIVE • HLS.js';
+        video.play().then(()=>{
+          statusEl.textContent = 'LIVE';
         }).catch(err=>{
-          console.warn('Autoplay blocked', err);
-          heroMetaEl.textContent = 'Tap to play';
-          showBanner('Autoplay blocked. On a TV player it should start; on laptop tap to start.');
+          console.warn('Dock autoplay blocked', err);
+          statusEl.textContent = 'Tap';
+          statusEl.classList.add('idle');
         });
       });
 
       hls.on(Hls.Events.ERROR, (_, data)=>{
-        if (data && data.fatal) {
-          console.error('Fatal HLS error', data);
-          heroMetaEl.textContent = 'Stream error';
-          showBanner('Stream error. Check the source URL.');
+        if (data && data.fatal){
+          console.error('Dock fatal HLS error', data);
+          statusEl.textContent = 'Error';
+          statusEl.classList.add('err');
         }
       });
+
+      video._hlsDock = hls;
     }
-    // Native HLS (Safari etc.)
-    else if (heroVideo.canPlayType('application/vnd.apple.mpegurl')) {
+    else if (video.canPlayType('application/vnd.apple.mpegurl')){
+      video.src = url;
+      video.play().then(()=>{
+        statusEl.textContent = 'LIVE';
+      }).catch(err=>{
+        console.warn('Dock autoplay blocked (native)', err);
+        statusEl.textContent = 'Tap';
+        statusEl.classList.add('idle');
+      });
+    } else {
+      video.src = url;
+      statusEl.textContent = 'HLS?';
+      statusEl.classList.add('idle');
+    }
+
+    video.onerror = () => {
+      statusEl.textContent = 'Video error';
+      statusEl.classList.add('err');
+    };
+  }
+
+  // Attach HLS to hero (only one at a time)
+  function loadHero(idx){
+    if (!CHANNELS.length) return;
+
+    if (idx < 0) idx = 0;
+    if (idx >= CHANNELS.length) idx = 0;
+    heroIndex = idx;
+
+    const ch = CHANNELS[idx];
+    heroNameEl.textContent = ch.name || `Channel ${idx+1}`;
+    heroMetaEl.textContent = 'Loading…';
+
+    // highlight in dock
+    const buttons = dock.querySelectorAll('.dock-item');
+    buttons.forEach((b,i)=>{
+      if (i === idx) b.classList.add('dock-item-active');
+      else b.classList.remove('dock-item-active');
+    });
+
+    // clean old hero hls
+    hideBanner();
+    heroVideo.src = '';
+    heroVideo.muted = true;
+    if (heroHls){
+      try{ heroHls.destroy(); }catch(e){}
+      heroHls = null;
+    }
+
+    const url = ch.url;
+    if (!isUrl(url)){
+      heroMetaEl.textContent = 'No URL';
+      return;
+    }
+
+    if (window.Hls && Hls.isSupported()){
+      heroHls = new Hls({
+        enableWorker:true,
+        lowLatencyMode:true
+      });
+      heroHls.loadSource(url);
+      heroHls.attachMedia(heroVideo);
+
+      heroHls.on(Hls.Events.MANIFEST_PARSED, ()=>{
+        heroVideo.play().then(()=>{
+          heroMetaEl.textContent = 'LIVE • HLS.js';
+        }).catch(err=>{
+          console.warn('Hero autoplay blocked', err);
+          heroMetaEl.textContent = 'Tap to play';
+          showBanner('Hero autoplay blocked. On BrightSign it should start automatically.');
+        });
+      });
+
+      heroHls.on(Hls.Events.ERROR, (_, data)=>{
+        if (data && data.fatal){
+          console.error('Hero fatal HLS error', data);
+          heroMetaEl.textContent = 'Stream error';
+          showBanner('Hero stream error. Check URL or bitrate.');
+        }
+      });
+    } else if (heroVideo.canPlayType('application/vnd.apple.mpegurl')){
       heroVideo.src = url;
       heroVideo.play().then(()=>{
         heroMetaEl.textContent = 'LIVE • native';
       }).catch(err=>{
-        console.warn('Autoplay blocked (native)', err);
+        console.warn('Hero autoplay blocked (native)', err);
         heroMetaEl.textContent = 'Tap to play';
-        showBanner('Autoplay blocked. Tap to start on desktop.');
+        showBanner('Hero autoplay blocked on desktop, tap to start.');
       });
-    }
-    // Fallback
-    else {
+    } else {
       heroVideo.src = url;
       heroMetaEl.textContent = 'HLS not fully supported';
     }
 
     heroVideo.onerror = () => {
       heroMetaEl.textContent = 'Video error';
-      showBanner('Video error while playing this channel.');
+      showBanner('Hero video error.');
     };
+
+    restartHeroRotation();
   }
 
-  function loadChannel(index){
-    if (!CHANNELS.length) return;
-    if (index < 0) index = 0;
-    if (index >= CHANNELS.length) index = 0;
-
-    currentIndex = index;
-    const ch = CHANNELS[index];
-
-    heroNameEl.textContent = ch.name || `Channel ${index+1}`;
-    heroMetaEl.textContent = 'Loading…';
-    statusLabel.textContent = `Now showing: ${ch.name || ('Channel '+(index+1))}`;
-
-    updateDockActive();
-    attachStreamToHero(ch.url);
-
-    // reset auto-rotate timer
-    startAutoRotate();
+  function restartHeroRotation(){
+    if (rotateTimer) clearInterval(rotateTimer);
+    if (CHANNELS.length <= 1) return;
+    const delay = (CONFIG.ROTATE_SECONDS || 25) * 1000;
+    rotateTimer = setInterval(()=>{
+      const next = (heroIndex + 1) % CHANNELS.length;
+      loadHero(next);
+    }, delay);
   }
 
   function buildDock(){
-    dockEl.innerHTML = '';
-    CHANNELS.forEach((ch, i)=>{
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'dock-item';
-      btn.innerHTML = `
-        <div class="dock-item-label">${ch.name || ('Channel '+(i+1))}</div>
-        <div class="dock-item-sub">CH ${i+1}</div>
-      `;
-      btn.addEventListener('click', ()=>{
-        // On TV there is no mouse, but on your laptop you can pick manually.
-        loadChannel(i);
-      });
-      dockEl.appendChild(btn);
+    dock.innerHTML = '';
+    CHANNELS.forEach((ch, idx)=>{
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'dock-item';
+
+      const inner = document.createElement('div');
+      inner.className = 'dock-item-inner';
+
+      const v = document.createElement('video');
+      v.autoplay    = true;
+      v.muted       = true;
+      v.playsInline = true;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'dock-overlay';
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'dock-name';
+      nameEl.textContent = ch.name || `Channel ${idx+1}`;
+
+      const statusEl = document.createElement('div');
+      statusEl.className = 'dock-status';
+      statusEl.textContent = 'Loading…';
+
+      overlay.appendChild(nameEl);
+      overlay.appendChild(statusEl);
+      inner.appendChild(v);
+      inner.appendChild(overlay);
+      item.appendChild(inner);
+      dock.appendChild(item);
+
+      // All channels play in dock
+      attachDockStream(v, ch.url, statusEl);
+
+      // Optional: clicking a tile sets the hero when testing on laptop
+      item.addEventListener('click', ()=> loadHero(idx));
     });
-    updateDockActive();
-  }
 
-  function startAutoRotate(){
-    if (rotateTimer) clearInterval(rotateTimer);
-    if (CHANNELS.length <= 1) return; // nothing to rotate
-
-    const delay = (CONFIG.ROTATE_SECONDS || 30) * 1000;
-    rotateTimer = setInterval(()=>{
-      const next = (currentIndex + 1) % CHANNELS.length;
-      loadChannel(next);
-    }, delay);
+    dockSummary.textContent = `${CHANNELS.length} channel${CHANNELS.length>1?'s':''} live in dock`;
   }
 
   function init(){
     CHANNELS = CONFIG.channels.filter(c => c && isUrl(c.url));
-    if (!CHANNELS.length) {
+    if (!CHANNELS.length){
       statusLabel.textContent = 'No valid channels configured';
-      showBanner('Add at least one channel in CONFIG.channels (name + url).');
+      showBanner('Add at least one channel with a valid URL in CONFIG.channels.');
       return;
     }
 
-    if (CHANNELS.length === 1) {
-      statusLabel.textContent = 'Single channel mode';
-    } else {
-      statusLabel.textContent = `Rotating ${CHANNELS.length} channels`;
-    }
+    statusLabel.textContent = `Hero + dock, ${CHANNELS.length} channel(s)`;
 
     buildDock();
-    loadChannel(0); // start with first
+    loadHero(0);
   }
 
   document.addEventListener('DOMContentLoaded', init);
+
   window.addEventListener('beforeunload', ()=>{
     if (rotateTimer) clearInterval(rotateTimer);
-    if (hls) { try{hls.destroy();}catch(e){} }
+    if (heroHls){
+      try{ heroHls.destroy(); }catch(e){}
+    }
+    // clean dock hls
+    document.querySelectorAll('video').forEach(v=>{
+      if (v._hlsDock){
+        try{ v._hlsDock.destroy(); }catch(e){}
+      }
+    });
   });
 </script>
 </body>
