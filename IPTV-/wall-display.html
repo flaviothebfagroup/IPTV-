@@ -3,17 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BFA IPTV — Multi Channel Wall</title>
+<title>BFA IPTV — Rotating Channel Wall</title>
 
-<!-- hls.js for HLS playback on Chromium / BrightSign -->
+<!-- hls.js for BrightSign / Chromium -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 
 <style>
   :root{
     --brand:#ff6a00;
     --brand2:#e85f00;
+    --bg-soft:#fff7ef;
     --fg:#0f172a;
     --muted:#94a3b8;
+
+    --shell-radius:30px;
+    --card-radius:24px;
+
+    --shadow-strong:0 26px 70px rgba(15,23,42,.55);
+    --shadow-soft:0 18px 44px rgba(15,23,42,.22);
+    --shadow-inner:inset 0 1px 0 rgba(255,255,255,.55),
+                    inset 0 -1px 0 rgba(15,23,42,.15);
   }
 
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -26,101 +35,144 @@
     color:var(--fg);
   }
 
-  /* Orange “neumorphism” background */
+  /* Full-screen soft orange background for 1920x1080 */
   body{
     background:
-      radial-gradient(circle at top left,#ffe8c2 0%,#ffb86b 20%,#ff6a00 40%,#12060c 100%);
+      radial-gradient(circle at top left,#ffe8cc 0%,#ffd29c 22%,#ff9b42 46%,#ff6a00 60%,#130912 100%);
   }
 
-  .page{
+  .frame{
     position:relative;
     width:100%;
     height:100%;
-    padding:12px;
+    padding:22px;
   }
 
-  /* Header */
-  .brand-bar{
-    position:absolute;
-    left:12px;right:12px;top:8px;
-    display:flex;justify-content:space-between;align-items:center;
-    z-index:10;
+  /* Main neumorphic shell, centred for TV */
+  .shell{
+    position:relative;
+    width:100%;
+    height:100%;
+    border-radius:var(--shell-radius);
+    background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(255,255,255,.82));
+    box-shadow:
+      0 34px 80px rgba(15,23,42,.55),
+      0 0 0 1px rgba(255,255,255,.65);
+    padding:18px 22px 20px;
+    display:flex;
+    flex-direction:column;
+    backdrop-filter:blur(18px) saturate(150%);
+    -webkit-backdrop-filter:blur(18px) saturate(150%);
   }
+
+  /* HEADER */
+  .shell-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:18px;
+    margin-bottom:14px;
+  }
+
   .brand-left{
-    display:flex;align-items:center;gap:10px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    min-width:0;
+  }
+
+  .logo-wrap{
+    width:60px;
+    height:60px;
+    border-radius:22px;
+    background:radial-gradient(circle at 20% 20%,#ffe7c8,#ff9c3c,#ff6a00);
+    box-shadow:var(--shadow-strong);
+    display:flex;
+    align-items:center;
+    justify-content:center;
   }
   .logo{
-    width:40px;height:40px;border-radius:14px;
-    box-shadow:0 10px 26px rgba(0,0,0,.4);
+    width:38px;height:38px;border-radius:14px;
+    box-shadow:0 10px 22px rgba(0,0,0,.45);
     background:#ff6a00;
   }
-  .brand-text h1{
-    margin:0;
-    font-size:18px;
-    font-weight:800;
-    color:#fff;
-    text-shadow:0 2px 6px rgba(0,0,0,.6);
+
+  .brand-text{
+    min-width:0;
   }
-  .brand-text .sub{
-    font-size:11px;
-    color:#e5e7eb;
-    opacity:.9;
+  .brand-title{
+    font-size:20px;
+    font-weight:800;
+    color:#0f172a;
+    letter-spacing:.01em;
+  }
+  .brand-sub{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:4px;
   }
 
   .pill{
-    padding:6px 12px;
+    padding:7px 14px;
     border-radius:999px;
-    background:rgba(5,7,12,.86);
-    border:1px solid rgba(255,255,255,.12);
+    background:linear-gradient(135deg,rgba(15,23,42,.96),rgba(15,23,42,.88));
+    border:1px solid rgba(255,255,255,.22);
     color:#e5e7eb;
     font-size:11px;
     display:inline-flex;
     align-items:center;
-    gap:6px;
-    box-shadow:0 10px 24px rgba(0,0,0,.45);
+    gap:7px;
+    box-shadow:0 18px 40px rgba(15,23,42,.7);
+    white-space:nowrap;
   }
   .pill-dot{
-    width:8px;height:8px;border-radius:999px;background:#22c55e;
-    box-shadow:0 0 0 0 rgba(34,197,94,.6);
+    width:9px;height:9px;border-radius:999px;background:#22c55e;
+    box-shadow:0 0 0 0 rgba(34,197,94,.7);
     animation:pulse 1.6s infinite;
   }
   @keyframes pulse{
     0%{box-shadow:0 0 0 0 rgba(34,197,94,.6);}
-    70%{box-shadow:0 0 0 10px rgba(34,197,94,0);}
+    70%{box-shadow:0 0 0 12px rgba(34,197,94,0);}
     100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}
   }
 
-  /* Grid area */
-  .wall-grid{
-    position:absolute;
-    left:12px;right:12px;top:60px;bottom:12px;
-    display:grid;
-    gap:10px;
-    align-items:start;
-    justify-items:stretch;
+  /* LAYOUT: hero + dock */
+  .layout{
+    flex:1;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
   }
 
-  /* === STRICT 16:9 TILES (works everywhere) === */
-  .tile{
+  /* HERO VIDEO (16:9) */
+  .hero-wrap{
+    flex:1;
+    min-height:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .hero-shell{
+    width:100%;
+    max-width:1400px;
+    border-radius:var(--card-radius);
+    background:radial-gradient(circle at top,#0b1120,#020617);
+    box-shadow:var(--shadow-soft);
+    border:1px solid rgba(15,23,42,.7);
+    overflow:hidden;
+    position:relative;
+  }
+
+  .hero-16x9{
     position:relative;
     width:100%;
     height:0;
-    padding-top:56.25%; /* 16:9 ratio */
-    border-radius:20px;
-    overflow:hidden;
-    background:radial-gradient(circle at top,#111827,#020617);
-    box-shadow:
-      0 18px 40px rgba(0,0,0,.7),
-      0 1px 0 rgba(255,255,255,.12);
-    border:1px solid rgba(15,23,42,.7);
+    padding-top:56.25%; /* 16:9, safe for BrightSign */
   }
 
-  .tile-inner{
-    position:absolute;
-    inset:0;
-  }
-
-  .tile video{
+  .hero-16x9 video{
     position:absolute;
     inset:0;
     width:100%;
@@ -130,65 +182,153 @@
     display:block;
   }
 
-  .tile-overlay{
+  .hero-overlay{
     position:absolute;
     left:0;right:0;bottom:0;
-    padding:6px 10px;
-    background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.7) 55%,rgba(0,0,0,.95) 100%);
+    padding:10px 14px;
+    background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.78) 55%,rgba(0,0,0,.96) 100%);
     display:flex;
     justify-content:space-between;
     align-items:center;
     color:#f9fafb;
-    font-size:11px;
+    font-size:12px;
   }
-  .tile-name{
-    font-weight:600;
-    max-width:70%;
+  .hero-channel{
+    font-weight:700;
+    max-width:60%;
     white-space:nowrap;
     text-overflow:ellipsis;
     overflow:hidden;
   }
-  .tile-status{
-    font-size:10px;
+  .hero-meta{
+    font-size:11px;
     color:#cbd5f5;
     opacity:.9;
   }
-  .tile-status.err{color:#fecaca;}
-  .tile-status.idle{color:#9ca3af;}
 
+  /* DOCK */
+  .dock{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    padding:6px 2px 2px;
+  }
+
+  .dock-item{
+    flex:1 1 0;
+    max-width:180px;
+    min-width:110px;
+    height:68px;
+    border-radius:18px;
+    border:none;
+    outline:none;
+    cursor:pointer;
+    background:linear-gradient(145deg,#fdf5ee,#f7ebe0);
+    box-shadow:
+      0 10px 22px rgba(15,23,42,.15),
+      var(--shadow-inner);
+    padding:8px 10px;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:space-between;
+    text-align:left;
+    -webkit-tap-highlight-color:transparent;
+    transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+  .dock-item-label{
+    font-size:12px;
+    font-weight:600;
+    color:#0f172a;
+    max-width:100%;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+    overflow:hidden;
+  }
+  .dock-item-sub{
+    font-size:11px;
+    color:var(--muted);
+  }
+
+  .dock-item-active{
+    transform:translateY(-4px) scale(1.04);
+    background:linear-gradient(145deg,#fffcf6,#ffe1c4);
+    box-shadow:
+      0 18px 38px rgba(15,23,42,.28),
+      0 0 0 1px rgba(255,149,0,.7);
+  }
+  .dock-item-active .dock-item-label{
+    color:#b45309;
+  }
+
+  .dock-item:focus-visible{
+    box-shadow:
+      0 0 0 2px rgba(56,189,248,.9),
+      0 12px 26px rgba(15,23,42,.22);
+  }
+
+  /* Small global error banner */
   .err-banner{
     position:absolute;
-    left:50%;bottom:10px;
+    left:50%;bottom:28px;
     transform:translateX(-50%);
     background:rgba(239,68,68,.96);
     color:#fff;
-    padding:6px 12px;
+    padding:7px 14px;
     border-radius:999px;
     font-size:11px;
-    box-shadow:0 12px 28px rgba(0,0,0,.65);
+    box-shadow:0 18px 44px rgba(0,0,0,.7);
     display:none;
-    z-index:20;
+    z-index:40;
+  }
+
+  @media (max-width:1100px){
+    .shell{padding:14px 14px 18px;}
+    .shell-header{flex-direction:column;align-items:flex-start;gap:10px;}
+    .pill{align-self:flex-end;}
   }
 </style>
 </head>
 <body>
-<div class="page">
-  <header class="brand-bar">
-    <div class="brand-left">
-      <img class="logo" src="/IPTV-/icons/icon-192.png" alt="BFA logo"
-           onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22 viewBox=%220 0 40 40%22%3E%3Crect width=%2240%22 height=%2240%22 rx=%2214%22 fill=%22%23ff6a00%22/%3E%3Ctext x=%2250%25%22 y=%2255%25%22 text-anchor=%22middle%22 font-size=%2213%22 font-family=%22system-ui%22 font-weight=%22800%22 fill=%22%23fff%22%3EBFA%3C/text%3E%3C/svg%3E';">
-      <div class="brand-text">
-        <h1>BFA IPTV — Multi Channel Wall</h1>
-        <div class="sub">Up to 9 channels • fixed 16:9 tiles • HLS</div>
+<div class="frame">
+  <div class="shell">
+    <header class="shell-header">
+      <div class="brand-left">
+        <div class="logo-wrap">
+          <img class="logo" src="/IPTV-/icons/icon-192.png" alt="BFA logo"
+               onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2238%22 height=%2238%22 viewBox=%220 0 38 38%22%3E%3Crect width=%2238%22 height=%2238%22 rx=%2214%22 fill=%22%23ff6a00%22/%3E%3Ctext x=%2250%25%22 y=%2255%25%22 text-anchor=%22middle%22 font-size=%2213%22 font-family=%22system-ui%22 font-weight=%22800%22 fill=%22%23fff%22%3EBFA%3C/text%3E%3C/svg%3E';">
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">BFA IPTV — Rotating Channel Wall</div>
+          <div class="brand-sub">Hero rotates through all channels · dock shows what’s coming next</div>
+        </div>
       </div>
-    </div>
-    <div class="pill">
-      <span class="pill-dot"></span>
-      <span id="statusLabel">Starting…</span>
-    </div>
-  </header>
+      <div class="pill">
+        <span class="pill-dot"></span>
+        <span id="statusLabel">Starting…</span>
+      </div>
+    </header>
 
-  <main id="wallGrid" class="wall-grid"></main>
+    <section class="layout">
+      <!-- HERO -->
+      <div class="hero-wrap">
+        <div class="hero-shell">
+          <div class="hero-16x9">
+            <video id="heroVideo" autoplay muted playsinline></video>
+            <div class="hero-overlay">
+              <div class="hero-channel" id="heroName">—</div>
+              <div class="hero-meta" id="heroMeta">…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DOCK -->
+      <div class="dock" id="dock"></div>
+    </section>
+  </div>
+
   <div id="errBanner" class="err-banner"></div>
 </div>
 
@@ -197,8 +337,7 @@
   // 1) SIMPLE CONFIG — EDIT ONLY HERE
   // ===============================
   const CONFIG = {
-    // Put between 1 and 9 channels here.
-    // name = label on screen, url = your m3u8 stream.
+    ROTATE_SECONDS: 30, // how long each channel stays full-screen
     channels: [
       {
         name: "News",
@@ -207,6 +346,10 @@
       {
         name: "Tennis Channel S",
         url: "https://amg01444-tennischannelth-tennischannelnl-samsungnl-x3dq1.amagi.tv/playlist/amg01444-tennischannelth-tennischannelnl-samsungnl/playlist.m3u8"
+      },
+      {
+        name: "TSN 5",
+        url: "https://fl31.moveonjoy.com/TSN_5/index.m3u8"
       },
       {
         name: "Cooking",
@@ -220,21 +363,26 @@
         name: "Kids",
         url: "https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8"
       },
-      {
-      name: "TSN 5",
-        url: "https://fl31.moveonjoy.com/TSN_5/index.m3u8"
-      },
-      // Add more if you want (up to 9 total):
+      // Add more if you want (any number), the dock + rotation will handle it:
       // { name:"Channel 6", url:"https://..." },
       // { name:"Channel 7", url:"https://..." },
-      // { name:"Channel 8", url:"https://..." },
-      // { name:"Channel 9", url:"https://..." },
+      // ...
     ]
   };
 
-  const wallGrid    = document.getElementById('wallGrid');
+  const isUrl = u => /^https?:\/\/\S+$/i.test((u||'').trim());
+
+  const heroVideo   = document.getElementById('heroVideo');
+  const heroNameEl  = document.getElementById('heroName');
+  const heroMetaEl  = document.getElementById('heroMeta');
+  const dockEl      = document.getElementById('dock');
   const statusLabel = document.getElementById('statusLabel');
   const errBanner   = document.getElementById('errBanner');
+
+  let CHANNELS = [];
+  let hls = null;
+  let currentIndex = 0;
+  let rotateTimer = null;
 
   function showBanner(msg){
     errBanner.textContent = msg;
@@ -244,169 +392,151 @@
     errBanner.style.display = 'none';
   }
 
-  const isUrl = u => /^https?:\/\/\S+$/i.test((u||'').trim());
+  function updateDockActive(){
+    const items = dockEl.querySelectorAll('.dock-item');
+    items.forEach((btn, i)=>{
+      if(i === currentIndex) btn.classList.add('dock-item-active');
+      else btn.classList.remove('dock-item-active');
+    });
+  }
 
-  // HLS attach helper
-  function attachStream(video, url, statusEl){
-    statusEl.textContent = 'Loading…';
-    statusEl.className = 'tile-status';
+  function attachStreamToHero(url){
+    // Clean previous
+    hideBanner();
+    heroVideo.src = '';
+    heroVideo.muted = true;
+    heroVideo.autoplay = true;
+    heroVideo.playsInline = true;
+
+    if (hls) {
+      try { hls.destroy(); } catch(e){}
+      hls = null;
+    }
 
     if (!isUrl(url)) {
-      statusEl.textContent = 'No URL';
-      statusEl.classList.add('err');
+      heroMetaEl.textContent = 'No URL';
+      showBanner('Invalid URL for this channel.');
       return;
     }
 
-    // HLS.js path (Chromium / BrightSign)
+    // Hls.js path
     if (window.Hls && Hls.isSupported()) {
-      const hls = new Hls({
-        enableWorker:true,
-        lowLatencyMode:true
-      });
+      hls = new Hls({ enableWorker:true, lowLatencyMode:true });
       hls.loadSource(url);
-      hls.attachMedia(video);
+      hls.attachMedia(heroVideo);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().then(()=>{
-          statusEl.textContent = 'LIVE';
+        heroVideo.play().then(()=>{
+          heroMetaEl.textContent = 'LIVE • HLS.js';
         }).catch(err=>{
           console.warn('Autoplay blocked', err);
-          statusEl.textContent = 'Tap to play';
-          statusEl.classList.add('idle');
+          heroMetaEl.textContent = 'Tap to play';
+          showBanner('Autoplay blocked. On a TV player it should start; on laptop tap to start.');
         });
       });
 
-      hls.on(Hls.Events.ERROR, (_, data) => {
+      hls.on(Hls.Events.ERROR, (_, data)=>{
         if (data && data.fatal) {
           console.error('Fatal HLS error', data);
-          statusEl.textContent = 'Stream error';
-          statusEl.classList.add('err');
+          heroMetaEl.textContent = 'Stream error';
+          showBanner('Stream error. Check the source URL.');
         }
       });
     }
-    // Native HLS (Safari / some engines)
-    else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = url;
-      video.play().then(()=>{
-        statusEl.textContent = 'LIVE';
+    // Native HLS (Safari etc.)
+    else if (heroVideo.canPlayType('application/vnd.apple.mpegurl')) {
+      heroVideo.src = url;
+      heroVideo.play().then(()=>{
+        heroMetaEl.textContent = 'LIVE • native';
       }).catch(err=>{
         console.warn('Autoplay blocked (native)', err);
-        statusEl.textContent = 'Tap to play';
-        statusEl.classList.add('idle');
+        heroMetaEl.textContent = 'Tap to play';
+        showBanner('Autoplay blocked. Tap to start on desktop.');
       });
     }
     // Fallback
     else {
-      video.src = url;
-      statusEl.textContent = 'HLS not supported';
-      statusEl.classList.add('err');
+      heroVideo.src = url;
+      heroMetaEl.textContent = 'HLS not fully supported';
     }
 
-    video.onerror = () => {
-      statusEl.textContent = 'Video error';
-      statusEl.classList.add('err');
+    heroVideo.onerror = () => {
+      heroMetaEl.textContent = 'Video error';
+      showBanner('Video error while playing this channel.');
     };
   }
 
-  // Choose a layout (cols x rows) based on number of channels + screen size
-  function pickLayout(count){
-    const maxCols = 4;   // allow 4x3 if needed to fit
-    const maxRows = 4;
-    const gap = 10;
+  function loadChannel(index){
+    if (!CHANNELS.length) return;
+    if (index < 0) index = 0;
+    if (index >= CHANNELS.length) index = 0;
 
-    const availW = window.innerWidth  - 24;     // padding left/right
-    const availH = window.innerHeight - (60+12); // header + bottom pad
+    currentIndex = index;
+    const ch = CHANNELS[index];
 
-    const candidates = [];
-    for(let cols=1; cols<=maxCols; cols++){
-      const rows = Math.ceil(count/cols);
-      if(rows>maxRows) continue;
-      const tileW = (availW - gap*(cols-1)) / cols;
-      const tileH = tileW * 9/16;
-      const totalH = tileH*rows + gap*(rows-1);
-      candidates.push({cols,rows,totalH,tileH});
-    }
+    heroNameEl.textContent = ch.name || `Channel ${index+1}`;
+    heroMetaEl.textContent = 'Loading…';
+    statusLabel.textContent = `Now showing: ${ch.name || ('Channel '+(index+1))}`;
 
-    // First, layouts that fit in height
-    const fitting = candidates.filter(c => c.totalH <= availH);
-    if (fitting.length){
-      // Choose the one with biggest tiles (largest tileH)
-      fitting.sort((a,b)=>b.tileH-a.tileH);
-      return fitting[0];
-    }
+    updateDockActive();
+    attachStreamToHero(ch.url);
 
-    // If none fit, pick the one with smallest overflow
-    candidates.sort((a,b)=>a.totalH-b.totalH);
-    return candidates[0] || {cols:count,rows:1};
+    // reset auto-rotate timer
+    startAutoRotate();
   }
 
-  function buildWall(){
-    hideBanner();
-    const channels = CONFIG.channels.filter(c => c && isUrl(c.url));
-    const n = channels.length;
+  function buildDock(){
+    dockEl.innerHTML = '';
+    CHANNELS.forEach((ch, i)=>{
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'dock-item';
+      btn.innerHTML = `
+        <div class="dock-item-label">${ch.name || ('Channel '+(i+1))}</div>
+        <div class="dock-item-sub">CH ${i+1}</div>
+      `;
+      btn.addEventListener('click', ()=>{
+        // On TV there is no mouse, but on your laptop you can pick manually.
+        loadChannel(i);
+      });
+      dockEl.appendChild(btn);
+    });
+    updateDockActive();
+  }
 
-    if (!n) {
-      statusLabel.textContent = 'No channels configured';
+  function startAutoRotate(){
+    if (rotateTimer) clearInterval(rotateTimer);
+    if (CHANNELS.length <= 1) return; // nothing to rotate
+
+    const delay = (CONFIG.ROTATE_SECONDS || 30) * 1000;
+    rotateTimer = setInterval(()=>{
+      const next = (currentIndex + 1) % CHANNELS.length;
+      loadChannel(next);
+    }, delay);
+  }
+
+  function init(){
+    CHANNELS = CONFIG.channels.filter(c => c && isUrl(c.url));
+    if (!CHANNELS.length) {
+      statusLabel.textContent = 'No valid channels configured';
       showBanner('Add at least one channel in CONFIG.channels (name + url).');
-      wallGrid.innerHTML = '';
       return;
     }
 
-    const layout = pickLayout(Math.min(n,9));
-    const cols = layout.cols;
-    const rows = layout.rows;
-    const totalSlots = cols * rows;
-
-    wallGrid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
-    wallGrid.innerHTML = '';
-
-    for (let i = 0; i < totalSlots; i++) {
-      const ch = channels[i] || null;
-
-      const tile   = document.createElement('section');
-      tile.className = 'tile';
-
-      const inner = document.createElement('div');
-      inner.className = 'tile-inner';
-
-      const video  = document.createElement('video');
-      video.autoplay   = true;
-      video.muted      = true;
-      video.playsInline = true;
-
-      const overlay   = document.createElement('div');
-      overlay.className = 'tile-overlay';
-
-      const nameEl    = document.createElement('div');
-      nameEl.className = 'tile-name';
-
-      const statusEl  = document.createElement('div');
-      statusEl.className = 'tile-status';
-
-      if (ch) {
-        nameEl.textContent = ch.name || 'Channel';
-        attachStream(video, ch.url, statusEl);
-      } else {
-        nameEl.textContent = 'Empty';
-        statusEl.textContent = '';
-        statusEl.classList.add('idle');
-      }
-
-      overlay.appendChild(nameEl);
-      overlay.appendChild(statusEl);
-      inner.appendChild(video);
-      inner.appendChild(overlay);
-      tile.appendChild(inner);
-      wallGrid.appendChild(tile);
+    if (CHANNELS.length === 1) {
+      statusLabel.textContent = 'Single channel mode';
+    } else {
+      statusLabel.textContent = `Rotating ${CHANNELS.length} channels`;
     }
 
-    statusLabel.textContent = `Showing ${Math.min(n,totalSlots)} channel(s) • Layout ${cols} × ${rows}`;
+    buildDock();
+    loadChannel(0); // start with first
   }
 
-  document.addEventListener('DOMContentLoaded', buildWall);
-  window.addEventListener('resize', () => {
-    // Rebuild on resize to keep tiles nicely fitted
-    buildWall();
+  document.addEventListener('DOMContentLoaded', init);
+  window.addEventListener('beforeunload', ()=>{
+    if (rotateTimer) clearInterval(rotateTimer);
+    if (hls) { try{hls.destroy();}catch(e){} }
   });
 </script>
 </body>
