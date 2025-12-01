@@ -1,588 +1,373 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>BFA IPTV — Channel Wall</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BFA IPTV — Multi Channel Wall</title>
 
-  <!-- hls.js, non-module, Signagelive/BrightSign friendly -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
+<!-- hls.js for HLS playback on Chromium / BrightSign -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 
-  <style>
-    :root{
-      --brand:#ff6a00; --brand-2:#e85f00;
+<style>
+  :root{
+    --brand:#ff6a00;
+    --brand2:#e85f00;
+    --fg:#0f172a;
+    --muted:#94a3b8;
+  }
 
-      --bg-start:#fff7f0;
-      --bg-mid:#ffe0c2;
-      --bg-end:#ff6a00;
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:#000;
+    color:var(--fg);
+  }
 
-      --fg:#0f172a;
-      --panel:rgba(255,255,255,.56);
-      --line:rgba(15,23,42,.12);
-      --muted:#64748b;
+  /* Orange “neumorphism” background */
+  body{
+    background:
+      radial-gradient(circle at top left,#ffe8c2 0%,#ffb86b 20%,#ff6a00 40%,#12060c 100%);
+  }
 
-      --glass-blur:18px;
-      --glass-sat:150%;
-      --elev-shadow:0 18px 40px rgba(15,23,42,.14), 0 2px 10px rgba(15,23,42,.08);
-      --elev-shadow-soft:0 10px 26px rgba(15,23,42,.10), 0 1px 4px rgba(15,23,42,.06);
-    }
+  .page{
+    position:relative;
+    width:100%;
+    height:100%;
+    padding:12px;
+  }
 
-    *{box-sizing:border-box}
-    html,body{min-height:100%}
-    body{
-      margin:0;color:var(--fg);
-      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-      background:transparent;
-      min-height:100vh;
-    }
+  /* Header */
+  .brand-bar{
+    position:absolute;
+    left:12px;right:12px;top:8px;
+    display:flex;justify-content:space-between;align-items:center;
+    z-index:10;
+  }
+  .brand-left{
+    display:flex;align-items:center;gap:10px;
+  }
+  .logo{
+    width:40px;height:40px;border-radius:14px;
+    box-shadow:0 10px 26px rgba(0,0,0,.4);
+    background:#ff6a00;
+  }
+  .brand-text h1{
+    margin:0;
+    font-size:18px;
+    font-weight:800;
+    color:#fff;
+    text-shadow:0 2px 6px rgba(0,0,0,.6);
+  }
+  .brand-text .sub{
+    font-size:11px;
+    color:#e5e7eb;
+    opacity:.9;
+  }
 
-    /* Orange wall background */
-    body::before{
-      content:"";
-      position:fixed; inset:0; z-index:-2; pointer-events:none;
-      background:
-        radial-gradient(circle at 10% 0%, rgba(255,255,255,0.65) 0, transparent 50%),
-        radial-gradient(circle at 85% 15%, rgba(255,179,102,0.9) 0, transparent 48%),
-        linear-gradient(180deg, var(--bg-start) 0%, var(--bg-mid) 55%, var(--bg-end) 100%);
-    }
-    body::after{
-      content:"";
-      position:fixed; inset:0; z-index:-1; pointer-events:none;
-      background:radial-gradient(circle at 50% 110%, rgba(0,0,0,0.6) 0, transparent 55%);
-      mix-blend-mode:multiply;
-    }
+  .pill{
+    padding:6px 12px;
+    border-radius:999px;
+    background:rgba(5,7,12,.86);
+    border:1px solid rgba(255,255,255,.12);
+    color:#e5e7eb;
+    font-size:11px;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    box-shadow:0 10px 24px rgba(0,0,0,.45);
+  }
+  .pill-dot{
+    width:8px;height:8px;border-radius:999px;background:#22c55e;
+    box-shadow:0 0 0 0 rgba(34,197,94,.6);
+    animation:pulse 1.6s infinite;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(34,197,94,.6);}
+    70%{box-shadow:0 0 0 10px rgba(34,197,94,0);}
+    100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}
+  }
 
-    .page{
-      max-width:1280px;
-      margin:12px auto 18px;
-      padding:12px 16px 20px;
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-      min-height:100vh;
-    }
+  /* Grid */
+  .wall-grid{
+    position:absolute;
+    left:12px;right:12px;top:60px;bottom:12px;
+    display:grid;
+    gap:10px;
+    align-items:stretch;
+    justify-items:stretch;
+  }
 
-    /* HEADER */
-    .head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:14px;
-      flex-wrap:wrap;
-    }
-    .brand-pill{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:6px 10px;
-      border-radius:999px;
-      background:rgba(255,255,255,0.3);
-      border:1px solid rgba(255,255,255,0.7);
-      box-shadow:0 8px 22px rgba(255,106,0,0.35);
-      backdrop-filter:blur(18px) saturate(160%);
-      -webkit-backdrop-filter:blur(18px) saturate(160%);
-    }
-    .logo{height:34px}
-    h1{
-      margin:0;
-      font-size:clamp(18px,4.2vw,24px);
-      font-weight:900;
-      letter-spacing:.02em;
-    }
-    .sub{color:var(--muted);font-size:12px}
+  .tile{
+    position:relative;
+    width:100%;
+    aspect-ratio:16/9;
+    border-radius:20px;
+    overflow:hidden;
+    background:radial-gradient(circle at top,#111827,#020617);
+    box-shadow:
+      0 18px 40px rgba(0,0,0,.7),
+      0 1px 0 rgba(255,255,255,.12);
+    border:1px solid rgba(15,23,42,.7);
+  }
 
-    .badge{
-      padding:4px 10px;
-      border-radius:999px;
-      font-size:12px;
-      border:1px solid rgba(255,255,255,0.18);
-      background:rgba(15,23,42,0.82);
-      color:#e5e7eb;
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-    }
-    .dot{
-      width:9px;height:9px;border-radius:50%;
-      background:var(--brand);
-      box-shadow:0 0 0 0 rgba(255,149,0,0.7);
-      animation:pulse 1.6s infinite;
-    }
-    @keyframes pulse{
-      0%{box-shadow:0 0 0 0 rgba(255,149,0,0.7);}
-      70%{box-shadow:0 0 0 9px rgba(255,149,0,0);}
-      100%{box-shadow:0 0 0 0 rgba(255,149,0,0);}
-    }
+  .tile video{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    background:#000;
+    display:block;
+  }
 
-    /* MAIN CARD */
-    .card{
-      flex:1;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      background:var(--panel);
-      border:1px solid var(--line);
-      border-radius:26px;
-      padding:14px 14px 16px;
-      box-shadow:var(--elev-shadow);
-      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
-      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
-      min-height:0;
-    }
+  /* Fallback if aspect-ratio not supported (older engines) */
+  @supports not (aspect-ratio: 16 / 9){
+    .tile{height:0;padding-bottom:56.25%;position:relative;}
+    .tile video{position:absolute;inset:0;}
+  }
 
-    .card-top{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:8px;
-      flex-wrap:wrap;
-    }
-    .card-title{font-weight:800;font-size:14px;letter-spacing:.04em;text-transform:uppercase}
-    .status-text{font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .status-pill-small{
-      padding:3px 8px;
-      border-radius:999px;
-      border:1px solid rgba(148,163,184,0.35);
-      font-size:11px;
-      background:rgba(15,23,42,0.06);
-    }
+  .tile-overlay{
+    position:absolute;
+    left:0;right:0;bottom:0;
+    padding:6px 10px;
+    background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.7) 55%,rgba(0,0,0,.95) 100%);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    color:#f9fafb;
+    font-size:11px;
+  }
+  .tile-name{
+    font-weight:600;
+    max-width:70%;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+    overflow:hidden;
+  }
+  .tile-status{
+    font-size:10px;
+    color:#cbd5f5;
+    opacity:.9;
+  }
+  .tile-status.err{color:#fecaca;}
+  .tile-status.idle{color:#9ca3af;}
 
-    /* GRID */
-    .grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
-      gap:12px;
-      width:100%;
-      flex:1;
-      min-height:0;
-    }
-
-    /* 16:9 TILE */
-    .tile{
-      position:relative;
-      background:#050816;
-      border-radius:18px;
-      border:1px solid rgba(15,23,42,0.55);
-      overflow:hidden;
-      box-shadow:var(--elev-shadow-soft);
-      aspect-ratio:16 / 9;  /* 🔶 LOCKED 16:9 */
-      isolation:isolate;
-    }
-    .tile::before{
-      content:"";
-      position:absolute;
-      inset:-20%;
-      background:
-        radial-gradient(circle at 0% 0%, rgba(255,255,255,0.08) 0, transparent 50%),
-        radial-gradient(circle at 100% 0%, rgba(255,149,0,0.3) 0, transparent 55%);
-      mix-blend-mode:soft-light;
-      opacity:.55;
-      pointer-events:none;
-      z-index:0;
-    }
-
-    .tile video{
-      position:absolute;
-      inset:0;
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      background:#000;
-      display:block;
-      z-index:0;
-    }
-
-    .tile-header{
-      position:absolute;
-      top:8px; left:8px; right:8px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:6px;
-      pointer-events:none;
-      z-index:2;
-    }
-    .name-pill{
-      font-size:12px;
-      font-weight:650;
-      padding:4px 9px;
-      border-radius:999px;
-      background:rgba(10,10,13,0.86);
-      border:1px solid rgba(255,255,255,0.28);
-      backdrop-filter:blur(12px);
-      -webkit-backdrop-filter:blur(12px);
-      max-width:68%;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-      overflow:hidden;
-      color:#f9fafb;
-      display:flex;
-      align-items:center;
-      gap:6px;
-    }
-    .name-pill span.idx{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      width:18px;height:18px;
-      border-radius:999px;
-      background:rgba(255,255,255,0.08);
-      font-size:11px;
-    }
-
-    .status-pill{
-      font-size:11px;
-      padding:3px 9px;
-      border-radius:999px;
-      background:rgba(10,10,13,0.9);
-      border:1px solid rgba(255,255,255,0.16);
-      color:var(--muted);
-      display:inline-flex;
-      align-items:center;
-      gap:4px;
-    }
-    .status-pill.ok{color:#4ade80;border-color:rgba(34,197,94,0.7);}
-    .status-pill.err{color:#fecaca;border-color:rgba(239,68,68,0.8);}
-    .status-pill.load{color:#e5e7eb;}
-    .status-dot{
-      width:7px;height:7px;border-radius:50%;background:var(--muted);
-    }
-    .status-pill.ok .status-dot{background:#22c55e;}
-    .status-pill.err .status-dot{background:#ef4444;}
-
-    .tile-footer{
-      position:absolute;
-      left:0;right:0;bottom:0;
-      padding:7px 10px;
-      font-size:11px;
-      color:#cbd5f5;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      background:radial-gradient(circle at top, rgba(15,23,42,0.96), rgba(0,0,0,0.98));
-      border-top:1px solid rgba(148,163,184,0.38);
-      z-index:2;
-    }
-    .url{
-      max-width:80%;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
-      font-size:10px;
-      opacity:.85;
-    }
-    .ctrl-button{
-      font-size:11px;
-      padding:4px 9px;
-      border-radius:999px;
-      border:1px solid rgba(148,163,184,0.7);
-      background:transparent;
-      color:#e5e7eb;
-      box-shadow:none;
-      backdrop-filter:none;
-      -webkit-backdrop-filter:none;
-      cursor:pointer;
-    }
-    .ctrl-button:hover{
-      border-color:var(--brand);
-      background:rgba(255,149,0,0.06);
-    }
-
-    .msg-error{
-      font-size:12px;
-      color:#b91c1c;
-      margin-top:6px;
-    }
-
-    @media (max-width:640px){
-      .page{padding:10px}
-      .card{padding:10px}
-    }
-  </style>
+  .err-banner{
+    position:absolute;
+    left:50%;bottom:10px;
+    transform:translateX(-50%);
+    background:rgba(239,68,68,.96);
+    color:#fff;
+    padding:6px 12px;
+    border-radius:999px;
+    font-size:11px;
+    box-shadow:0 12px 28px rgba(0,0,0,.65);
+    display:none;
+    z-index:20;
+  }
+</style>
 </head>
 <body>
-  <div class="page">
-    <header class="head">
-      <div class="brand-pill">
-        <img id="bfaLogo" class="logo" alt="BFA logo" />
-        <div>
-          <h1>BFA IPTV — Channel Wall</h1>
-          <div class="sub">All channels from Google Sheet • 16:9 tiles • No interaction on screen</div>
-        </div>
+<div class="page">
+  <header class="brand-bar">
+    <div class="brand-left">
+      <img class="logo" src="/IPTV-/icons/icon-192.png" alt="BFA logo"
+           onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22 viewBox=%220 0 40 40%22%3E%3Crect width=%2240%22 height=%2240%22 rx=%2214%22 fill=%22%23ff6a00%22/%3E%3Ctext x=%2250%25%22 y=%2255%25%22 text-anchor=%22middle%22 font-size=%2213%22 font-family=%22system-ui%22 font-weight=%22800%22 fill=%22%23fff%22%3EBFA%3C/text%3E%3C/svg%3E';">
+      <div class="brand-text">
+        <h1>BFA IPTV — Multi Channel Wall</h1>
+        <div class="sub">Up to 9 channels • 16:9 • HLS</div>
       </div>
-      <div class="badge">
-        <span class="dot"></span>
-        <span>Signagelive / BrightSign</span>
-      </div>
-    </header>
+    </div>
+    <div class="pill">
+      <span class="pill-dot"></span>
+      <span id="statusLabel">Starting…</span>
+    </div>
+  </header>
 
-    <section class="card">
-      <div class="card-top">
-        <div class="card-title">Live preview</div>
-        <div id="statusText" class="status-text">
-          <span class="status-pill-small">Loading…</span>
-        </div>
-      </div>
-      <div id="grid" class="grid"></div>
-      <div id="errGlobal" class="msg-error"></div>
-    </section>
-  </div>
+  <main id="wallGrid" class="wall-grid"></main>
+  <div id="errBanner" class="err-banner"></div>
+</div>
 
-  <script>
-    /************* BASIC CONFIG *************/
-    // TODO: change these to your sheet
-    var SHEET_ID  = "1Oh69mDuOCuy27YDYpInoVfcw3o4TlFutQEGYamBXSHE"; // your example
-    var SHEET_GID = "824459168";
-    var REFRESH_MS = 60000; // 60s
+<script>
+  // ===============================
+  // 1) SIMPLE CONFIG — EDIT ONLY HERE
+  // ===============================
+  const CONFIG = {
+    // Put between 1 and 9 channels here.
+    // name = label on screen, url = your m3u8 stream.
+    channels: [
+      {
+        name: "News",
+        url: "https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8"
+      },
+      {
+        name: "Tennis Channel S",
+        url: "https://amg01444-tennischannelth-tennischannelnl-samsungnl-x3dq1.amagi.tv/playlist/amg01444-tennischannelth-tennischannelnl-samsungnl/playlist.m3u8"
+      },
+      {
+        name: "Cooking",
+        url: "https://gusto-xumo.amagi.tv/playlist.m3u8"
+      },
+      {
+        name: "Love Nature",
+        url: "https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8"
+      },
+      {
+        name: "Kids",
+        url: "https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8"
+      },
+      // Add more if you want (up to 9 total):
+      // { name:"Channel 6", url:"https://..." },
+      // { name:"Channel 7", url:"https://..." },
+      // { name:"Channel 8", url:"https://..." },
+      // { name:"Channel 9", url:"https://..." },
+    ]
+  };
 
-    /************* HELPERS *************/
-    function isUrl(u){
-      return /^https?:\/\/\S+$/i.test((u || "").trim());
-    }
+  // ===============================
+  // 2) BASIC SETUP
+  // ===============================
+  const wallGrid    = document.getElementById('wallGrid');
+  const statusLabel = document.getElementById('statusLabel');
+  const errBanner   = document.getElementById('errBanner');
 
-    function fetchCsv(url){
-      return fetch(url, { cache: "no-store" }).then(function(res){
-        if(!res.ok) throw new Error("HTTP "+res.status);
-        return res.text();
+  function showBanner(msg){
+    errBanner.textContent = msg;
+    errBanner.style.display = 'block';
+  }
+  function hideBanner(){
+    errBanner.style.display = 'none';
+  }
+
+  // ===============================
+  // 3) HLS attach helper
+  // ===============================
+  function attachStream(video, url, statusEl){
+    statusEl.textContent = 'Loading…';
+    statusEl.className = 'tile-status';
+
+    // HLS.js path (Chromium / BrightSign)
+    if (window.Hls && Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker:true,
+        lowLatencyMode:true
+      });
+      hls.loadSource(url);
+      hls.attachMedia(video);
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().then(()=>{
+          statusEl.textContent = 'LIVE';
+        }).catch(err=>{
+          console.warn('Autoplay blocked', err);
+          statusEl.textContent = 'Tap to play';
+          statusEl.classList.add('idle');
+        });
+      });
+
+      hls.on(Hls.Events.ERROR, (_, data) => {
+        if (data && data.fatal) {
+          console.error('Fatal HLS error', data);
+          statusEl.textContent = 'Stream error';
+          statusEl.classList.add('err');
+        }
       });
     }
-
-    function parseCSV(t){
-      var out = [];
-      var row = [];
-      var cur = "";
-      var q = false;
-      var i, c, n;
-      for(i=0;i<t.length;i++){
-        c = t[i];
-        n = t[i+1];
-        if(q){
-          if(c === '"' && n === '"'){ cur+='"'; i++; }
-          else if(c === '"'){ q = false; }
-          else { cur += c; }
-        } else {
-          if(c === '"'){ q = true; }
-          else if(c === ','){ row.push(cur); cur = ""; }
-          else if(c === '\n'){
-            row.push(cur); out.push(row); row = []; cur = "";
-          } else if(c !== '\r'){ cur += c; }
-        }
-      }
-      row.push(cur); out.push(row);
-      return out.filter(function(r){
-        for(var k=0;k<r.length;k++){
-          if(String(r[k]||"").trim()!=="") return true;
-        }
-        return false;
+    // Native HLS (Safari / some engines)
+    else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = url;
+      video.play().then(()=>{
+        statusEl.textContent = 'LIVE';
+      }).catch(err=>{
+        console.warn('Autoplay blocked (native)', err);
+        statusEl.textContent = 'Tap to play';
+        statusEl.classList.add('idle');
       });
     }
+    // Fallback
+    else {
+      video.src = url;
+      statusEl.textContent = 'HLS not supported';
+      statusEl.classList.add('err');
+    }
 
-    /************* LOGO *************/
-    (function(){
-      var LOGO_PRIMARY = "/IPTV-/icons/icon-192.png";
-      var FALLBACK_SVG = 'data:image/svg+xml;charset=UTF-8,' +
-        encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="30" viewBox="0 0 120 30"><rect rx="7" width="120" height="30" fill="#ff6a00"/><text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial" font-weight="800" font-size="14" fill="#fff">BFA</text></svg>');
+    video.onerror = () => {
+      statusEl.textContent = 'Video error';
+      statusEl.classList.add('err');
+    };
+  }
 
-      var logo = document.getElementById("bfaLogo");
-      logo.src = LOGO_PRIMARY;
-      logo.onerror = function(){
-        logo.onerror = null;
-        logo.src = FALLBACK_SVG;
-      };
-    })();
+  // ===============================
+  // 4) Build grid (auto 2x2 / 3x2 / 3x3)
+  // ===============================
+  function buildWall(){
+    hideBanner();
+    const channels = CONFIG.channels.filter(c => c && c.url && c.name);
+    const n = channels.length;
 
-    /************* WALL LOGIC *************/
-    var gridEl      = document.getElementById("grid");
-    var statusText  = document.getElementById("statusText");
-    var errGlobalEl = document.getElementById("errGlobal");
-    var instances   = new Map();
-    var lastRefresh = null;
+    if (!n) {
+      statusLabel.textContent = 'No channels configured';
+      showBanner('Add at least one channel in CONFIG.channels');
+      return;
+    }
 
-    function setStatusLabel(activeCount, total){
-      var last = lastRefresh ? new Date(lastRefresh).toLocaleTimeString() : "-";
-      if(!activeCount){
-        statusText.innerHTML =
-          '<span class="status-pill-small">No channels found</span>' +
-          '<span>Check that the sheet is public (Viewer) and B2:C has URL / Name.</span>';
+    let cols, rows;
+    if (n <= 4) {
+      cols = 2;
+      rows = Math.ceil(n / 2);
+    } else if (n <= 6) {
+      cols = 3;
+      rows = 2;
+    } else {
+      cols = 3;
+      rows = 3;
+    }
+    const total = cols * rows;
+
+    wallGrid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+    wallGrid.innerHTML = '';
+
+    for (let i = 0; i < total; i++) {
+      const ch = channels[i] || null;
+
+      const tile   = document.createElement('section');
+      tile.className = 'tile';
+
+      const video  = document.createElement('video');
+      video.autoplay = true;
+      video.muted = true;
+      video.playsInline = true;
+
+      const overlay   = document.createElement('div');
+      overlay.className = 'tile-overlay';
+
+      const nameEl    = document.createElement('div');
+      nameEl.className = 'tile-name';
+
+      const statusEl  = document.createElement('div');
+      statusEl.className = 'tile-status';
+
+      if (ch) {
+        nameEl.textContent = ch.name;
+        attachStream(video, ch.url, statusEl);
       } else {
-        statusText.innerHTML =
-          '<span class="status-pill-small">'+activeCount+' channel'+(activeCount>1?'s':'')+'</span>' +
-          '<span>Last refresh: '+last+'</span>' +
-          '<span style="opacity:.7">Auto-refresh every '+(REFRESH_MS/1000)+'s</span>';
-      }
-    }
-
-    function showGlobalError(msg){
-      errGlobalEl.textContent = msg || "";
-    }
-
-    function destroyAllInstances(){
-      instances.forEach(function(obj){
-        if(obj && obj.hls){
-          try{ obj.hls.destroy(); }catch(e){}
-        }
-      });
-      instances.clear();
-    }
-
-    function createTile(channel, index){
-      var tile = document.createElement("section");
-      tile.className = "tile";
-
-      tile.innerHTML =
-        '<div class="tile-header">' +
-          '<div class="name-pill">' +
-            '<span class="idx">'+(index+1)+'</span>' +
-            '<span class="lbl">'+(channel.name||("Channel "+channel.id))+'</span>' +
-          '</div>' +
-          '<div class="status-pill load" data-status>' +
-            '<span class="status-dot"></span>' +
-            '<span data-status-text>Loading…</span>' +
-          '</div>' +
-        '</div>' +
-        '<video muted playsinline autoplay data-chan-id="'+channel.id+'"></video>' +
-        '<div class="tile-footer">' +
-          '<div class="url" title="'+channel.url+'">'+channel.url+'</div>' +
-          '<button class="ctrl-button" type="button" data-reload>Reload</button>' +
-        '</div>';
-
-      var video         = tile.querySelector("video");
-      var statusPill    = tile.querySelector("[data-status]");
-      var statusTextEl  = tile.querySelector("[data-status-text]");
-      var reloadBtn     = tile.querySelector("[data-reload]");
-
-      function setTileStatus(state, text){
-        statusPill.className = "status-pill";
-        if(state === "ok")   statusPill.className += " ok";
-        else if(state==="err") statusPill.className += " err";
-        else statusPill.className += " load";
-        statusTextEl.textContent = text || "";
+        nameEl.textContent = 'Empty';
+        statusEl.textContent = '';
+        statusEl.classList.add('idle');
       }
 
-      function startPlayback(){
-        if(!isUrl(channel.url)){
-          setTileStatus("err","No URL");
-          return;
-        }
-        setTileStatus("load","Loading…");
-
-        var existing = instances.get(video);
-        if(existing && existing.hls){
-          try{ existing.hls.destroy(); }catch(e){}
-        }
-
-        if(window.Hls && window.Hls.isSupported()){
-          var hls = new Hls({ enableWorker:true, lowLatencyMode:true });
-          instances.set(video,{hls:hls,id:channel.id});
-
-          hls.attachMedia(video);
-          hls.loadSource(channel.url);
-
-          hls.on(Hls.Events.MANIFEST_PARSED,function(){
-            video.muted = true;
-            video.play().then(function(){
-              setTileStatus("ok","Playing");
-            }).catch(function(err){
-              console.log("Autoplay blocked?",err);
-              setTileStatus("err","Autoplay blocked");
-            });
-          });
-
-          hls.on(Hls.Events.ERROR,function(_,data){
-            if(data && data.fatal){
-              setTileStatus("err","Stream error");
-            }
-          });
-        } else if(video.canPlayType("application/vnd.apple.mpegurl")){
-          video.src = channel.url;
-          instances.set(video,{hls:null,id:channel.id});
-          video.muted = true;
-          video.play().then(function(){
-            setTileStatus("ok","Playing");
-          }).catch(function(err){
-            console.log("Autoplay blocked (native)?",err);
-            setTileStatus("err","Autoplay blocked");
-          });
-          video.onerror = function(){
-            setTileStatus("err","Video error");
-          };
-        } else {
-          setTileStatus("err","HLS not supported");
-        }
-      }
-
-      reloadBtn.addEventListener("click", startPlayback);
-      startPlayback();
-      return tile;
+      overlay.appendChild(nameEl);
+      overlay.appendChild(statusEl);
+      tile.appendChild(video);
+      tile.appendChild(overlay);
+      wallGrid.appendChild(tile);
     }
 
-    function buildGrid(channels){
-      destroyAllInstances();
-      gridEl.innerHTML = "";
-      showGlobalError("");
+    statusLabel.textContent = `Showing ${Math.min(n, total)} channel(s) • Layout ${wallGrid.style.gridTemplateColumns.replace(/[^0-9]/g,'')} cols`;
+  }
 
-      var active = [];
-      for(var i=0;i<channels.length;i++){
-        if(isUrl(channels[i].url)){
-          active.push(channels[i]);
-        }
-      }
-      if(!active.length){
-        setStatusLabel(0, channels.length);
-        return;
-      }
-      for(var j=0;j<active.length;j++){
-        gridEl.appendChild(createTile(active[j], j));
-      }
-      lastRefresh = Date.now();
-      setStatusLabel(active.length, channels.length);
-    }
-
-    function loadFromSheet(){
-      showGlobalError("");
-      setStatusLabel(0,0);
-
-      var url = "https://docs.google.com/spreadsheets/d/"+SHEET_ID+
-                "/gviz/tq?tqx=out:csv&gid="+encodeURIComponent(SHEET_GID)+
-                "&range="+encodeURIComponent("B2:C");
-
-      fetchCsv(url).then(function(text){
-        if(/^\s*</.test(text)){
-          throw new Error("HTML returned (sheet not public?)");
-        }
-        var rows = parseCSV(text);
-        var channels = [];
-        for(var i=0;i<rows.length;i++){
-          var u = (rows[i][0]||"").trim();
-          var n = (rows[i][1]||"").trim();
-          if(!u && !n) continue;
-          channels.push({
-            id: i+1,
-            name: n || ("Channel "+(i+1)),
-            url: u
-          });
-        }
-        if(!channels.length){
-          showGlobalError("No rows in B2:C. Fill URLs in column B and names in column C.");
-        }
-        buildGrid(channels);
-      }).catch(function(err){
-        console.log("Sheet load error", err);
-        showGlobalError("Error loading sheet. Make sure it is public (Viewer). "+(err && err.message ? err.message:""));
-        setStatusLabel(0,0);
-      });
-    }
-
-    // Auto refresh
-    setInterval(loadFromSheet, REFRESH_MS);
-
-    window.addEventListener("beforeunload", function(){
-      destroyAllInstances();
-    });
-
-    // Init
-    loadFromSheet();
-  </script>
+  document.addEventListener('DOMContentLoaded', buildWall);
+</script>
 </body>
 </html>
