@@ -3,151 +3,169 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>BFA IPTV — Channel Wall Display</title>
+  <title>BFA IPTV — Channel Wall</title>
 
-  <!-- hls.js -->
+  <!-- hls.js, non-module, Signagelive/BrightSign friendly -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
 
   <style>
     :root{
       --brand:#ff6a00; --brand-2:#e85f00;
+
       --bg-start:#fff7f0;
       --bg-mid:#ffe0c2;
       --bg-end:#ff6a00;
 
       --fg:#0f172a;
-      --panel:rgba(255,255,255,.18);
-      --line:rgba(15,23,42,.2);
+      --panel:rgba(255,255,255,.56);
+      --line:rgba(15,23,42,.12);
       --muted:#64748b;
 
       --glass-blur:18px;
       --glass-sat:150%;
-      --elev-shadow:0 18px 40px rgba(15,23,42,.25), 0 2px 10px rgba(15,23,42,.18);
-      --elev-shadow-soft:0 10px 26px rgba(15,23,42,.22), 0 1px 4px rgba(15,23,42,.12);
+      --elev-shadow:0 18px 40px rgba(15,23,42,.14), 0 2px 10px rgba(15,23,42,.08);
+      --elev-shadow-soft:0 10px 26px rgba(15,23,42,.10), 0 1px 4px rgba(15,23,42,.06);
     }
+
     *{box-sizing:border-box}
     html,body{min-height:100%}
     body{
       margin:0;color:var(--fg);
       font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-      background:#000;
+      background:transparent;
       min-height:100vh;
-      overflow:hidden;
     }
+
+    /* Orange wall background */
     body::before{
       content:"";
-      position:fixed; inset:0; z-index:-3; pointer-events:none;
+      position:fixed; inset:0; z-index:-2; pointer-events:none;
       background:
-        radial-gradient(circle at 0% 0%, rgba(255,255,255,0.55) 0, transparent 50%),
-        radial-gradient(circle at 100% 0%, rgba(255,179,102,0.95) 0, transparent 55%),
+        radial-gradient(circle at 10% 0%, rgba(255,255,255,0.65) 0, transparent 50%),
+        radial-gradient(circle at 85% 15%, rgba(255,179,102,0.9) 0, transparent 48%),
         linear-gradient(180deg, var(--bg-start) 0%, var(--bg-mid) 55%, var(--bg-end) 100%);
     }
     body::after{
       content:"";
-      position:fixed; inset:0; z-index:-2; pointer-events:none;
-      background:radial-gradient(circle at 50% 110%, rgba(0,0,0,0.8) 0, transparent 55%);
+      position:fixed; inset:0; z-index:-1; pointer-events:none;
+      background:radial-gradient(circle at 50% 110%, rgba(0,0,0,0.6) 0, transparent 55%);
       mix-blend-mode:multiply;
     }
 
     .page{
-      position:relative;
-      z-index:1;
-      width:100%;
-      height:100vh;
-      padding:10px 18px 16px;
+      max-width:1280px;
+      margin:12px auto 18px;
+      padding:12px 16px 20px;
       display:flex;
       flex-direction:column;
-      gap:8px;
+      gap:12px;
+      min-height:100vh;
     }
 
+    /* HEADER */
     .head{
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:10px;
+      gap:14px;
       flex-wrap:wrap;
     }
     .brand-pill{
       display:flex;
       align-items:center;
       gap:10px;
-      padding:5px 10px;
+      padding:6px 10px;
       border-radius:999px;
-      background:rgba(0,0,0,0.32);
-      border:1px solid rgba(255,255,255,0.45);
-      box-shadow:0 8px 22px rgba(0,0,0,0.65);
+      background:rgba(255,255,255,0.3);
+      border:1px solid rgba(255,255,255,0.7);
+      box-shadow:0 8px 22px rgba(255,106,0,0.35);
       backdrop-filter:blur(18px) saturate(160%);
       -webkit-backdrop-filter:blur(18px) saturate(160%);
     }
-    .logo{height:28px}
+    .logo{height:34px}
     h1{
       margin:0;
-      font-size:14px;
-      font-weight:800;
-      letter-spacing:.16em;
-      text-transform:uppercase;
-      color:#f9fafb;
+      font-size:clamp(18px,4.2vw,24px);
+      font-weight:900;
+      letter-spacing:.02em;
     }
-    .sub{color:#e5e7eb;font-size:11px;opacity:.85}
+    .sub{color:var(--muted);font-size:12px}
 
     .badge{
-      padding:3px 8px;
+      padding:4px 10px;
       border-radius:999px;
-      font-size:11px;
-      border:1px solid rgba(255,255,255,0.22);
-      background:rgba(0,0,0,0.7);
+      font-size:12px;
+      border:1px solid rgba(255,255,255,0.18);
+      background:rgba(15,23,42,0.82);
       color:#e5e7eb;
       display:inline-flex;
       align-items:center;
-      gap:5px;
+      gap:6px;
     }
     .dot{
-      width:8px;height:8px;border-radius:50%;
-      background:#22c55e;
-      box-shadow:0 0 0 0 rgba(34,197,94,0.7);
+      width:9px;height:9px;border-radius:50%;
+      background:var(--brand);
+      box-shadow:0 0 0 0 rgba(255,149,0,0.7);
       animation:pulse 1.6s infinite;
     }
     @keyframes pulse{
-      0%{box-shadow:0 0 0 0 rgba(34,197,94,0.7);}
-      70%{box-shadow:0 0 0 9px rgba(34,197,94,0);}
-      100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}
+      0%{box-shadow:0 0 0 0 rgba(255,149,0,0.7);}
+      70%{box-shadow:0 0 0 9px rgba(255,149,0,0);}
+      100%{box-shadow:0 0 0 0 rgba(255,149,0,0);}
     }
 
-    .status{
+    /* MAIN CARD */
+    .card{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:26px;
+      padding:14px 14px 16px;
+      box-shadow:var(--elev-shadow);
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      min-height:0;
+    }
+
+    .card-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .card-title{font-weight:800;font-size:14px;letter-spacing:.04em;text-transform:uppercase}
+    .status-text{font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .status-pill-small{
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,0.35);
       font-size:11px;
-      color:#e5e7eb;
-      opacity:.9;
+      background:rgba(15,23,42,0.06);
     }
 
-    .grid-wrap{
+    /* GRID */
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+      gap:12px;
+      width:100%;
       flex:1;
       min-height:0;
-      border-radius:24px;
-      border:1px solid rgba(15,23,42,0.5);
-      padding:8px;
-      background:radial-gradient(circle at top, rgba(15,15,23,0.9), rgba(3,5,9,0.98));
-      box-shadow:var(--elev-shadow);
-      backdrop-filter:blur(16px) saturate(130%);
-      -webkit-backdrop-filter:blur(16px) saturate(130%);
     }
 
-    .grid{
-      width:100%;
-      height:100%;
-      display:grid;
-      grid-template-columns:repeat(var(--cols,2), 1fr);
-      grid-auto-rows:1fr;
-      gap:8px;
-    }
-
+    /* 16:9 TILE */
     .tile{
       position:relative;
-      border-radius:16px;
-      border:1px solid rgba(148,163,184,0.5);
+      background:#050816;
+      border-radius:18px;
+      border:1px solid rgba(15,23,42,0.55);
       overflow:hidden;
-      background:#020617;
       box-shadow:var(--elev-shadow-soft);
-      aspect-ratio:16 / 9;
+      aspect-ratio:16 / 9;  /* 🔶 LOCKED 16:9 */
       isolation:isolate;
     }
     .tile::before{
@@ -158,12 +176,12 @@
         radial-gradient(circle at 0% 0%, rgba(255,255,255,0.08) 0, transparent 50%),
         radial-gradient(circle at 100% 0%, rgba(255,149,0,0.3) 0, transparent 55%);
       mix-blend-mode:soft-light;
-      opacity:.5;
+      opacity:.55;
       pointer-events:none;
       z-index:0;
     }
 
-    video{
+    .tile video{
       position:absolute;
       inset:0;
       width:100%;
@@ -176,7 +194,7 @@
 
     .tile-header{
       position:absolute;
-      top:6px;left:6px;right:6px;
+      top:8px; left:8px; right:8px;
       display:flex;
       justify-content:space-between;
       align-items:center;
@@ -185,43 +203,49 @@
       z-index:2;
     }
     .name-pill{
-      max-width:68%;
-      padding:3px 8px;
+      font-size:12px;
+      font-weight:650;
+      padding:4px 9px;
       border-radius:999px;
-      background:rgba(0,0,0,0.78);
-      border:1px solid rgba(255,255,255,0.22);
+      background:rgba(10,10,13,0.86);
+      border:1px solid rgba(255,255,255,0.28);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      max-width:68%;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      overflow:hidden;
       color:#f9fafb;
-      font-size:11px;
       display:flex;
       align-items:center;
-      gap:5px;
+      gap:6px;
     }
-    .idx{
-      width:18px;height:18px;
-      border-radius:999px;
-      background:rgba(255,255,255,0.08);
+    .name-pill span.idx{
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      font-size:10px;
+      width:18px;height:18px;
+      border-radius:999px;
+      background:rgba(255,255,255,0.08);
+      font-size:11px;
     }
 
     .status-pill{
-      font-size:10px;
-      padding:2px 7px;
+      font-size:11px;
+      padding:3px 9px;
       border-radius:999px;
-      background:rgba(0,0,0,0.85);
-      border:1px solid rgba(148,163,184,0.6);
-      color:#e5e7eb;
+      background:rgba(10,10,13,0.9);
+      border:1px solid rgba(255,255,255,0.16);
+      color:var(--muted);
       display:inline-flex;
       align-items:center;
       gap:4px;
     }
-    .status-pill.ok{color:#4ade80;border-color:rgba(34,197,94,0.8);}
-    .status-pill.err{color:#fecaca;border-color:rgba(239,68,68,0.85);}
+    .status-pill.ok{color:#4ade80;border-color:rgba(34,197,94,0.7);}
+    .status-pill.err{color:#fecaca;border-color:rgba(239,68,68,0.8);}
     .status-pill.load{color:#e5e7eb;}
     .status-dot{
-      width:6px;height:6px;border-radius:50%;background:#64748b;
+      width:7px;height:7px;border-radius:50%;background:var(--muted);
     }
     .status-pill.ok .status-dot{background:#22c55e;}
     .status-pill.err .status-dot{background:#ef4444;}
@@ -229,14 +253,14 @@
     .tile-footer{
       position:absolute;
       left:0;right:0;bottom:0;
-      padding:5px 8px;
-      font-size:10px;
+      padding:7px 10px;
+      font-size:11px;
       color:#cbd5f5;
       display:flex;
       justify-content:space-between;
       align-items:center;
       background:radial-gradient(circle at top, rgba(15,23,42,0.96), rgba(0,0,0,0.98));
-      border-top:1px solid rgba(148,163,184,0.5);
+      border-top:1px solid rgba(148,163,184,0.38);
       z-index:2;
     }
     .url{
@@ -244,32 +268,36 @@
       overflow:hidden;
       text-overflow:ellipsis;
       white-space:nowrap;
-      font-family:ui-monospace,Menlo,Monaco,Consolas,"Courier New",monospace;
-      opacity:.8;
-    }
-    .reload{
+      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
       font-size:10px;
-      padding:3px 7px;
+      opacity:.85;
+    }
+    .ctrl-button{
+      font-size:11px;
+      padding:4px 9px;
       border-radius:999px;
       border:1px solid rgba(148,163,184,0.7);
       background:transparent;
       color:#e5e7eb;
+      box-shadow:none;
+      backdrop-filter:none;
+      -webkit-backdrop-filter:none;
       cursor:pointer;
     }
+    .ctrl-button:hover{
+      border-color:var(--brand);
+      background:rgba(255,149,0,0.06);
+    }
 
-    .error-global{
-      position:absolute;
-      left:50%;
-      bottom:8px;
-      transform:translateX(-50%);
-      font-size:11px;
-      color:#fecaca;
-      background:rgba(127,29,29,0.9);
-      padding:4px 10px;
-      border-radius:999px;
-      border:1px solid rgba(248,113,113,0.9);
-      backdrop-filter:blur(10px);
-      -webkit-backdrop-filter:blur(10px);
+    .msg-error{
+      font-size:12px;
+      color:#b91c1c;
+      margin-top:6px;
+    }
+
+    @media (max-width:640px){
+      .page{padding:10px}
+      .card{padding:10px}
     }
   </style>
 </head>
@@ -280,64 +308,117 @@
         <img id="bfaLogo" class="logo" alt="BFA logo" />
         <div>
           <h1>BFA IPTV — Channel Wall</h1>
-          <div class="sub">Layout driven by editor. All tiles 16:9 for the TV wall.</div>
+          <div class="sub">All channels from Google Sheet • 16:9 tiles • No interaction on screen</div>
         </div>
       </div>
-      <div>
-        <div class="badge">
-          <span class="dot"></span>
-          <span id="statusLabel">Refreshing layout…</span>
-        </div>
+      <div class="badge">
+        <span class="dot"></span>
+        <span>Signagelive / BrightSign</span>
       </div>
     </header>
 
-    <div class="grid-wrap">
-      <div id="grid" class="grid" style="--cols:2"></div>
-    </div>
-
-    <div id="globalError" class="error-global" style="display:none"></div>
+    <section class="card">
+      <div class="card-top">
+        <div class="card-title">Live preview</div>
+        <div id="statusText" class="status-text">
+          <span class="status-pill-small">Loading…</span>
+        </div>
+      </div>
+      <div id="grid" class="grid"></div>
+      <div id="errGlobal" class="msg-error"></div>
+    </section>
   </div>
 
   <script>
-    // ---- CONFIG ----
-    // SAME WEB APP URL AS EDITOR:
-    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxDqMW48Yrkt-m942pipz7HtMOk0lwJp8O_LQHIQR-OM06sytw9U-HNQIrbpOjS4VQS/exec';
-    const REFRESH_MS = 30000; // 30 seconds
+    /************* BASIC CONFIG *************/
+    // TODO: change these to your sheet
+    var SHEET_ID  = "1Oh69mDuOCuy27YDYpInoVfcw3o4TlFutQEGYamBXSHE"; // your example
+    var SHEET_GID = "824459168";
+    var REFRESH_MS = 60000; // 60s
 
-    // ---- LOGO ----
-    (function(){
-      const LOGO_PRIMARY = '/IPTV-/icons/icon-192.png';
-      const FALLBACK = 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="30" viewBox="0 0 120 30"><rect rx="7" width="120" height="30" fill="#ff6a00"/><text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial" font-weight="800" font-size="14" fill="#fff">BFA</text></svg>');
-      const logo = document.getElementById('bfaLogo');
-      logo.src = LOGO_PRIMARY;
-      logo.onerror = function(){ logo.onerror=null; logo.src = FALLBACK; };
-    })();
+    /************* HELPERS *************/
+    function isUrl(u){
+      return /^https?:\/\/\S+$/i.test((u || "").trim());
+    }
 
-    // ---- ELEMENTS ----
-    const gridEl      = document.getElementById('grid');
-    const statusLabel = document.getElementById('statusLabel');
-    const globalError = document.getElementById('globalError');
-
-    const instances = new Map(); // video -> {hls, slot}
-
-    function isUrl(u){return /^https?:\/\/\S+$/i.test((u||'').trim());}
-
-    function fetchJson(url, opts){
-      return fetch(url, opts||{}).then(res=>{
-        if(!res.ok) throw new Error('HTTP '+res.status);
-        return res.json();
+    function fetchCsv(url){
+      return fetch(url, { cache: "no-store" }).then(function(res){
+        if(!res.ok) throw new Error("HTTP "+res.status);
+        return res.text();
       });
     }
 
-    function showGlobalError(msg){
-      if(!msg){ globalError.style.display='none'; return; }
-      globalError.textContent = msg;
-      globalError.style.display = 'block';
+    function parseCSV(t){
+      var out = [];
+      var row = [];
+      var cur = "";
+      var q = false;
+      var i, c, n;
+      for(i=0;i<t.length;i++){
+        c = t[i];
+        n = t[i+1];
+        if(q){
+          if(c === '"' && n === '"'){ cur+='"'; i++; }
+          else if(c === '"'){ q = false; }
+          else { cur += c; }
+        } else {
+          if(c === '"'){ q = true; }
+          else if(c === ','){ row.push(cur); cur = ""; }
+          else if(c === '\n'){
+            row.push(cur); out.push(row); row = []; cur = "";
+          } else if(c !== '\r'){ cur += c; }
+        }
+      }
+      row.push(cur); out.push(row);
+      return out.filter(function(r){
+        for(var k=0;k<r.length;k++){
+          if(String(r[k]||"").trim()!=="") return true;
+        }
+        return false;
+      });
     }
 
-    function destroyAll(){
-      instances.forEach(obj=>{
+    /************* LOGO *************/
+    (function(){
+      var LOGO_PRIMARY = "/IPTV-/icons/icon-192.png";
+      var FALLBACK_SVG = 'data:image/svg+xml;charset=UTF-8,' +
+        encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="30" viewBox="0 0 120 30"><rect rx="7" width="120" height="30" fill="#ff6a00"/><text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial" font-weight="800" font-size="14" fill="#fff">BFA</text></svg>');
+
+      var logo = document.getElementById("bfaLogo");
+      logo.src = LOGO_PRIMARY;
+      logo.onerror = function(){
+        logo.onerror = null;
+        logo.src = FALLBACK_SVG;
+      };
+    })();
+
+    /************* WALL LOGIC *************/
+    var gridEl      = document.getElementById("grid");
+    var statusText  = document.getElementById("statusText");
+    var errGlobalEl = document.getElementById("errGlobal");
+    var instances   = new Map();
+    var lastRefresh = null;
+
+    function setStatusLabel(activeCount, total){
+      var last = lastRefresh ? new Date(lastRefresh).toLocaleTimeString() : "-";
+      if(!activeCount){
+        statusText.innerHTML =
+          '<span class="status-pill-small">No channels found</span>' +
+          '<span>Check that the sheet is public (Viewer) and B2:C has URL / Name.</span>';
+      } else {
+        statusText.innerHTML =
+          '<span class="status-pill-small">'+activeCount+' channel'+(activeCount>1?'s':'')+'</span>' +
+          '<span>Last refresh: '+last+'</span>' +
+          '<span style="opacity:.7">Auto-refresh every '+(REFRESH_MS/1000)+'s</span>';
+      }
+    }
+
+    function showGlobalError(msg){
+      errGlobalEl.textContent = msg || "";
+    }
+
+    function destroyAllInstances(){
+      instances.forEach(function(obj){
         if(obj && obj.hls){
           try{ obj.hls.destroy(); }catch(e){}
         }
@@ -345,137 +426,163 @@
       instances.clear();
     }
 
-    function setStatus(text){
-      statusLabel.textContent = text;
-    }
+    function createTile(channel, index){
+      var tile = document.createElement("section");
+      tile.className = "tile";
 
-    function createTile(tileData, index){
-      const name = tileData.name || ('Channel '+tileData.slot);
-      const url  = tileData.url;
+      tile.innerHTML =
+        '<div class="tile-header">' +
+          '<div class="name-pill">' +
+            '<span class="idx">'+(index+1)+'</span>' +
+            '<span class="lbl">'+(channel.name||("Channel "+channel.id))+'</span>' +
+          '</div>' +
+          '<div class="status-pill load" data-status>' +
+            '<span class="status-dot"></span>' +
+            '<span data-status-text>Loading…</span>' +
+          '</div>' +
+        '</div>' +
+        '<video muted playsinline autoplay data-chan-id="'+channel.id+'"></video>' +
+        '<div class="tile-footer">' +
+          '<div class="url" title="'+channel.url+'">'+channel.url+'</div>' +
+          '<button class="ctrl-button" type="button" data-reload>Reload</button>' +
+        '</div>';
 
-      const section = document.createElement('section');
-      section.className = 'tile';
-      section.innerHTML = `
-        <div class="tile-header">
-          <div class="name-pill">
-            <span class="idx">${tileData.slot}</span>
-            <span>${name}</span>
-          </div>
-          <div class="status-pill load" data-status>
-            <span class="status-dot"></span>
-            <span data-status-text>Loading…</span>
-          </div>
-        </div>
-        <video muted playsinline autoplay data-slot="${tileData.slot}"></video>
-        <div class="tile-footer">
-          <div class="url" title="${url}">${url}</div>
-          <button class="reload" type="button" data-reload>Reload</button>
-        </div>
-      `;
+      var video         = tile.querySelector("video");
+      var statusPill    = tile.querySelector("[data-status]");
+      var statusTextEl  = tile.querySelector("[data-status-text]");
+      var reloadBtn     = tile.querySelector("[data-reload]");
 
-      const video = section.querySelector('video');
-      const statusPill = section.querySelector('[data-status]');
-      const statusText = section.querySelector('[data-status-text]');
-      const reloadBtn  = section.querySelector('[data-reload]');
-
-      function setTileStatus(type, text){
-        statusPill.className = 'status-pill ' + type;
-        statusText.textContent = text;
+      function setTileStatus(state, text){
+        statusPill.className = "status-pill";
+        if(state === "ok")   statusPill.className += " ok";
+        else if(state==="err") statusPill.className += " err";
+        else statusPill.className += " load";
+        statusTextEl.textContent = text || "";
       }
 
       function startPlayback(){
-        if(!isUrl(url)){
-          setTileStatus('err','No URL');
+        if(!isUrl(channel.url)){
+          setTileStatus("err","No URL");
           return;
         }
-        setTileStatus('load','Loading…');
+        setTileStatus("load","Loading…");
 
-        const existing = instances.get(video);
+        var existing = instances.get(video);
         if(existing && existing.hls){
           try{ existing.hls.destroy(); }catch(e){}
         }
 
         if(window.Hls && window.Hls.isSupported()){
-          const hls = new Hls({enableWorker:true,lowLatencyMode:true});
-          instances.set(video,{hls,slot:tileData.slot});
+          var hls = new Hls({ enableWorker:true, lowLatencyMode:true });
+          instances.set(video,{hls:hls,id:channel.id});
+
           hls.attachMedia(video);
-          hls.loadSource(url);
+          hls.loadSource(channel.url);
+
           hls.on(Hls.Events.MANIFEST_PARSED,function(){
             video.muted = true;
-            video.play().then(()=>{
-              setTileStatus('ok','Playing');
-            }).catch(()=>{
-              setTileStatus('err','Autoplay blocked');
+            video.play().then(function(){
+              setTileStatus("ok","Playing");
+            }).catch(function(err){
+              console.log("Autoplay blocked?",err);
+              setTileStatus("err","Autoplay blocked");
             });
           });
+
           hls.on(Hls.Events.ERROR,function(_,data){
             if(data && data.fatal){
-              setTileStatus('err','Stream error');
+              setTileStatus("err","Stream error");
             }
           });
-        }else if(video.canPlayType('application/vnd.apple.mpegurl')){
-          video.src = url;
-          instances.set(video,{hls:null,slot:tileData.slot});
+        } else if(video.canPlayType("application/vnd.apple.mpegurl")){
+          video.src = channel.url;
+          instances.set(video,{hls:null,id:channel.id});
           video.muted = true;
-          video.play().then(()=>{
-            setTileStatus('ok','Playing');
-          }).catch(()=>{
-            setTileStatus('err','Autoplay blocked');
+          video.play().then(function(){
+            setTileStatus("ok","Playing");
+          }).catch(function(err){
+            console.log("Autoplay blocked (native)?",err);
+            setTileStatus("err","Autoplay blocked");
           });
           video.onerror = function(){
-            setTileStatus('err','Video error');
+            setTileStatus("err","Video error");
           };
-        }else{
-          setTileStatus('err','HLS not supported');
+        } else {
+          setTileStatus("err","HLS not supported");
         }
       }
 
-      reloadBtn.addEventListener('click', startPlayback);
+      reloadBtn.addEventListener("click", startPlayback);
       startPlayback();
-      return section;
+      return tile;
     }
 
-    function buildGrid(layout){
-      destroyAll();
-      gridEl.innerHTML = '';
+    function buildGrid(channels){
+      destroyAllInstances();
+      gridEl.innerHTML = "";
+      showGlobalError("");
 
-      const cols = Number(layout.cols) || 1;
-      const rows = Number(layout.rows) || 1;
-      const tiles = Array.isArray(layout.tiles) ? layout.tiles.slice().sort((a,b)=>a.slot-b.slot) : [];
-
-      if(!tiles.length){
-        showGlobalError('No tiles defined in layout. Use the editor to assign channels.');
-        setStatus('No tiles • waiting for layout…');
-        return;
-      }else{
-        showGlobalError('');
+      var active = [];
+      for(var i=0;i<channels.length;i++){
+        if(isUrl(channels[i].url)){
+          active.push(channels[i]);
+        }
       }
-
-      gridEl.style.setProperty('--cols', cols);
-
-      tiles.forEach((t, idx)=>{
-        gridEl.appendChild(createTile(t, idx));
-      });
-
-      const now = new Date().toLocaleTimeString();
-      setStatus(`${cols} x ${rows} (${tiles.length} tiles) • refreshed ${now}`);
+      if(!active.length){
+        setStatusLabel(0, channels.length);
+        return;
+      }
+      for(var j=0;j<active.length;j++){
+        gridEl.appendChild(createTile(active[j], j));
+      }
+      lastRefresh = Date.now();
+      setStatusLabel(active.length, channels.length);
     }
 
-    function loadLayout(){
-      setStatus('Refreshing layout…');
-      fetchJson(WEBAPP_URL + '?fn=getwall').then(data=>{
-        if(!data.ok) throw new Error(data.error || 'getWall failed');
-        buildGrid(data);
-      }).catch(err=>{
-        console.log(err);
-        showGlobalError('Error loading layout from backend.');
-        setStatus('Error loading layout');
+    function loadFromSheet(){
+      showGlobalError("");
+      setStatusLabel(0,0);
+
+      var url = "https://docs.google.com/spreadsheets/d/"+SHEET_ID+
+                "/gviz/tq?tqx=out:csv&gid="+encodeURIComponent(SHEET_GID)+
+                "&range="+encodeURIComponent("B2:C");
+
+      fetchCsv(url).then(function(text){
+        if(/^\s*</.test(text)){
+          throw new Error("HTML returned (sheet not public?)");
+        }
+        var rows = parseCSV(text);
+        var channels = [];
+        for(var i=0;i<rows.length;i++){
+          var u = (rows[i][0]||"").trim();
+          var n = (rows[i][1]||"").trim();
+          if(!u && !n) continue;
+          channels.push({
+            id: i+1,
+            name: n || ("Channel "+(i+1)),
+            url: u
+          });
+        }
+        if(!channels.length){
+          showGlobalError("No rows in B2:C. Fill URLs in column B and names in column C.");
+        }
+        buildGrid(channels);
+      }).catch(function(err){
+        console.log("Sheet load error", err);
+        showGlobalError("Error loading sheet. Make sure it is public (Viewer). "+(err && err.message ? err.message:""));
+        setStatusLabel(0,0);
       });
     }
 
-    // ---- INIT ----
-    loadLayout();
-    setInterval(loadLayout, REFRESH_MS);
+    // Auto refresh
+    setInterval(loadFromSheet, REFRESH_MS);
+
+    window.addEventListener("beforeunload", function(){
+      destroyAllInstances();
+    });
+
+    // Init
+    loadFromSheet();
   </script>
 </body>
 </html>
