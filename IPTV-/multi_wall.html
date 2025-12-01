@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>BFA — Channel Wall</title>
+  <title>BFA — Multi Channel Tester</title>
 
   <!-- hls.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
@@ -21,11 +21,13 @@
       --panel:rgba(255,255,255,.56);
       --line:rgba(15,23,42,.06);
       --muted:#64748b;
+      --radius:18px; --btn-h:40px; --gap:14px;
 
       --glass-blur:16px;
       --glass-sat:140%;
       --elev-shadow:0 14px 34px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.05);
       --elev-shadow-soft:0 10px 26px rgba(15,23,42,.06), 0 1px 4px rgba(15,23,42,.04);
+      --inset-soft:inset 0 1px 0 rgba(255,255,255,.65), inset 0 -1px 0 rgba(15,23,42,.06);
     }
     [data-theme="dark"]{
       --fg:#e8ecf1;
@@ -39,6 +41,7 @@
       --glass-blur:14px; --glass-sat:140%;
       --elev-shadow:0 12px 28px rgba(0,0,0,.32), 0 1px 2px rgba(0,0,0,.24);
       --elev-shadow-soft:0 10px 20px rgba(0,0,0,.28), 0 1px 2px rgba(0,0,0,.2);
+      --inset-soft:inset 0 1px 0 rgba(255,255,255,.06), inset 0 -1px 0 rgba(0,0,0,.35);
     }
 
     *{box-sizing:border-box}
@@ -55,39 +58,66 @@
       background:linear-gradient(180deg, var(--bg-start) 0%, var(--bg-mid) 52%, var(--bg-end) 100%);
     }
 
-    .page{
-      max-width:1280px;
-      margin:12px auto;
-      padding:12px 16px 20px;
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-      min-height:100vh;
-    }
+    .page{max-width:1100px;margin:18px auto;padding:16px}
+    .stack>*+*{margin-top:var(--gap)}
 
-    /* HEADER */
-    .head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-    }
+    .head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
     .brand{display:flex;align-items:center;gap:10px}
-    .logo{height:34px}
+    .logo{height:30px}
     h1{margin:0;font-size:clamp(18px,4.2vw,22px);font-weight:800}
     .sub{color:var(--muted);font-size:12px}
 
-    .right-head{
-      display:flex;
-      gap:10px;
+    .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .theme-sel{width:110px}
+
+    .badge{
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:12px;
+      border:1px solid rgba(255,255,255,0.18);
+      background:rgba(15,23,42,0.7);
+      color:#e5e7eb;
+      display:inline-flex;
       align-items:center;
-      flex-wrap:wrap;
+      gap:6px;
+    }
+    .dot{
+      width:9px;height:9px;border-radius:50%;
+      background:var(--brand);
+      box-shadow:0 0 0 0 rgba(255,149,0,0.5);
+      animation:pulse 1.6s infinite;
+    }
+    @keyframes pulse{
+      0%{box-shadow:0 0 0 0 rgba(255,149,0,0.6);}
+      70%{box-shadow:0 0 0 8px rgba(255,149,0,0);}
+      100%{box-shadow:0 0 0 0 rgba(255,149,0,0);}
     }
 
-    select,button{
+    .card{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:14px 14px 16px;
+      box-shadow:var(--elev-shadow);
+      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
+
+    .card-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      margin-bottom:10px;
+    }
+    .card-title{
+      font-weight:700;
+      font-size:14px;
+    }
+
+    button,input,select{
       font-size:13px;
-      height:34px;
+      height:var(--btn-h);
       padding:0 12px;
       border-radius:18px;
       border:1px solid var(--line);
@@ -98,6 +128,15 @@
       box-shadow:var(--elev-shadow-soft);
       backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
       -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
+    input[type="checkbox"]{
+      height:auto;
+      width:auto;
+      box-shadow:none;
+      padding:0;
+      margin:0;
+    }
+    button{
       cursor:pointer;
       display:inline-flex;
       align-items:center;
@@ -130,66 +169,14 @@
       filter:brightness(.985);
     }
 
-    .badge{
-      padding:4px 10px;
-      border-radius:999px;
-      font-size:12px;
-      border:1px solid rgba(255,255,255,0.18);
-      background:rgba(15,23,42,0.7);
-      color:#e5e7eb;
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-    }
-    .dot{
-      width:9px;height:9px;border-radius:50%;
-      background:var(--brand);
-      box-shadow:0 0 0 0 rgba(255,149,0,0.5);
-      animation:pulse 1.6s infinite;
-    }
-    @keyframes pulse{
-      0%{box-shadow:0 0 0 0 rgba(255,149,0,0.6);}
-      70%{box-shadow:0 0 0 8px rgba(255,149,0,0);}
-      100%{box-shadow:0 0 0 0 rgba(255,149,0,0);}
-    }
-
-    /* MAIN CARD */
-    .card{
-      flex:1;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      background:var(--panel);
-      border:1px solid var(--line);
-      border-radius:22px;
-      padding:12px 12px 14px;
-      box-shadow:var(--elev-shadow);
-      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
-      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
-      min-height:0;
-    }
-
-    .card-top{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:8px;
-      flex-wrap:wrap;
-    }
-    .card-title{font-weight:700;font-size:14px}
-    .status-text{font-size:12px;color:var(--muted)}
-
     /* GRID */
     .grid{
       display:grid;
       grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-      gap:10px;
-      width:100%;
-      flex:1;
-      min-height:0;
+      gap:12px;
     }
 
-    /* 16:9 TILE */
+    /* 🔶 TILE: 16:9, with video filling it */
     .tile{
       position:relative;
       background:#050816;
@@ -197,9 +184,8 @@
       border:1px solid rgba(15,23,42,0.45);
       overflow:hidden;
       box-shadow:var(--elev-shadow-soft);
-      aspect-ratio:16 / 9;  /* 🔶 LOCKED 16:9 */
+      aspect-ratio:16 / 9;   /* LOCKED 16:9 */
     }
-
     .tile video{
       position:absolute;
       inset:0;
@@ -286,48 +272,139 @@
       box-shadow:none;
       backdrop-filter:none;
       -webkit-backdrop-filter:none;
-      cursor:pointer;
     }
     .ctrl-button:hover{
       border-color:var(--brand);
     }
 
+    /* CONFIG FORM */
+    .cfg-grid-header,
+    .cfg-row{
+      display:grid;
+      grid-template-columns:40px minmax(90px,160px) minmax(140px,1fr) 70px;
+      gap:8px;
+      align-items:center;
+    }
+    .cfg-grid-header{
+      font-size:11px;
+      color:var(--muted);
+      padding-bottom:4px;
+      border-bottom:1px solid rgba(148,163,184,0.25);
+      margin-bottom:6px;
+    }
+    .cfg-row + .cfg-row{
+      margin-top:6px;
+    }
+    .cfg-row input[type="text"]{
+      width:100%;
+      height:var(--btn-h);
+    }
+    .cfg-row .slot-label{
+      font-size:12px;
+      font-weight:600;
+    }
+    .cfg-row .enabled-cell{
+      display:flex;
+      align-items:center;
+      gap:4px;
+      font-size:11px;
+      color:var(--muted);
+    }
+
+    .cfg-help{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:6px;
+    }
+
+    .msg{
+      font-size:12px;
+      margin-top:6px;
+    }
+
     @media (max-width:640px){
-      .page{padding:10px}
-      .card{padding:10px}
+      .cfg-grid-header{display:none;}
+      .cfg-row{
+        grid-template-columns:1fr;
+        border:1px solid rgba(148,163,184,0.3);
+        border-radius:14px;
+        padding:8px;
+      }
+      .cfg-row .slot-label{
+        margin-bottom:4px;
+      }
+      .cfg-row .enabled-cell{
+        justify-content:flex-start;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="page stack">
     <header class="head">
       <div class="brand">
         <img id="bfaLogo" class="logo" alt="BFA logo" />
         <div>
-          <h1>BFA — Channel Wall</h1>
-          <div class="sub">16:9 preview wall. Reads channels from <code>bfa_multi_channels_v1</code>.</div>
+          <h1>BFA — Multi Channel Tester</h1>
+          <div class="sub">Test as many IPTV channels as you need, side-by-side. Config stored locally (no Firebase).</div>
         </div>
       </div>
-      <div class="right-head">
-        <select id="themeSel" title="Theme">
+      <div class="actions">
+        <select id="themeSel" class="theme-sel" title="Theme">
           <option value="light">Light</option>
           <option value="dark">Dark</option>
         </select>
-        <button id="refreshBtn" class="btn-outline" type="button">Refresh channels</button>
         <div class="badge">
           <span class="dot"></span>
-          <span>TV wall</span>
+          <span>Standalone sandbox</span>
         </div>
       </div>
     </header>
 
+    <!-- MULTI-CHANNEL GRID -->
     <section class="card">
-      <div class="card-top">
-        <div class="card-title">Live preview</div>
-        <div id="statusText" class="status-text">Loading config…</div>
+      <div class="card-header">
+        <div class="card-title">Preview wall</div>
+        <div class="sub" id="statusText">Using local config.</div>
       </div>
       <div id="grid" class="grid"></div>
     </section>
+
+    <!-- CONFIG "BACKEND" CARD -->
+    <section class="card">
+      <div class="card-header">
+        <div class="card-title">Channel configuration</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button id="addSlot" class="btn-outline" type="button">+ Add slot</button>
+          <button id="resetDefaults" class="btn-outline" type="button">Reset to defaults</button>
+        </div>
+      </div>
+      <p class="sub">
+        Edit any number of channel slots. Only rows with a valid URL are used.  
+        Changes are saved in this browser with key <code>bfa_multi_channels_v1</code>.
+      </p>
+
+      <div class="cfg-grid-header">
+        <div>#</div>
+        <div>Name</div>
+        <div>URL</div>
+        <div>Enabled</div>
+      </div>
+
+      <div id="cfgRows"></div>
+
+      <div class="cfg-help">
+        Tip: On your laptop, edit names and URLs here, click <b>Save & Refresh Grid</b>, then open this same page on your 1920×1080 screen.
+      </div>
+
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button id="saveBtn" class="btn" type="button">Save & Refresh Grid</button>
+        <button id="reloadBtn" class="btn-outline" type="button">Reload from storage</button>
+        <span id="saveMsg" class="msg"></span>
+      </div>
+    </section>
+
+    <div class="sub">Autoplay: all tiles start muted so browsers allow background playback.</div>
   </div>
 
   <script>
@@ -353,10 +430,7 @@
     logoEl.src = LOGO_PRIMARY;
     logoEl.onerror = () => { logoEl.onerror = null; logoEl.src = FALLBACK_SVG; };
 
-    /************* CONFIG SOURCE (same as editor) *************/
-    const STORAGE_KEY = "bfa_multi_channels_v1";
-    const MAX_SLOTS = 32;
-
+    /************* DEFAULT CHANNELS *************/
     const DEFAULT_CHANNELS = [
       {
         id: 1,
@@ -390,6 +464,9 @@
       }
     ];
 
+    const STORAGE_KEY = "bfa_multi_channels_v1";
+    const MAX_SLOTS = 32; // just a safety cap (can increase later)
+
     function loadChannelsFromStorage() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -406,23 +483,111 @@
       }
     }
 
+    function saveChannelsToStorage(chans) {
+      const sanitized = chans
+        .slice(0, MAX_SLOTS)
+        .map((c, i) => ({ id: i + 1, name: c.name || "", url: c.url || "" }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+    }
+
+    /************* CONFIG "BACKEND" UI *************/
+    const cfgRowsContainer = document.getElementById("cfgRows");
+    const saveBtn = document.getElementById("saveBtn");
+    const reloadBtn = document.getElementById("reloadBtn");
+    const resetDefaultsBtn = document.getElementById("resetDefaults");
+    const addSlotBtn = document.getElementById("addSlot");
+    const saveMsg = document.getElementById("saveMsg");
+    const statusText = document.getElementById("statusText");
+
+    let currentChannels = loadChannelsFromStorage();
+
+    function renderConfigForm() {
+      cfgRowsContainer.innerHTML = "";
+      currentChannels.forEach((ch, index) => {
+        const row = document.createElement("div");
+        row.className = "cfg-row";
+        row.dataset.index = String(index);
+
+        row.innerHTML = `
+          <div class="slot-label">#${index + 1}</div>
+          <input type="text" class="cfg-name" placeholder="Channel name" value="${ch.name ? ch.name.replace(/"/g, "&quot;") : ""}">
+          <input type="text" class="cfg-url" placeholder="https://… (HLS .m3u8)" value="${ch.url ? ch.url.replace(/"/g, "&quot;") : ""}">
+          <label class="enabled-cell">
+            <input type="checkbox" class="cfg-enabled" ${isUrl(ch.url) ? "checked" : ""}>
+            <span>Use</span>
+          </label>
+        `;
+        cfgRowsContainer.appendChild(row);
+      });
+    }
+
+    function readConfigForm() {
+      const rows = Array.from(cfgRowsContainer.querySelectorAll(".cfg-row"));
+      const result = [];
+      rows.forEach((row, idx) => {
+        const nameInput = row.querySelector(".cfg-name");
+        const urlInput = row.querySelector(".cfg-url");
+        const enabledInput = row.querySelector(".cfg-enabled");
+        const name = nameInput.value.trim();
+        const url = urlInput.value.trim();
+        const enabled = enabledInput.checked && isUrl(url);
+        result.push({
+          id: idx + 1,
+          name,
+          url: enabled ? url : "", // if not enabled, treat as empty
+        });
+      });
+      return result;
+    }
+
+    saveBtn.addEventListener("click", () => {
+      const newCfg = readConfigForm();
+      currentChannels = newCfg;
+      saveChannelsToStorage(newCfg);
+      buildGrid();
+      saveMsg.textContent = "Saved and grid refreshed ✔";
+      setTimeout(() => (saveMsg.textContent = ""), 4000);
+    });
+
+    reloadBtn.addEventListener("click", () => {
+      currentChannels = loadChannelsFromStorage();
+      renderConfigForm();
+      buildGrid();
+      saveMsg.textContent = "Reloaded from storage.";
+      setTimeout(() => (saveMsg.textContent = ""), 3000);
+    });
+
+    resetDefaultsBtn.addEventListener("click", () => {
+      currentChannels = DEFAULT_CHANNELS.slice();
+      renderConfigForm();
+      buildGrid();
+      saveMsg.textContent = "Reset to defaults (not saved yet). Click “Save & Refresh Grid” to persist.";
+      setTimeout(() => (saveMsg.textContent = ""), 6000);
+    });
+
+    addSlotBtn.addEventListener("click", () => {
+      if (currentChannels.length >= MAX_SLOTS) {
+        saveMsg.textContent = `Max ${MAX_SLOTS} slots reached.`;
+        setTimeout(() => (saveMsg.textContent = ""), 4000);
+        return;
+      }
+      const n = currentChannels.length + 1;
+      currentChannels.push({
+        id: n,
+        name: `Extra Slot ${n}`,
+        url: "",
+      });
+      renderConfigForm();
+      saveMsg.textContent = `Added slot #${n}.`;
+      setTimeout(() => (saveMsg.textContent = ""), 3000);
+    });
+
     /************* GRID + HLS INSTANCES *************/
     const gridEl = document.getElementById("grid");
-    const statusText = document.getElementById("statusText");
-    const refreshBtn = document.getElementById("refreshBtn");
     const instances = new Map(); // videoEl -> { hls, id }
 
     function setStatusLabel(text) {
       statusText.textContent = text;
-    }
-
-    function destroyAllInstances() {
-      instances.forEach(({ hls }) => {
-        if (hls) {
-          try { hls.destroy(); } catch (e) {}
-        }
-      });
-      instances.clear();
     }
 
     function createTile(channel) {
@@ -512,22 +677,32 @@
       };
 
       reloadBtn.addEventListener("click", playChannel);
-      playChannel(); // initial
+
+      // Initial load
+      playChannel();
 
       return tile;
+    }
+
+    function destroyAllInstances() {
+      instances.forEach(({ hls }) => {
+        if (hls) {
+          try { hls.destroy(); } catch (e) {}
+        }
+      });
+      instances.clear();
     }
 
     function buildGrid() {
       destroyAllInstances();
       gridEl.innerHTML = "";
 
-      const channels = loadChannelsFromStorage();
-      const activeChannels = channels.filter(ch => isUrl(ch.url));
-      const totalSlots = channels.length;
+      const activeChannels = currentChannels.filter(ch => isUrl(ch.url));
+      const totalSlots = currentChannels.length;
       const activeCount = activeChannels.length;
 
       if (!activeCount) {
-        setStatusLabel("No enabled channels. Configure them in the editor page.");
+        setStatusLabel("No enabled channels. Add URLs & click Save.");
         return;
       }
 
@@ -542,24 +717,12 @@
       }
     }
 
-    // Manual refresh button
-    refreshBtn.addEventListener("click", () => {
-      buildGrid();
-    });
-
-    // Live updates if editor is open in another tab on SAME device + origin
-    window.addEventListener("storage", (e) => {
-      if (e.key === STORAGE_KEY) {
-        buildGrid();
-      }
-    });
-
-    // Clean up HLS on unload
     window.addEventListener("beforeunload", () => {
       destroyAllInstances();
     });
 
     /************* INIT *************/
+    renderConfigForm();
     buildGrid();
   </script>
 </body>
