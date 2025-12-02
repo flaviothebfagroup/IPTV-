@@ -107,7 +107,7 @@
       dealershipName: 'PerformanceHyundai',
       channels: [
         { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
-        { id:2, name:'Sports',   url:'https://amg01444-tennischannelth-tennischannelnl-samsungnl-x3dq1.amagi.tv/playlist/amg01444-tennischannelth-tennischannelnl-samsungnl/playlist.m3u8', type:'hls' },
+        { id:2, name:'TSN 5',   url:'https://fl31.moveonjoy.com/TSN_5/index.m3u8', type:'hls' },
         { id:3, name:'Cooking',   url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
         { id:4, name:'Nature',   url:'https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8', type:'hls' },
         { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
@@ -267,221 +267,77 @@
 
   <!-- Firebase (module) for the player) -->
   <script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-  import {
-    getAuth,
-    signInAnonymously,
-    onAuthStateChanged,
-    setPersistence,
-    inMemoryPersistence
-  } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-  import {
-    getDatabase,
-    ref,
-    onValue,
-    update,
-    get
-  } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-  const firebaseConfig = {
-    apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
-    authDomain:"iptv-bfa.firebaseapp.com",
-    databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",
-    projectId:"iptv-bfa",
-    storageBucket:"iptv-bfa.firebasestorage.app",
-    messagingSenderId:"838790935867",
-    appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"
-  };
+    const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
 
-  // preview/iframe mode → read-only, don’t spam /user or presence
-  const EMBED = /\bembed=1\b/i.test(location.search) || (window.top !== window.self);
+    const EMBED = /\bembed=1\b/i.test(location.search) || (window.top !== window.self);
+    const app   = initializeApp(firebaseConfig, EMBED ? 'embed' : undefined);
+    const auth  = getAuth(app);
+    if(EMBED){ await setPersistence(auth, inMemoryPersistence); }
+    const db    = getDatabase(app);
 
-  const app  = initializeApp(firebaseConfig, EMBED ? 'embed' : undefined);
-  const auth = getAuth(app);
-  if (EMBED) {
-    await setPersistence(auth, inMemoryPersistence);
-  }
-  const db = getDatabase(app);
+    /* Anonymous auth + realtime wiring */
+    signInAnonymously(auth).catch(e=>{ console.error('[auth]',e); window.setStatus(false,'anon auth failed'); });
 
-  signInAnonymously(auth).catch(e => {
-    console.error('[auth]', e);
-    window.setStatus(false, 'anon auth failed');
-  });
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user) return;
+      const displayId      = CONFIG.displayId;
+      const dealershipName = CONFIG.dealershipName;
 
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) return;
+      if(EMBED){
+        /* In-iframe preview: only listen; do not write user record */
+        const dref=ref(db,`displays/${displayId}`);
+        onValue(dref,(snap)=>{
+          const d=snap.val(); if(!d) return;
+          if(typeof d.channel==='number' && d.channel!==window.currentChannel) window.loadChannel(d.channel);
+          if(d.volume!==undefined || d.muted!==undefined) window.applyVolumeSettings(d.volume, d.muted);
+          window.setStatus(true,'');
+        },(err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
+        return;
+      }
 
-    const displayId    = CONFIG.displayId;
-    const dealershipId = CONFIG.dealershipName;
-    const dRef         = ref(db, `displays/${displayId}`);
-
-    // ===== PREVIEW / EMBED MODE (iframe or ?embed=1) =====
-    if (EMBED) {
-      window.onLocalAudioChange = null; // no writes in preview
-
-      let lastApplied = { volume:null, muted:null, channel:null };
-
-      onValue(
-        dRef,
-        (snap) => {
-          const d = snap.val();
-          if (!d) return;
-
-          if (typeof d.channel === 'number' && d.channel !== lastApplied.channel) {
-            lastApplied.channel = d.channel;
-            window.loadChannel(d.channel);
-          }
-          if (typeof d.volume === 'number' && d.volume !== lastApplied.volume) {
-            lastApplied.volume = d.volume;
-            window.applyVolumeSettings(d.volume, d.muted);
-          }
-          if (typeof d.muted === 'boolean' && d.muted !== lastApplied.muted) {
-            lastApplied.muted = d.muted;
-            window.applyVolumeSettings(d.volume, d.muted);
-          }
-
-          window.setStatus(true, 'Preview');
-        },
-        (err) => {
-          console.error('[listener preview]', err);
-          window.setStatus(false, 'listener error');
-        }
-      );
-
-      return; // stop here in preview mode (no /user, no presence)
-    }
-
-    // ===== REAL DEVICE MODE =====
-
-    const presenceRef = ref(db, `onlineDisplays/${displayId}`); // change name if your tree is different
-    const sessionId   = (crypto.randomUUID && crypto.randomUUID()) ||
-                        Math.random().toString(36).slice(2);
-    const now         = Date.now();
-
-    // 1) Ensure device user profile exists (needed for your rules)
-    try {
-      await update(ref(db, `user/${user.uid}`), {
-        role:        'device',
-        name:        displayId,
-        dealershipId,
-        updatedAt:   now,
-        createdAt:   now
-      });
-    } catch (e) {
-      console.error('[user upsert]', e);
-    }
-
-    // 2) Ensure display doc exists and has base fields
-    let existing = null;
-    try {
-      const snap = await get(dRef);
-      existing   = snap.val() || {};
-
-      if (!snap.exists()) {
-        await update(dRef, {
-          channel:    1,
-          volume:     50,
-          muted:      false,
-          dealership: dealershipId,
-          // if admin didn’t already set previewUrl, create a default one:
-          previewUrl: existing.previewUrl ||
-            `https://flaviothebfagroup.github.io/IPTV-/${displayId}.html`,
-          timestamp:  now
+      /* Register device (role=device) + seed display if missing */
+      try{
+        await update(ref(db,`user/${user.uid}`),{
+          role:'device',
+          name:displayId,
+          dealershipId:dealershipName,
+          updatedAt:Date.now(),
+          createdAt:Date.now()
         });
-      } else if (!existing.dealership) {
-        await update(dRef, { dealership: dealershipId });
-      }
-    } catch (e) {
-      console.error('[display upsert]', e);
-    }
+        await update(ref(db, `${dealer}/displays/${displayId}`), true);
 
-    // 3) Write login info into displays/{displayId}
-    try {
-      await update(dRef, {
-        lastLoginAt:   now,
-        lastSeenAt:    now,
-        lastSessionId: sessionId,
-        lastUser:      { uid: user.uid },
-        updatedAt:     now
-      });
-    } catch (e) {
-      console.error('[display login meta]', e);
-    }
+      }catch(e){}
 
-    // 4) Presence node like the KF-001 / PH-001 screenshot
-    try {
-      await update(presenceRef, {
-        displayId,
-        uid:      user.uid,
-        sessionId,
-        loginAt:  now,
-        lastSeen: now
-      });
-    } catch (e) {
-      console.error('[presence init]', e);
-    }
-
-    // 5) Local audio changes → update DB
-    window.onLocalAudioChange = async (vol, muted) => {
-      try {
-        await update(dRef, { volume: vol, muted });
-      } catch (e) {
-        console.error('[audio update]', e);
-      }
-    };
-
-    // 6) Realtime listener (same as preview, but for devices)
-    let lastApplied = { volume:null, muted:null, channel:null };
-
-    onValue(
-      dRef,
-      (snap) => {
-        const d = snap.val();
-        if (!d) return;
-
-        if (typeof d.channel === 'number' && d.channel !== lastApplied.channel) {
-          lastApplied.channel = d.channel;
-          window.loadChannel(d.channel);
-        }
-        if (typeof d.volume === 'number' && d.volume !== lastApplied.volume) {
-          lastApplied.volume = d.volume;
-          window.applyVolumeSettings(d.volume, d.muted);
-        }
-        if (typeof d.muted === 'boolean' && d.muted !== lastApplied.muted) {
-          lastApplied.muted = d.muted;
-          window.applyVolumeSettings(d.volume, d.muted);
+      try{
+        const dRef=ref(db,`displays/${displayId}`); const snap=await get(dRef);
+        if(!snap.exists()){
+          await update(dRef,{ channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() });
         }
 
-        window.setStatus(true, '');
-      },
-      (err) => {
-        console.error('[listener]', err);
-        window.setStatus(false, 'listener error');
-      }
-    );
+        try { await update(ref(db, `${dealershipName}/displays/${displayId}`), true); } catch(e) {}
 
-    // 7) Heartbeat: update lastSeenAt / updatedAt in displays
-    //    and lastSeen in onlineDisplays
-    const beat = async () => {
-      const ts = Date.now();
-      try {
-        await update(dRef, {
-          lastSeenAt: ts,
-          updatedAt:  ts
-        });
-        await update(presenceRef, {
-          lastSeen: ts
-        });
-      } catch (e) {
-        console.error('[heartbeat]', e);
-      }
-    };
+      }catch(e){}
 
-    beat();
-    setInterval(beat, 15000);
-  });
-</script>
+      /* Live controls listener */
+      const dref=ref(db,`displays/${displayId}`);
+      onValue(dref,(snap)=>{
+        const d=snap.val(); if(!d) return;
+        if(typeof d.channel==='number' && d.channel!==window.currentChannel) window.loadChannel(d.channel);
+        if(d.volume!==undefined || d.muted!==undefined) window.applyVolumeSettings(d.volume, d.muted);
+        window.setStatus(true,'');
+      },(err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
 
-
+      /* Heartbeat */
+      try{
+        const hbRef=ref(db,`displays/${displayId}`);
+        const beat=async()=>{ try{ await update(hbRef,{ lastSeenAt:Date.now(), updatedAt:Date.now() }); }catch(e){} };
+        beat(); setInterval(beat, 15000);
+      }catch(e){}
+    });
+  </script>
 
 
