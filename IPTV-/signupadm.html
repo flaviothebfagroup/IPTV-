@@ -440,6 +440,14 @@
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
+    // -------- small helper: remove undefined before sending to Firebase ------
+    function stripUndefined(obj) {
+      Object.keys(obj).forEach((key) => {
+        if (obj[key] === undefined) delete obj[key];
+      });
+      return obj;
+    }
+
     const toastEl       = document.getElementById('toast');
     const loginView     = document.getElementById('loginView');
     const adminView     = document.getElementById('adminView');
@@ -763,7 +771,7 @@
       const lat = latInput.value.trim();
       const lng = lngInput.value.trim();
 
-      const payload = {
+      let payload = {
         name,
         address: addressInput.value.trim() || undefined,
         city: cityInput.value.trim() || undefined,
@@ -774,10 +782,17 @@
         mapsUrl: mapsUrl.value.trim() || undefined,
       };
 
-      if(lat && lng && !Number.isNaN(parseFloat(lat)) && !Number.isNaN(parseFloat(lng))){
+      if (
+        lat && lng &&
+        !Number.isNaN(parseFloat(lat)) &&
+        !Number.isNaN(parseFloat(lng))
+      ) {
         payload.lat = parseFloat(lat);
         payload.lng = parseFloat(lng);
       }
+
+      // remove any undefined fields (fixes the error you saw)
+      payload = stripUndefined(payload);
 
       try{
         await set(ref(db, 'dealershipPublic/' + id), payload);
