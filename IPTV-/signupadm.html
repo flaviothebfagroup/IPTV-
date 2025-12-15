@@ -1,584 +1,878 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- keep these first -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>BFA IPTV — Dealership Admin</title>
 
-  <!-- PWA + Icons -->
-  <link rel="manifest" href="/IPTV-/manifest.webmanifest">
-  <meta name="theme-color" content="#000000">
-  <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png">
-  <link rel="apple-touch-icon" href="/IPTV-/icons/apple-touch-icon.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-
-  <title>BFA IPTV — Create Account</title>
-
-  <!-- Leaflet (free; no API key) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet (free / no key) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    crossorigin="">
+  </script>
 
   <style>
     :root {
-      --bg:#0b0b0c;
-      --fg:#fff;
-      --muted:#9a9aa0;
-      --panel:#121214;
-      --border:rgba(255,255,255,.14);
-      --accent:#ff9500;
-      --tile:#17171a;
-      --tileActive:#1d1d21;
-      --shadow:0 18px 48px rgba(0,0,0,.45);
-    }
-    body.light {
+      /* Light, similar to your other clean IPTV pages */
       --bg:#f5f5f7;
-      --fg:#111;
-      --muted:#6e6e73;
-      --panel:#fff;
-      --border:rgba(0,0,0,.12);
+      --fg:#111827;
+      --muted:#6b7280;
+      --panel:#ffffff;
+      --border:rgba(15,23,42,.08);
       --accent:#ff9500;
-      --tile:#f5f5f7;        /* FIX: light version */
-      --tileActive:#eaeaef;  /* FIX: light version */
-      --shadow:0 14px 36px rgba(0,0,0,.10);
+      --shadow:0 18px 48px rgba(15,23,42,.09);
     }
 
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    *{box-sizing:border-box;margin:0;padding:0}
+
     body{
       background:var(--bg);
       color:var(--fg);
       font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
       min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:22px;
-      transition:background .25s,color .25s;
     }
 
-    .wrap{width:100%;max-width:420px}
-    .brand{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:16px}
-    .logo{
-      width:110px;height:110px;background:var(--accent);
-      -webkit-mask:url('https://i.ibb.co/LzJwPhjg/ICON-IPTV.png') center/contain no-repeat;
-      mask:url('https://i.ibb.co/LzJwPhjg/ICON-IPTV.png') center/contain no-repeat;
+    .shell{
+      max-width:1100px;
+      margin:24px auto 32px;
+      padding:0 16px;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
     }
-    .title{font-size:22px;font-weight:800;}
-    .subtitle{color:var(--muted);font-size:12px;text-transform:uppercase;}
+
+    @media (min-width:900px){
+      .layout{
+        display:grid;
+        grid-template-columns: minmax(0, 0.4fr) minmax(0, 0.6fr);
+        gap:16px;
+        align-items:flex-start;
+      }
+    }
 
     .card{
       background:var(--panel);
-      border-radius:28px;
+      border-radius:24px;
       border:1px solid var(--border);
-      padding:22px 18px 18px;
       box-shadow:var(--shadow);
+      padding:16px 16px 14px;
     }
 
-    .field{display:flex;flex-direction:column;gap:8px;margin:12px 0}
-    .input{
-      padding:14px;
-      background:transparent;
-      border:1px solid var(--border);
-      border-radius:14px;
-      color:var(--fg);
-      font-size:16px;
-      text-align:center;
-      outline:none;
-      transition:border-color .18s, box-shadow .18s, background .18s;
+    h1{
+      font-size:22px;
+      font-weight:800;
+      margin:0 0 4px;
     }
-    .input::placeholder{color:var(--muted)}
-    .input:focus{
-      border-color:var(--accent);
-      box-shadow:0 0 0 2px rgba(255,149,0,.25);
-      background:rgba(0,0,0,.06);
+    .subtitle{
+      font-size:13px;
+      color:var(--muted);
     }
-
-    .helper{text-align:center;font-size:11px;color:var(--muted);margin-bottom:6px;}
-
-    .btn{
-      width:100%;padding:14px;border:none;
-      border-radius:999px;font-size:16px;font-weight:800;
-      background:var(--accent);color:#000;cursor:pointer;
-      transition:filter .18s,transform .08s;
-    }
-    .btn:active{transform:scale(.97);}
-    .btn:disabled{opacity:.6;cursor:not-allowed;}
-
-    .btn-ghost{
-      padding:9px 14px;
-      border-radius:999px;
-      border:1px solid var(--border);
-      background:transparent;
-      color:var(--fg);
-      font-size:12px;
+    .section-title{
+      font-size:13px;
       font-weight:600;
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      cursor:pointer;
+      margin-bottom:8px;
     }
 
-    .loc-icon{
-      width:16px;height:16px;
-      border-radius:999px;
-      border:2px solid var(--accent);
-      position:relative;
-    }
-    .loc-icon::after{
-      content:'';
-      position:absolute;
-      inset:3px;
-      border-radius:999px;
-      background:var(--accent);
-    }
-
-    .dealer-row{
-      display:flex;
-      gap:8px;
-      align-items:center;
-    }
-    .dealer-row .input{
-      flex:1;
-      text-align:left;
-      font-size:14px;
-      padding-inline:12px;
-    }
-
-    .dealer-results{
-      max-height:160px;
+    .dealer-list{
+      max-height:420px;
       overflow:auto;
+      margin-top:4px;
       border-radius:16px;
       border:1px solid var(--border);
-      background:var(--tile);
-      padding:6px;
+      padding:6px 8px;
+      background:#f9fafb;
     }
-
-    .dealer-card{
-      padding:8px 10px;
+    .dealer-item{
+      padding:8px 8px;
       border-radius:12px;
       cursor:pointer;
-      font-size:12px;
-      transition:background .18s, transform .08s;
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      transition:background .15s, box-shadow .15s;
     }
-    .dealer-card + .dealer-card{margin-top:4px;}
-    .dealer-card:hover{background:var(--tileActive);transform:translateY(-1px);}
-    .dealer-card.selected{
-      background:rgba(255,149,0,.2);
-      box-shadow:0 0 0 1px rgba(255,149,0,.7);
+    .dealer-item + .dealer-item{
+      margin-top:4px;
+    }
+    .dealer-item:hover{
+      background:#f3f4ff;
+    }
+    .dealer-item.active{
+      background:#fffbeb;
+      box-shadow:0 0 0 1px rgba(245,158,11,.45);
+    }
+    .dealer-name{
+      font-size:13px;
+      font-weight:600;
+    }
+    .dealer-meta{
+      font-size:11px;
+      color:var(--muted);
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-size:11px;
+      color:var(--muted);
+      margin-top:2px;
+    }
+    .pill span.key{
+      font-size:10px;
+      text-transform:uppercase;
+      letter-spacing:.8px;
+      opacity:.7;
+    }
+    .pill span.value{
+      font-family:monospace;
     }
 
-    .dealer-name{font-weight:600;font-size:12px;}
-    .dealer-meta{font-size:11px;color:var(--muted);}
-    .dealer-distance{font-size:11px;color:var(--muted);}
-
-    .map-wrap{
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      margin:6px 0;
+    }
+    label{
+      font-size:11px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.8px;
+    }
+    .input, .textarea{
+      width:100%;
+      padding:9px 10px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background:#f9fafb;
+      color:var(--fg);
+      font-size:13px;
+      outline:none;
+      transition:border-color .15s, box-shadow .15s, background .15s;
+    }
+    .textarea{
+      min-height:48px;
+      resize:vertical;
+    }
+    .input::placeholder, .textarea::placeholder{
+      color:rgba(156,163,175,.9);
+    }
+    .input:focus, .textarea:focus{
+      border-color:var(--accent);
+      box-shadow:0 0 0 2px rgba(245,158,11,.35);
+      background:#ffffff;
+    }
+    .row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .row > .field{
+      flex:1;
+      margin:0;
+      min-width:0;
+    }
+    .btn-row{
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
       margin-top:10px;
+      flex-wrap:wrap;
+    }
+    .btn{
+      padding:9px 16px;
+      border-radius:999px;
+      border:none;
+      cursor:pointer;
+      font-size:13px;
+      font-weight:600;
+      white-space:nowrap;
+    }
+    .btn-secondary{
+      background:#ffffff;
+      color:var(--muted);
+      border:1px solid var(--border);
+    }
+    .btn-secondary:hover{
+      background:#f3f4f6;
+    }
+    .btn-primary{
+      background:var(--accent);
+      color:#000;
+    }
+    .btn-primary:hover{
+      filter:brightness(1.05);
+    }
+    .btn-danger{
+      background:#ef4444;
+      color:#fff;
+    }
+    .btn-danger:hover{
+      filter:brightness(1.05);
+    }
+    #map{
+      width:100%;
+      height:320px;
       border-radius:18px;
       overflow:hidden;
       border:1px solid var(--border);
-      display:none;
+      margin-top:10px;
     }
-    #dealerMap{width:100%;height:220px;}
-
-    .below{margin-top:16px;text-align:center;color:var(--muted);font-size:14px}
-    .below a{color:var(--fg);border-bottom:1px dashed var(--border);text-decoration:none;}
-
+    @media (min-width:1100px){
+      #map{height:360px;}
+    }
+    .help-text{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:4px;
+    }
     .toast{
-      position:fixed;bottom:50px;left:50%;
+      position:fixed;
+      bottom:18px;
+      left:50%;
       transform:translateX(-50%);
-      background:var(--accent);color:#000;
-      padding:10px 20px;border-radius:999px;
-      opacity:0;transition:.25s;font-weight:700;
+      background:var(--accent);
+      color:#000;
+      padding:8px 14px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:600;
+      opacity:0;
+      transition:opacity .25s;
       pointer-events:none;
-      max-width:92vw;
+      max-width:90vw;
       text-align:center;
       z-index:9999;
     }
-    .toast.show{opacity:1;}
-    .toast.error{background:#ff453a;color:#fff;}
+    .toast.show{opacity:1}
+    .toast.error{background:#ef4444;color:#fff;}
+
+    .login-title{
+      font-size:18px;
+      font-weight:700;
+      margin-bottom:4px;
+    }
+    .login-sub{
+      font-size:13px;
+      color:var(--muted);
+      margin-bottom:10px;
+    }
+    .login-meta{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:6px;
+    }
   </style>
 </head>
-
 <body>
-<div class="wrap">
-  <div class="brand">
-    <div class="logo"></div>
-    <div class="title">Create your account</div>
-    <div class="subtitle">Access your dealership remotes</div>
-  </div>
+  <div class="shell">
 
-  <div class="card">
-
-    <div class="field">
-      <input id="email" class="input" type="email" placeholder="Email">
-    </div>
-    <div class="field">
-      <input id="password" class="input" type="password" placeholder="Password (6+ characters)">
-    </div>
-    <div class="field">
-      <input id="name" class="input" type="text" placeholder="Your Name">
-    </div>
-
-    <div class="helper">Choose your dealership</div>
-
-    <div class="field">
-      <div class="dealer-row">
-        <button id="locateBtn" class="btn-ghost" type="button">
-          <span class="loc-icon"></span>
-          <span>Use my location</span>
-        </button>
-        <input id="dealerSearch" class="input" type="text" placeholder="Search city or dealership">
+    <!-- LOGIN VIEW -->
+    <div id="loginView" class="card">
+      <div class="login-title">Admin sign in</div>
+      <div class="login-sub">
+        Only BFA admin accounts can manage dealerships.  
+        Use the same email/password you already use for the IPTV admin.
       </div>
 
-      <div class="dealer-results" id="dealerResults">
-        <div class="dealer-card">
-          <span class="dealer-meta">Search or tap “Use my location”.</span>
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <input id="loginEmail" class="input" type="email" placeholder="admin@yourdomain.com" autocomplete="email">
+      </div>
+
+      <div class="field">
+        <label for="loginPassword">Password</label>
+        <input id="loginPassword" class="input" type="password" placeholder="Password" autocomplete="current-password">
+      </div>
+
+      <div class="btn-row" style="justify-content:flex-start">
+        <button id="loginBtn" class="btn btn-primary">Sign in</button>
+      </div>
+
+      <div class="login-meta" id="loginStatus"></div>
+    </div>
+
+    <!-- ADMIN VIEW -->
+    <div id="adminView" style="display:none; width:100%; display:flex; flex-direction:column; gap:16px;">
+      <div>
+        <h1>Dealership Manager</h1>
+        <div class="subtitle" id="adminSubtitle">
+          Loading…
         </div>
       </div>
 
-      <div class="map-wrap" id="mapWrap">
-        <div id="dealerMap"></div>
+      <div class="layout">
+        <!-- LEFT: list -->
+        <div class="card">
+          <div class="section-title">Existing Dealerships</div>
+          <div class="field">
+            <input id="listSearch" class="input" placeholder="Filter by name / city / postal">
+          </div>
+          <div id="dealerList" class="dealer-list"></div>
+          <div class="help-text">
+            Click a dealership to edit it, or use the form on the right to add a new one.
+          </div>
+        </div>
+
+        <!-- RIGHT: editor -->
+        <div class="card">
+          <div class="section-title">Add / Edit Dealership</div>
+
+          <div class="field">
+            <label for="mapsUrl">Google Maps link</label>
+            <input id="mapsUrl" class="input" placeholder="Paste full Google Maps URL for this dealership">
+            <div class="help-text">
+              If you have a short link like <code>https://share.google/...</code>, open it first in a new tab,
+              let Maps load, then copy the long URL from the browser address bar (it will start with
+              <code>https://www.google.com/maps/...</code>).
+            </div>
+          </div>
+
+          <div class="btn-row" style="justify-content:flex-start;margin-bottom:4px;">
+            <button id="parseBtn" class="btn btn-secondary">Parse link</button>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="name">Name</label>
+              <input id="name" class="input" placeholder="Stouffville Hyundai">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="address">Address (line)</label>
+            <input id="address" class="input" placeholder="67 Automall Blvd">
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="city">City</label>
+              <input id="city" class="input" placeholder="Whitchurch-Stouffville">
+            </div>
+            <div class="field" style="max-width:92px;">
+              <label for="province">Prov/State</label>
+              <input id="province" class="input" placeholder="ON">
+            </div>
+            <div class="field" style="max-width:120px;">
+              <label for="postal">Postal</label>
+              <input id="postal" class="input" placeholder="L4A 0W7">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="phone">Phone</label>
+              <input id="phone" class="input" placeholder="905-888-7777">
+            </div>
+            <div class="field">
+              <label for="placeId">Place ID (optional)</label>
+              <input id="placeId" class="input" placeholder="If you already have it">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="lat">Latitude</label>
+              <input id="lat" class="input" placeholder="43.9495">
+            </div>
+            <div class="field">
+              <label for="lng">Longitude</label>
+              <input id="lng" class="input" placeholder="-79.2632">
+            </div>
+          </div>
+
+          <div class="help-text">
+            We auto-fill <strong>name + coordinates</strong> from the Maps URL when possible.
+            Address / city / postal can be pasted from Maps if needed.
+          </div>
+
+          <div id="idDisplay" class="help-text" style="margin-top:6px;"></div>
+
+          <div id="map"></div>
+
+          <div class="btn-row">
+            <button id="newBtn" class="btn btn-secondary">New</button>
+            <button id="deleteBtn" class="btn btn-danger">Delete</button>
+            <button id="saveBtn" class="btn btn-primary">Save</button>
+          </div>
+        </div>
       </div>
-
-      <div class="helper" id="dealerHelper">Search or tap “Use my location”.</div>
     </div>
-
-    <input type="hidden" id="dealershipId">
-    <input type="hidden" id="dealershipName">
-
-    <button id="signupBtn" class="btn" onclick="signUp()">CREATE ACCOUNT</button>
   </div>
 
-  <div class="below">
-    Already have an account? <a href="/IPTV-/remote-control.html">Sign in</a>
-  </div>
-</div>
+  <div id="toast" class="toast"></div>
 
-<div id="toast" class="toast"></div>
+  <!-- Firebase + logic -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      signOut,
+      setPersistence,
+      browserLocalPersistence,
+      onAuthStateChanged
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import {
+      getDatabase,
+      ref,
+      get,
+      set,
+      remove
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-<script>
-(function(){
-  const saved = localStorage.getItem('iptv_theme') || 'light';
-  document.body.classList.toggle('light', saved === 'light');
-})();
-</script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+      authDomain: "iptv-bfa.firebaseapp.com",
+      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+      projectId: "iptv-bfa",
+      storageBucket: "iptv-bfa.firebasestorage.app",
+      messagingSenderId: "838790935867",
+      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    };
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import {
-    getAuth,
-    signInAnonymously,
-    setPersistence,
-    browserLocalPersistence,
-    EmailAuthProvider,
-    linkWithCredential,
-    createUserWithEmailAndPassword
-  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-  import {
-    getDatabase,
-    ref,
-    get,
-    set
-  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
-    authDomain: "iptv-bfa.firebaseapp.com",
-    databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
-    projectId: "iptv-bfa",
-    storageBucket: "iptv-bfa.firebasestorage.app",
-    messagingSenderId: "838790935867",
-    appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getDatabase(app);
-  const L  = window.L;
-
-  const dealerResultsEl = document.getElementById("dealerResults");
-  const dealerSearchEl  = document.getElementById("dealerSearch");
-  const locateBtn       = document.getElementById("locateBtn");
-  const dealerHelper    = document.getElementById("dealerHelper");
-  const mapWrap         = document.getElementById("mapWrap");
-  const dealershipIdInput   = document.getElementById("dealershipId");
-  const dealershipNameInput = document.getElementById("dealershipName");
-
-  let allDealers = [];
-  let selectedDealerId = null;
-  let userLocation = null;
-  let map = null;
-  let dealerMarker = null;
-
-  function showToast(msg,type=""){
-    const t=document.getElementById("toast");
-    t.textContent=msg;
-    t.className="toast show"+(type==="error"?" error":"");
-    setTimeout(()=>t.classList.remove("show"),2600);
-  }
-
-  function initMap(){
-    if(map) return;
-    map = L.map("dealerMap").setView([43.7,-79.4],8);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-  }
-
-  function setDealerMarker(lat,lng){
-    initMap();
-    mapWrap.style.display="block";
-    const pos=[lat,lng];
-    if(!dealerMarker){
-      dealerMarker=L.marker(pos).addTo(map);
-    }else{
-      dealerMarker.setLatLng(pos);
-    }
-    map.setView(pos,13);
-  }
-
-  function distanceKm(a,b){
-    const R=6371;
-    const dLat=(b.lat-a.lat)*Math.PI/180;
-    const dLng=(b.lng-a.lng)*Math.PI/180;
-    const lat1=a.lat*Math.PI/180;
-    const lat2=b.lat*Math.PI/180;
-    const s1=Math.sin(dLat/2);
-    const s2=Math.sin(dLng/2);
-    const c=2*Math.atan2(
-      Math.sqrt(s1*s1 + Math.cos(lat1)*Math.cos(lat2)*s2*s2),
-      Math.sqrt(1 - (s1*s1 + Math.cos(lat1)*Math.cos(lat2)*s2*s2))
-    );
-    return R*c;
-  }
-
-  function renderSingleDealerCard(dealer,distLabel){
-    dealerResultsEl.innerHTML="";
-    if(!dealer){
-      dealerResultsEl.innerHTML=
-        `<div class="dealer-card"><span class="dealer-meta">No results found.</span></div>`;
-      return;
-    }
-
-    const card=document.createElement("div");
-    card.className="dealer-card"+(dealer.id===selectedDealerId?" selected":"");
-    const lines=[];
-    if(dealer.address) lines.push(dealer.address);
-    const cityLine=[dealer.city,dealer.province].filter(Boolean).join(", ");
-    if(cityLine) lines.push(cityLine);
-    if(dealer.postal) lines.push(dealer.postal);
-
-    card.innerHTML=`
-      <div class="dealer-name">${dealer.name}</div>
-      <div class="dealer-meta">${lines.join(" • ")}</div>
-      ${distLabel ? `<div class="dealer-distance">${distLabel}</div>` : ""}
-    `;
-    card.addEventListener("click",()=>selectDealer(dealer.id,dealer));
-    dealerResultsEl.appendChild(card);
-  }
-
-  function selectDealer(id,preload=null){
-    const d=preload || allDealers.find(x=>x.id===id);
-    if(!d)return;
-
-    selectedDealerId=d.id;
-    dealershipIdInput.value=d.id;
-    dealershipNameInput.value=d.name;
-
-    document.querySelectorAll(".dealer-card").forEach(c=>
-      c.classList.toggle("selected",c.textContent.includes(d.name))
-    );
-
-    dealerHelper.textContent=`Selected: ${d.name}`;
-
-    if(d.lat!=null && d.lng!=null){
-      setDealerMarker(d.lat,d.lng);
-    }
-  }
-
-  async function useMyLocation(){
-    if(!navigator.geolocation){
-      showToast("Location not supported","error");
-      return;
-    }
-    dealerHelper.textContent="Locating…";
-    locateBtn.disabled=true;
-
-    try{
-      const pos=await new Promise((res,rej)=>{
-        navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true,timeout:11000});
+    // -------- small helper: remove undefined before sending to Firebase ------
+    function stripUndefined(obj) {
+      Object.keys(obj).forEach((key) => {
+        if (obj[key] === undefined) delete obj[key];
       });
-      userLocation={lat:pos.coords.latitude,lng:pos.coords.longitude};
+      return obj;
+    }
 
-      let nearest=null;
-      let bestDist=Infinity;
+    const toastEl       = document.getElementById('toast');
+    const loginView     = document.getElementById('loginView');
+    const adminView     = document.getElementById('adminView');
+    const loginEmail    = document.getElementById('loginEmail');
+    const loginPassword = document.getElementById('loginPassword');
+    const loginBtn      = document.getElementById('loginBtn');
+    const loginStatus   = document.getElementById('loginStatus');
+    const adminSubtitle = document.getElementById('adminSubtitle');
 
-      allDealers.forEach(d=>{
-        if(d.lat==null || d.lng==null)return;
-        const dist=distanceKm(userLocation,{lat:d.lat,lng:d.lng});
-        if(dist<bestDist){
-          bestDist=dist;
-          nearest={...d,_km:dist};
+    function showToast(msg, type=''){
+      toastEl.textContent = msg;
+      toastEl.className = 'toast show' + (type==='error' ? ' error' : '');
+      setTimeout(()=>{ toastEl.classList.remove('show'); }, 2600);
+    }
+
+    // --- map ---
+    let map = null;
+    let marker = null;
+    function initMap(){
+      if(map) return;
+      map = L.map('map').setView([43.7, -79.4], 9); // GTA default
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: ''
+      }).addTo(map);
+
+      marker = L.marker([43.7, -79.4], { draggable:true }).addTo(map);
+      marker.on('dragend', ()=>{
+        const pos = marker.getLatLng();
+        latInput.value = pos.lat.toFixed(6);
+        lngInput.value = pos.lng.toFixed(6);
+      });
+
+      map.on('click', (e)=>{
+        marker.setLatLng(e.latlng);
+        latInput.value = e.latlng.lat.toFixed(6);
+        lngInput.value = e.latlng.lng.toFixed(6);
+      });
+    }
+
+    function updateMapFromLatLng(){
+      initMap();
+      const lat = parseFloat(latInput.value);
+      const lng = parseFloat(lngInput.value);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      const pos = [lat, lng];
+      map.setView(pos, 14);
+      marker.setLatLng(pos);
+    }
+
+    // --- helpers ---
+    function slugify(str){
+      return (str || '')
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g,'-')
+        .replace(/(^-|-$)/g,'')
+        .substr(0,50);
+    }
+
+    function parseGoogleMapsUrl(url){
+      try{
+        const u = new URL(url);
+
+        let name = '';
+
+        // From /place/<name>/
+        const parts = u.pathname.split('/');
+        const placeIndex = parts.indexOf('place');
+        if(placeIndex >= 0 && parts.length > placeIndex+1){
+          name = decodeURIComponent(parts[placeIndex+1].replace(/\+/g,' '));
         }
+
+        // lat/lng from @lat,lng or from ll= or q=lat,lng
+        let lat = null, lng = null;
+
+        const atMatch = u.href.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+        if(atMatch){
+          lat = parseFloat(atMatch[1]);
+          lng = parseFloat(atMatch[2]);
+        } else if(u.searchParams.get('ll')){
+          const ll = u.searchParams.get('ll').split(',');
+          if(ll.length>=2){
+            lat = parseFloat(ll[0]);
+            lng = parseFloat(ll[1]);
+          }
+        } else if(u.searchParams.get('q')){
+          const qVal = u.searchParams.get('q');
+          const coordMatch = qVal.match(/(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/);
+          if(coordMatch){
+            lat = parseFloat(coordMatch[1]);
+            lng = parseFloat(coordMatch[2]);
+          }
+          if(!name){
+            name = decodeURIComponent(qVal.replace(/\+/g,' '));
+          }
+        }
+
+        // best-effort address guess from q= if it's not coordinates
+        let addressGuess = '';
+        const qRaw = u.searchParams.get('q');
+        if(qRaw){
+          const decodedQ = decodeURIComponent(qRaw.replace(/\+/g,' '));
+          const looksLikeCoords = /-?\d+\.?\d*,\s*-?\d+\.?\d*/.test(decodedQ);
+          if(!looksLikeCoords){
+            addressGuess = decodedQ;
+          }
+        }
+
+        if(!name && !lat && !lng && !addressGuess){
+          return null;
+        }
+        return { name, lat, lng, addressGuess };
+      }catch(e){
+        return null;
+      }
+    }
+
+    // --- DOM refs for admin UI ---
+    const listEl      = document.getElementById('dealerList');
+    const listSearch  = document.getElementById('listSearch');
+    const mapsUrl     = document.getElementById('mapsUrl');
+    const nameInput   = document.getElementById('name');
+    const addressInput= document.getElementById('address');
+    const cityInput   = document.getElementById('city');
+    const provinceInput=document.getElementById('province');
+    const postalInput = document.getElementById('postal');
+    const phoneInput  = document.getElementById('phone');
+    const placeIdInput= document.getElementById('placeId');
+    const latInput    = document.getElementById('lat');
+    const lngInput    = document.getElementById('lng');
+    const idDisplay   = document.getElementById('idDisplay');
+
+    const parseBtn    = document.getElementById('parseBtn');
+    const newBtn      = document.getElementById('newBtn');
+    const saveBtn     = document.getElementById('saveBtn');
+    const deleteBtn   = document.getElementById('deleteBtn');
+
+    let currentId = null;
+    let allDealersMap = {}; // id -> obj
+
+    // --- load dealerships from DB (only after admin check) ---
+    async function loadDealerships(){
+      try{
+        const snap = await get(ref(db, 'dealershipPublic'));
+        allDealersMap = {};
+        if(!snap.exists()){
+          listEl.innerHTML = '<div class="help-text" style="padding:4px 2px;">No dealerships yet. Add one on the right.</div>';
+          idDisplay.textContent = 'New dealership (ID will be auto-generated from the name)';
+          return;
+        }
+        allDealersMap = snap.val() || {};
+        renderDealerList();
+        idDisplay.textContent = currentId
+          ? 'Editing ID: ' + currentId
+          : 'New dealership (ID will be auto-generated from the name)';
+      }catch(e){
+        console.error(e);
+        showToast('Failed to load dealerships: ' + (e.code || e.message),'error');
+      }
+    }
+
+    function renderDealerList(){
+      const q = (listSearch.value || '').toLowerCase().trim();
+      listEl.innerHTML = '';
+
+      const entries = Object.entries(allDealersMap).map(([id, v])=>({id, v}));
+
+      entries.sort((a,b)=>{
+        const an = (a.v.name || a.id).toLowerCase();
+        const bn = (b.v.name || b.id).toLowerCase();
+        return an.localeCompare(bn);
       });
 
-      if(!nearest){
-        renderSingleDealerCard(null,null);
-        mapWrap.style.display="none";
-        dealerHelper.textContent="No dealership found near you.";
+      const filtered = entries.filter(({id, v})=>{
+        if(!q) return true;
+        const txt = [
+          id,
+          v.name,
+          v.city,
+          v.address,
+          v.fullAddress,
+          v.postal,
+          v.province,
+          v.phone
+        ].filter(Boolean).join(' ').toLowerCase();
+        return txt.includes(q);
+      });
+
+      if(!filtered.length){
+        listEl.innerHTML = '<div class="help-text" style="padding:4px 2px;">No results.</div>';
         return;
       }
 
-      const label = bestDist < 1
-        ? `${Math.round(bestDist*1000)} m away`
-        : `${bestDist.toFixed(1)} km away`;
+      filtered.forEach(({id, v})=>{
+        const item = document.createElement('div');
+        item.className = 'dealer-item' + (currentId === id ? ' active' : '');
+        item.dataset.id = id;
 
-      renderSingleDealerCard(nearest,label);
-      selectDealer(nearest.id,nearest);
-      dealerHelper.textContent="Nearest dealership selected.";
-    }
-    catch(e){
-      showToast("Location denied","error");
-      dealerHelper.textContent="Search by city or dealership.";
-    }
-    finally{
-      locateBtn.disabled=false;
-    }
-  }
+        const name = v.name || id;
+        const cityLine = [v.city, v.province].filter(Boolean).join(', ');
+        const addr = v.address || v.fullAddress || '';
 
-  function searchBestMatch(){
-    const q=dealerSearchEl.value.trim().toLowerCase();
-    if(!q){
-      dealerResultsEl.innerHTML=
-        `<div class="dealer-card"><span class='dealer-meta'>Search or tap “Use my location”.</span></div>`;
-      if(!selectedDealerId) mapWrap.style.display="none";
-      return;
+        item.innerHTML = `
+          <div class="dealer-name">${name}</div>
+          <div class="dealer-meta">${[addr, cityLine, v.postal].filter(Boolean).join(' • ')}</div>
+          <div class="pill"><span class="key">ID</span><span class="value">${id}</span></div>
+        `;
+        item.addEventListener('click', ()=>loadFormForId(id));
+        listEl.appendChild(item);
+      });
     }
 
-    let best=null;
-    let bestScore=-1;
-
-    allDealers.forEach(d=>{
-      const text=[
-        d.name,d.city,d.province,d.address,d.postal
-      ].filter(Boolean).join(" ").toLowerCase();
-
-      if(!text.includes(q))return;
-
-      const score=q.length;
-      if(score>bestScore){
-        bestScore=score;
-        best=d;
+    function clearForm(){
+      currentId = null;
+      mapsUrl.value = '';
+      nameInput.value = '';
+      addressInput.value = '';
+      cityInput.value = '';
+      provinceInput.value = '';
+      postalInput.value = '';
+      phoneInput.value = '';
+      placeIdInput.value = '';
+      latInput.value = '';
+      lngInput.value = '';
+      idDisplay.textContent = 'New dealership (ID will be auto-generated from the name)';
+      if(map && marker){
+        map.setView([43.7,-79.4], 9);
+        marker.setLatLng([43.7,-79.4]);
       }
+      listEl.querySelectorAll('.dealer-item').forEach(el=>el.classList.remove('active'));
+    }
+
+    function loadFormForId(id){
+      const v = allDealersMap[id];
+      if(!v) return;
+      currentId = id;
+      mapsUrl.value = v.mapsUrl || '';
+      nameInput.value = v.name || '';
+      addressInput.value = v.address || v.fullAddress || '';
+      cityInput.value = v.city || '';
+      provinceInput.value = v.province || '';
+      postalInput.value = v.postal || v.postalCode || '';
+      phoneInput.value = v.phone || '';
+      placeIdInput.value = v.placeId || '';
+      latInput.value = (v.lat != null ? v.lat : '').toString();
+      lngInput.value = (v.lng != null ? v.lng : '').toString();
+      idDisplay.textContent = `Editing ID: ${id}`;
+      renderDealerList();
+      updateMapFromLatLng();
+    }
+
+    // parse Google Maps URL
+    parseBtn.addEventListener('click', ()=>{
+      const raw = mapsUrl.value.trim();
+      if(!raw){
+        showToast('Paste a Google Maps URL first','error');
+        return;
+      }
+      const parsed = parseGoogleMapsUrl(raw);
+      if(!parsed){
+        showToast('Could not understand this URL. Open the short link first and paste the long Maps URL.', 'error');
+        return;
+      }
+      if(parsed.name && !nameInput.value){
+        nameInput.value = parsed.name;
+      }
+      if(parsed.addressGuess && !addressInput.value){
+        addressInput.value = parsed.addressGuess;
+      }
+      if(parsed.lat != null){
+        latInput.value = parsed.lat.toFixed(6);
+      }
+      if(parsed.lng != null){
+        lngInput.value = parsed.lng.toFixed(6);
+      }
+      updateMapFromLatLng();
+      showToast('Parsed link — name / position filled. Address may still need manual tweak.');
     });
 
-    if(!best){
-      renderSingleDealerCard(null,null);
-      mapWrap.style.display="none";
-      dealerHelper.textContent="No results.";
-      return;
-    }
+    // map updates when lat/lng edited
+    latInput.addEventListener('change', updateMapFromLatLng);
+    lngInput.addEventListener('change', updateMapFromLatLng);
 
-    renderSingleDealerCard(best,"");
-    dealerHelper.textContent="Tap to confirm.";
-  }
+    // list filter
+    listSearch.addEventListener('input', ()=>renderDealerList());
 
-  dealerSearchEl.addEventListener("input",searchBestMatch);
-  locateBtn.addEventListener("click",useMyLocation);
+    newBtn.addEventListener('click', ()=>clearForm());
 
-  async function loadDealers(){
-    try{
-      const snap=await get(ref(db,"dealershipPublic"));
-      if(snap.exists()){
-        allDealers = Object.entries(snap.val()).map(([id,v])=>({
-          id,
-          name:v.name||id,
-          address:v.address||"",
-          city:v.city||"",
-          province:v.province||"",
-          postal:v.postal||"",
-          lat:v.lat!=null?parseFloat(v.lat):null,
-          lng:v.lng!=null?parseFloat(v.lng):null
-        }));
+    deleteBtn.addEventListener('click', async ()=>{
+      if(!currentId){
+        showToast('No dealership selected to delete','error');
+        return;
       }
-    }
-    catch(e){
-      console.warn(e);
-    }
-  }
-
-  (async()=>{
-    await setPersistence(auth,browserLocalPersistence);
-    if(!auth.currentUser) await signInAnonymously(auth);
-    await loadDealers();
-  })();
-
-  ["email","password","name"].forEach(id=>{
-    document.getElementById(id).addEventListener("keydown",e=>{
-      if(e.key==="Enter") signUp();
-    });
-  });
-
-  window.signUp=async function(){
-    const email=document.getElementById("email").value.trim();
-    const password=document.getElementById("password").value;
-    const name=document.getElementById("name").value.trim();
-    const dealershipId=dealershipIdInput.value;
-    const dealershipName=dealershipNameInput.value;
-
-    if(!email || !password || !name){
-      showToast("Fill all fields","error");
-      return;
-    }
-    if(password.length<6){
-      showToast("Password too short","error");
-      return;
-    }
-    if(!dealershipId){
-      showToast("Please select dealership","error");
-      return;
-    }
-
-    const btn=document.getElementById("signupBtn");
-    btn.disabled=true;
-    btn.textContent="CREATING…";
-
-    try{
-      let cred;
-      if(auth.currentUser?.isAnonymous){
-        const c=EmailAuthProvider.credential(email,password);
-        cred = await linkWithCredential(auth.currentUser,c);
-      }else{
-        cred = await createUserWithEmailAndPassword(auth,email,password);
-      }
-      const {user}=cred;
-
-      let displays=[];
+      if(!confirm(`Delete dealership "${currentId}"?`)) return;
       try{
-        const snap=await get(ref(db,`dealership/${dealershipId}/displays`));
-        if(snap.exists()) displays=Object.keys(snap.val());
-      }catch{}
+        await remove(ref(db, 'dealershipPublic/' + currentId));
+        showToast('Deleted dealership');
+        currentId = null;
+        await loadDealerships();
+        clearForm();
+      }catch(e){
+        console.error(e);
+        showToast('Delete failed: ' + (e.code || e.message),'error');
+      }
+    });
 
-      const profile={
-        email,
+    saveBtn.addEventListener('click', async ()=>{
+      const name = nameInput.value.trim();
+      if(!name){
+        showToast('Name is required','error');
+        return;
+      }
+      const id = currentId || slugify(name);
+      if(!id){
+        showToast('Could not generate ID','error');
+        return;
+      }
+
+      const lat = latInput.value.trim();
+      const lng = lngInput.value.trim();
+
+      let payload = {
         name,
-        dealershipId,
-        dealershipName,
-        createdAt:Date.now()
+        address: addressInput.value.trim() || undefined,
+        city: cityInput.value.trim() || undefined,
+        province: provinceInput.value.trim() || undefined,
+        postal: postalInput.value.trim() || undefined,
+        phone: phoneInput.value.trim() || undefined,
+        placeId: placeIdInput.value.trim() || undefined,
+        mapsUrl: mapsUrl.value.trim() || undefined,
       };
-      if(displays.length) profile.displays=displays;
 
-      await set(ref(db,`user/${user.uid}`),profile);
+      if (
+        lat && lng &&
+        !Number.isNaN(parseFloat(lat)) &&
+        !Number.isNaN(parseFloat(lng))
+      ) {
+        payload.lat = parseFloat(lat);
+        payload.lng = parseFloat(lng);
+      }
 
-      showToast("Account created!");
-      btn.textContent="SUCCESS";
-      setTimeout(()=>location.href="/IPTV-/remote-control.html",1100);
+      // remove any undefined fields (fixes the error you saw)
+      payload = stripUndefined(payload);
 
-    }catch(e){
-      console.error(e);
-      showToast(e.message||"Signup failed","error");
-      btn.disabled=false;
-      btn.textContent="CREATE ACCOUNT";
+      try{
+        await set(ref(db, 'dealershipPublic/' + id), payload);
+        currentId = id;
+        showToast('Saved dealership');
+        await loadDealerships();
+        loadFormForId(id);
+      }catch(e){
+        console.error(e);
+        showToast('Save failed: ' + (e.code || e.message),'error');
+      }
+    });
+
+    // --- ADMIN AUTH FLOW ---
+
+    async function doLogin(){
+      const email = loginEmail.value.trim();
+      const password = loginPassword.value;
+      if(!email || !password){
+        loginStatus.textContent = 'Enter email and password.';
+        return;
+      }
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Signing in…';
+      loginStatus.textContent = '';
+      try{
+        await setPersistence(auth, browserLocalPersistence);
+        await signInWithEmailAndPassword(auth, email, password);
+        // onAuthStateChanged will handle the rest
+      }catch(e){
+        console.error(e);
+        loginStatus.textContent = 'Login failed: ' + (e.code || e.message);
+      }finally{
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Sign in';
+      }
     }
-  };
-</script>
+
+    loginBtn.addEventListener('click', doLogin);
+    loginPassword.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter') doLogin();
+    });
+    loginEmail.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter') doLogin();
+    });
+
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){
+        // not logged in
+        loginView.style.display = 'block';
+        adminView.style.display = 'none';
+        loginStatus.textContent = '';
+        return;
+      }
+
+      try{
+        const profileSnap = await get(ref(db, 'user/' + user.uid));
+        const profile = profileSnap.exists() ? profileSnap.val() : {};
+        const role = profile.role || 'user';
+
+        if(role === 'admin'){
+          loginView.style.display = 'none';
+          adminView.style.display = 'flex';
+          adminSubtitle.textContent = `Signed in as ${user.email || 'admin'} · role: admin`;
+          initMap();
+          loadDealerships();
+        }else{
+          loginView.style.display = 'block';
+          adminView.style.display = 'none';
+          loginStatus.textContent = `You are signed in as ${user.email || 'user'}, but your role is "${role}". This page is restricted to admin accounts.`;
+          await signOut(auth);
+        }
+      }catch(e){
+        console.error(e);
+        loginView.style.display = 'block';
+        adminView.style.display = 'none';
+        loginStatus.textContent = 'Could not verify admin role: ' + (e.code || e.message);
+      }
+    });
+
+  </script>
 </body>
 </html>
