@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- keep these first -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <!-- PWA + Icons -->
+  <link rel="manifest" href="/IPTV-/manifest.webmanifest">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" type="image/png" sizes="192x192" href="/IPTV-/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/IPTV-/icons/icon-512.png">
+  <link rel="apple-touch-icon" href="/IPTV-/icons/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="/IPTV-/icons/apple-touch-icon-120.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/IPTV-/icons/apple-touch-icon-152.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="/IPTV-/icons/apple-touch-icon-167.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/IPTV-/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="IPTV Remote">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+  <title>IPTV — Create Account</title>
+
+  <style>
+    :root { --bg:#0b0b0c; --fg:#fff; --muted:#9a9aa0; --panel:#121214; --border:rgba(255,255,255,.14);
+            --accent:#ff9500; --tile:#17171a; --tileActive:#1d1d21; --shadow:0 18px 48px rgba(0,0,0,.45); }
+    body.light { --bg:#f5f5f7; --fg:#111; --muted:#6e6e73; --panel:#fff; --border:rgba(0,0,0,.12);
+                 --accent:#ff9500; --tile:#f2f2f7; --tileActive:#eaeaef; --shadow:0 14px 36px rgba(0,0,0,.10); }
+
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%}
+    body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
+         display:flex;align-items:center;justify-content:center;padding:22px;transition:background .25s,color .25s}
+
+    .wrap{width:100%;max-width:420px}
+    .brand{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:16px}
+    .logo{width:110px;height:110px;background:var(--accent);
+      -webkit-mask:url('https://i.ibb.co/LzJwPhjg/ICON-IPTV.png') center/contain no-repeat;
+      mask:url('https://i.ibb.co/LzJwPhjg/ICON-IPTV.png') center/contain no-repeat}
+    .title{font-size:22px;font-weight:800;letter-spacing:.4px}
+    .subtitle{color:var(--muted);font-size:12px;letter-spacing:1px;text-transform:uppercase}
+
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:28px;padding:22px 18px 18px;box-shadow:var(--shadow)}
+
+    .field{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+    .label{font-size:12px;color:var(--muted);letter-spacing:.5px}
+
+    .input, .new-dealer{width:100%;padding:14px 14px;background:transparent;border:1px solid var(--border);
+       border-radius:14px;color:var(--fg);font-size:16px;text-align:center;outline:none;transition:border-color .18s, box-shadow .18s}
+    .input::placeholder,.new-dealer::placeholder{color:var(--muted)}
+    .input:focus,.new-dealer:focus{border-color:var(--accent); box-shadow:0 0 0 2px rgba(255,149,0,.25)}
+
+    .helper{margin:8px 0 4px;text-align:center;color:var(--muted);font-size:11px;letter-spacing:.8px;text-transform:uppercase}
+
+    .btn{width:100%;padding:14px;background:var(--accent);color:#000;border:none;border-radius:9999px;font-size:16px;font-weight:800;cursor:pointer}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,0,0,.35);border-top-color:#000;border-radius:50%;
+             animation:spin .6s linear infinite;margin-left:10px;vertical-align:-2px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .below{margin-top:16px;text-align:center;color:var(--muted);font-size:14px}
+    .below a{color:var(--fg);text-decoration:none;border-bottom:1px dashed var(--border)}
+    .toast{position:fixed;bottom:50px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 20px;border-radius:999px;
+           font-size:13px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;max-width:92vw;text-align:center}
+    .toast.show{opacity:1}
+    .toast.error{background:#ff453a;color:#fff}
+
+    .theme-note{display:block;text-align:center;margin-top:10px;color:var(--muted);font-size:11px}
+
+    /* Location + suggestions */
+    .field-location{
+      gap:10px;
+    }
+    .location-actions{
+      display:flex;
+      gap:8px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+    .chip-btn{
+      padding:6px 12px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.04);
+      color:var(--fg);
+      font-size:12px;
+      cursor:pointer;
+    }
+    .chip-btn:active{
+      transform:scale(.97);
+    }
+
+    #dealershipSuggestions{
+      margin-top:4px;
+      border-radius:16px;
+      border:1px solid var(--border);
+      padding:10px 12px;
+      background:rgba(0,0,0,.22);
+      font-size:13px;
+    }
+    body.light #dealershipSuggestions{
+      background:rgba(255,255,255,.75);
+    }
+    .suggestion{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      padding:6px 0;
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    body.light .suggestion{
+      border-bottom:1px solid rgba(0,0,0,.06);
+    }
+    .suggestion:last-child{
+      border-bottom:none;
+    }
+    .suggestion label{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      width:100%;
+      cursor:pointer;
+    }
+    .suggestion small{
+      color:var(--muted);
+      font-size:11px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">
+      <div class="logo" role="img" aria-label="IPTV logo"></div>
+      <div class="title">Create your account</div>
+      <div class="subtitle">Access your dealership remotes</div>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <input id="email" class="input" type="email" placeholder="Email" autocomplete="email">
+      </div>
+      <div class="field">
+        <input id="password" class="input" type="password" placeholder="Password (6+ characters)" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <input id="name" class="input" type="text" placeholder="Your Name" autocomplete="name">
+      </div>
+
+      <div class="helper">Your Dealership</div>
+
+      <!-- NEW: address / location input instead of dropdown -->
+      <div class="field field-location">
+        <input id="locationInput" class="input" type="text" placeholder="Type your address, city or postal code">
+        <div class="location-actions">
+          <button type="button" class="chip-btn" id="findByAddressBtn">Find dealerships</button>
+          <button type="button" class="chip-btn" id="useLocationBtn">Use my location</button>
+        </div>
+      </div>
+
+      <!-- Suggestions: closest dealerships only (no full public list) -->
+      <div class="field" id="dealershipSuggestions" style="display:none"></div>
+
+      <!-- Hidden fields that will store the chosen dealership -->
+      <input type="hidden" id="dealershipId">
+      <input type="hidden" id="dealershipName">
+
+      <button id="signupBtn" class="btn" onclick="signUp()">CREATE ACCOUNT</button>
+      <small class="theme-note">Theme matches your remote (white/dark)</small>
+    </div>
+
+    <div class="below">
+      Already have an account? <a href="https://flaviothebfagroup.github.io/IPTV-/remote-control.html">Sign in</a>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // keep theme consistent with the remote
+    (function(){
+      const saved = localStorage.getItem('iptv_theme') || 'light';
+      document.body.classList.toggle('light', saved === 'light');
+    })();
+  </script>
+
+  <!-- Firebase + Logic -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import {
+      getAuth,
+      setPersistence, browserLocalPersistence,
+      signInAnonymously, EmailAuthProvider, linkWithCredential,
+      createUserWithEmailAndPassword
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getDatabase, ref, set, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+    // --- Firebase config ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+      authDomain: "iptv-bfa.firebaseapp.com",
+      databaseURL: "https://iptv-bfa-default-rtdb.firebaseio.com",
+      projectId: "iptv-bfa",
+      storageBucket: "iptv-bfa.firebasestorage.app",
+      messagingSenderId: "838790935867",
+      appId: "1:838790935867:web:1860eac7dbeb7159e1b31e"
+    };
+
+    // --- Google Maps / Geocoding API (YOU MUST PUT YOUR KEY HERE) ---
+    const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY_HERE';
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
+
+    // ---------- helpers ----------
+    function showToast(message, type=''){
+      const t = document.getElementById('toast');
+      t.textContent = message;
+      t.className = 'toast show' + (type==='error' ? ' error' : '');
+      setTimeout(()=>t.classList.remove('show'), 2800);
+    }
+    function slugify(id){
+      return (id||'')
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g,'-')
+        .replace(/(^-|-$)/g,'');
+    }
+    function twoLetterPrefix(name){
+      const raw = (name||'').trim();
+      if(!raw) return 'DS';
+      let parts = raw.match(/[A-ZÀ-ÖØ-Ý][a-zà-öø-ÿ]*/g);
+      if(!parts || parts.length < 2) parts = raw.match(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g) || [];
+      let first = parts[0] || '', second = parts[1] || '';
+      let prefix = '';
+      if(first) prefix += first[0];
+      if(second) prefix += second[0];
+      if(prefix.length < 2 && first.length >= 2) prefix = first.slice(0,2);
+      return prefix.toUpperCase();
+    }
+
+    function distanceKm(lat1,lng1,lat2,lng2){
+      const R = 6371;
+      const dLat = (lat2-lat1) * Math.PI/180;
+      const dLng = (lng2-lng1) * Math.PI/180;
+      const a = Math.sin(dLat/2)**2 +
+                Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+                Math.sin(dLng/2)**2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    let dealerships = []; // {id, name, lat, lng}
+
+    // ---------- load dealerships (read list, but do NOT expose as big dropdown) ----------
+    async function loadDealerships(){
+      try{
+        const snap = await get(ref(db, 'dealershipPublic'));
+        dealerships = [];
+
+        if (snap.exists()) {
+          dealerships = Object.entries(snap.val()).map(([id, v]) => ({
+            id,
+            name: (v && v.name) ? v.name : id,
+            lat: v && typeof v.lat !== 'undefined' ? Number(v.lat) : null,
+            lng: v && typeof v.lng !== 'undefined' ? Number(v.lng) : null
+          }));
+        } else {
+          console.warn('dealershipPublic is empty');
+        }
+      }catch(err){
+        console.warn('Could not load dealershipPublic:', err);
+        dealerships = [];
+      }
+    }
+
+    function renderSuggestions(list){
+      const wrap = document.getElementById('dealershipSuggestions');
+      const hiddenId   = document.getElementById('dealershipId');
+      const hiddenName = document.getElementById('dealershipName');
+
+      if(!list.length){
+        wrap.style.display = 'none';
+        wrap.innerHTML = '';
+        hiddenId.value = '';
+        hiddenName.value = '';
+        return;
+      }
+
+      wrap.innerHTML = '';
+      list.forEach((d, idx)=>{
+        const div = document.createElement('div');
+        div.className = 'suggestion';
+        div.innerHTML = `
+          <label>
+            <input type="radio" name="dealerChoice" value="${d.id}" data-name="${d.name}" ${idx===0?'checked':''}>
+            <span>${d.name} <small>${d.distance ? d.distance.toFixed(1)+' km away' : ''}</small></span>
+          </label>
+        `;
+        wrap.appendChild(div);
+      });
+      wrap.style.display = 'block';
+
+      updateSelectedFromRadios();
+    }
+
+    function updateSelectedFromRadios(){
+      const checked = document.querySelector('input[name="dealerChoice"]:checked');
+      const hiddenId   = document.getElementById('dealershipId');
+      const hiddenName = document.getElementById('dealershipName');
+
+      if(checked){
+        hiddenId.value = checked.value;
+        hiddenName.value = checked.dataset.name || '';
+      }
+    }
+
+    document.addEventListener('change', (e)=>{
+      if(e.target && e.target.name === 'dealerChoice'){
+        updateSelectedFromRadios();
+      }
+    });
+
+    function suggestClosestDealershipsFromCoords(lat, lng){
+      if(!dealerships.length){
+        showToast('No dealerships available yet.','error');
+        return;
+      }
+
+      const withCoords = dealerships
+        .filter(d => typeof d.lat === 'number' && !Number.isNaN(d.lat) &&
+                     typeof d.lng === 'number' && !Number.isNaN(d.lng))
+        .map(d => ({
+          ...d,
+          distance: distanceKm(lat, lng, d.lat, d.lng)
+        }));
+
+      if(!withCoords.length){
+        showToast('Dealerships are missing location data.','error');
+        return;
+      }
+
+      withCoords.sort((a,b)=>a.distance - b.distance);
+      const top = withCoords.slice(0,3);
+      renderSuggestions(top);
+      showToast('Showing closest dealerships');
+    }
+
+    async function geocodeAddress(address){
+      if(!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY_HERE'){
+        showToast('Add your Google Maps API key in the code.','error');
+        throw new Error('Missing API key');
+      }
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`;
+      const res = await fetch(url);
+      if(!res.ok) throw new Error('Network error');
+      const data = await res.json();
+      if(data.status !== 'OK' || !data.results || !data.results.length){
+        throw new Error('No geocode results');
+      }
+      const loc = data.results[0].geometry.location;
+      suggestClosestDealershipsFromCoords(loc.lat, loc.lng);
+    }
+
+    // sign-in anonymously so reads are allowed by your root .read rule
+    (async ()=>{
+      try{
+        await setPersistence(auth, browserLocalPersistence);
+        if (!auth.currentUser) await signInAnonymously(auth);
+      }catch(e){ console.warn('Anonymous sign-in failed:', e); }
+      finally{
+        loadDealerships();
+      }
+    })();
+
+    // enter to submit
+    ['email','password','name'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') signUp(); });
+    });
+
+    // Location buttons
+    const locationInput = document.getElementById('locationInput');
+    const findByAddressBtn = document.getElementById('findByAddressBtn');
+    const useLocationBtn   = document.getElementById('useLocationBtn');
+
+    findByAddressBtn.addEventListener('click', async ()=>{
+      const addr = (locationInput.value || '').trim();
+      if(!addr){
+        showToast('Enter your address, city, or postal code','error');
+        return;
+      }
+      try{
+        await geocodeAddress(addr);
+      }catch(err){
+        console.error(err);
+        showToast('Could not find that location','error');
+      }
+    });
+
+    useLocationBtn.addEventListener('click', ()=>{
+      if(!navigator.geolocation){
+        showToast('Location not supported on this device','error');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos)=>{
+          const { latitude, longitude } = pos.coords;
+          suggestClosestDealershipsFromCoords(latitude, longitude);
+        },
+        (err)=>{
+          console.warn(err);
+          showToast('Unable to get your location','error');
+        },
+        { enableHighAccuracy:false, timeout:10000 }
+      );
+    });
+
+    // ---------- sign up ----------
+    window.signUp = async function(){
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const name = document.getElementById('name').value.trim();
+
+      const dealershipId   = document.getElementById('dealershipId').value;
+      const dealershipName = document.getElementById('dealershipName').value;
+
+      if(!email || !password || !name){ showToast('Please fill all fields','error'); return; }
+      if(password.length < 6){ showToast('Password must be 6+ characters','error'); return; }
+      if(!dealershipId || !dealershipName){
+        showToast('Please choose your dealership from the suggestions','error');
+        return;
+      }
+
+      const btn = document.getElementById('signupBtn');
+      btn.disabled = true; btn.innerHTML = 'CREATING<span class="spinner"></span>';
+
+      try{
+        // Upgrade anon → email/pass OR create if not anon
+        let cred;
+        if (auth.currentUser && auth.currentUser.isAnonymous) {
+          const c = EmailAuthProvider.credential(email, password);
+          cred = await linkWithCredential(auth.currentUser, c);
+        } else {
+          cred = await createUserWithEmailAndPassword(auth, email, password);
+        }
+        const { user } = cred;
+
+        // Try to read displays for existing dealership (allowed by your public .read at children)
+        let userDisplays = [];
+        try {
+          const dSnap = await get(ref(db, `dealership/${dealershipId}/displays`));
+          if (dSnap.exists()) {
+            userDisplays = Object.keys(dSnap.val());
+          }
+        } catch (e) {
+          console.warn('Displays read failed (ok):', e);
+        }
+
+        // Build profile WITHOUT role (your rules require this for non-admin first write)
+        const profile = {
+          email,
+          name,
+          dealershipId,
+          dealershipName,
+          createdAt: Date.now()
+        };
+        if (userDisplays.length) profile.displays = userDisplays;
+
+        // Write /user/{uid}
+        await set(ref(db, `user/${user.uid}`), profile);
+
+        showToast('Account created!');
+
+        btn.innerHTML = 'SUCCESS — OPENING REMOTE…';
+        setTimeout(()=>{ window.location.href = 'https://flaviothebfagroup.github.io/IPTV-/remote-control.html'; }, 1200);
+      }catch(error){
+        console.error('signup', error);
+        const map = {
+          'auth/operation-not-allowed':'Email & Password sign-in is disabled (enable in Firebase Auth).',
+          'auth/unauthorized-domain':'Domain not authorized in Firebase Auth settings.',
+          'auth/email-already-in-use':'Email already registered.',
+          'auth/weak-password':'Password too weak.',
+          'auth/invalid-email':'Invalid email address.'
+        };
+        const msg = map[error.code] || (`Signup failed: ${error.code || error.message || 'Unknown error'}`);
+        showToast(msg, 'error');
+        btn.disabled = false; btn.textContent = 'CREATE ACCOUNT';
+      }
+    };
+  </script>
+</body>
+</html>
