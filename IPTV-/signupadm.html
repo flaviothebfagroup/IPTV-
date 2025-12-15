@@ -18,7 +18,7 @@
 
   <style>
     :root {
-      /* Light, similar to your other clean pages */
+      /* Light, similar to your other clean IPTV pages */
       --bg:#f5f5f7;
       --fg:#111827;
       --muted:#6b7280;
@@ -251,109 +251,155 @@
     }
     .toast.show{opacity:1}
     .toast.error{background:#ef4444;color:#fff;}
+
+    .login-title{
+      font-size:18px;
+      font-weight:700;
+      margin-bottom:4px;
+    }
+    .login-sub{
+      font-size:13px;
+      color:var(--muted);
+      margin-bottom:10px;
+    }
+    .login-meta{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:6px;
+    }
   </style>
 </head>
 <body>
   <div class="shell">
-    <div>
-      <h1>Dealership Manager</h1>
-      <div class="subtitle">
-        Admin-only tool. Add or edit dealerships in <code>dealershipPublic</code> using Google Maps links (no API key / no subscription).
+
+    <!-- LOGIN VIEW -->
+    <div id="loginView" class="card">
+      <div class="login-title">Admin sign in</div>
+      <div class="login-sub">
+        Only BFA admin accounts can manage dealerships.  
+        Use the same email/password you already use for the IPTV admin.
       </div>
+
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <input id="loginEmail" class="input" type="email" placeholder="admin@yourdomain.com" autocomplete="email">
+      </div>
+
+      <div class="field">
+        <label for="loginPassword">Password</label>
+        <input id="loginPassword" class="input" type="password" placeholder="Password" autocomplete="current-password">
+      </div>
+
+      <div class="btn-row" style="justify-content:flex-start">
+        <button id="loginBtn" class="btn btn-primary">Sign in</button>
+      </div>
+
+      <div class="login-meta" id="loginStatus"></div>
     </div>
 
-    <div class="layout">
-      <!-- LEFT: list -->
-      <div class="card">
-        <div class="section-title">Existing Dealerships</div>
-        <div class="field">
-          <input id="listSearch" class="input" placeholder="Filter by name / city / postal">
-        </div>
-        <div id="dealerList" class="dealer-list"></div>
-        <div class="help-text">
-          Click a dealership to edit it, or use the form on the right to add a new one.
+    <!-- ADMIN VIEW -->
+    <div id="adminView" style="display:none; width:100%; display:flex; flex-direction:column; gap:16px;">
+      <div>
+        <h1>Dealership Manager</h1>
+        <div class="subtitle" id="adminSubtitle">
+          Loading…
         </div>
       </div>
 
-      <!-- RIGHT: editor -->
-      <div class="card">
-        <div class="section-title">Add / Edit Dealership</div>
-
-        <div class="field">
-          <label for="mapsUrl">Google Maps link</label>
-          <input id="mapsUrl" class="input" placeholder="Paste full Google Maps URL for this dealership">
+      <div class="layout">
+        <!-- LEFT: list -->
+        <div class="card">
+          <div class="section-title">Existing Dealerships</div>
+          <div class="field">
+            <input id="listSearch" class="input" placeholder="Filter by name / city / postal">
+          </div>
+          <div id="dealerList" class="dealer-list"></div>
           <div class="help-text">
-            If you have a short link like <code>https://share.google/...</code>, open it first, let Maps load,
-            then copy the long URL from the browser address bar (it will start with <code>https://www.google.com/maps/...</code>).
+            Click a dealership to edit it, or use the form on the right to add a new one.
           </div>
         </div>
 
-        <div class="btn-row" style="justify-content:flex-start;margin-bottom:4px;">
-          <button id="parseBtn" class="btn btn-secondary">Parse link</button>
-        </div>
+        <!-- RIGHT: editor -->
+        <div class="card">
+          <div class="section-title">Add / Edit Dealership</div>
 
-        <div class="row">
           <div class="field">
-            <label for="name">Name</label>
-            <input id="name" class="input" placeholder="Stouffville Hyundai">
+            <label for="mapsUrl">Google Maps link</label>
+            <input id="mapsUrl" class="input" placeholder="Paste full Google Maps URL for this dealership">
+            <div class="help-text">
+              If you have a short link like <code>https://share.google/...</code>, open it first in a new tab,
+              let Maps load, then copy the long URL from the browser address bar (it will start with
+              <code>https://www.google.com/maps/...</code>).
+            </div>
           </div>
-        </div>
 
-        <div class="field">
-          <label for="address">Address (line)</label>
-          <input id="address" class="input" placeholder="67 Automall Blvd">
-        </div>
+          <div class="btn-row" style="justify-content:flex-start;margin-bottom:4px;">
+            <button id="parseBtn" class="btn btn-secondary">Parse link</button>
+          </div>
 
-        <div class="row">
+          <div class="row">
+            <div class="field">
+              <label for="name">Name</label>
+              <input id="name" class="input" placeholder="Stouffville Hyundai">
+            </div>
+          </div>
+
           <div class="field">
-            <label for="city">City</label>
-            <input id="city" class="input" placeholder="Whitchurch-Stouffville">
+            <label for="address">Address (line)</label>
+            <input id="address" class="input" placeholder="67 Automall Blvd">
           </div>
-          <div class="field" style="max-width:92px;">
-            <label for="province">Prov/State</label>
-            <input id="province" class="input" placeholder="ON">
-          </div>
-          <div class="field" style="max-width:120px;">
-            <label for="postal">Postal</label>
-            <input id="postal" class="input" placeholder="L4A 0W7">
-          </div>
-        </div>
 
-        <div class="row">
-          <div class="field">
-            <label for="phone">Phone</label>
-            <input id="phone" class="input" placeholder="905-888-7777">
+          <div class="row">
+            <div class="field">
+              <label for="city">City</label>
+              <input id="city" class="input" placeholder="Whitchurch-Stouffville">
+            </div>
+            <div class="field" style="max-width:92px;">
+              <label for="province">Prov/State</label>
+              <input id="province" class="input" placeholder="ON">
+            </div>
+            <div class="field" style="max-width:120px;">
+              <label for="postal">Postal</label>
+              <input id="postal" class="input" placeholder="L4A 0W7">
+            </div>
           </div>
-          <div class="field">
-            <label for="placeId">Place ID (optional)</label>
-            <input id="placeId" class="input" placeholder="If you already have it">
+
+          <div class="row">
+            <div class="field">
+              <label for="phone">Phone</label>
+              <input id="phone" class="input" placeholder="905-888-7777">
+            </div>
+            <div class="field">
+              <label for="placeId">Place ID (optional)</label>
+              <input id="placeId" class="input" placeholder="If you already have it">
+            </div>
           </div>
-        </div>
 
-        <div class="row">
-          <div class="field">
-            <label for="lat">Latitude</label>
-            <input id="lat" class="input" placeholder="43.9495">
+          <div class="row">
+            <div class="field">
+              <label for="lat">Latitude</label>
+              <input id="lat" class="input" placeholder="43.9495">
+            </div>
+            <div class="field">
+              <label for="lng">Longitude</label>
+              <input id="lng" class="input" placeholder="-79.2632">
+            </div>
           </div>
-          <div class="field">
-            <label for="lng">Longitude</label>
-            <input id="lng" class="input" placeholder="-79.2632">
+
+          <div class="help-text">
+            We auto-fill <strong>name + coordinates</strong> from the Maps URL when possible.
+            Address / city / postal can be pasted from Maps if needed.
           </div>
-        </div>
 
-        <div class="help-text">
-          We auto-fill <strong>name + coordinates</strong> from the Maps URL when possible.
-          Address / city / postal can be pasted from Maps if needed.
-        </div>
+          <div id="idDisplay" class="help-text" style="margin-top:6px;"></div>
 
-        <div id="idDisplay" class="help-text" style="margin-top:6px;"></div>
+          <div id="map"></div>
 
-        <div id="map"></div>
-
-        <div class="btn-row">
-          <button id="newBtn" class="btn btn-secondary">New</button>
-          <button id="deleteBtn" class="btn btn-danger">Delete</button>
-          <button id="saveBtn" class="btn btn-primary">Save</button>
+          <div class="btn-row">
+            <button id="newBtn" class="btn btn-secondary">New</button>
+            <button id="deleteBtn" class="btn btn-danger">Delete</button>
+            <button id="saveBtn" class="btn btn-primary">Save</button>
+          </div>
         </div>
       </div>
     </div>
@@ -366,9 +412,11 @@
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import {
       getAuth,
-      signInAnonymously,
+      signInWithEmailAndPassword,
+      signOut,
       setPersistence,
-      browserLocalPersistence
+      browserLocalPersistence,
+      onAuthStateChanged
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import {
       getDatabase,
@@ -392,7 +440,15 @@
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    const toastEl = document.getElementById('toast');
+    const toastEl       = document.getElementById('toast');
+    const loginView     = document.getElementById('loginView');
+    const adminView     = document.getElementById('adminView');
+    const loginEmail    = document.getElementById('loginEmail');
+    const loginPassword = document.getElementById('loginPassword');
+    const loginBtn      = document.getElementById('loginBtn');
+    const loginStatus   = document.getElementById('loginStatus');
+    const adminSubtitle = document.getElementById('adminSubtitle');
+
     function showToast(msg, type=''){
       toastEl.textContent = msg;
       toastEl.className = 'toast show' + (type==='error' ? ' error' : '');
@@ -503,7 +559,7 @@
       }
     }
 
-    // --- DOM refs ---
+    // --- DOM refs for admin UI ---
     const listEl      = document.getElementById('dealerList');
     const listSearch  = document.getElementById('listSearch');
     const mapsUrl     = document.getElementById('mapsUrl');
@@ -523,12 +579,10 @@
     const saveBtn     = document.getElementById('saveBtn');
     const deleteBtn   = document.getElementById('deleteBtn');
 
-    initMap(); // initialise early so layout is stable
-
     let currentId = null;
     let allDealersMap = {}; // id -> obj
 
-    // --- load dealerships from DB ---
+    // --- load dealerships from DB (only after admin check) ---
     async function loadDealerships(){
       try{
         const snap = await get(ref(db, 'dealershipPublic'));
@@ -613,9 +667,11 @@
       latInput.value = '';
       lngInput.value = '';
       idDisplay.textContent = 'New dealership (ID will be auto-generated from the name)';
+      if(map && marker){
+        map.setView([43.7,-79.4], 9);
+        marker.setLatLng([43.7,-79.4]);
+      }
       listEl.querySelectorAll('.dealer-item').forEach(el=>el.classList.remove('active'));
-      map.setView([43.7,-79.4], 9);
-      marker.setLatLng([43.7,-79.4]);
     }
 
     function loadFormForId(id){
@@ -731,24 +787,77 @@
         loadFormForId(id);
       }catch(e){
         console.error(e);
-        // This is likely where your "save doesn’t work" was happening.
         showToast('Save failed: ' + (e.code || e.message),'error');
       }
     });
 
-    // auth then load data
-    (async ()=>{
+    // --- ADMIN AUTH FLOW ---
+
+    async function doLogin(){
+      const email = loginEmail.value.trim();
+      const password = loginPassword.value;
+      if(!email || !password){
+        loginStatus.textContent = 'Enter email and password.';
+        return;
+      }
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Signing in…';
+      loginStatus.textContent = '';
       try{
         await setPersistence(auth, browserLocalPersistence);
-        await signInAnonymously(auth);
+        await signInWithEmailAndPassword(auth, email, password);
+        // onAuthStateChanged will handle the rest
       }catch(e){
         console.error(e);
-        showToast('Anonymous auth failed — your Firebase rules may require admin login','error');
+        loginStatus.textContent = 'Login failed: ' + (e.code || e.message);
       }finally{
-        initMap();
-        loadDealerships();
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Sign in';
       }
-    })();
+    }
+
+    loginBtn.addEventListener('click', doLogin);
+    loginPassword.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter') doLogin();
+    });
+    loginEmail.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter') doLogin();
+    });
+
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){
+        // not logged in
+        loginView.style.display = 'block';
+        adminView.style.display = 'none';
+        loginStatus.textContent = '';
+        return;
+      }
+
+      try{
+        const profileSnap = await get(ref(db, 'user/' + user.uid));
+        const profile = profileSnap.exists() ? profileSnap.val() : {};
+        const role = profile.role || 'user';
+
+        if(role === 'admin'){
+          loginView.style.display = 'none';
+          adminView.style.display = 'flex';
+          adminSubtitle.textContent = `Signed in as ${user.email || 'admin'} · role: admin`;
+          initMap();
+          loadDealerships();
+        }else{
+          loginView.style.display = 'block';
+          adminView.style.display = 'none';
+          loginStatus.textContent = `You are signed in as ${user.email || 'user'}, but your role is "${role}". This page is restricted to admin accounts.`;
+          await signOut(auth);
+        }
+      }catch(e){
+        console.error(e);
+        loginView.style.display = 'block';
+        adminView.style.display = 'none';
+        loginStatus.textContent = 'Could not verify admin role: ' + (e.code || e.message);
+      }
+    });
+
   </script>
 </body>
 </html>
