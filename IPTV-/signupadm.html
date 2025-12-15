@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>BFA IPTV — Dealership Admin</title>
 
-  <!-- Leaflet for free/open maps (no API key) -->
+  <!-- Leaflet (free / no key) -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -17,29 +17,44 @@
   </script>
 
   <style>
-    :root { --bg:#0b0b0c; --fg:#fff; --muted:#9a9aa0; --panel:#121214; --border:rgba(255,255,255,.14);
-            --accent:#ff9500; --shadow:0 18px 48px rgba(0,0,0,.45); }
+    :root {
+      /* Light, similar to your other clean pages */
+      --bg:#f5f5f7;
+      --fg:#111827;
+      --muted:#6b7280;
+      --panel:#ffffff;
+      --border:rgba(15,23,42,.08);
+      --accent:#ff9500;
+      --shadow:0 18px 48px rgba(15,23,42,.09);
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+
     body{
-      margin:0;
       background:var(--bg);
       color:var(--fg);
       font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
+      min-height:100vh;
     }
+
     .shell{
       max-width:1100px;
-      margin:24px auto;
-      padding:16px;
+      margin:24px auto 32px;
+      padding:0 16px;
       display:flex;
       flex-direction:column;
       gap:16px;
     }
+
     @media (min-width:900px){
       .layout{
         display:grid;
         grid-template-columns: minmax(0, 0.4fr) minmax(0, 0.6fr);
         gap:16px;
+        align-items:flex-start;
       }
     }
+
     .card{
       background:var(--panel);
       border-radius:24px;
@@ -47,6 +62,7 @@
       box-shadow:var(--shadow);
       padding:16px 16px 14px;
     }
+
     h1{
       font-size:22px;
       font-weight:800;
@@ -61,6 +77,7 @@
       font-weight:600;
       margin-bottom:8px;
     }
+
     .dealer-list{
       max-height:420px;
       overflow:auto;
@@ -68,7 +85,7 @@
       border-radius:16px;
       border:1px solid var(--border);
       padding:6px 8px;
-      background:#09090b;
+      background:#f9fafb;
     }
     .dealer-item{
       padding:8px 8px;
@@ -77,13 +94,17 @@
       display:flex;
       flex-direction:column;
       gap:2px;
+      transition:background .15s, box-shadow .15s;
     }
     .dealer-item + .dealer-item{
       margin-top:4px;
     }
+    .dealer-item:hover{
+      background:#f3f4ff;
+    }
     .dealer-item.active{
-      background:rgba(255,149,0,.14);
-      border:1px solid rgba(255,149,0,.6);
+      background:#fffbeb;
+      box-shadow:0 0 0 1px rgba(245,158,11,.45);
     }
     .dealer-name{
       font-size:13px;
@@ -99,6 +120,7 @@
       gap:6px;
       font-size:11px;
       color:var(--muted);
+      margin-top:2px;
     }
     .pill span.key{
       font-size:10px;
@@ -127,35 +149,40 @@
       padding:9px 10px;
       border-radius:10px;
       border:1px solid var(--border);
-      background:#050508;
+      background:#f9fafb;
       color:var(--fg);
       font-size:13px;
       outline:none;
+      transition:border-color .15s, box-shadow .15s, background .15s;
     }
     .textarea{
       min-height:48px;
       resize:vertical;
     }
     .input::placeholder, .textarea::placeholder{
-      color:rgba(154,154,160,.8);
+      color:rgba(156,163,175,.9);
     }
     .input:focus, .textarea:focus{
       border-color:var(--accent);
-      box-shadow:0 0 0 2px rgba(255,149,0,.35);
+      box-shadow:0 0 0 2px rgba(245,158,11,.35);
+      background:#ffffff;
     }
     .row{
       display:flex;
       gap:8px;
+      flex-wrap:wrap;
     }
     .row > .field{
       flex:1;
       margin:0;
+      min-width:0;
     }
     .btn-row{
       display:flex;
       justify-content:flex-end;
       gap:8px;
       margin-top:10px;
+      flex-wrap:wrap;
     }
     .btn{
       padding:9px 16px;
@@ -164,26 +191,40 @@
       cursor:pointer;
       font-size:13px;
       font-weight:600;
+      white-space:nowrap;
     }
     .btn-secondary{
-      background:transparent;
+      background:#ffffff;
       color:var(--muted);
       border:1px solid var(--border);
+    }
+    .btn-secondary:hover{
+      background:#f3f4f6;
     }
     .btn-primary{
       background:var(--accent);
       color:#000;
     }
+    .btn-primary:hover{
+      filter:brightness(1.05);
+    }
     .btn-danger{
-      background:#ff453a;
+      background:#ef4444;
       color:#fff;
+    }
+    .btn-danger:hover{
+      filter:brightness(1.05);
     }
     #map{
       width:100%;
-      height:360px;
+      height:320px;
       border-radius:18px;
       overflow:hidden;
       border:1px solid var(--border);
+      margin-top:10px;
+    }
+    @media (min-width:1100px){
+      #map{height:360px;}
     }
     .help-text{
       font-size:11px;
@@ -209,7 +250,7 @@
       z-index:9999;
     }
     .toast.show{opacity:1}
-    .toast.error{background:#ff453a;color:#fff;}
+    .toast.error{background:#ef4444;color:#fff;}
   </style>
 </head>
 <body>
@@ -217,7 +258,7 @@
     <div>
       <h1>Dealership Manager</h1>
       <div class="subtitle">
-        Admin-only. Paste a Google Maps link, we’ll extract name + coordinates and save everything to <code>dealershipPublic</code>.
+        Admin-only tool. Add or edit dealerships in <code>dealershipPublic</code> using Google Maps links (no API key / no subscription).
       </div>
     </div>
 
@@ -242,7 +283,8 @@
           <label for="mapsUrl">Google Maps link</label>
           <input id="mapsUrl" class="input" placeholder="Paste full Google Maps URL for this dealership">
           <div class="help-text">
-            In Google Maps: search the store → Share → copy link → paste here → click “Parse link”.
+            If you have a short link like <code>https://share.google/...</code>, open it first, let Maps load,
+            then copy the long URL from the browser address bar (it will start with <code>https://www.google.com/maps/...</code>).
           </div>
         </div>
 
@@ -284,7 +326,7 @@
           </div>
           <div class="field">
             <label for="placeId">Place ID (optional)</label>
-            <input id="placeId" class="input" placeholder="Only if you already have it">
+            <input id="placeId" class="input" placeholder="If you already have it">
           </div>
         </div>
 
@@ -300,12 +342,13 @@
         </div>
 
         <div class="help-text">
-          Lat / Lng and Name are auto-filled from the Google Maps URL when possible. You can tweak any field.
+          We auto-fill <strong>name + coordinates</strong> from the Maps URL when possible.
+          Address / city / postal can be pasted from Maps if needed.
         </div>
 
         <div id="idDisplay" class="help-text" style="margin-top:6px;"></div>
 
-        <div id="map" style="margin-top:10px;"></div>
+        <div id="map"></div>
 
         <div class="btn-row">
           <button id="newBtn" class="btn btn-secondary">New</button>
@@ -325,8 +368,7 @@
       getAuth,
       signInAnonymously,
       setPersistence,
-      browserLocalPersistence,
-      onAuthStateChanged
+      browserLocalPersistence
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import {
       getDatabase,
@@ -406,17 +448,17 @@
     function parseGoogleMapsUrl(url){
       try{
         const u = new URL(url);
-        if (!/google\.[^/]*\/maps/.test(u.href)) return null;
 
-        // name from /place/<name>/
         let name = '';
+
+        // From /place/<name>/
         const parts = u.pathname.split('/');
         const placeIndex = parts.indexOf('place');
         if(placeIndex >= 0 && parts.length > placeIndex+1){
           name = decodeURIComponent(parts[placeIndex+1].replace(/\+/g,' '));
         }
 
-        // lat/lng from @lat,lng or from q= / ll=
+        // lat/lng from @lat,lng or from ll= or q=lat,lng
         let lat = null, lng = null;
 
         const atMatch = u.href.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
@@ -430,15 +472,32 @@
             lng = parseFloat(ll[1]);
           }
         } else if(u.searchParams.get('q')){
-          const q = u.searchParams.get('q');
-          const coordMatch = q.match(/(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/);
+          const qVal = u.searchParams.get('q');
+          const coordMatch = qVal.match(/(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/);
           if(coordMatch){
             lat = parseFloat(coordMatch[1]);
             lng = parseFloat(coordMatch[2]);
           }
+          if(!name){
+            name = decodeURIComponent(qVal.replace(/\+/g,' '));
+          }
         }
 
-        return { name, lat, lng };
+        // best-effort address guess from q= if it's not coordinates
+        let addressGuess = '';
+        const qRaw = u.searchParams.get('q');
+        if(qRaw){
+          const decodedQ = decodeURIComponent(qRaw.replace(/\+/g,' '));
+          const looksLikeCoords = /-?\d+\.?\d*,\s*-?\d+\.?\d*/.test(decodedQ);
+          if(!looksLikeCoords){
+            addressGuess = decodedQ;
+          }
+        }
+
+        if(!name && !lat && !lng && !addressGuess){
+          return null;
+        }
+        return { name, lat, lng, addressGuess };
       }catch(e){
         return null;
       }
@@ -464,22 +523,30 @@
     const saveBtn     = document.getElementById('saveBtn');
     const deleteBtn   = document.getElementById('deleteBtn');
 
-    const mapOverlay  = document.getElementById('map');
-    initMap(); // start immediately
+    initMap(); // initialise early so layout is stable
 
     let currentId = null;
     let allDealersMap = {}; // id -> obj
 
     // --- load dealerships from DB ---
     async function loadDealerships(){
-      const snap = await get(ref(db, 'dealershipPublic'));
-      allDealersMap = {};
-      if(!snap.exists()){
-        listEl.innerHTML = '<div class="help-text" style="padding:4px 2px;">No dealerships yet. Add one on the right.</div>';
-        return;
+      try{
+        const snap = await get(ref(db, 'dealershipPublic'));
+        allDealersMap = {};
+        if(!snap.exists()){
+          listEl.innerHTML = '<div class="help-text" style="padding:4px 2px;">No dealerships yet. Add one on the right.</div>';
+          idDisplay.textContent = 'New dealership (ID will be auto-generated from the name)';
+          return;
+        }
+        allDealersMap = snap.val() || {};
+        renderDealerList();
+        idDisplay.textContent = currentId
+          ? 'Editing ID: ' + currentId
+          : 'New dealership (ID will be auto-generated from the name)';
+      }catch(e){
+        console.error(e);
+        showToast('Failed to load dealerships: ' + (e.code || e.message),'error');
       }
-      allDealersMap = snap.val() || {};
-      renderDealerList();
     }
 
     function renderDealerList(){
@@ -579,11 +646,14 @@
       }
       const parsed = parseGoogleMapsUrl(raw);
       if(!parsed){
-        showToast('Could not understand this URL. Make sure it is a Google Maps place link.','error');
+        showToast('Could not understand this URL. Open the short link first and paste the long Maps URL.', 'error');
         return;
       }
       if(parsed.name && !nameInput.value){
         nameInput.value = parsed.name;
+      }
+      if(parsed.addressGuess && !addressInput.value){
+        addressInput.value = parsed.addressGuess;
       }
       if(parsed.lat != null){
         latInput.value = parsed.lat.toFixed(6);
@@ -592,7 +662,7 @@
         lngInput.value = parsed.lng.toFixed(6);
       }
       updateMapFromLatLng();
-      showToast('Parsed link — check fields above.');
+      showToast('Parsed link — name / position filled. Address may still need manual tweak.');
     });
 
     // map updates when lat/lng edited
@@ -610,11 +680,16 @@
         return;
       }
       if(!confirm(`Delete dealership "${currentId}"?`)) return;
-      await remove(ref(db, 'dealershipPublic/' + currentId));
-      showToast('Deleted dealership');
-      currentId = null;
-      await loadDealerships();
-      clearForm();
+      try{
+        await remove(ref(db, 'dealershipPublic/' + currentId));
+        showToast('Deleted dealership');
+        currentId = null;
+        await loadDealerships();
+        clearForm();
+      }catch(e){
+        console.error(e);
+        showToast('Delete failed: ' + (e.code || e.message),'error');
+      }
     });
 
     saveBtn.addEventListener('click', async ()=>{
@@ -648,12 +723,17 @@
         payload.lng = parseFloat(lng);
       }
 
-      await set(ref(db, 'dealershipPublic/' + id), payload);
-      currentId = id;
-      showToast('Saved dealership');
-
-      await loadDealerships();
-      loadFormForId(id);
+      try{
+        await set(ref(db, 'dealershipPublic/' + id), payload);
+        currentId = id;
+        showToast('Saved dealership');
+        await loadDealerships();
+        loadFormForId(id);
+      }catch(e){
+        console.error(e);
+        // This is likely where your "save doesn’t work" was happening.
+        showToast('Save failed: ' + (e.code || e.message),'error');
+      }
     });
 
     // auth then load data
@@ -663,7 +743,7 @@
         await signInAnonymously(auth);
       }catch(e){
         console.error(e);
-        showToast('Anonymous auth failed — check rules', 'error');
+        showToast('Anonymous auth failed — your Firebase rules may require admin login','error');
       }finally{
         initMap();
         loadDealerships();
