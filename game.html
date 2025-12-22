@@ -1,495 +1,1174 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>VVAL — Truth • Truth • Dare • Lie (18+)</title>
-<style>
-  :root{
-    --bg:#090b10; --fg:#fff; --muted:#b7bfcc;
-    --panel:#111421; --tile:#15192a; --border:rgba(255,255,255,.14);
-    --accent:#00d17a; --accent2:#ffd500; --danger:#ff5470;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; color:var(--fg);
-    background: radial-gradient(900px 600px at 15% -10%, #0b1f16 0%, transparent 60%),
-                radial-gradient(900px 600px at 90% 110%, #2a1a28 0%, transparent 60%),
-                linear-gradient(180deg,#0a0e14,#090b10);
-    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
-  }
-  .app{max-width:980px; margin:0 auto; padding:18px 16px 80px}
-  header{display:flex; align-items:center; gap:12px; padding:8px 6px 16px}
-  .logo{
-    width:44px;height:44px;border-radius:12px;
-    background: conic-gradient(from 220deg,#00d17a,#ffd500,#ff5470,#00d17a);
-    display:grid;place-items:center;color:#0a0a0a;font-weight:900;letter-spacing:.3px;
-  }
-  h1{font-size:22px; margin:0}
-  .tiny{font-size:12px;color:var(--muted)}
-  .panel{
-    background: color-mix(in srgb, var(--panel) 92%, black 8%);
-    border:1px solid var(--border); border-radius:18px; padding:18px;
-    box-shadow: 0 30px 80px rgba(0,0,0,.45); backdrop-filter: blur(10px);
-  }
-  .grid{display:grid; gap:14px}
-  @media(min-width:760px){ .grid.two{grid-template-columns:1fr 1fr} }
-  .title{font-size:20px;font-weight:800; letter-spacing:.2px}
-  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
-  input,button,select,label.toggle{
-    border-radius:14px; border:1px solid var(--border); background:var(--tile); color:var(--fg);
-  }
-  input,select{padding:14px 14px; font-size:18px; min-height:52px}
-  input::placeholder{color:#91a0b8}
-  button{
-    padding:14px 16px; font-size:18px; cursor:pointer; border-color:transparent;
-    background:linear-gradient(180deg,#232735,#161a28); font-weight:800;
-  }
-  button.primary{
-    background:linear-gradient(180deg,#00ff95,#00d17a);
-    color:#0a1310; border:1px solid rgba(255,255,255,.18); text-shadow:0 1px 0 rgba(255,255,255,.35)
-  }
-  button.warn{background:linear-gradient(180deg,#ffe169,#ffd500); color:#201a05}
-  button.danger{background:linear-gradient(180deg,#ff7f96,#ff5470)}
-  button.ghost{background:transparent; border:1px dashed var(--border); color:var(--muted)}
-  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
-  .chip{background:#1a2033; border:1px solid var(--border); padding:10px 12px; border-radius:999px; display:flex; gap:8px; align-items:center; font-size:16px}
-  .chip button{background:transparent; border:none; color:#9aa0ad; padding:0 2px; font-size:18px; cursor:pointer}
-  .sep{height:1px;background:var(--border); margin:12px 0}
-  label.toggle{
-    display:inline-flex; gap:10px; align-items:center; padding:10px 12px; color:#d0d5e1; background:#181e31;
-  }
-  .note{font-size:13px; color:#9aa0ad}
-  .story{font-size:20px; line-height:1.45; background:#181e31; border:1px solid var(--border); border-radius:16px; padding:14px}
-  .question{font-size:22px; font-weight:900; margin-top:10px}
-  .players{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px}
-  @media(min-width:560px){ .players{grid-template-columns:1fr 1fr 1fr} }
-  .pbtn{
-    min-height:64px; font-size:20px; padding:16px; border-radius:14px; border:1px solid var(--border);
-    background:linear-gradient(180deg,#1e2233,#151a28); display:flex; justify-content:space-between; align-items:center;
-  }
-  .pbtn small{color:#a8aebd; font-weight:700; font-size:16px}
-  .toolbar{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px}
-  .winner{padding:14px; border-radius:14px; background:linear-gradient(180deg, rgba(255,213,0,.22), rgba(255,213,0,.06)); border:1px solid rgba(255,213,0,.35); font-size:18px}
-  .scoreboard{margin-top:14px; border-top:1px solid var(--border); padding-top:14px}
-  .scores{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-  @media(min-width:680px){ .scores{grid-template-columns:1fr 1fr 1fr 1fr} }
-  .score{background:#181e31; border:1px solid var(--border); border-radius:12px; padding:10px 12px; display:flex; justify-content:space-between; font-size:18px}
-  .hidden{display:none !important}
-  .confetti{pointer-events:none; position:fixed; inset:0; overflow:hidden}
-  .confetti i{position:absolute; width:10px; height:14px; border-radius:2px; opacity:.9}
-  .badge{display:inline-block; padding:6px 10px; border-radius:999px; font-size:12px; font-weight:900}
-  .b1{background:#0b2; color:#00140a}
-  .b2{background:#ffd500; color:#2a2000}
-  .bigtext *{font-size: calc(1.14 * 1rem)}
-  .timer{font-variant-numeric: tabular-nums; font-weight:900; font-size:18px; padding:10px 12px; border-radius:12px; background:#1d2338; border:1px solid var(--border)}
-  .modeTabs{display:flex; gap:8px; flex-wrap:wrap}
-  .modeTabs button{border:1px solid var(--border); background:#1a2033}
-  .modeTabs button.active{outline:2px solid var(--accent); background:linear-gradient(180deg,#142a22,#101a15)}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tennis Court Flow</title>
+  <style>
+    :root {
+      --accent: #ff9500;
+      --accent-soft: #ffb347;
+      --court-green: #1b8f4d;
+      --court-lines: #e5f9ff;
+      --card-radius: 22px;
+      --shadow-strong: 0 20px 60px rgba(15,23,42,0.25);
+      --shadow-soft: 0 14px 40px rgba(15,23,42,0.18);
+      --shell-border: rgba(209,213,219,0.9);
+      --border-subtle: rgba(209,213,219,0.9);
+
+      --bg: #e5e7eb;
+      --bg-soft: #f3f4f6;
+      --shell-bg: radial-gradient(circle at 10% 0%, rgba(252,211,77,0.18), transparent 55%),
+                  radial-gradient(circle at 90% 0%, rgba(59,130,246,0.14), transparent 60%),
+                  linear-gradient(145deg, #ffffff, #f9fafb);
+      --text: #111827;
+      --muted: #6b7280;
+      --glass: rgba(255,255,255,0.9);
+      --courts-bg: rgba(255,255,255,0.96);
+      --court-visual-bg: linear-gradient(135deg, #c7f9cc, #8fd19e);
+      --court-inner-bg: linear-gradient(#42b883, #1b8f4d);
+      --chip-bg: rgba(249,250,251,0.96);
+      --chip-hover-bg: rgba(229,231,235,0.98);
+      --timer-badge-bg: rgba(31,41,55,0.9);
+      --hint-bg-dot: rgba(248,250,252,0.9);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 0% 0%, #d4d4d8 0, transparent 50%),
+        radial-gradient(circle at 100% 0%, #cbd5f5 0, transparent 55%),
+        radial-gradient(circle at 50% 100%, #e5e7eb 0, transparent 55%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 1200px;
+      background: var(--shell-bg);
+      border-radius: 32px;
+      box-shadow: var(--shadow-strong);
+      border: 1px solid var(--shell-border);
+      padding: 20px 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    @media (min-width: 900px) {
+      .app-shell {
+        padding: 24px 26px 28px;
+      }
+    }
+
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .title-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.4);
+      background: rgba(255,255,255,0.9);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--muted);
+    }
+
+    .title-chip-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #fff, #22c55e);
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.35);
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .header-right {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .summary-pill {
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .summary-pill span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .summary-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255,149,0,0.35);
+    }
+
+    .summary-separator {
+      width: 1px;
+      height: 14px;
+      background: linear-gradient(to bottom, transparent, rgba(148,163,184,0.5), transparent);
+    }
+
+    .location-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      font-size: 0.75rem;
+    }
+
+    .location-row label {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.68rem;
+      color: var(--muted);
+    }
+
+    .location-select {
+      position: relative;
+    }
+
+    .location-select select {
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      padding: 6px 26px 6px 10px;
+      background: var(--chip-bg);
+      font-size: 0.75rem;
+      color: var(--text);
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+
+    .location-select-chevron {
+      position: absolute;
+      right: 9px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.7rem;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .chip-btn {
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.7);
+      background: var(--chip-bg);
+      color: var(--muted);
+      font-size: 0.72rem;
+      padding: 5px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.08s ease, color 0.08s ease, border-color 0.08s ease, transform 0.08s ease;
+      box-shadow: 0 4px 14px rgba(15,23,42,0.08);
+    }
+
+    .chip-btn:hover {
+      background: var(--chip-hover-bg);
+      color: var(--text);
+      border-color: rgba(156,163,175,0.9);
+      transform: translateY(-0.5px);
+    }
+
+    .chip-btn:active {
+      transform: translateY(0.5px) scale(0.985);
+    }
+
+    .chip-btn.danger {
+      border-color: rgba(248,113,113,0.7);
+      color: #b91c1c;
+      background: #fef2f2;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.4fr);
+      gap: 18px;
+      align-items: flex-start;
+    }
+
+    @media (max-width: 800px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    /* Control panel */
+    .panel {
+      background: var(--glass);
+      border-radius: 22px;
+      border: 1px solid var(--shell-border);
+      padding: 14px 14px 16px;
+      backdrop-filter: blur(24px);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .panel-title {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .panel-badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.7);
+      color: var(--muted);
+      background: rgba(249,250,251,0.9);
+    }
+
+    .form-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .form-row > * {
+      flex: 1 1 120px;
+      min-width: 0;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-wrap label {
+      position: absolute;
+      left: 10px;
+      top: 6px;
+      font-size: 0.65rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .input-wrap input,
+    .input-wrap select {
+      width: 100%;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      padding: 18px 12px 6px;
+      background: rgba(249,250,251,0.96);
+      color: var(--text);
+      font-size: 0.8rem;
+      outline: none;
+    }
+
+    .input-wrap input::placeholder {
+      color: rgba(148,163,184,0.9);
+    }
+
+    .input-wrap select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      padding-right: 28px;
+    }
+
+    .select-chevron {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(2px);
+      font-size: 0.7rem;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    button.primary {
+      border-radius: 999px;
+      border: none;
+      padding: 14px 18px;
+      font-size: 0.83rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: radial-gradient(circle at 0 0, #ffe7c4, transparent 50%),
+                  linear-gradient(135deg, var(--accent), var(--accent-soft));
+      color: #111827;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(15,23,42,0.28);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex: 0 0 auto;
+      min-width: 150px;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
+      white-space: nowrap;
+    }
+
+    button.primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 36px rgba(15,23,42,0.35);
+      filter: brightness(1.05);
+    }
+
+    button.primary:active {
+      transform: translateY(1px) scale(0.99);
+      box-shadow: 0 8px 24px rgba(15,23,42,0.3);
+      filter: brightness(0.96);
+    }
+
+    button.primary span.icon {
+      font-size: 1rem;
+    }
+
+    .hint-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+
+    .hint-row strong {
+      color: var(--accent-soft);
+      font-weight: 500;
+    }
+
+    .hint-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      box-shadow: 0 0 0 3px var(--hint-bg-dot);
+    }
+
+    .global-info {
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 6px;
+    }
+
+    .global-info strong {
+      color: var(--accent-soft);
+      font-weight: 500;
+    }
+
+    /* Court grid */
+    .courts-wrapper {
+      background: var(--courts-bg);
+      border-radius: 22px;
+      border: 1px solid var(--shell-border);
+      padding: 14px;
+      backdrop-filter: blur(26px);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .courts-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      gap: 10px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+
+    .courts-header-title {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .courts-header-title span.location {
+      color: #4b5563;
+      font-weight: 400;
+    }
+
+    .court-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    @media (max-width: 700px) {
+      .court-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .court-card {
+      position: relative;
+      border-radius: 18px;
+      background:
+        linear-gradient(135deg, #f9fafb, #e5f4ff),
+        radial-gradient(circle at 100% 0%, rgba(255,149,0,0.18), transparent 55%);
+      border: 1px solid rgba(209,213,219,0.95);
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr);
+      min-height: 150px;
+    }
+
+    @media (max-width: 540px) {
+      .court-card {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .court-visual {
+      position: relative;
+      padding: 12px;
+      background: var(--court-visual-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .court-visual-inner {
+      position: relative;
+      width: 100%;
+      padding-bottom: 55%;
+      border-radius: 16px;
+      background: var(--court-inner-bg);
+      box-shadow: 0 14px 35px rgba(15,23,42,0.35);
+      border: 2px solid var(--court-lines);
+      overflow: hidden;
+    }
+
+    .court-lines {
+      position: absolute;
+      inset: 7%;
+      border-radius: 8px;
+      border: 1.5px solid rgba(229,249,255,0.9);
+      box-shadow: 0 0 0 1px rgba(15,23,42,0.2);
+    }
+
+    .court-lines::before,
+    .court-lines::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 0;
+      height: 100%;
+      border-left: 1.5px solid rgba(229,249,255,0.9);
+    }
+
+    .court-lines::after {
+      top: 50%;
+      left: 0;
+      width: 100%;
+      height: 0;
+      border-top: 1.5px solid rgba(229,249,255,0.9);
+    }
+
+    .service-box {
+      position: absolute;
+      inset: 17% 23%;
+      border-radius: 6px;
+      border: 1px solid rgba(229,249,255,0.7);
+    }
+
+    .court-label-pill {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      font-size: 0.65rem;
+      background: rgba(15,23,42,0.85);
+      padding: 3px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(229,249,255,0.4);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--court-lines);
+    }
+
+    .court-label-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+      box-shadow: 0 0 0 3px rgba(255,149,0,0.35);
+    }
+
+    .timer-badge {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--timer-badge-bg);
+      border: 1px solid rgba(229,249,255,0.5);
+      font-size: 0.7rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--court-lines);
+    }
+
+    .timer-badge span.time {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timer-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+    }
+
+    .timer-status-dot.running {
+      background: #22c55e;
+      box-shadow: 0 0 0 3px rgba(34,197,94,0.45);
+    }
+
+    .timer-status-dot.idle {
+      background: #6b7280;
+      box-shadow: 0 0 0 3px rgba(107,114,128,0.4);
+    }
+
+    .timer-status-dot.finished {
+      background: #f97316;
+      box-shadow: 0 0 0 3px rgba(249,115,22,0.45);
+    }
+
+    .court-info {
+      padding: 10px 12px 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .court-row-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      flex-wrap: wrap;
+    }
+
+    .court-status-pill {
+      font-size: 0.7rem;
+      padding: 2px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.7);
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+    }
+
+    .status-dot.free {
+      background: #22c55e;
+      box-shadow: 0 0 0 3px rgba(34,197,94,0.35);
+    }
+
+    .status-dot.inuse {
+      background: #f97316;
+      box-shadow: 0 0 0 3px rgba(249,115,22,0.45);
+    }
+
+    .status-dot.queue {
+      background: #eab308;
+      box-shadow: 0 0 0 3px rgba(234,179,8,0.45);
+    }
+
+    .court-current {
+      font-size: 0.8rem;
+    }
+
+    .court-current strong {
+      font-weight: 600;
+    }
+
+    .court-current span.name {
+      color: #92400e;
+      font-weight: 600;
+    }
+
+    .court-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .queue-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(148,163,184,0.95);
+      margin-top: 4px;
+    }
+
+    .queue-list {
+      list-style: none;
+      margin-top: 3px;
+      max-height: 60px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .queue-empty {
+      font-size: 0.73rem;
+      color: rgba(148,163,184,0.85);
+      margin-top: 4px;
+    }
+
+    .queue-pill {
+      font-size: 0.74rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--chip-bg);
+      border: 1px solid rgba(148,163,184,0.5);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+
+    .queue-pill span.index {
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+
+    .queue-pill span.name {
+      font-weight: 500;
+    }
+
+    .queue-pill small {
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+  </style>
 </head>
 <body>
-<div class="app">
-  <header>
-    <div class="logo">18+</div>
-    <div>
-      <h1>VVAL — Truth • Truth • Dare • Lie <span class="badge b1">18+</span></h1>
-      <div class="tiny">Bluff • Vote • Timer • Light penalties • Fun, cheeky, consent-first (non-explicit)</div>
-    </div>
-  </header>
-
-  <!-- SETUP -->
-  <section id="setup" class="panel grid two">
-    <div>
-      <div class="title">Players</div>
-      <div class="row" style="margin-top:8px;">
-        <input id="nameInput" type="text" placeholder="Type a name and press Add" onkeydown="if(event.key==='Enter') addPlayer()">
-        <button class="primary" onclick="addPlayer()">Add</button>
-        <button class="ghost" onclick="demoFill()">Demo</button>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="title-block">
+        <div class="title-chip">
+          <span class="title-chip-dot"></span>
+          <span>Local courts · live queue</span>
+        </div>
+        <h1>Tennis Court Flow</h1>
+        <p class="subtitle">Pick your location, drop your name, and let the app manage the 30-minute rounds.</p>
       </div>
-      <div id="chips" class="chips"></div>
-      <div class="sep"></div>
-      <div class="row">
-        <label class="toggle"><input id="adultsOnly" type="checkbox" style="accent-color:var(--accent)"> I confirm all players are 18+</label>
-        <label class="toggle"><input id="bigText" type="checkbox" style="accent-color:var(--accent2)"> Big text</label>
+      <div class="header-right">
+        <div class="summary-pill">
+          <span><span class="summary-dot"></span> 30 min per court</span>
+          <span class="summary-separator"></span>
+          <span>
+            <span id="summaryCourts">4</span> courts ·
+            <span id="summaryLocationName">Location</span>
+          </span>
+        </div>
+        <div class="location-row">
+          <label for="locationSelect">Location</label>
+          <div class="location-select">
+            <select id="locationSelect"></select>
+            <span class="location-select-chevron">⌄</span>
+          </div>
+          <button class="chip-btn" id="addLocationBtn">＋ Add location</button>
+        </div>
       </div>
-      <div class="note">Quick rules: no pressure, no shaming, consent always. You can swap a dare for a light penalty.</div>
-    </div>
+    </header>
 
-    <div>
-      <div class="title">Mode & Duration</div>
-      <div class="modeTabs" style="margin-top:8px;">
-        <button id="tab-ttdl" class="active" onclick="setMode('ttdl')">TTDL</button>
-        <button id="tab-roulette" onclick="setMode('roulette')">Roulette</button>
-        <button id="tab-duel" onclick="setMode('duel')">Duel</button>
-      </div>
-      <div class="sep"></div>
-      <div class="row">
-        <select id="roundSecs">
-          <option value="30">Timer 30s</option>
-          <option value="45">Timer 45s</option>
-          <option value="60" selected>Timer 60s</option>
-          <option value="0">No timer</option>
-        </select>
-        <select id="penaltySel">
-          <option value="sip">Penalty: 1 sip</option>
-          <option value="dance">Penalty: 5s dance move</option>
-          <option value="accent">Penalty: speak with an accent next round</option>
-        </select>
-        <button class="warn" onclick="startGame()">Start</button>
-      </div>
-      <div class="note">Modes: <b>TTDL</b> (bluff + voting), <b>Roulette</b> (spin and do), <b>Duel</b> (1v1 mini-scene). 18+ is cheeky, never graphic.</div>
-    </div>
-  </section>
+    <main class="layout">
+      <!-- Courts -->
+      <section class="courts-wrapper">
+        <div class="courts-header">
+          <div class="courts-header-title">
+            Courts overview · <span class="location" id="courtsHeaderLocation">—</span>
+          </div>
+          <div>Timers and queues are for this location only.</div>
+        </div>
+        <div class="court-grid" id="courtGrid">
+          <!-- Courts will be injected by JS -->
+        </div>
+      </section>
 
-  <!-- ROUND -->
-  <section id="round" class="panel hidden">
-    <div class="row" style="justify-content:space-between; align-items:center;">
-      <div class="title">Round <span id="roundNum">1</span> • <span id="modeLabel">TTDL</span></div>
-      <div class="row">
-        <div class="timer" id="timerBox">—</div>
-        <button onclick="nextRound()">Next</button>
-        <button class="danger" onclick="endGame()">End</button>
-      </div>
-    </div>
+      <!-- Right panel: controls & info -->
+      <section class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Join the queue</div>
+          <div class="panel-badge">30 min rounds · first-come, first-served</div>
+        </div>
 
-    <div class="story" id="storyBox"></div>
-    <div class="question" id="questionText"></div>
+        <div class="form-row">
+          <div class="input-wrap">
+            <label for="playerName">Your name</label>
+            <input id="playerName" type="text" placeholder="Type your name…" autocomplete="off" />
+          </div>
+          <div class="input-wrap">
+            <label for="courtSelect">Court</label>
+            <select id="courtSelect"></select>
+            <span class="select-chevron">⌄</span>
+          </div>
+        </div>
 
-    <div class="players" id="playerButtons"></div>
+        <div class="form-row">
+          <button class="primary" id="playNextBtn">
+            <span class="icon">🎾</span>
+            <span>Play Next</span>
+          </button>
+        </div>
 
-    <div class="toolbar">
-      <button onclick="undoVote()">Undo vote</button>
-      <button onclick="clearVotes()">Clear votes</button>
-      <button class="primary" onclick="reveal()">Reveal</button>
-    </div>
+        <div class="hint-row">
+          <span><span class="hint-dot"></span> <strong>Tip:</strong> If the court is free, you start right away. If not, you join that court’s queue.</span>
+          <span>When 30 minutes end, the next name in that court’s list is auto-called.</span>
+        </div>
 
-    <div id="winnerBlock" class="winner hidden" aria-live="polite"></div>
+        <div class="global-info" id="globalInfo">
+          <!-- Filled by JS -->
+        </div>
+      </section>
+    </main>
+  </div>
 
-    <div class="scoreboard">
-      <div class="title" style="font-size:18px">Scoreboard</div>
-      <div id="scores" class="scores"></div>
-    </div>
-  </section>
-</div>
+  <script>
+    const ROUND_SECONDS = 30 * 60; // 30 minutes
 
-<!-- confetti -->
-<div class="confetti" id="confetti"></div>
+    let locations = [];
+    let nextLocationId = 1;
+    let currentLocationId = null;
 
-<script>
-/* ===== State ===== */
-const state = {
-  players:[], scores:new Map(), round:1,
-  votes:[], voteCount:new Map(),
-  mode:'ttdl', // ttdl | roulette | duel
-  secs:60, penalty:'sip',
-  rngSeed: Date.now()%2147483647,
-  ticking:null
-};
-function rand(){ state.rngSeed = (state.rngSeed*48271)%2147483647; return (state.rngSeed-1)/2147483646; }
-function choice(a){ return a[Math.floor(rand()*a.length)] }
+    const courtGrid = document.getElementById("courtGrid");
+    const playNextBtn = document.getElementById("playNextBtn");
+    const playerNameInput = document.getElementById("playerName");
+    const courtSelect = document.getElementById("courtSelect");
+    const globalInfo = document.getElementById("globalInfo");
+    const summaryCourtsEl = document.getElementById("summaryCourts");
+    const summaryLocationNameEl = document.getElementById("summaryLocationName");
+    const courtsHeaderLocationEl = document.getElementById("courtsHeaderLocation");
+    const locationSelect = document.getElementById("locationSelect");
+    const addLocationBtn = document.getElementById("addLocationBtn");
 
-/* ===== Elements ===== */
-const setup = document.getElementById('setup');
-const roundEl = document.getElementById('round');
-const chips = document.getElementById('chips');
-const nameInput = document.getElementById('nameInput');
-const adultsOnly = document.getElementById('adultsOnly');
-const bigText = document.getElementById('bigText');
-const roundSecs = document.getElementById('roundSecs');
-const penaltySel = document.getElementById('penaltySel');
-const modeLabel = document.getElementById('modeLabel');
-const storyBox = document.getElementById('storyBox');
-const questionText = document.getElementById('questionText');
-const playerButtons = document.getElementById('playerButtons');
-const roundNum = document.getElementById('roundNum');
-const winnerBlock = document.getElementById('winnerBlock');
-const scoresEl = document.getElementById('scores');
-const timerBox = document.getElementById('timerBox');
+    function createCourt(name) {
+      return {
+        id: crypto.randomUUID(),
+        name,
+        current: null,
+        queue: [],
+        remaining: 0,
+        intervalId: null,
+        status: "free"
+      };
+    }
 
-/* ===== Setup UI ===== */
-function renderChips(){
-  chips.innerHTML='';
-  state.players.forEach((n,i)=>{
-    const d=document.createElement('div'); d.className='chip';
-    d.innerHTML = `<b>${escapeHtml(n)}</b><button title="Remove" onclick="removePlayer(${i})">✕</button>`;
-    chips.appendChild(d);
-  });
-}
-function addPlayer(){
-  const v=nameInput.value.trim(); if(!v) return;
-  if(state.players.includes(v)) { nameInput.value=''; return; }
-  state.players.push(v); state.scores.set(v, state.scores.get(v)||0);
-  renderChips(); nameInput.value='';
-}
-function removePlayer(i){
-  const n=state.players[i]; state.players.splice(i,1); state.scores.delete(n); renderChips();
-}
-function demoFill(){ ['Alex','Maya','Jo','Pri','Sam','Nico'].forEach(n=>{ if(!state.players.includes(n)){ state.players.push(n); state.scores.set(n,0); } }); renderChips(); }
+    function createLocation(name, courtCount) {
+      const courts = [];
+      for (let i = 1; i <= courtCount; i++) {
+        courts.push(createCourt("Court " + i));
+      }
+      return {
+        id: nextLocationId++,
+        name,
+        courts
+      };
+    }
 
-function setMode(m){
-  state.mode=m;
-  document.getElementById('tab-ttdl').classList.toggle('active', m==='ttdl');
-  document.getElementById('tab-roulette').classList.toggle('active', m==='roulette');
-  document.getElementById('tab-duel').classList.toggle('active', m==='duel');
-}
+    function getCurrentLocation() {
+      return locations.find(l => l.id === currentLocationId) || null;
+    }
 
-/* ===== Content (party vibe; 18+ light, non-explicit) ===== */
-const places = [
-  "a rooftop bar", "a midnight beach", "a neon-lit club", "a cozy balcony party",
-  "a crowded karaoke room", "a backyard BBQ", "a speakeasy with velvet chairs",
-  "a festival afterparty", "a lakeside bonfire", "a swanky hotel lobby"
-];
-const props = [
-  "a neon sunglasses pair","a glitter fan","a tiny towel (why?)","a heart balloon",
-  "a tray of mystery shots","a feather boa","a plastic trophy cup","a lipstick-stained napkin",
-  "a stray confetti cannon","a disposable camera"
-];
-const beats = [
-  "The DJ replays the chorus for the third time and everyone screams.",
-  "Breeze warms up, chat cools down, energy rises.",
-  "The playlist jumps to a classic sing-along without warning.",
-  "The bathroom line becomes reality TV.",
-  "A message arrives: “Where are you guys?” and nobody knows.",
-  "Someone declares: “No judgment!” and it becomes law."
-];
+    function updateLocationSelectOptions() {
+      locationSelect.innerHTML = locations
+        .map(loc => `<option value="${loc.id}">${loc.name}</option>`)
+        .join("");
+      if (locations.length > 0) {
+        if (!currentLocationId) {
+          currentLocationId = locations[0].id;
+        }
+        locationSelect.value = currentLocationId;
+      }
+      updateCourtSelectOptions();
+      updateLocationUI();
+    }
 
-/* TRUTHS (PG) */
-const truthsPG = [
-  "share an unlikely crush from your life",
-  "tell your most awkward moment on a date (keep it classy)",
-  "say the best or worst pick-up line you’ve ever received",
-  "admit a quirky habit nobody here knows",
-  "say who here you’d invite for a cute, harmless hangout",
-  "tell a recent workplace oops",
-  "show your most-used emoji and explain why",
-  "reveal your family’s secret nickname for you",
-  "admit who you occasionally check on social media",
-  "describe a bizarre dream you actually had"
-];
+    function updateCourtSelectOptions() {
+      const loc = getCurrentLocation();
+      if (!loc) {
+        courtSelect.innerHTML = "";
+        return;
+      }
+      courtSelect.innerHTML = loc.courts
+        .map(c => `<option value="${c.id}">${c.name}</option>`)
+        .join("");
+    }
 
-/* TRUTHS (18+ cheeky, non-explicit) */
-const truths18 = [
-  "reveal your most charming ‘red flag’",
-  "tell a moment you thought was ‘sweet but a little spicy’ (no graphic detail)",
-  "admit who here would have the best shot flirting with you",
-  "share the most creative line you’ve used",
-  "say which song flips your flirty switch",
-  "confess the last time a flirt left you speechless",
-  "tell a date plot twist that became legendary",
-  "say your ‘superpower’ in romantic vibes",
-  "name a hard boundary you always respect (consent = king/queen)",
-  "share a cheeky compliment you’d give with elegance"
-];
+    function updateLocationUI() {
+      const loc = getCurrentLocation();
+      if (!loc) {
+        summaryCourtsEl.textContent = "0";
+        summaryLocationNameEl.textContent = "No location";
+        courtsHeaderLocationEl.textContent = "—";
+        return;
+      }
+      summaryCourtsEl.textContent = loc.courts.length;
+      summaryLocationNameEl.textContent = loc.name;
+      courtsHeaderLocationEl.textContent = loc.name;
+    }
 
-/* DARES (PG and 18+ lite; consent-first) */
-const daresPG = [
-  "toast dramatically like a soap-opera star",
-  "do your secret dance move for 5 seconds",
-  "invent a poetic pick-up line and say it to the ceiling",
-  "strike a Carnival-style photo pose for 3 seconds",
-  "sell grilled cheese on a beach… convincingly (voice only)",
-  "narrate the table like a sports commentator for 10 seconds",
-  "make a heart with your hands to the person on your left",
-  "pitch your star sign like a 5-second ad",
-  "give your best beauty-pageant wave to the ‘camera’"
-];
-const dares18 = [
-  "teach a hip sway (PG-13) without touching anyone",
-  "give a 10/10 flirty look (from a respectful distance)",
-  "do a waist groove for 7 seconds (PG-13)",
-  "deliver a warm, tasteful compliment (with their okay)",
-  "create a ‘consent contract’ in 10 seconds and read it out",
-  "run a ‘summer heat’ runway walk with your fiercest face",
-  "announce a cinematic kiss like a movie trailer (no kiss)",
-  "give a toast ‘to situationships’ with rhyme and class",
-  "perform a suave ‘high-five and strut away’ bit",
-  "throw three theatrical winks and a killer wave"
-];
+    function formatTime(seconds) {
+      const s = Math.max(0, seconds);
+      const m = Math.floor(s / 60);
+      const sec = s % 60;
+      return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+    }
 
-/* LIES (bluff prompts — group votes if it’s true or a lie) */
-const liesDeck = [
-  "claim you once turned down a VIP invite from a celebrity",
-  "say you learned a dance move after watching it only once",
-  "insist you became the DJ by accident at a party",
-  "tell that you hitchhiked into an unforgettable night",
-  "say you improvised as a tour guide on a seaside walk",
-  "claim you won a ‘best smile’ contest",
-  "say people once confused you for an influencer",
-  "tell how you saved a BBQ from total disaster",
-  "say you trended online for 24 hours",
-  "claim you talked your way past security (politely!)"
-];
+    function computeGlobalStats() {
+      const loc = getCurrentLocation();
+      if (!loc) return { totalInUse: 0, totalQueued: 0 };
+      let totalInUse = 0;
+      let totalQueued = 0;
+      loc.courts.forEach(c => {
+        if (c.current) totalInUse++;
+        totalQueued += c.queue.length;
+      });
+      return { totalInUse, totalQueued };
+    }
 
-/* ===== Helpers ===== */
-function aAn(word){
-  return (/^[aeiou]/i.test(word) ? 'an ' : 'a ') + word;
-}
-function escapeHtml(s){ return s.replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
+    function updateGlobalInfo() {
+      const { totalInUse, totalQueued } = computeGlobalStats();
+      globalInfo.innerHTML = `
+        <div><strong>${totalInUse}</strong> court${totalInUse === 1 ? "" : "s"} currently in play at this location.</div>
+        <div><strong>${totalQueued}</strong> player${totalQueued === 1 ? "" : "s"} waiting across all courts here.</div>
+        <div>Each new block is <strong>30:00</strong>. When time is up, the next name in that court’s queue jumps in automatically.</div>
+      `;
+    }
 
-/* ===== Game Flow ===== */
-function startGame(){
-  if(state.players.length<2){ alert('Add at least 2 players.'); return; }
-  if(!adultsOnly.checked){ alert('Please confirm all players are 18+ to use this deck.'); return; }
-  document.body.classList.toggle('bigtext', bigText.checked);
-  state.secs = parseInt(roundSecs.value,10) || 0;
-  state.penalty = penaltySel.value;
-  setup.classList.add('hidden'); roundEl.classList.remove('hidden');
-  state.round = 1; nextRound(true);
-}
-function buildPlayerButtons(){
-  playerButtons.innerHTML='';
-  state.players.forEach(p=>{
-    const b=document.createElement('button'); b.className='pbtn'; b.onclick=()=>vote(p,b);
-    b.innerHTML=`<span>${escapeHtml(p)}</span><small>0</small>`; playerButtons.appendChild(b);
-  });
-}
-function resetVotes(){
-  state.votes=[]; state.voteCount=new Map(state.players.map(p=>[p,0]));
-  [...playerButtons.children].forEach(b=>b.querySelector('small').textContent='0');
-  winnerBlock.classList.add('hidden'); winnerBlock.innerHTML='';
-}
-function vote(name, btn){
-  const c=(state.voteCount.get(name)||0)+1; state.voteCount.set(name,c);
-  state.votes.push(name); btn.querySelector('small').textContent=String(c);
-}
-function undoVote(){
-  const last=state.votes.pop(); if(!last) return;
-  const c=(state.voteCount.get(last)||0)-1; state.voteCount.set(last,Math.max(0,c));
-  [...playerButtons.children].forEach(b=>{
-    if(b.querySelector('span').textContent===last) b.querySelector('small').textContent=String(Math.max(0,c));
-  });
-}
-function clearVotes(){ resetVotes(); }
+    function clearCourtTimer(court) {
+      if (court.intervalId) {
+        clearInterval(court.intervalId);
+        court.intervalId = null;
+      }
+    }
 
-/* ===== Rounds ===== */
-function nextRound(first=false){
-  if(!first) state.round++;
-  roundNum.textContent = state.round;
-  modeLabel.textContent = state.mode==='ttdl'?'TTDL':state.mode==='roulette'?'Roulette':'Duel';
-  const {story, prompt} = buildPrompt();
-  storyBox.innerHTML = story; questionText.textContent = prompt;
-  buildPlayerButtons(); resetVotes(); startTimer();
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-function buildPrompt(){
-  const place = choice(places), prop = choice(props), beat = choice(beats);
-  const story = `<b>Scene:</b> You’re at ${place}. ${beat} Someone shows up with ${aAn(prop)}.`;
+    function startRound(court) {
+      clearCourtTimer(court);
+      court.remaining = ROUND_SECONDS;
+      court.status = "inuse";
+      renderCourts();
+      court.intervalId = setInterval(() => {
+        court.remaining--;
+        if (court.remaining <= 0) {
+          clearCourtTimer(court);
+          court.remaining = 0;
+          court.status = "finished";
+          if (court.queue.length > 0) {
+            const nextPlayer = court.queue.shift();
+            court.current = nextPlayer;
+            court.status = "inuse";
+            court.remaining = ROUND_SECONDS;
+            renderCourts();
+          } else {
+            court.current = null;
+            court.status = "free";
+          }
+          renderCourts();
+        } else {
+          renderCourts();
+        }
+      }, 1000);
+    }
 
-  if(state.mode==='roulette'){
-    const pool = choice([truthsPG, truths18, daresPG, dares18, liesDeck]);
-    const type = pool===liesDeck ? 'Lie' : (pool===truthsPG||pool===truths18 ? 'Truth' : 'Dare');
-    const act = choice(pool);
-    return {story, prompt:`${type}: ${act}.`};
-  }
+    function manuallyEndRound(court) {
+      clearCourtTimer(court);
+      court.remaining = 0;
+      if (court.queue.length > 0) {
+        const next = court.queue.shift();
+        court.current = next;
+        startRound(court);
+      } else {
+        court.current = null;
+        court.status = "free";
+        renderCourts();
+      }
+    }
 
-  if(state.mode==='duel'){
-    const a = choice(state.players); let b=a; while(b===a){ b=choice(state.players); }
-    const theme = choice([
-      "best smooth talk in 10 seconds (no cheesy words)",
-      "hip-isolation dance (no touching), 7 seconds",
-      "funniest confident compliment (PG-13)",
-      "make your star sign sound irresistible in 7 seconds",
-      "runway walk like it’s Carnival — fierce face only"
-    ]);
-    return {story, prompt:`Duel: ${a} vs ${b} — ${theme}. Group taps to vote the winner.`};
-  }
+    function resetCourt(court) {
+      clearCourtTimer(court);
+      court.current = null;
+      court.queue = [];
+      court.remaining = 0;
+      court.status = "free";
+      renderCourts();
+    }
 
-  // TTDL (Truth • Truth • Dare • Lie)
-  const step = choice(['Truth','Truth','Dare','Lie']);
-  let act;
-  if(step==='Truth'){ act = choice(truthsPG.concat(truths18)); }
-  if(step==='Dare'){ act = choice(daresPG.concat(dares18)); }
-  if(step==='Lie'){ act = choice(liesDeck); }
-  const target = choice(state.players);
-  const prompt = `${step} for ${target}: ${act}. (Bluff allowed on Lie — group votes!)`;
-  return {story, prompt};
-}
+    function renderCourts() {
+      const loc = getCurrentLocation();
+      courtGrid.innerHTML = "";
+      if (!loc) {
+        courtGrid.innerHTML = `<p style="font-size:0.85rem;color:#6b7280;">Add a location to start managing courts.</p>`;
+        updateGlobalInfo();
+        return;
+      }
 
-/* ===== Timer ===== */
-function startTimer(){
-  if(state.ticking){ clearInterval(state.ticking); state.ticking=null; }
-  if(!state.secs){ timerBox.textContent='—'; return; }
-  let t=state.secs; timerBox.textContent = formatS(t);
-  state.ticking=setInterval(()=>{
-    t--; timerBox.textContent = formatS(t);
-    if(t<=0){ clearInterval(state.ticking); state.ticking=null; timerBox.textContent='⏰'; }
-  },1000);
-}
-function formatS(s){ if(s<0) s=0; return `00:${String(s).padStart(2,'0')}`; }
+      loc.courts.forEach(court => {
+        const isRunning = court.status === "inuse";
+        const finished = court.status === "finished" && !isRunning;
+        const hasQueue = court.queue.length > 0;
 
-/* ===== Reveal & Scoring ===== */
-function reveal(){
-  let max=-1,tops=[];
-  state.voteCount.forEach((v,k)=>{ if(v>max){max=v;tops=[k]} else if(v===max){tops.push(k)} });
-  if(max<=0){ alert('No votes yet. Tap a name to vote.'); return; }
-  const winner = choice(tops);
-  state.scores.set(winner,(state.scores.get(winner)||0)+1);
-  renderScores();
-  const end = buildEnding(winner);
-  winnerBlock.innerHTML = `🏆 <b>${escapeHtml(winner)}</b> takes it with ${max} vote${max>1?'s':''}.<br>${end} ${penaltyHint()}`;
-  winnerBlock.classList.remove('hidden');
-  confetti();
-}
-function penaltyHint(){
-  if(state.mode!=='ttdl') return '';
-  return `<br><span class="tiny">Missed a dare? Do your penalty: ${penaltyLabel(state.penalty)}.</span>`;
-}
-function penaltyLabel(k){
-  return k==='sip'?'1 sip':k==='dance'?'5s dance move':'speak with an accent next round';
-}
-function endGame(){
-  const top = Math.max(...[...state.scores.values(),0]);
-  const champs = [...state.scores.entries()].filter(([_,v])=>v===top).map(([k])=>k);
-  alert(top>0?`Winner${champs.length>1?'s':''}: ${champs.join(', ')} with ${top} point${top>1?'s':''}!`:'No points!');
-}
+        const statusLabel = court.current
+          ? "In play"
+          : hasQueue
+            ? "Waiting to start"
+            : "Free";
 
-/* ===== Endings ===== */
-function buildEnding(winner){
-  const tags = [
-    `${winner} grins: “Character development, baby.”`,
-    `${winner} promises a tutorial at the next BBQ.`,
-    `${winner} triggers a slow-clap from exactly one person. Iconic.`,
-    `${winner} declares: “No screenshots, only memories.”`,
-    `${winner} poses like a retro DVD cover and somehow nails it.`,
-    `${winner} says it was a social experiment. We… believe it.`
-  ];
-  return choice(tags);
-}
+        const statusClass = court.current
+          ? "inuse"
+          : hasQueue
+            ? "queue"
+            : "free";
 
-/* ===== Scoreboard ===== */
-function renderScores(){
-  const arr=[...state.scores.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
-  scoresEl.innerHTML=''; arr.forEach(([n,s])=>{
-    const d=document.createElement('div'); d.className='score';
-    d.innerHTML=`<span>${escapeHtml(n)}</span><b>${s}</b>`; scoresEl.appendChild(d);
-  });
-}
+        const timerBadgeStatusClass = isRunning
+          ? "running"
+          : finished
+            ? "finished"
+            : "idle";
 
-/* ===== Confetti ===== */
-function confetti(){
-  const host=document.getElementById('confetti');
-  for(let i=0;i<100;i++){
-    const p=document.createElement('i');
-    p.style.left=(Math.random()*100)+'%'; p.style.top='-8%';
-    p.style.background=`hsl(${Math.random()*360},90%,60%)`;
-    const dur=3+Math.random()*2, rot=(Math.random()*720-360)+'deg';
-    p.animate([
-      {transform:`translate(-50%,0) rotate(0deg)`, opacity:1},
-      {transform:`translate(${(Math.random()*120-60)}px, 110vh) rotate(${rot})`, opacity:1}
-    ],{duration: dur*1000, easing:'cubic-bezier(.2,.6,.2,1)'}).onfinish=()=>p.remove();
-    host.appendChild(p);
-  }
-}
+        const timerLabel = court.current
+          ? formatTime(court.remaining)
+          : hasQueue
+            ? "Next round"
+            : "00:00";
 
-/* ===== Utilities ===== */
-function escapeHtml(s){ return s.replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
+        const courtEl = document.createElement("article");
+        courtEl.className = "court-card";
 
-/* Init */
-renderChips();
-renderScores();
-</script>
+        courtEl.innerHTML = `
+          <div class="court-visual">
+            <div class="court-visual-inner">
+              <div class="court-lines"></div>
+              <div class="service-box"></div>
+              <div class="court-label-pill">
+                <span class="court-label-dot"></span>
+                <span>${court.name}</span>
+              </div>
+              <div class="timer-badge">
+                <span class="timer-status-dot ${timerBadgeStatusClass}"></span>
+                <span class="time">${timerLabel}</span>
+              </div>
+            </div>
+          </div>
+          <div class="court-info">
+            <div class="court-row-top">
+              <div class="court-status-pill">
+                <span class="status-dot ${statusClass}"></span>
+                <span>${statusLabel}</span>
+              </div>
+              <div style="font-size:0.7rem; color:var(--muted);">
+                Round: 30:00
+              </div>
+            </div>
+            <div class="court-current">
+              ${
+                court.current
+                  ? `<strong>On court now:</strong> <span class="name">${court.current}</span>`
+                  : hasQueue
+                    ? `<strong>Next up:</strong> <span class="name">${court.queue[0]}</span>`
+                    : `<strong>On court now:</strong> <span class="name" style="color:var(--muted);font-weight:400;">Nobody yet</span>`
+              }
+            </div>
+            <div class="court-actions">
+              ${
+                court.current
+                  ? `<button class="chip-btn danger" data-action="end" data-court="${court.id}">
+                      ⏹ End round
+                    </button>`
+                  : `<button class="chip-btn" data-action="forceStart" data-court="${court.id}">
+                      ▶ Start next round
+                    </button>`
+              }
+              <button class="chip-btn" data-action="reset" data-court="${court.id}">
+                ↺ Clear court
+              </button>
+            </div>
+            <div class="queue-label">Queue</div>
+            ${
+              hasQueue
+                ? `<ul class="queue-list">
+                    ${court.queue
+                      .map(
+                        (name, index) => `
+                      <li>
+                        <span class="queue-pill">
+                          <span class="index">#${index + 1}</span>
+                          <span class="name">${name}</span>
+                          <small>${index === 0 ? "up next" : "in line"}</small>
+                        </span>
+                      </li>
+                    `
+                      )
+                      .join("")}
+                  </ul>`
+                : `<div class="queue-empty">No one waiting for this court yet.</div>`
+            }
+          </div>
+        `;
+
+        courtEl.querySelectorAll("button[data-action]").forEach(btn => {
+          const action = btn.getAttribute("data-action");
+          const courtId = btn.getAttribute("data-court");
+          btn.addEventListener("click", () => {
+            const locNow = getCurrentLocation();
+            if (!locNow) return;
+            const c = locNow.courts.find(ct => ct.id === courtId);
+            if (!c) return;
+            if (action === "end") {
+              manuallyEndRound(c);
+            } else if (action === "reset") {
+              if (confirm(`Clear ${c.name} (current player + queue)?`)) {
+                resetCourt(c);
+              }
+            } else if (action === "forceStart") {
+              if (!c.current && c.queue.length > 0) {
+                c.current = c.queue.shift();
+                startRound(c);
+              }
+            }
+            updateGlobalInfo();
+          });
+        });
+
+        courtGrid.appendChild(courtEl);
+      });
+
+      updateGlobalInfo();
+    }
+
+    // --- Events ---
+    playNextBtn.addEventListener("click", () => {
+      const name = playerNameInput.value.trim();
+      if (!name) {
+        alert("Please type your name before joining the queue.");
+        playerNameInput.focus();
+        return;
+      }
+      const loc = getCurrentLocation();
+      if (!loc) {
+        alert("Please add a location first.");
+        return;
+      }
+      const courtId = courtSelect.value;
+      const court = loc.courts.find(c => c.id === courtId);
+      if (!court) return;
+
+      if (!court.current && court.status === "free") {
+        court.current = name;
+        startRound(court);
+      } else {
+        court.queue.push(name);
+        renderCourts();
+      }
+
+      playerNameInput.value = "";
+      playerNameInput.focus();
+    });
+
+    locationSelect.addEventListener("change", () => {
+      const newId = Number(locationSelect.value);
+      currentLocationId = newId;
+      updateCourtSelectOptions();
+      updateLocationUI();
+      renderCourts();
+    });
+
+    addLocationBtn.addEventListener("click", () => {
+      const name = prompt("Location name (e.g., Eglinton Tennis Courts):");
+      if (!name) return;
+      let countStr = prompt("How many courts at this location? (1–10)");
+      if (!countStr) return;
+      let count = parseInt(countStr, 10);
+      if (isNaN(count) || count < 1) count = 1;
+      if (count > 10) count = 10;
+
+      const newLoc = createLocation(name.trim(), count);
+      locations.push(newLoc);
+      currentLocationId = newLoc.id;
+      updateLocationSelectOptions();
+      renderCourts();
+    });
+
+    // --- Init: start with one example location ---
+    (function init() {
+      const eglinton = createLocation("Eglinton Tennis Courts", 4);
+      locations.push(eglinton);
+      currentLocationId = eglinton.id;
+      updateLocationSelectOptions();
+      renderCourts();
+      playerNameInput.focus();
+    })();
+  </script>
 </body>
 </html>
