@@ -2,1172 +2,1250 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Tennis Court Flow</title>
   <style>
-    :root {
-      --accent: #ff9500;
-      --accent-soft: #ffb347;
-      --court-green: #1b8f4d;
-      --court-lines: #e5f9ff;
-      --card-radius: 22px;
-      --shadow-strong: 0 20px 60px rgba(15,23,42,0.25);
-      --shadow-soft: 0 14px 40px rgba(15,23,42,0.18);
-      --shell-border: rgba(209,213,219,0.9);
-      --border-subtle: rgba(209,213,219,0.9);
+    :root{
+      --accent:#ff9500;
+      --accent2:#ffb347;
 
-      --bg: #e5e7eb;
-      --bg-soft: #f3f4f6;
-      --shell-bg: radial-gradient(circle at 10% 0%, rgba(252,211,77,0.18), transparent 55%),
-                  radial-gradient(circle at 90% 0%, rgba(59,130,246,0.14), transparent 60%),
-                  linear-gradient(145deg, #ffffff, #f9fafb);
-      --text: #111827;
-      --muted: #6b7280;
-      --glass: rgba(255,255,255,0.9);
-      --courts-bg: rgba(255,255,255,0.96);
-      --court-visual-bg: linear-gradient(135deg, #c7f9cc, #8fd19e);
-      --court-inner-bg: linear-gradient(#42b883, #1b8f4d);
-      --chip-bg: rgba(249,250,251,0.96);
-      --chip-hover-bg: rgba(229,231,235,0.98);
-      --timer-badge-bg: rgba(31,41,55,0.9);
-      --hint-bg-dot: rgba(248,250,252,0.9);
+      --bg:#e5e7eb;
+      --shell:#ffffff;
+      --card:#ffffff;
+      --soft:#f3f4f6;
+
+      --text:#111827;
+      --muted:#6b7280;
+
+      --border:rgba(209,213,219,.95);
+      --shadow:0 20px 60px rgba(15,23,42,.16);
+      --shadow2:0 12px 34px rgba(15,23,42,.10);
+
+      --radius-xl:32px;
+      --radius-lg:22px;
+      --radius-md:18px;
+
+      --court-lines:#e5f9ff;
+      --court-visual-bg:linear-gradient(135deg,#c7f9cc,#8fd19e);
+      --court-inner-bg:linear-gradient(#42b883,#1b8f4d);
+      --timer-badge-bg:rgba(17,24,39,.90);
+
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-top: env(safe-area-inset-top, 0px);
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;
       background:
         radial-gradient(circle at 0% 0%, #d4d4d8 0, transparent 50%),
         radial-gradient(circle at 100% 0%, #cbd5f5 0, transparent 55%),
         radial-gradient(circle at 50% 100%, #e5e7eb 0, transparent 55%),
         var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 16px;
-      display: flex;
-      align-items: stretch;
-      justify-content: center;
+      color:var(--text);
+      min-height:100vh;
+      padding:16px;
+      padding-top: calc(16px + var(--safe-top));
+      display:flex;
+      justify-content:center;
+      align-items:stretch;
     }
 
-    .app-shell {
-      width: 100%;
-      max-width: 1200px;
-      background: var(--shell-bg);
-      border-radius: 32px;
-      box-shadow: var(--shadow-strong);
-      border: 1px solid var(--shell-border);
-      padding: 20px 20px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
+    .shell{
+      width:100%;
+      max-width:1200px;
+      background: radial-gradient(circle at 10% 0%, rgba(252,211,77,0.18), transparent 55%),
+                  radial-gradient(circle at 90% 0%, rgba(59,130,246,0.14), transparent 60%),
+                  linear-gradient(145deg, #ffffff, #f9fafb);
+      border:1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      overflow:hidden;
     }
 
-    @media (min-width: 900px) {
-      .app-shell {
-        padding: 24px 26px 28px;
-      }
+    header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
     }
 
-    .app-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
+    .title{
+      display:flex; flex-direction:column; gap:6px;
+      min-width: 240px;
     }
-
-    .title-block {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.4);
+      background:rgba(255,255,255,.9);
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.09em;
+      color:var(--muted);
+      width:max-content;
     }
-
-    .title-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.4);
-      background: rgba(255,255,255,0.9);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.09em;
-      color: var(--muted);
-    }
-
-    .title-chip-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
+    .dot{
+      width:8px;height:8px;border-radius:999px;
       background: radial-gradient(circle at 30% 30%, #fff, #22c55e);
-      box-shadow: 0 0 0 4px rgba(34,197,94,0.35);
+      box-shadow:0 0 0 4px rgba(34,197,94,.25);
+    }
+    h1{font-size:1.35rem;font-weight:650;letter-spacing:.01em}
+    .sub{font-size:.82rem;color:var(--muted);max-width:58ch}
+
+    .top-controls{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:8px;
+      flex: 1 1 240px;
     }
 
-    h1 {
-      font-size: 1.4rem;
-      font-weight: 600;
-      letter-spacing: 0.03em;
+    .summary{
+      font-size:.78rem;color:var(--muted);
+      display:flex; gap:14px; flex-wrap:wrap; justify-content:flex-end;
+      align-items:center;
+    }
+    .summary .sdot{
+      width:6px;height:6px;border-radius:999px;
+      background:var(--accent);
+      box-shadow:0 0 0 3px rgba(255,149,0,.25);
+      display:inline-block;
+    }
+    .sep{width:1px;height:14px;background:linear-gradient(to bottom,transparent,rgba(148,163,184,.5),transparent)}
+
+    .loc-row{
+      display:flex; flex-wrap:wrap;
+      justify-content:flex-end;
+      align-items:center;
+      gap:8px;
+    }
+    .loc-row label{
+      font-size:.68rem;
+      text-transform:uppercase;
+      letter-spacing:.09em;
+      color:var(--muted);
+    }
+    .select-wrap{position:relative}
+    select{
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(249,250,251,.98);
+      color:var(--text);
+      padding:8px 30px 8px 12px;
+      font-size:.8rem;
+      outline:none;
+      appearance:none;
+      -webkit-appearance:none;
+      -moz-appearance:none;
+    }
+    .chev{
+      position:absolute; right:11px; top:50%;
+      transform:translateY(-50%);
+      font-size:.75rem; color:var(--muted);
+      pointer-events:none;
     }
 
-    .subtitle {
-      font-size: 0.8rem;
-      color: var(--muted);
+    .btn{
+      border-radius:999px;
+      border:1px solid rgba(156,163,175,.85);
+      background: rgba(249,250,251,.98);
+      color:var(--text);
+      font-size:.78rem;
+      padding:8px 12px;
+      cursor:pointer;
+      box-shadow:0 6px 18px rgba(15,23,42,.08);
+      transition: transform .08s ease, box-shadow .08s ease, filter .08s ease;
+      display:inline-flex; align-items:center; gap:8px;
+      user-select:none;
+    }
+    .btn:hover{transform:translateY(-.5px); box-shadow:0 10px 24px rgba(15,23,42,.12)}
+    .btn:active{transform:translateY(.5px) scale(.99)}
+
+    .btn.primary{
+      border:none;
+      background: radial-gradient(circle at 0 0, #ffe7c4, transparent 52%),
+                  linear-gradient(135deg, var(--accent), var(--accent2));
+      color:#111827;
+      font-weight:650;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      padding:12px 14px;
     }
 
-    .header-right {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      align-items: flex-end;
-      justify-content: center;
-    }
-
-    .summary-pill {
-      font-size: 0.75rem;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
-    .summary-pill span {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .summary-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: var(--accent);
-      box-shadow: 0 0 0 3px rgba(255,149,0,0.35);
-    }
-
-    .summary-separator {
-      width: 1px;
-      height: 14px;
-      background: linear-gradient(to bottom, transparent, rgba(148,163,184,0.5), transparent);
-    }
-
-    .location-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      font-size: 0.75rem;
-    }
-
-    .location-row label {
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-size: 0.68rem;
-      color: var(--muted);
-    }
-
-    .location-select {
-      position: relative;
-    }
-
-    .location-select select {
-      border-radius: 999px;
-      border: 1px solid var(--border-subtle);
-      padding: 6px 26px 6px 10px;
-      background: var(--chip-bg);
-      font-size: 0.75rem;
-      color: var(--text);
-      outline: none;
-      appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-    }
-
-    .location-select-chevron {
-      position: absolute;
-      right: 9px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 0.7rem;
-      color: var(--muted);
-      pointer-events: none;
-    }
-
-    .chip-btn {
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.7);
-      background: var(--chip-bg);
-      color: var(--muted);
-      font-size: 0.72rem;
-      padding: 5px 10px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      transition: background 0.08s ease, color 0.08s ease, border-color 0.08s ease, transform 0.08s ease;
-      box-shadow: 0 4px 14px rgba(15,23,42,0.08);
-    }
-
-    .chip-btn:hover {
-      background: var(--chip-hover-bg);
-      color: var(--text);
-      border-color: rgba(156,163,175,0.9);
-      transform: translateY(-0.5px);
-    }
-
-    .chip-btn:active {
-      transform: translateY(0.5px) scale(0.985);
-    }
-
-    .chip-btn.danger {
-      border-color: rgba(248,113,113,0.7);
-      color: #b91c1c;
-      background: #fef2f2;
-    }
-
-    .layout {
-      display: grid;
+    .grid{
+      display:grid;
       grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.4fr);
-      gap: 18px;
-      align-items: flex-start;
+      gap:14px;
+      align-items:start;
     }
 
-    @media (max-width: 800px) {
-      .layout {
-        grid-template-columns: minmax(0, 1fr);
-      }
+    .card{
+      background: rgba(255,255,255,.92);
+      border:1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow2);
+      overflow:hidden;
     }
 
-    /* Control panel */
-    .panel {
-      background: var(--glass);
-      border-radius: 22px;
-      border: 1px solid var(--shell-border);
-      padding: 14px 14px 16px;
-      backdrop-filter: blur(24px);
-      box-shadow: var(--shadow-soft);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+    .card-h{
+      padding:12px 14px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .card-h .t{
+      font-size:.92rem;
+      font-weight:600;
+    }
+    .card-h .m{
+      font-size:.78rem;
+      color:var(--muted);
     }
 
-    .panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
+    /* Courts list */
+    .courts{
+      padding:12px;
     }
-
-    .panel-title {
-      font-size: 0.9rem;
-      font-weight: 500;
-    }
-
-    .panel-badge {
-      font-size: 0.7rem;
-      padding: 2px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.7);
-      color: var(--muted);
-      background: rgba(249,250,251,0.9);
-    }
-
-    .form-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .form-row > * {
-      flex: 1 1 120px;
-      min-width: 0;
-    }
-
-    .input-wrap {
-      position: relative;
-    }
-
-    .input-wrap label {
-      position: absolute;
-      left: 10px;
-      top: 6px;
-      font-size: 0.65rem;
-      letter-spacing: 0.07em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    .input-wrap input,
-    .input-wrap select {
-      width: 100%;
-      border-radius: 999px;
-      border: 1px solid var(--border-subtle);
-      padding: 18px 12px 6px;
-      background: rgba(249,250,251,0.96);
-      color: var(--text);
-      font-size: 0.8rem;
-      outline: none;
-    }
-
-    .input-wrap input::placeholder {
-      color: rgba(148,163,184,0.9);
-    }
-
-    .input-wrap select {
-      appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      padding-right: 28px;
-    }
-
-    .select-chevron {
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(2px);
-      font-size: 0.7rem;
-      color: var(--muted);
-      pointer-events: none;
-    }
-
-    button.primary {
-      border-radius: 999px;
-      border: none;
-      padding: 14px 18px;
-      font-size: 0.83rem;
-      font-weight: 500;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      background: radial-gradient(circle at 0 0, #ffe7c4, transparent 50%),
-                  linear-gradient(135deg, var(--accent), var(--accent-soft));
-      color: #111827;
-      cursor: pointer;
-      box-shadow: 0 10px 30px rgba(15,23,42,0.28);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      flex: 0 0 auto;
-      min-width: 150px;
-      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
-      white-space: nowrap;
-    }
-
-    button.primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 16px 36px rgba(15,23,42,0.35);
-      filter: brightness(1.05);
-    }
-
-    button.primary:active {
-      transform: translateY(1px) scale(0.99);
-      box-shadow: 0 8px 24px rgba(15,23,42,0.3);
-      filter: brightness(0.96);
-    }
-
-    button.primary span.icon {
-      font-size: 1rem;
-    }
-
-    .hint-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.75rem;
-      color: var(--muted);
-      flex-wrap: wrap;
-    }
-
-    .hint-row strong {
-      color: var(--accent-soft);
-      font-weight: 500;
-    }
-
-    .hint-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: var(--accent-soft);
-      box-shadow: 0 0 0 3px var(--hint-bg-dot);
-    }
-
-    .global-info {
-      font-size: 0.75rem;
-      color: var(--muted);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-top: 6px;
-    }
-
-    .global-info strong {
-      color: var(--accent-soft);
-      font-weight: 500;
-    }
-
-    /* Court grid */
-    .courts-wrapper {
-      background: var(--courts-bg);
-      border-radius: 22px;
-      border: 1px solid var(--shell-border);
-      padding: 14px;
-      backdrop-filter: blur(26px);
-      box-shadow: var(--shadow-soft);
-    }
-
-    .courts-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      gap: 10px;
-      font-size: 0.8rem;
-      color: var(--muted);
-      flex-wrap: wrap;
-    }
-
-    .courts-header-title {
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--text);
-    }
-
-    .courts-header-title span.location {
-      color: #4b5563;
-      font-weight: 400;
-    }
-
-    .court-grid {
-      display: grid;
+    .court-grid{
+      display:grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
+      gap:10px;
     }
 
-    @media (max-width: 700px) {
-      .court-grid {
-        grid-template-columns: minmax(0, 1fr);
-      }
-    }
-
-    .court-card {
-      position: relative;
-      border-radius: 18px;
+    .court{
+      border:1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow:hidden;
       background:
         linear-gradient(135deg, #f9fafb, #e5f4ff),
-        radial-gradient(circle at 100% 0%, rgba(255,149,0,0.18), transparent 55%);
-      border: 1px solid rgba(209,213,219,0.95);
-      overflow: hidden;
-      display: grid;
+        radial-gradient(circle at 100% 0%, rgba(255,149,0,0.14), transparent 55%);
+      display:grid;
       grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr);
-      min-height: 150px;
+      min-height:150px;
     }
 
-    @media (max-width: 540px) {
-      .court-card {
-        grid-template-columns: minmax(0, 1fr);
+    .court-visual{
+      padding:12px;
+      background: var(--court-visual-bg);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+    }
+    .court-visual-inner{
+      width:100%;
+      padding-bottom:55%;
+      border-radius:16px;
+      background: var(--court-inner-bg);
+      border:2px solid var(--court-lines);
+      box-shadow:0 14px 35px rgba(15,23,42,.20);
+      position:relative;
+      overflow:hidden;
+    }
+    .lines{
+      position:absolute; inset:7%;
+      border-radius:8px;
+      border:1.5px solid rgba(229,249,255,.9);
+      box-shadow:0 0 0 1px rgba(15,23,42,.14);
+    }
+    .lines::before,.lines::after{
+      content:""; position:absolute; left:50%; top:0;
+      height:100%; border-left:1.5px solid rgba(229,249,255,.9);
+    }
+    .lines::after{
+      left:0; top:50%; width:100%; height:0;
+      border-top:1.5px solid rgba(229,249,255,.9);
+    }
+    .svc{
+      position:absolute; inset:17% 23%;
+      border-radius:6px;
+      border:1px solid rgba(229,249,255,.7);
+    }
+
+    .pill{
+      position:absolute;
+      left:10px; top:10px;
+      font-size:.68rem;
+      background: rgba(17,24,39,.86);
+      color: var(--court-lines);
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(229,249,255,.4);
+      display:inline-flex; align-items:center; gap:6px;
+    }
+    .pill .pdot{
+      width:7px; height:7px; border-radius:999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow:0 0 0 3px rgba(255,149,0,.25);
+    }
+
+    .timer{
+      position:absolute;
+      right:10px; bottom:10px;
+      font-size:.72rem;
+      background: var(--timer-badge-bg);
+      color: var(--court-lines);
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(229,249,255,.5);
+      display:inline-flex; align-items:center; gap:6px;
+    }
+    .tstat{width:7px;height:7px;border-radius:999px}
+    .tstat.running{background:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.26)}
+    .tstat.idle{background:#6b7280; box-shadow:0 0 0 3px rgba(107,114,128,.22)}
+    .tstat.finished{background:#f97316; box-shadow:0 0 0 3px rgba(249,115,22,.25)}
+    .tval{font-variant-numeric:tabular-nums}
+
+    .court-info{
+      padding:10px 12px 12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .row{
+      display:flex; justify-content:space-between; align-items:center;
+      gap:8px; flex-wrap:wrap;
+      font-size:.82rem;
+    }
+    .status{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:3px 9px;
+      border-radius:999px;
+      border:1px solid rgba(156,163,175,.8);
+      font-size:.72rem;
+      color:var(--muted);
+      background: rgba(249,250,251,.88);
+    }
+    .sd{width:7px;height:7px;border-radius:999px}
+    .sd.free{background:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.20)}
+    .sd.inuse{background:#f97316; box-shadow:0 0 0 3px rgba(249,115,22,.22)}
+    .sd.queue{background:#eab308; box-shadow:0 0 0 3px rgba(234,179,8,.22)}
+
+    .now{
+      font-size:.82rem;
+      line-height:1.25rem;
+    }
+    .now strong{font-weight:650}
+    .now .name{color:#92400e;font-weight:650}
+
+    .actions{
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .btn.small{padding:7px 10px; font-size:.74rem; box-shadow:none}
+    .btn.danger{
+      background:#fef2f2;
+      border-color:#fecaca;
+      color:#b91c1c;
+    }
+
+    .qtitle{
+      font-size:.68rem;
+      text-transform:uppercase;
+      letter-spacing:.09em;
+      color:rgba(107,114,128,.95);
+      margin-top:2px;
+    }
+    .q{
+      list-style:none;
+      max-height: 78px;
+      overflow:auto;
+      padding-right:4px;
+      margin-top:4px;
+    }
+    .qp{
+      display:inline-flex; align-items:center; gap:8px;
+      border-radius:999px;
+      border:1px solid rgba(156,163,175,.55);
+      background: rgba(249,250,251,.98);
+      padding:4px 9px;
+      font-size:.76rem;
+      margin-bottom:6px;
+    }
+    .qp .idx{font-size:.68rem;color:var(--muted)}
+    .qp small{font-size:.68rem;color:var(--muted)}
+    .qempty{font-size:.78rem;color:rgba(107,114,128,.9); margin-top:4px}
+
+    /* Right side panel */
+    .panel{
+      padding:12px 12px 14px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .form{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .field{
+      flex: 1 1 160px;
+      min-width: 0;
+      position:relative;
+    }
+    .field label{
+      position:absolute;
+      left:12px; top:7px;
+      font-size:.66rem;
+      text-transform:uppercase;
+      letter-spacing:.09em;
+      color:var(--muted);
+    }
+    .field input, .field select{
+      width:100%;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(249,250,251,.98);
+      padding:20px 12px 8px;
+      font-size:.86rem;
+      outline:none;
+    }
+
+    .hint{
+      font-size:.80rem;
+      color:var(--muted);
+      line-height:1.2rem;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:space-between;
+      align-items:center;
+    }
+    .hint strong{color:var(--accent2); font-weight:650}
+    .hint .hd{
+      width:7px;height:7px;border-radius:999px;
+      background: var(--accent2);
+      box-shadow:0 0 0 3px rgba(255,149,0,.20);
+      display:inline-block;
+      margin-right:6px;
+      transform: translateY(-1px);
+    }
+
+    .info{
+      font-size:.80rem;
+      color:var(--muted);
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .info strong{color:var(--accent2); font-weight:650}
+
+    /* Share card */
+    .share{
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .share-row{
+      display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    }
+    .share-row input{
+      flex: 1 1 200px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(249,250,251,.98);
+      padding:10px 12px;
+      font-size:.82rem;
+      outline:none;
+    }
+    .qrbox{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .qr{
+      width:110px; height:110px;
+      border-radius:16px;
+      border:1px solid var(--border);
+      background:#fff;
+      display:flex; align-items:center; justify-content:center;
+      overflow:hidden;
+    }
+    .qr img{width:100%;height:100%;object-fit:cover}
+    .share-note{
+      font-size:.78rem;
+      color:var(--muted);
+      line-height:1.15rem;
+      flex: 1 1 220px;
+    }
+
+    /* Mobile optimization */
+    @media (max-width: 860px){
+      body{padding:12px; padding-top: calc(12px + var(--safe-top));}
+      .shell{padding:14px; border-radius: 26px;}
+      .grid{grid-template-columns: 1fr;}
+      .court-grid{grid-template-columns: 1fr;}
+      header{gap:10px}
+      .top-controls{align-items:flex-start}
+      .summary{justify-content:flex-start}
+      .loc-row{justify-content:flex-start}
+    }
+
+    /* Ultra mobile: make court cards accordion and add sticky join bar */
+    @media (max-width: 540px){
+      .court{grid-template-columns: 1fr; min-height: 0;}
+      .court-info{padding: 10px 12px 12px}
+      .actions .btn{flex:1 1 auto; justify-content:center}
+      .panel{display:none;} /* replaced by sticky join bar on phones */
+      .share{padding:12px}
+      .qrbox{gap:10px}
+    }
+
+    /* Sticky join bar (phones) */
+    .joinbar{
+      display:none;
+    }
+    @media (max-width: 540px){
+      .joinbar{
+        display:block;
+        position: fixed;
+        left: 10px;
+        right: 10px;
+        bottom: calc(10px + var(--safe-bottom));
+        background: rgba(255,255,255,.92);
+        border:1px solid var(--border);
+        border-radius: 22px;
+        box-shadow: 0 18px 48px rgba(15,23,42,.18);
+        backdrop-filter: blur(16px);
+        padding: 10px;
+        z-index: 50;
+      }
+      .joinbar .row{
+        display:grid;
+        grid-template-columns: 1.3fr .9fr;
+        gap:8px;
+        align-items:stretch;
+        margin-bottom:8px;
+      }
+      .joinbar input, .joinbar select{
+        width:100%;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: rgba(249,250,251,.98);
+        padding: 12px;
+        font-size: .92rem;
+        outline:none;
+      }
+      .joinbar .btn.primary{
+        width:100%;
+        justify-content:center;
+        border-radius: 16px;
+        padding: 14px 14px;
+        font-size: .86rem;
+      }
+      .joinbar small{
+        display:block;
+        font-size:.72rem;
+        color: var(--muted);
+        line-height:1.05rem;
+        padding: 0 2px;
+      }
+
+      /* add bottom padding so content doesn't hide behind joinbar */
+      .spacer{
+        height: 170px;
       }
     }
 
-    .court-visual {
-      position: relative;
-      padding: 12px;
-      background: var(--court-visual-bg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    /* Modal */
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background: rgba(17,24,39,.35);
+      display:none;
+      align-items:flex-end;
+      justify-content:center;
+      z-index: 100;
+      padding: 14px;
+      padding-bottom: calc(14px + var(--safe-bottom));
     }
-
-    .court-visual-inner {
-      position: relative;
-      width: 100%;
-      padding-bottom: 55%;
-      border-radius: 16px;
-      background: var(--court-inner-bg);
-      box-shadow: 0 14px 35px rgba(15,23,42,0.35);
-      border: 2px solid var(--court-lines);
-      overflow: hidden;
+    .modal{
+      width:100%;
+      max-width:560px;
+      background: rgba(255,255,255,.96);
+      border:1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: 0 24px 70px rgba(15,23,42,.22);
+      overflow:hidden;
     }
-
-    .court-lines {
-      position: absolute;
-      inset: 7%;
-      border-radius: 8px;
-      border: 1.5px solid rgba(229,249,255,0.9);
-      box-shadow: 0 0 0 1px rgba(15,23,42,0.2);
+    .modal-h{
+      padding:12px 14px;
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+      border-bottom: 1px solid rgba(209,213,219,.7);
     }
-
-    .court-lines::before,
-    .court-lines::after {
-      content: "";
-      position: absolute;
-      left: 50%;
-      top: 0;
-      width: 0;
-      height: 100%;
-      border-left: 1.5px solid rgba(229,249,255,0.9);
+    .modal-h strong{font-size:.92rem}
+    .modal-b{
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
     }
-
-    .court-lines::after {
-      top: 50%;
-      left: 0;
-      width: 100%;
-      height: 0;
-      border-top: 1.5px solid rgba(229,249,255,0.9);
+    .modal-b .field{
+      flex: 1 1 auto;
     }
-
-    .service-box {
-      position: absolute;
-      inset: 17% 23%;
-      border-radius: 6px;
-      border: 1px solid rgba(229,249,255,0.7);
+    .modal-actions{
+      display:flex; gap:10px; flex-wrap:wrap;
+      margin-top:2px;
     }
-
-    .court-label-pill {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      font-size: 0.65rem;
-      background: rgba(15,23,42,0.85);
-      padding: 3px 7px;
-      border-radius: 999px;
-      border: 1px solid rgba(229,249,255,0.4);
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      color: var(--court-lines);
-    }
-
-    .court-label-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
-      box-shadow: 0 0 0 3px rgba(255,149,0,0.35);
-    }
-
-    .timer-badge {
-      position: absolute;
-      right: 10px;
-      bottom: 10px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: var(--timer-badge-bg);
-      border: 1px solid rgba(229,249,255,0.5);
-      font-size: 0.7rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      color: var(--court-lines);
-    }
-
-    .timer-badge span.time {
-      font-variant-numeric: tabular-nums;
-    }
-
-    .timer-status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-    }
-
-    .timer-status-dot.running {
-      background: #22c55e;
-      box-shadow: 0 0 0 3px rgba(34,197,94,0.45);
-    }
-
-    .timer-status-dot.idle {
-      background: #6b7280;
-      box-shadow: 0 0 0 3px rgba(107,114,128,0.4);
-    }
-
-    .timer-status-dot.finished {
-      background: #f97316;
-      box-shadow: 0 0 0 3px rgba(249,115,22,0.45);
-    }
-
-    .court-info {
-      padding: 10px 12px 11px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .court-row-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.8rem;
-      flex-wrap: wrap;
-    }
-
-    .court-status-pill {
-      font-size: 0.7rem;
-      padding: 2px 9px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.7);
-      color: var(--muted);
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-    }
-
-    .status-dot.free {
-      background: #22c55e;
-      box-shadow: 0 0 0 3px rgba(34,197,94,0.35);
-    }
-
-    .status-dot.inuse {
-      background: #f97316;
-      box-shadow: 0 0 0 3px rgba(249,115,22,0.45);
-    }
-
-    .status-dot.queue {
-      background: #eab308;
-      box-shadow: 0 0 0 3px rgba(234,179,8,0.45);
-    }
-
-    .court-current {
-      font-size: 0.8rem;
-    }
-
-    .court-current strong {
-      font-weight: 600;
-    }
-
-    .court-current span.name {
-      color: #92400e;
-      font-weight: 600;
-    }
-
-    .court-actions {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-top: 4px;
-    }
-
-    .queue-label {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: rgba(148,163,184,0.95);
-      margin-top: 4px;
-    }
-
-    .queue-list {
-      list-style: none;
-      margin-top: 3px;
-      max-height: 60px;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
-
-    .queue-empty {
-      font-size: 0.73rem;
-      color: rgba(148,163,184,0.85);
-      margin-top: 4px;
-    }
-
-    .queue-pill {
-      font-size: 0.74rem;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: var(--chip-bg);
-      border: 1px solid rgba(148,163,184,0.5);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: #111827;
-      margin-bottom: 4px;
-    }
-
-    .queue-pill span.index {
-      font-size: 0.65rem;
-      color: var(--muted);
-    }
-
-    .queue-pill span.name {
-      font-weight: 500;
-    }
-
-    .queue-pill small {
-      font-size: 0.65rem;
-      color: var(--muted);
-    }
+    .modal-actions .btn{flex: 1 1 160px; justify-content:center}
   </style>
 </head>
 <body>
-  <div class="app-shell">
-    <header class="app-header">
-      <div class="title-block">
-        <div class="title-chip">
-          <span class="title-chip-dot"></span>
-          <span>Local courts · live queue</span>
-        </div>
+  <div class="shell">
+    <header>
+      <div class="title">
+        <div class="chip"><span class="dot"></span><span>Local courts · live queue</span></div>
         <h1>Tennis Court Flow</h1>
-        <p class="subtitle">Pick your location, drop your name, and let the app manage the 30-minute rounds.</p>
+        <p class="sub">Pick your location, then tap <strong>Play Next</strong>. Each court runs a 30-minute round and auto-calls the next person.</p>
       </div>
-      <div class="header-right">
-        <div class="summary-pill">
-          <span><span class="summary-dot"></span> 30 min per court</span>
-          <span class="summary-separator"></span>
-          <span>
-            <span id="summaryCourts">4</span> courts ·
-            <span id="summaryLocationName">Location</span>
-          </span>
+
+      <div class="top-controls">
+        <div class="summary">
+          <span><span class="sdot"></span> 30 min per court</span>
+          <span class="sep"></span>
+          <span><strong id="sumCourts">4</strong> courts · <strong id="sumLoc">Eglinton Park</strong></span>
         </div>
-        <div class="location-row">
+
+        <div class="loc-row">
           <label for="locationSelect">Location</label>
-          <div class="location-select">
+          <div class="select-wrap">
             <select id="locationSelect"></select>
-            <span class="location-select-chevron">⌄</span>
+            <span class="chev">⌄</span>
           </div>
-          <button class="chip-btn" id="addLocationBtn">＋ Add location</button>
+          <button class="btn" id="addLocationBtn">＋ Add location</button>
         </div>
       </div>
     </header>
 
-    <main class="layout">
+    <main class="grid">
       <!-- Courts -->
-      <section class="courts-wrapper">
-        <div class="courts-header">
-          <div class="courts-header-title">
-            Courts overview · <span class="location" id="courtsHeaderLocation">—</span>
+      <section class="card courts">
+        <div class="card-h">
+          <div>
+            <div class="t">Courts overview</div>
+            <div class="m">Location: <strong id="headerLoc">Eglinton Park</strong></div>
           </div>
-          <div>Timers and queues are for this location only.</div>
+          <div class="m">Tap a court to expand queue & actions (mobile)</div>
         </div>
-        <div class="court-grid" id="courtGrid">
-          <!-- Courts will be injected by JS -->
-        </div>
+
+        <div class="court-grid" id="courtGrid"></div>
       </section>
 
-      <!-- Right panel: controls & info -->
-      <section class="panel">
-        <div class="panel-header">
-          <div class="panel-title">Join the queue</div>
-          <div class="panel-badge">30 min rounds · first-come, first-served</div>
+      <!-- Right panel (desktop/tablet) -->
+      <section class="card panel" aria-label="Join the queue panel">
+        <div class="card-h">
+          <div class="t">Join the queue</div>
+          <div class="m">Fast, fair, simple</div>
         </div>
 
-        <div class="form-row">
-          <div class="input-wrap">
+        <div class="form">
+          <div class="field">
             <label for="playerName">Your name</label>
             <input id="playerName" type="text" placeholder="Type your name…" autocomplete="off" />
           </div>
-          <div class="input-wrap">
+          <div class="field">
             <label for="courtSelect">Court</label>
             <select id="courtSelect"></select>
-            <span class="select-chevron">⌄</span>
+            <span class="chev" style="right:16px;">⌄</span>
           </div>
         </div>
 
-        <div class="form-row">
-          <button class="primary" id="playNextBtn">
-            <span class="icon">🎾</span>
-            <span>Play Next</span>
-          </button>
+        <button class="btn primary" id="playNextBtn">🎾 Play Next</button>
+
+        <div class="hint">
+          <span><span class="hd"></span><strong>Tip:</strong> If a court is free, you start right away. If not, you join that court’s queue.</span>
+          <span>Auto-advance when the timer ends.</span>
         </div>
 
-        <div class="hint-row">
-          <span><span class="hint-dot"></span> <strong>Tip:</strong> If the court is free, you start right away. If not, you join that court’s queue.</span>
-          <span>When 30 minutes end, the next name in that court’s list is auto-called.</span>
+        <div class="info" id="globalInfo"></div>
+      </section>
+
+      <!-- Share / QR -->
+      <section class="card share" aria-label="Share this app">
+        <div class="card-h">
+          <div class="t">Share this page</div>
+          <div class="m">QR + quick share</div>
         </div>
 
-        <div class="global-info" id="globalInfo">
-          <!-- Filled by JS -->
+        <div class="share-row">
+          <input id="shareUrl" type="text" placeholder="Paste your hosted link here (Netlify/GitHub Pages)…" />
+          <button class="btn" id="copyBtn">📋 Copy</button>
+          <button class="btn" id="shareBtn">📲 Share</button>
+        </div>
+
+        <div class="qrbox">
+          <div class="qr" title="QR code" aria-label="QR code box">
+            <img id="qrImg" alt="QR code" />
+          </div>
+          <div class="share-note" id="shareNote">
+            For a real QR, host this page (Netlify/GitHub Pages) and paste the URL above.
+            If you’re using a local file, phones can’t open your <em>file://</em> link.
+          </div>
         </div>
       </section>
     </main>
+
+    <div class="spacer"></div>
+  </div>
+
+  <!-- Sticky join bar (phones) -->
+  <div class="joinbar" id="joinbar">
+    <div class="row">
+      <input id="mName" type="text" placeholder="Your name" autocomplete="off" />
+      <select id="mCourt"></select>
+    </div>
+    <button class="btn primary" id="mPlay">🎾 Play Next</button>
+    <small>Free court → start now. Busy court → you’re added to the queue. Auto-advance in 30 minutes.</small>
+  </div>
+
+  <!-- Add location modal -->
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-label="Add location dialog">
+    <div class="modal">
+      <div class="modal-h">
+        <strong>Add a court location</strong>
+        <button class="btn small" id="modalClose">✕ Close</button>
+      </div>
+      <div class="modal-b">
+        <div class="field" style="flex:1 1 auto">
+          <label for="locName">Location name</label>
+          <input id="locName" type="text" placeholder='e.g., Eglinton Park' />
+        </div>
+        <div class="field" style="flex:1 1 auto">
+          <label for="locCourts">How many courts?</label>
+          <input id="locCourts" type="number" min="1" max="24" step="1" value="4" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn" id="modalCancel">Cancel</button>
+          <button class="btn primary" id="modalAdd">＋ Add location</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
-    const ROUND_SECONDS = 30 * 60; // 30 minutes
+    const ROUND_SECONDS = 30 * 60;
+
+    // Local storage keys
+    const LS_KEY = "tc_locations_v2";
+    const LS_SEL = "tc_selected_location_v2";
+    const LS_SHARE = "tc_share_url_v2";
 
     let locations = [];
     let nextLocationId = 1;
     let currentLocationId = null;
 
+    // Elements
     const courtGrid = document.getElementById("courtGrid");
     const playNextBtn = document.getElementById("playNextBtn");
     const playerNameInput = document.getElementById("playerName");
     const courtSelect = document.getElementById("courtSelect");
     const globalInfo = document.getElementById("globalInfo");
-    const summaryCourtsEl = document.getElementById("summaryCourts");
-    const summaryLocationNameEl = document.getElementById("summaryLocationName");
-    const courtsHeaderLocationEl = document.getElementById("courtsHeaderLocation");
+
+    const sumCourts = document.getElementById("sumCourts");
+    const sumLoc = document.getElementById("sumLoc");
+    const headerLoc = document.getElementById("headerLoc");
+
     const locationSelect = document.getElementById("locationSelect");
     const addLocationBtn = document.getElementById("addLocationBtn");
 
-    function createCourt(name) {
+    // Mobile join bar
+    const mName = document.getElementById("mName");
+    const mCourt = document.getElementById("mCourt");
+    const mPlay = document.getElementById("mPlay");
+
+    // Modal
+    const modalBackdrop = document.getElementById("modalBackdrop");
+    const modalClose = document.getElementById("modalClose");
+    const modalCancel = document.getElementById("modalCancel");
+    const modalAdd = document.getElementById("modalAdd");
+    const locName = document.getElementById("locName");
+    const locCourts = document.getElementById("locCourts");
+
+    // Share
+    const shareUrl = document.getElementById("shareUrl");
+    const copyBtn = document.getElementById("copyBtn");
+    const shareBtn = document.getElementById("shareBtn");
+    const qrImg = document.getElementById("qrImg");
+    const shareNote = document.getElementById("shareNote");
+
+    // Helpers
+    function formatTime(seconds){
+      const s = Math.max(0, seconds);
+      const m = Math.floor(s/60);
+      const sec = s % 60;
+      return `${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
+    }
+
+    function safeText(str){
+      return String(str).replace(/[&<>"']/g, m => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[m]));
+    }
+
+    function makeCourt(name){
       return {
-        id: crypto.randomUUID(),
+        id: (crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random())),
         name,
-        current: null,
-        queue: [],
-        remaining: 0,
-        intervalId: null,
-        status: "free"
+        current:null,
+        queue:[],
+        remaining:0,
+        intervalId:null,
+        status:"free",
+        expanded:false
       };
     }
 
-    function createLocation(name, courtCount) {
+    function makeLocation(name, count){
       const courts = [];
-      for (let i = 1; i <= courtCount; i++) {
-        courts.push(createCourt("Court " + i));
-      }
-      return {
-        id: nextLocationId++,
-        name,
-        courts
-      };
+      for(let i=1;i<=count;i++) courts.push(makeCourt(`Court ${i}`));
+      return { id: nextLocationId++, name, courts };
     }
 
-    function getCurrentLocation() {
+    function getLoc(){
       return locations.find(l => l.id === currentLocationId) || null;
     }
 
-    function updateLocationSelectOptions() {
-      locationSelect.innerHTML = locations
-        .map(loc => `<option value="${loc.id}">${loc.name}</option>`)
-        .join("");
-      if (locations.length > 0) {
-        if (!currentLocationId) {
-          currentLocationId = locations[0].id;
-        }
-        locationSelect.value = currentLocationId;
-      }
-      updateCourtSelectOptions();
-      updateLocationUI();
+    function computeStats(){
+      const loc = getLoc();
+      if(!loc) return { inUse:0, queued:0 };
+      let inUse=0, queued=0;
+      loc.courts.forEach(c => { if(c.current) inUse++; queued += c.queue.length; });
+      return { inUse, queued };
     }
 
-    function updateCourtSelectOptions() {
-      const loc = getCurrentLocation();
-      if (!loc) {
-        courtSelect.innerHTML = "";
+    function updateHeader(){
+      const loc = getLoc();
+      if(!loc){
+        sumCourts.textContent = "0";
+        sumLoc.textContent = "No location";
+        headerLoc.textContent = "—";
         return;
       }
-      courtSelect.innerHTML = loc.courts
-        .map(c => `<option value="${c.id}">${c.name}</option>`)
-        .join("");
+      sumCourts.textContent = loc.courts.length;
+      sumLoc.textContent = loc.name;
+      headerLoc.textContent = loc.name;
     }
 
-    function updateLocationUI() {
-      const loc = getCurrentLocation();
-      if (!loc) {
-        summaryCourtsEl.textContent = "0";
-        summaryLocationNameEl.textContent = "No location";
-        courtsHeaderLocationEl.textContent = "—";
+    function updateGlobalInfo(){
+      const loc = getLoc();
+      if(!loc){
+        globalInfo.innerHTML = `<div>Add a location to begin.</div>`;
         return;
       }
-      summaryCourtsEl.textContent = loc.courts.length;
-      summaryLocationNameEl.textContent = loc.name;
-      courtsHeaderLocationEl.textContent = loc.name;
-    }
-
-    function formatTime(seconds) {
-      const s = Math.max(0, seconds);
-      const m = Math.floor(s / 60);
-      const sec = s % 60;
-      return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-    }
-
-    function computeGlobalStats() {
-      const loc = getCurrentLocation();
-      if (!loc) return { totalInUse: 0, totalQueued: 0 };
-      let totalInUse = 0;
-      let totalQueued = 0;
-      loc.courts.forEach(c => {
-        if (c.current) totalInUse++;
-        totalQueued += c.queue.length;
-      });
-      return { totalInUse, totalQueued };
-    }
-
-    function updateGlobalInfo() {
-      const { totalInUse, totalQueued } = computeGlobalStats();
+      const { inUse, queued } = computeStats();
       globalInfo.innerHTML = `
-        <div><strong>${totalInUse}</strong> court${totalInUse === 1 ? "" : "s"} currently in play at this location.</div>
-        <div><strong>${totalQueued}</strong> player${totalQueued === 1 ? "" : "s"} waiting across all courts here.</div>
-        <div>Each new block is <strong>30:00</strong>. When time is up, the next name in that court’s queue jumps in automatically.</div>
+        <div><strong>${inUse}</strong> court${inUse===1?"":"s"} currently in play.</div>
+        <div><strong>${queued}</strong> player${queued===1?"":"s"} waiting across all courts.</div>
+        <div>Each round is <strong>30:00</strong>. When it ends, the next person is auto-called.</div>
       `;
     }
 
-    function clearCourtTimer(court) {
-      if (court.intervalId) {
+    function clearTimer(court){
+      if(court.intervalId){
         clearInterval(court.intervalId);
         court.intervalId = null;
       }
     }
 
-    function startRound(court) {
-      clearCourtTimer(court);
+    function startRound(court){
+      clearTimer(court);
       court.remaining = ROUND_SECONDS;
       court.status = "inuse";
-      renderCourts();
+      render();
+
       court.intervalId = setInterval(() => {
         court.remaining--;
-        if (court.remaining <= 0) {
-          clearCourtTimer(court);
+        if(court.remaining <= 0){
+          clearTimer(court);
           court.remaining = 0;
           court.status = "finished";
-          if (court.queue.length > 0) {
-            const nextPlayer = court.queue.shift();
-            court.current = nextPlayer;
+
+          if(court.queue.length > 0){
+            const next = court.queue.shift();
+            court.current = next;
             court.status = "inuse";
             court.remaining = ROUND_SECONDS;
-            renderCourts();
           } else {
             court.current = null;
             court.status = "free";
           }
-          renderCourts();
+          render();
         } else {
-          renderCourts();
+          // lightweight update: avoid reflow heavy operations? still ok.
+          render();
         }
       }, 1000);
     }
 
-    function manuallyEndRound(court) {
-      clearCourtTimer(court);
+    function endRound(court){
+      clearTimer(court);
       court.remaining = 0;
-      if (court.queue.length > 0) {
-        const next = court.queue.shift();
-        court.current = next;
+      if(court.queue.length > 0){
+        court.current = court.queue.shift();
         startRound(court);
       } else {
         court.current = null;
         court.status = "free";
-        renderCourts();
+        render();
       }
     }
 
-    function resetCourt(court) {
-      clearCourtTimer(court);
+    function resetCourt(court){
+      clearTimer(court);
       court.current = null;
       court.queue = [];
       court.remaining = 0;
       court.status = "free";
-      renderCourts();
+      render();
     }
 
-    function renderCourts() {
-      const loc = getCurrentLocation();
+    // Mobile-friendly: expand/collapse per court
+    function toggleCourt(court){
+      court.expanded = !court.expanded;
+      render();
+    }
+
+    // UI Builders
+    function updateCourtSelects(){
+      const loc = getLoc();
+      const opts = loc ? loc.courts.map(c => `<option value="${c.id}">${safeText(c.name)}</option>`).join("") : "";
+      courtSelect.innerHTML = opts;
+      mCourt.innerHTML = opts;
+    }
+
+    function render(){
+      const loc = getLoc();
       courtGrid.innerHTML = "";
-      if (!loc) {
-        courtGrid.innerHTML = `<p style="font-size:0.85rem;color:#6b7280;">Add a location to start managing courts.</p>`;
+
+      if(!loc){
+        courtGrid.innerHTML = `<div style="padding:14px;color:#6b7280;font-size:.9rem">Add a location to start.</div>`;
+        updateHeader();
+        updateCourtSelects();
         updateGlobalInfo();
+        persist();
         return;
       }
 
       loc.courts.forEach(court => {
+        const hasQueue = court.queue.length > 0;
         const isRunning = court.status === "inuse";
         const finished = court.status === "finished" && !isRunning;
-        const hasQueue = court.queue.length > 0;
 
-        const statusLabel = court.current
-          ? "In play"
-          : hasQueue
-            ? "Waiting to start"
-            : "Free";
+        const statusLabel = court.current ? "In play" : (hasQueue ? "Waiting" : "Free");
+        const statusClass = court.current ? "inuse" : (hasQueue ? "queue" : "free");
 
-        const statusClass = court.current
-          ? "inuse"
-          : hasQueue
-            ? "queue"
-            : "free";
+        const tClass = isRunning ? "running" : (finished ? "finished" : "idle");
+        const timerLabel = court.current ? formatTime(court.remaining) : (hasQueue ? "Next round" : "00:00");
 
-        const timerBadgeStatusClass = isRunning
-          ? "running"
-          : finished
-            ? "finished"
-            : "idle";
+        const expanded = court.expanded || window.matchMedia("(min-width: 541px)").matches;
 
-        const timerLabel = court.current
-          ? formatTime(court.remaining)
-          : hasQueue
-            ? "Next round"
-            : "00:00";
-
-        const courtEl = document.createElement("article");
-        courtEl.className = "court-card";
-
-        courtEl.innerHTML = `
-          <div class="court-visual">
+        const el = document.createElement("article");
+        el.className = "court";
+        el.innerHTML = `
+          <div class="court-visual" role="button" tabindex="0" aria-label="Toggle court details">
             <div class="court-visual-inner">
-              <div class="court-lines"></div>
-              <div class="service-box"></div>
-              <div class="court-label-pill">
-                <span class="court-label-dot"></span>
-                <span>${court.name}</span>
-              </div>
-              <div class="timer-badge">
-                <span class="timer-status-dot ${timerBadgeStatusClass}"></span>
-                <span class="time">${timerLabel}</span>
+              <div class="lines"></div>
+              <div class="svc"></div>
+              <div class="pill"><span class="pdot"></span><span>${safeText(court.name)}</span></div>
+              <div class="timer">
+                <span class="tstat ${tClass}"></span>
+                <span class="tval">${timerLabel}</span>
               </div>
             </div>
           </div>
+
           <div class="court-info">
-            <div class="court-row-top">
-              <div class="court-status-pill">
-                <span class="status-dot ${statusClass}"></span>
-                <span>${statusLabel}</span>
-              </div>
-              <div style="font-size:0.7rem; color:var(--muted);">
-                Round: 30:00
-              </div>
+            <div class="row">
+              <div class="status"><span class="sd ${statusClass}"></span><span>${statusLabel}</span></div>
+              <div style="font-size:.72rem;color:var(--muted)">Round: 30:00</div>
             </div>
-            <div class="court-current">
+
+            <div class="now">
               ${
                 court.current
-                  ? `<strong>On court now:</strong> <span class="name">${court.current}</span>`
+                  ? `<strong>On court:</strong> <span class="name">${safeText(court.current)}</span>`
                   : hasQueue
-                    ? `<strong>Next up:</strong> <span class="name">${court.queue[0]}</span>`
-                    : `<strong>On court now:</strong> <span class="name" style="color:var(--muted);font-weight:400;">Nobody yet</span>`
+                    ? `<strong>Next:</strong> <span class="name">${safeText(court.queue[0])}</span>`
+                    : `<strong>On court:</strong> <span style="color:var(--muted);font-weight:500">Nobody yet</span>`
               }
             </div>
-            <div class="court-actions">
-              ${
-                court.current
-                  ? `<button class="chip-btn danger" data-action="end" data-court="${court.id}">
-                      ⏹ End round
-                    </button>`
-                  : `<button class="chip-btn" data-action="forceStart" data-court="${court.id}">
-                      ▶ Start next round
-                    </button>`
-              }
-              <button class="chip-btn" data-action="reset" data-court="${court.id}">
-                ↺ Clear court
+
+            <div class="row" style="gap:10px;">
+              <button class="btn small" data-action="toggle" data-court="${court.id}">
+                ${expanded ? "▾ Hide details" : "▸ Show details"}
               </button>
+              <div style="font-size:.72rem;color:var(--muted)">${hasQueue ? `${court.queue.length} waiting` : "No queue"}</div>
             </div>
-            <div class="queue-label">Queue</div>
-            ${
-              hasQueue
-                ? `<ul class="queue-list">
-                    ${court.queue
-                      .map(
-                        (name, index) => `
-                      <li>
-                        <span class="queue-pill">
-                          <span class="index">#${index + 1}</span>
-                          <span class="name">${name}</span>
-                          <small>${index === 0 ? "up next" : "in line"}</small>
-                        </span>
-                      </li>
-                    `
-                      )
-                      .join("")}
-                  </ul>`
-                : `<div class="queue-empty">No one waiting for this court yet.</div>`
-            }
+
+            <div class="details" style="display:${expanded ? "block" : "none"}">
+              <div class="actions">
+                ${
+                  court.current
+                    ? `<button class="btn small danger" data-action="end" data-court="${court.id}">⏹ End round</button>`
+                    : `<button class="btn small" data-action="forceStart" data-court="${court.id}">▶ Start next</button>`
+                }
+                <button class="btn small" data-action="reset" data-court="${court.id}">↺ Clear</button>
+              </div>
+
+              <div class="qtitle">Queue</div>
+              ${
+                hasQueue
+                  ? `<ul class="q">
+                      ${court.queue.map((n,i)=>`
+                        <li>
+                          <span class="qp">
+                            <span class="idx">#${i+1}</span>
+                            <span>${safeText(n)}</span>
+                            <small>${i===0?"up next":"in line"}</small>
+                          </span>
+                        </li>
+                      `).join("")}
+                    </ul>`
+                  : `<div class="qempty">No one waiting for this court.</div>`
+              }
+            </div>
           </div>
         `;
 
-        courtEl.querySelectorAll("button[data-action]").forEach(btn => {
-          const action = btn.getAttribute("data-action");
-          const courtId = btn.getAttribute("data-court");
-          btn.addEventListener("click", () => {
-            const locNow = getCurrentLocation();
-            if (!locNow) return;
-            const c = locNow.courts.find(ct => ct.id === courtId);
-            if (!c) return;
-            if (action === "end") {
-              manuallyEndRound(c);
-            } else if (action === "reset") {
-              if (confirm(`Clear ${c.name} (current player + queue)?`)) {
-                resetCourt(c);
-              }
-            } else if (action === "forceStart") {
-              if (!c.current && c.queue.length > 0) {
+        // Toggle from visual area (best for mobile)
+        const visual = el.querySelector(".court-visual");
+        visual.addEventListener("click", () => toggleCourt(court));
+        visual.addEventListener("keydown", (e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggleCourt(court); }});
+
+        // Action buttons
+        el.querySelectorAll("button[data-action]").forEach(btn => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const action = btn.getAttribute("data-action");
+            const id = btn.getAttribute("data-court");
+            const c = loc.courts.find(x => x.id === id);
+            if(!c) return;
+
+            if(action === "toggle") toggleCourt(c);
+            if(action === "end") endRound(c);
+            if(action === "reset"){
+              if(confirm(`Clear ${c.name} (current player + queue)?`)) resetCourt(c);
+            }
+            if(action === "forceStart"){
+              if(!c.current && c.queue.length > 0){
                 c.current = c.queue.shift();
                 startRound(c);
               }
             }
             updateGlobalInfo();
+            persist();
           });
         });
 
-        courtGrid.appendChild(courtEl);
+        courtGrid.appendChild(el);
       });
 
+      updateHeader();
+      updateCourtSelects();
       updateGlobalInfo();
+      persist();
     }
 
-    // --- Events ---
-    playNextBtn.addEventListener("click", () => {
-      const name = playerNameInput.value.trim();
-      if (!name) {
-        alert("Please type your name before joining the queue.");
-        playerNameInput.focus();
-        return;
-      }
-      const loc = getCurrentLocation();
-      if (!loc) {
+    // Join action
+    function join(name, courtId){
+      const loc = getLoc();
+      if(!loc){
         alert("Please add a location first.");
         return;
       }
-      const courtId = courtSelect.value;
       const court = loc.courts.find(c => c.id === courtId);
-      if (!court) return;
+      if(!court) return;
 
-      if (!court.current && court.status === "free") {
+      if(!court.current && court.status === "free"){
         court.current = name;
         startRound(court);
       } else {
         court.queue.push(name);
-        renderCourts();
+        render();
       }
+      persist();
+    }
 
+    // Locations
+    function updateLocationSelect(){
+      locationSelect.innerHTML = locations.map(l => `<option value="${l.id}">${safeText(l.name)}</option>`).join("");
+      if(locations.length){
+        if(!currentLocationId) currentLocationId = locations[0].id;
+        locationSelect.value = currentLocationId;
+      }
+      updateHeader();
+      updateCourtSelects();
+    }
+
+    function openModal(){
+      locName.value = "";
+      locCourts.value = "4";
+      modalBackdrop.style.display = "flex";
+      setTimeout(()=>locName.focus(), 50);
+    }
+    function closeModal(){
+      modalBackdrop.style.display = "none";
+    }
+
+    // Share / QR
+    function setQr(url){
+      const u = (url || "").trim();
+      if(!u){
+        qrImg.src = "";
+        shareNote.textContent = "Paste a hosted URL above to generate a QR code.";
+        return;
+      }
+      // Simple QR via public endpoint:
+      // (If you later want “offline QR”, we can embed a tiny QR generator library.)
+      const qr = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(u)}`;
+      qrImg.src = qr;
+
+      if(u.startsWith("file://")){
+        shareNote.textContent = "This is a local file link. Host the page (Netlify/GitHub Pages) so phones can open it.";
+      } else {
+        shareNote.textContent = "Scan the QR with your phone camera to open the app. Tip: print it and tape it near the courts.";
+      }
+    }
+
+    async function tryNativeShare(url){
+      const u = (url || "").trim();
+      if(!u) return alert("Paste your hosted link first.");
+      if(navigator.share){
+        try{
+          await navigator.share({ title: "Tennis Court Flow", text: "Open the tennis queue", url: u });
+          return;
+        }catch(_){}
+      }
+      // fallback: copy
+      await navigator.clipboard.writeText(u);
+      alert("Link copied!");
+    }
+
+    // Persistence
+    function persist(){
+      try{
+        localStorage.setItem(LS_KEY, JSON.stringify({ nextLocationId, locations }));
+        localStorage.setItem(LS_SEL, String(currentLocationId ?? ""));
+      }catch(_){}
+    }
+
+    function load(){
+      try{
+        const raw = localStorage.getItem(LS_KEY);
+        if(raw){
+          const parsed = JSON.parse(raw);
+          if(parsed && Array.isArray(parsed.locations)){
+            locations = parsed.locations;
+            nextLocationId = parsed.nextLocationId || (locations.length+1);
+          }
+        }
+        const sel = localStorage.getItem(LS_SEL);
+        if(sel) currentLocationId = Number(sel) || null;
+      }catch(_){}
+    }
+
+    // Wire up
+    playNextBtn?.addEventListener("click", () => {
+      const name = playerNameInput.value.trim();
+      if(!name){ alert("Type your name first."); playerNameInput.focus(); return; }
+      const courtId = courtSelect.value;
+      join(name, courtId);
       playerNameInput.value = "";
       playerNameInput.focus();
     });
 
-    locationSelect.addEventListener("change", () => {
-      const newId = Number(locationSelect.value);
-      currentLocationId = newId;
-      updateCourtSelectOptions();
-      updateLocationUI();
-      renderCourts();
+    mPlay.addEventListener("click", () => {
+      const name = mName.value.trim();
+      if(!name){ alert("Type your name first."); mName.focus(); return; }
+      join(name, mCourt.value);
+      mName.value = "";
+      mName.focus();
     });
 
-    addLocationBtn.addEventListener("click", () => {
-      const name = prompt("Location name (e.g., Eglinton Tennis Courts):");
-      if (!name) return;
-      let countStr = prompt("How many courts at this location? (1–10)");
-      if (!countStr) return;
-      let count = parseInt(countStr, 10);
-      if (isNaN(count) || count < 1) count = 1;
-      if (count > 10) count = 10;
+    locationSelect.addEventListener("change", () => {
+      currentLocationId = Number(locationSelect.value);
+      const loc = getLoc();
+      if(loc) loc.courts.forEach(c => c.expanded = false); // collapse when switching on mobile
+      updateHeader();
+      updateCourtSelects();
+      render();
+    });
 
-      const newLoc = createLocation(name.trim(), count);
+    addLocationBtn.addEventListener("click", openModal);
+    modalClose.addEventListener("click", closeModal);
+    modalCancel.addEventListener("click", closeModal);
+    modalBackdrop.addEventListener("click", (e)=>{ if(e.target === modalBackdrop) closeModal(); });
+
+    modalAdd.addEventListener("click", () => {
+      const name = locName.value.trim();
+      let count = parseInt(locCourts.value, 10);
+      if(!name){ alert("Please enter a location name."); locName.focus(); return; }
+      if(isNaN(count) || count < 1) count = 1;
+      if(count > 24) count = 24;
+
+      const newLoc = makeLocation(name, count);
       locations.push(newLoc);
       currentLocationId = newLoc.id;
-      updateLocationSelectOptions();
-      renderCourts();
+      updateLocationSelect();
+      render();
+      closeModal();
     });
 
-    // --- Init: start with one example location ---
-    (function init() {
-      const eglinton = createLocation("Eglinton Tennis Courts", 4);
-      locations.push(eglinton);
-      currentLocationId = eglinton.id;
-      updateLocationSelectOptions();
-      renderCourts();
-      playerNameInput.focus();
+    // Share
+    function initShare(){
+      const saved = localStorage.getItem(LS_SHARE);
+      const candidate = saved || (location.protocol.startsWith("http") ? location.href : "");
+      shareUrl.value = candidate;
+      setQr(candidate);
+    }
+
+    shareUrl.addEventListener("input", () => {
+      localStorage.setItem(LS_SHARE, shareUrl.value.trim());
+      setQr(shareUrl.value);
+    });
+
+    copyBtn.addEventListener("click", async () => {
+      const u = shareUrl.value.trim();
+      if(!u) return alert("Paste your hosted link first.");
+      await navigator.clipboard.writeText(u);
+      alert("Copied!");
+    });
+
+    shareBtn.addEventListener("click", () => tryNativeShare(shareUrl.value));
+
+    // Boot
+    (function init(){
+      load();
+
+      // If nothing saved yet: add default location
+      // Default: "Eglinton Park" (City of Toronto uses this name) :contentReference[oaicite:1]{index=1}
+      if(!locations.length){
+        const defaultLoc = makeLocation("Eglinton Park", 4);
+        locations.push(defaultLoc);
+        currentLocationId = defaultLoc.id;
+      } else if(!getLoc()){
+        currentLocationId = locations[0]?.id ?? null;
+      }
+
+      updateLocationSelect();
+      render();
+      initShare();
+
+      // focus best field for the device
+      if(window.matchMedia("(max-width: 540px)").matches) mName.focus();
+      else playerNameInput.focus();
     })();
   </script>
 </body>
