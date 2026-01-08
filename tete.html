@@ -36,7 +36,7 @@
       background:var(--bg);
       color:var(--text);
       font-family:var(--sans);
-      font-size: 18px; /* easy to read */
+      font-size: 18px;
       line-height: 1.75;
       -webkit-font-smoothing: antialiased;
       text-rendering: geometricPrecision;
@@ -44,6 +44,7 @@
 
     a{ color:inherit; }
     a:hover{ color:var(--accent); }
+    :focus-visible{ outline: none; box-shadow: 0 0 0 2px var(--accent); }
 
     .wrap{
       max-width: var(--max);
@@ -51,10 +52,15 @@
       padding: 0 var(--pad);
     }
 
+    /* ===== Header (clean + premium) ===== */
     header{
-      position: sticky;
-      top:0;
+      position: fixed;
+      top:0; left:0; right:0;
       z-index: 50;
+      background: transparent;
+      transition: background .18s ease, border-color .18s ease;
+    }
+    header.scrolled{
       background: rgba(251,250,247,.92);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
@@ -107,7 +113,7 @@
     }
     .btn{
       display:inline-block;
-      border: 1px solid var(--line);
+      border: 1px solid rgba(18,20,28,.22);
       padding: 12px 14px;
       text-decoration:none;
       font-family: var(--mono);
@@ -115,8 +121,18 @@
       letter-spacing: .14em;
       text-transform: uppercase;
       background: transparent;
-      border-radius: 0; /* sharp */
+      border-radius: 0;
       line-height: 1;
+    }
+    header:not(.scrolled) .btn{
+      border-color: rgba(255,255,255,.45);
+      color: rgba(255,255,255,.92);
+    }
+    header:not(.scrolled) .brand .tag{
+      color: rgba(255,255,255,.85);
+    }
+    header:not(.scrolled) .brand .name{
+      color: rgba(255,255,255,.98);
     }
     .btn:hover{ border-color: var(--accent); color: var(--accent); }
 
@@ -125,16 +141,55 @@
       .btn{ padding: 12px 12px; }
     }
 
-    /* Page sections */
+    /* ===== Full-bleed Hero Carousel (no container) ===== */
     .hero{
-      padding: 34px 0 18px;
+      position: relative;
+      min-height: 92vh;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background: #111;
     }
+
+    .heroStage{
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      user-select: none;
+      touch-action: pan-y;
+    }
+    .heroStage img{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display:block;
+      transform: scale(1.01);
+      filter: saturate(.96) contrast(1.02);
+    }
+
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset: 0;
+      z-index: 1;
+      background:
+        linear-gradient(to bottom, rgba(0,0,0,.58) 0%, rgba(0,0,0,.34) 30%, rgba(0,0,0,.22) 55%, rgba(251,250,247,.92) 100%);
+    }
+
+    .heroInner{
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      padding-top: 92px;
+      padding-bottom: 34px;
+    }
+
     .kicker{
       font-family: var(--mono);
       font-size: 12px;
       letter-spacing: .16em;
       text-transform: uppercase;
-      color: var(--muted);
+      color: rgba(255,255,255,.82);
       display:flex;
       align-items:center;
       gap: 12px;
@@ -150,122 +205,123 @@
       font-family: var(--serif);
       font-weight: 400;
       letter-spacing: -0.05em;
-      font-size: clamp(52px, 6vw, 86px);
+      font-size: clamp(56px, 7vw, 94px);
       line-height: .92;
       text-transform: lowercase;
+      color: #fff;
     }
     .lead{
       margin: 14px 0 0;
-      color: var(--muted);
-      max-width: 70ch;
+      color: rgba(255,255,255,.82);
+      max-width: 72ch;
     }
 
-    /* === Top carousel (simple, elegant, big controls) === */
-    .carousel{
+    .heroBottomBar{
       margin-top: 18px;
-      border: 1px solid var(--line);
-      background: var(--paper);
-      padding: 10px;
-    }
-    .carouselStage{
-      position: relative;
-      border: 1px solid var(--line);
-      background: var(--soft);
-      overflow: hidden;
-      aspect-ratio: 16 / 9;
-      user-select: none;
-      touch-action: pan-y;
-    }
-    .carouselImg{
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display:block;
-      transform: scale(1.001);
-    }
-    .fade{
-      animation: fadeIn .28s ease;
-    }
-    @keyframes fadeIn{
-      from{ opacity: .55; }
-      to{ opacity: 1; }
-    }
-
-    .carouselControls{
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap: 12px;
-      padding-top: 12px;
+      flex-wrap: wrap;
+    }
+    .hint{
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.78);
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+    .hint .dot{
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      display:inline-block;
+    }
+
+    .heroNav{
+      position:absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
     }
     .navBtn{
-      border: 1px solid var(--line);
-      background: transparent;
+      pointer-events: auto;
+      position:absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 1px solid rgba(255,255,255,.45);
+      background: rgba(0,0,0,.18);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
       border-radius: 0;
-      padding: 12px 14px;  /* big tap area */
+      padding: 14px 14px;
       font-family: var(--mono);
       font-size: 12px;
       letter-spacing: .14em;
       text-transform: uppercase;
       cursor: pointer;
       line-height: 1;
-      min-width: 120px;
+      color: rgba(255,255,255,.92);
     }
     .navBtn:hover{
       border-color: var(--accent);
       color: var(--accent);
     }
+    .navBtn.prev{ left: 18px; }
+    .navBtn.next{ right: 18px; }
 
     .dots{
+      position:absolute;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
       display:flex;
       gap: 10px;
       align-items:center;
       justify-content:center;
-      flex: 1;
+      pointer-events: auto;
+      z-index: 4;
     }
-    .dot{
-      width: 10px;
-      height: 10px;
-      border: 1px solid var(--line);
+    .dotBtn{
+      width: 11px;
+      height: 11px;
+      border: 1px solid rgba(255,255,255,.55);
       background: transparent;
-      border-radius: 0; /* sharp */
+      border-radius: 0;
       padding: 0;
       cursor:pointer;
     }
-    .dot[aria-current="true"]{
+    .dotBtn[aria-current="true"]{
       background: var(--accent);
       border-color: var(--accent);
     }
 
-    .carouselCaption{
-      margin: 0;
+    .caption{
       font-family: var(--mono);
       font-size: 12px;
       letter-spacing: .14em;
       text-transform: uppercase;
-      color: var(--muted);
-      white-space: nowrap;
+      color: rgba(255,255,255,.72);
+      margin: 0;
     }
+
+    .fade{ animation: fadeIn .32s ease; }
+    @keyframes fadeIn{ from{ opacity: .55; } to{ opacity: 1; } }
 
     @media (max-width: 760px){
-      .carouselControls{
-        flex-wrap: wrap;
-      }
-      .navBtn{
-        min-width: auto;
-        flex: 1;
-      }
-      .carouselCaption{
-        width: 100%;
-        text-align: center;
-        white-space: normal;
-      }
+      .hero{ min-height: 86vh; }
+      .navBtn{ display:none; }
+      .brand .tag{ display:none; }
     }
 
-    /* Sections */
+    /* ===== Sections below ===== */
     .section{
-      padding: 22px 0;
+      padding: 26px 0;
       border-top: 1px solid var(--line);
+      background: var(--bg);
     }
     .sectionTitle{
       display:flex;
@@ -292,7 +348,23 @@
       white-space: nowrap;
     }
 
-    /* Images */
+    .subkicker{
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .subkicker .rule{
+      height: 1px;
+      width: 56px;
+      background: var(--accent);
+    }
+
     .grid{
       display:grid;
       grid-template-columns: 1fr 1fr;
@@ -304,8 +376,8 @@
     }
     figure{
       margin:0;
-      border: 1px solid var(--line);
       background: var(--paper);
+      border: 1px solid var(--line);
       padding: 10px;
     }
     img.project{
@@ -316,7 +388,6 @@
       background: var(--soft);
     }
 
-    /* Contact */
     .contact{
       display:grid;
       grid-template-columns: 1fr 1fr;
@@ -353,7 +424,7 @@
     }
 
     footer{
-      padding: 22px 0 44px;
+      padding: 26px 0 52px;
       border-top: 1px solid var(--line);
       text-align:center;
       font-family: var(--mono);
@@ -361,10 +432,10 @@
       letter-spacing: .14em;
       text-transform: uppercase;
       color: var(--muted);
+      background: var(--bg);
     }
     footer b{ color: var(--accent); }
 
-    /* Reduce motion */
     @media (prefers-reduced-motion: reduce){
       .fade{ animation: none; }
       html{ scroll-behavior: auto; }
@@ -373,10 +444,10 @@
 </head>
 
 <body>
-  <header>
+  <header id="siteHeader">
     <div class="wrap">
       <div class="head">
-        <a class="brand" href="#top">
+        <a class="brand" href="#top" aria-label="Go to top">
           <span class="name">tete</span>
           <span class="tag">interior design</span>
         </a>
@@ -390,85 +461,85 @@
     </div>
   </header>
 
-  <main id="top" class="wrap">
-    <section class="hero">
-      <div class="kicker"><span class="rule"></span><span>Selected works</span></div>
-      <h1>tete</h1>
-      <p class="lead">
-        A simple portfolio: three projects. Scroll down to view.
-      </p>
+  <!-- FULL-BLEED HERO -->
+  <section class="hero" id="top" aria-label="Featured images">
+    <div class="heroStage" id="stage" tabindex="0" aria-label="Carousel. Use left and right arrows to change image.">
+      <img id="heroImg" src="images/project-01-a.jpg" alt="Interior design image 1">
+    </div>
 
-      <!-- TOP CAROUSEL -->
-      <div class="carousel" aria-label="Image carousel">
-        <div class="carouselStage" id="stage" tabindex="0" aria-label="Carousel. Use left and right arrows to change image.">
-          <img id="carouselImg" class="carouselImg" src="images/project-01-a.jpg" alt="Interior design image 1">
+    <div class="heroNav">
+      <button class="navBtn prev" id="prevBtn" type="button" aria-label="Previous image">← Prev</button>
+      <button class="navBtn next" id="nextBtn" type="button" aria-label="Next image">Next →</button>
+      <div class="dots" id="dots" aria-label="Carousel pagination"></div>
+    </div>
+
+    <div class="heroInner">
+      <div class="wrap">
+        <div class="kicker"><span class="rule"></span><span>Selected works</span></div>
+        <h1>tete</h1>
+        <p class="lead">Minimal interior design. Three projects below.</p>
+
+        <div class="heroBottomBar">
+          <div class="hint"><span class="dot"></span><span>Scroll</span></div>
+          <p class="caption" id="caption">Image 1 of 6</p>
         </div>
-
-        <div class="carouselControls">
-          <button class="navBtn" id="prevBtn" type="button" aria-label="Previous image">← Prev</button>
-
-          <div class="dots" id="dots" aria-label="Carousel pagination"></div>
-
-          <button class="navBtn" id="nextBtn" type="button" aria-label="Next image">Next →</button>
-        </div>
-
-        <p class="carouselCaption" id="caption">Image 1 of 6</p>
       </div>
-    </section>
+    </div>
+  </section>
 
+  <main>
     <section id="projects" class="section" aria-label="Projects">
-      <div class="kicker"><span class="rule"></span><span>Projects</span></div>
+      <div class="wrap">
+        <div class="subkicker"><span class="rule"></span><span>Projects</span></div>
 
-      <!-- PROJECT 01 -->
-      <div class="section" style="border-top:none; padding-top: 0;">
-        <div class="sectionTitle">
-          <h2>Project 01</h2>
-          <div class="meta">Living / Kitchen</div>
+        <div class="section" style="border-top:none; padding-top: 0;">
+          <div class="sectionTitle">
+            <h2>Project 01</h2>
+            <div class="meta">Living / Kitchen</div>
+          </div>
+          <div class="grid">
+            <figure><img class="project" src="images/project-01-a.jpg" alt="Project 01 photo 1"></figure>
+            <figure><img class="project" src="images/project-01-b.jpg" alt="Project 01 photo 2"></figure>
+          </div>
         </div>
-        <div class="grid">
-          <figure><img class="project" src="images/project-01-a.jpg" alt="Project 01 photo 1"></figure>
-          <figure><img class="project" src="images/project-01-b.jpg" alt="Project 01 photo 2"></figure>
-        </div>
-      </div>
 
-      <!-- PROJECT 02 -->
-      <div class="section">
-        <div class="sectionTitle">
-          <h2>Project 02</h2>
-          <div class="meta">Residential</div>
+        <div class="section">
+          <div class="sectionTitle">
+            <h2>Project 02</h2>
+            <div class="meta">Residential</div>
+          </div>
+          <div class="grid">
+            <figure><img class="project" src="images/project-02-a.jpg" alt="Project 02 photo 1"></figure>
+            <figure><img class="project" src="images/project-02-b.jpg" alt="Project 02 photo 2"></figure>
+          </div>
         </div>
-        <div class="grid">
-          <figure><img class="project" src="images/project-02-a.jpg" alt="Project 02 photo 1"></figure>
-          <figure><img class="project" src="images/project-02-b.jpg" alt="Project 02 photo 2"></figure>
-        </div>
-      </div>
 
-      <!-- PROJECT 03 -->
-      <div class="section">
-        <div class="sectionTitle">
-          <h2>Project 03</h2>
-          <div class="meta">Kitchen / Bar</div>
-        </div>
-        <div class="grid">
-          <figure><img class="project" src="images/project-03-a.jpg" alt="Project 03 photo 1"></figure>
-          <figure><img class="project" src="images/project-03-b.jpg" alt="Project 03 photo 2"></figure>
+        <div class="section">
+          <div class="sectionTitle">
+            <h2>Project 03</h2>
+            <div class="meta">Kitchen / Bar</div>
+          </div>
+          <div class="grid">
+            <figure><img class="project" src="images/project-03-a.jpg" alt="Project 03 photo 1"></figure>
+            <figure><img class="project" src="images/project-03-b.jpg" alt="Project 03 photo 2"></figure>
+          </div>
         </div>
       </div>
     </section>
 
     <section id="contact" class="section" aria-label="Contact">
-      <div class="kicker"><span class="rule"></span><span>Contact</span></div>
+      <div class="wrap">
+        <div class="subkicker"><span class="rule"></span><span>Contact</span></div>
 
-      <div class="contact">
-        <div class="card">
-          <h3>Email</h3>
-          <div class="small">
-            <a id="emailLink" href="#">hello@tete.studio</a>
+        <div class="contact">
+          <div class="card">
+            <h3>Email</h3>
+            <div class="small"><a id="emailLink" href="#">hello@tete.studio</a></div>
           </div>
-        </div>
-        <div class="card">
-          <h3>Location</h3>
-          <div class="small">Toronto / Remote</div>
+          <div class="card">
+            <h3>Location</h3>
+            <div class="small">Toronto / Remote</div>
+          </div>
         </div>
       </div>
     </section>
@@ -479,9 +550,7 @@
   </main>
 
   <script>
-    // =========================
     // EDIT THIS (her email)
-    // =========================
     const EMAIL = "hello@tete.studio";
     const mailto = `mailto:${encodeURIComponent(EMAIL)}?subject=${encodeURIComponent("Project Inquiry — tete")}`;
 
@@ -492,10 +561,15 @@
 
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    // =========================
-    // TOP CAROUSEL
-    // (simple, accessible, auto-rotates)
-    // =========================
+    // Header style on scroll
+    const header = document.getElementById("siteHeader");
+    function updateHeader(){
+      header.classList.toggle("scrolled", window.scrollY > 10);
+    }
+    window.addEventListener("scroll", updateHeader, { passive: true });
+    updateHeader();
+
+    // FULL-BLEED HERO CAROUSEL (auto-rotating)
     const slides = [
       { src: "images/project-01-a.jpg", alt: "Interior design image 1" },
       { src: "images/project-01-b.jpg", alt: "Interior design image 2" },
@@ -505,7 +579,7 @@
       { src: "images/project-03-b.jpg", alt: "Interior design image 6" }
     ];
 
-    const img = document.getElementById("carouselImg");
+    const img = document.getElementById("heroImg");
     const caption = document.getElementById("caption");
     const dotsEl = document.getElementById("dots");
     const stage = document.getElementById("stage");
@@ -520,7 +594,6 @@
       index = (i + slides.length) % slides.length;
       const s = slides[index];
 
-      // preload to avoid flicker
       const pre = new Image();
       pre.onload = () => {
         img.classList.remove("fade");
@@ -541,7 +614,7 @@
       dotsEl.innerHTML = "";
       slides.forEach((_, i) => {
         const b = document.createElement("button");
-        b.className = "dot";
+        b.className = "dotBtn";
         b.type = "button";
         b.setAttribute("aria-label", `Go to image ${i + 1}`);
         b.setAttribute("aria-current", i === 0 ? "true" : "false");
@@ -577,7 +650,7 @@
     function start(){
       if (prefersReducedMotion) return;
       if (timer) return;
-      timer = setInterval(() => next(false), 4500);
+      timer = setInterval(() => next(false), 4200);
     }
     function stop(){
       if (!timer) return;
