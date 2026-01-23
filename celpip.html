@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CELPIP Writing Game — Task 1 & 2</title>
+  <style>
+    :root { --bg:#0b0f1a; --card:#121a2b; --ink:#e9eefc; --muted:#a9b4d6; --acc:#7dd3fc; --good:#34d399; --bad:#fb7185; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;background:radial-gradient(1200px 700px at 10% 10%, #1a2550 0%, var(--bg) 55%);color:var(--ink);}
+    .wrap{max-width:1050px;margin:24px auto;padding:0 16px;}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px}
+    h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
+    .pill{display:inline-flex;gap:10px;align-items:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:10px 12px;border-radius:999px}
+    .pill b{color:var(--acc)}
+    .grid{display:grid;grid-template-columns:320px 1fr;gap:14px;align-items:start}
+    @media (max-width: 900px){ .grid{grid-template-columns:1fr} }
+    .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .card .hd{padding:14px 14px 0 14px}
+    .card .bd{padding:14px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    button{cursor:pointer;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:var(--ink);padding:10px 12px;border-radius:12px;font-weight:600}
+    button:hover{border-color:rgba(255,255,255,.28)}
+    button.primary{background:rgba(125,211,252,.16);border-color:rgba(125,211,252,.28)}
+    button.good{background:rgba(52,211,153,.14);border-color:rgba(52,211,153,.28)}
+    button.bad{background:rgba(251,113,133,.12);border-color:rgba(251,113,133,.28)}
+    .mini{font-size:12px;color:var(--muted)}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .kpi{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .kpi .box{flex:1;min-width:120px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:10px}
+    .kpi .box .lab{font-size:12px;color:var(--muted)}
+    .kpi .box .val{font-size:18px;font-weight:800;margin-top:2px}
+    .sep{height:1px;background:rgba(255,255,255,.12);margin:12px 0}
+    .list{display:flex;flex-direction:column;gap:8px}
+    .block{padding:10px 10px;border-radius:12px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.12);display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .block .txt{line-height:1.25}
+    .block small{color:var(--muted)}
+    .block .actions{display:flex;gap:8px}
+    .ghost{opacity:.65}
+    textarea, input, select{
+      width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.22);color:var(--ink);outline:none;
+    }
+    textarea{min-height:170px;resize:vertical}
+    .hint{font-size:13px;color:var(--muted);line-height:1.35}
+    .status{padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.12)}
+    .status.good{border-color:rgba(52,211,153,.35)}
+    .status.bad{border-color:rgba(251,113,133,.35)}
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.2);color:var(--muted)}
+    .badge b{color:var(--ink)}
+    .req{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+    .req .item{display:flex;gap:8px;align-items:flex-start}
+    .dot{width:10px;height:10px;border-radius:999px;background:rgba(255,255,255,.22);margin-top:4px}
+    .dot.good{background:var(--good)}
+    .dot.bad{background:var(--bad)}
+    .footer{margin-top:14px;color:var(--muted);font-size:12px}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.28);color:var(--ink)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>CELPIP Writing Game <span class="mini">— Task 1 & Task 2 Memory Trainer</span></h1>
+      <div class="pill">
+        <span class="mini">Streak</span> <b id="streak">0</b>
+        <span class="mini">Best</span> <b id="best">0</b>
+        <span class="mini">XP</span> <b id="xp">0</b>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- LEFT -->
+      <div class="card">
+        <div class="hd">
+          <div class="tabs">
+            <button id="tabBlocks" class="primary">🧩 Block Builder</button>
+            <button id="tabFill">✍️ Fill-in</button>
+            <button id="tabSprint">⏱️ Prompt Sprint</button>
+          </div>
+          <div class="kpi">
+            <div class="box"><div class="lab">Mode</div><div class="val" id="modeName">Block Builder</div></div>
+            <div class="box"><div class="lab">Timer</div><div class="val" id="timer">00:00</div></div>
+          </div>
+          <div class="sep"></div>
+          <div class="row">
+            <button id="start" class="good">Start</button>
+            <button id="reset" class="bad">Reset</button>
+            <button id="showHint">Show Hint</button>
+          </div>
+          <div class="footer">
+            Shortcuts: <span class="kbd">S</span> start • <span class="kbd">R</span> reset • <span class="kbd">H</span> hint
+          </div>
+        </div>
+        <div class="bd">
+          <div class="status" id="statusBox">
+            Pick a mode, press <b>Start</b>, and play.
+          </div>
+          <div class="sep"></div>
+          <div id="hintBox" class="hint" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="card">
+        <div class="hd">
+          <div class="row" style="justify-content:space-between">
+            <div class="row">
+              <span class="badge"><b id="taskTag">Task 1</b> <span id="levelTag">Memory</span></span>
+              <span class="badge">Words: <b id="wordCount">0</b></span>
+            </div>
+            <div class="row">
+              <select id="deckSelect" title="Choose deck">
+                <option value="t1">Task 1 — Email</option>
+                <option value="t2">Task 2 — Opinion</option>
+              </select>
+              <button id="newRound">New Round</button>
+            </div>
+          </div>
+        </div>
+        <div class="bd" id="playArea"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =========================
+   Data (templates + prompts)
+   ========================= */
+
+const DECKS = {
+  t1: {
+    name: "Task 1 — Email",
+    tag: "Task 1",
+    blocks: [
+      "Dear [Name],",
+      "I hope you’re doing well. I’m writing regarding [issue] (Order/ID: [#]).",
+      "For the past [time], [problem].",
+      "To troubleshoot, I have already [what you tried], but the issue continues.",
+      "Could you please [request action] and confirm where/when/how it will be resolved?",
+      "If possible, please confirm the expected timeline by [deadline].",
+      "I am available [availability].",
+      "Thank you for your assistance. I look forward to your response.",
+      "Kind regards,",
+      "[Your Name]"
+    ],
+    prompts: [
+      {
+        title:"Missing Package",
+        req:["Explain: tracking says delivered but you didn’t receive it","Say what you already did (checked lobby/asked neighbours)","Ask for investigation + proof of delivery","Request replacement/refund + timeline"],
+        details:{to:"Taylor Morgan", id:"#A47291"}
+      },
+      {
+        title:"Heating Issue",
+        req:["Explain inconsistent heating (cold at night) + how long","Say what you tried (thermostat / emailed once)","Request inspection/repair + timeline","Give availability"],
+        details:{to:"Samantha Reed", id:"Unit 1207"}
+      },
+      {
+        title:"Noise Complaint",
+        req:["Explain early noise + how long","Ask permitted hours (weekends too)","Request solution (later start / notice)","Polite close"],
+        details:{to:"Jordan Lee", id:""}
+      },
+      {
+        title:"Schedule Conflict (Work)",
+        req:["Explain medical appointment cannot be rescheduled","Request leave early or time off","Offer to make up hours / swap shift","Ask for approval"],
+        details:{to:"Garth", id:""}
+      },
+      {
+        title:"Wrong Item Received",
+        req:["Describe wrong item or defect","Request replacement or refund","Ask for return label / steps","Give a deadline for response"],
+        details:{to:"Customer Support", id:"#B11903"}
+      }
+    ]
+  },
+  t2: {
+    name: "Task 2 — Opinion",
+    tag: "Task 2",
+    blocks: [
+      "In my opinion, [Option] is the better choice because [Reason 1] and [Reason 2].",
+      "First, [Reason 1].",
+      "For example, [Example 1 with time/number/place].",
+      "As a result, [Benefit 1].",
+      "Second, [Reason 2].",
+      "For instance, [Example 2].",
+      "Therefore, [Benefit 2].",
+      "Admittedly, [Counterpoint about other option].",
+      "However, [why your choice still wins].",
+      "Overall, [repeat your recommendation]."
+    ],
+    prompts: [
+      {
+        title:"Transit vs Roads",
+        req:["Choose one option","Give 2 reasons","Give 2 examples","Add counterpoint + conclusion"],
+        details:{a:"Improve public transit", b:"Repair roads/highways"}
+      },
+      {
+        title:"Parks vs Housing",
+        req:["Choose one option","Give 2 reasons","Give 2 examples","Add counterpoint + conclusion"],
+        details:{a:"Build more public parks", b:"Build more affordable housing"}
+      },
+      {
+        title:"4-day week vs WFH",
+        req:["Choose one option","Give 2 reasons","Give 2 examples","Add counterpoint + conclusion"],
+        details:{a:"4-day work week (same hours)", b:"Work from home 3 days/week"}
+      },
+      {
+        title:"Library vs Rec Center",
+        req:["Choose one option","Give 2 reasons","Give 2 examples","Add counterpoint + conclusion"],
+        details:{a:"Build a new public library", b:"Build a sports & recreation center"}
+      },
+      {
+        title:"English Support",
+        req:["Choose one option","Give 2 reasons","Give 2 examples","Add counterpoint + conclusion"],
+        details:{a:"In-person conversation groups", b:"App + online lessons"}
+      }
+    ]
+  }
+};
+
+const STORAGE_KEY = "celpip_writing_game_v1";
+
+/* =========================
+   State
+   ========================= */
+let state = loadState();
+let mode = "blocks"; // blocks | fill | sprint
+let deckKey = "t1";
+let currentPrompt = null;
+let timerInt = null;
+let startTime = null;
+let isRunning = false;
+
+const el = (id)=>document.getElementById(id);
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return {xp:0, streak:0, best:0};
+    return JSON.parse(raw);
+  }catch(e){ return {xp:0, streak:0, best:0}; }
+}
+function saveState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+/* =========================
+   UI helpers
+   ========================= */
+function setStatus(msg, kind=""){
+  const box = el("statusBox");
+  box.className = "status" + (kind ? " " + kind : "");
+  box.innerHTML = msg;
+}
+function setHint(msg){
+  const h = el("hintBox");
+  h.style.display = "block";
+  h.innerHTML = msg;
+}
+function hideHint(){
+  el("hintBox").style.display = "none";
+  el("hintBox").innerHTML = "";
+}
+function fmtTime(ms){
+  const s = Math.max(0, Math.floor(ms/1000));
+  const mm = String(Math.floor(s/60)).padStart(2,"0");
+  const ss = String(s%60).padStart(2,"0");
+  return `${mm}:${ss}`;
+}
+function startTimer(){
+  startTime = Date.now();
+  timerInt = setInterval(()=>{
+    el("timer").textContent = fmtTime(Date.now()-startTime);
+  }, 200);
+}
+function stopTimer(){
+  clearInterval(timerInt);
+  timerInt = null;
+}
+
+/* =========================
+   Mode switching
+   ========================= */
+function setMode(next){
+  mode = next;
+  el("modeName").textContent = next === "blocks" ? "Block Builder" : next === "fill" ? "Fill-in" : "Prompt Sprint";
+  el("levelTag").textContent = next === "blocks" ? "Memory" : next === "fill" ? "Recall" : "Test-like";
+  render();
+}
+function setDeck(next){
+  deckKey = next;
+  el("taskTag").textContent = DECKS[deckKey].tag;
+  newRound();
+}
+function newRound(){
+  currentPrompt = pickRandom(DECKS[deckKey].prompts);
+  hideHint();
+  setStatus("Round loaded. Press <b>Start</b> when ready.");
+  isRunning = false;
+  stopTimer();
+  el("timer").textContent = "00:00";
+  render();
+}
+function pickRandom(arr){
+  return arr[Math.floor(Math.random()*arr.length)];
+}
+
+/* =========================
+   Game logic
+   ========================= */
+function addXP(points){
+  state.xp += points;
+  state.streak += 1;
+  state.best = Math.max(state.best, state.streak);
+  saveState();
+  updateTopStats();
+}
+function miss(){
+  state.streak = 0;
+  saveState();
+  updateTopStats();
+}
+function updateTopStats(){
+  el("xp").textContent = state.xp;
+  el("streak").textContent = state.streak;
+  el("best").textContent = state.best;
+}
+
+/* =========================
+   Renderers
+   ========================= */
+function render(){
+  const area = el("playArea");
+  area.innerHTML = "";
+  el("deckSelect").value = deckKey;
+
+  // Top prompt header for right panel
+  const header = document.createElement("div");
+  header.className = "status";
+  header.innerHTML = `
+    <b>${DECKS[deckKey].name}</b> • <b>${currentPrompt?.title || ""}</b><br>
+    <span class="mini">${(currentPrompt?.req || []).map(r=>"• "+r).join("<br>")}</span>
+  `;
+  area.appendChild(header);
+
+  const sep = document.createElement("div");
+  sep.className = "sep";
+  area.appendChild(sep);
+
+  if(mode === "blocks") area.appendChild(renderBlocks());
+  if(mode === "fill") area.appendChild(renderFill());
+  if(mode === "sprint") area.appendChild(renderSprint());
+
+  updateWordCount();
+}
+
+function renderBlocks(){
+  const deck = DECKS[deckKey];
+  const correct = deck.blocks.slice();
+  const shuffled = shuffle(deck.blocks.slice());
+
+  const wrap = document.createElement("div");
+  wrap.className = "list";
+
+  // Builder area
+  const built = [];
+  const builder = document.createElement("div");
+  builder.className = "status";
+  builder.innerHTML = `<b>Build the answer in the correct order</b> <span class="mini">(click blocks to add; remove if needed)</span><div class="sep"></div>`;
+  const builtList = document.createElement("div");
+  builtList.className = "list";
+  builder.appendChild(builtList);
+
+  // Blocks pool
+  const pool = document.createElement("div");
+  pool.className = "list";
+
+  function rerenderBuilt(){
+    builtList.innerHTML = "";
+    built.forEach((txt, idx)=>{
+      const row = document.createElement("div");
+      row.className = "block";
+      row.innerHTML = `<div class="txt"><b>${idx+1}.</b> ${escapeHtml(txt)}</div>
+        <div class="actions">
+          <button class="bad" title="Remove">Remove</button>
+        </div>`;
+      row.querySelector("button").onclick = ()=>{
+        built.splice(idx,1);
+        rerenderBuilt();
+      };
+      builtList.appendChild(row);
+    });
+  }
+
+  function markResult(){
+    if(!isRunning){
+      setStatus("Press <b>Start</b> first.", "bad");
+      return;
+    }
+    const timeMs = Date.now()-startTime;
+    const ok = arraysEqual(built, correct);
+    if(ok){
+      const score = timeMs < 45000 ? 60 : timeMs < 80000 ? 45 : 30;
+      addXP(score);
+      setStatus(`✅ Perfect order! +${score} XP. Time: <b>${fmtTime(timeMs)}</b>`, "good");
+      stopTimer(); isRunning=false;
+    } else {
+      miss();
+      // Count correct prefix
+      let prefix = 0;
+      for(let i=0;i<Math.min(built.length, correct.length);i++){
+        if(built[i]===correct[i]) prefix++; else break;
+      }
+      setStatus(`❌ Not quite. Correct from the start: <b>${prefix}</b> block(s). Streak reset.`, "bad");
+    }
+  }
+
+  shuffled.forEach(txt=>{
+    const row = document.createElement("div");
+    row.className = "block";
+    row.innerHTML = `<div class="txt">${escapeHtml(txt)}</div>
+      <div class="actions">
+        <button class="primary" title="Add">Add</button>
+      </div>`;
+    row.querySelector("button").onclick = ()=>{
+      if(!isRunning){
+        setStatus("Press <b>Start</b> first, then build.", "bad");
+        return;
+      }
+      built.push(txt);
+      rerenderBuilt();
+    };
+    pool.appendChild(row);
+  });
+
+  const controls = document.createElement("div");
+  controls.className = "row";
+  controls.innerHTML = `
+    <button id="checkOrder" class="good">Check</button>
+    <button id="clearBuilt" class="bad">Clear</button>
+  `;
+  controls.querySelector("#checkOrder").onclick = markResult;
+  controls.querySelector("#clearBuilt").onclick = ()=>{ built.length=0; rerenderBuilt(); };
+
+  wrap.appendChild(builder);
+  wrap.appendChild(controls);
+
+  const lab = document.createElement("div");
+  lab.className = "hint";
+  lab.innerHTML = `<b>Pool</b>:`;
+  wrap.appendChild(lab);
+  wrap.appendChild(pool);
+
+  // Hint text
+  el("hintBox").innerHTML = deckKey==="t1"
+    ? "Task 1 order: Greeting → Purpose → Problem timeline → What you tried → Request + details → Timeline → Availability → Polite close → Sign-off → Name."
+    : "Task 2 order: Opinion sentence → Reason 1 → Example 1 → Result → Reason 2 → Example 2 → Result → Counterpoint → However → Overall recommendation.";
+  return wrap;
+}
+
+function renderFill(){
+  const wrap = document.createElement("div");
+  const deck = DECKS[deckKey];
+
+  const promptLine = document.createElement("div");
+  promptLine.className = "hint";
+  promptLine.innerHTML = `<b>Fill-in Challenge:</b> replace the brackets with real details (keep it short and clean).`;
+  wrap.appendChild(promptLine);
+
+  const ta = document.createElement("textarea");
+  ta.placeholder = deckKey==="t1"
+    ? "Write a short email using the template... (150–200 words)"
+    : "Write a 4-paragraph opinion response... (170–190 words)";
+  ta.value = seedFromPrompt(deckKey, currentPrompt);
+  ta.addEventListener("input", updateWordCount);
+  wrap.appendChild(ta);
+
+  const reqBox = document.createElement("div");
+  reqBox.className = "status";
+  reqBox.innerHTML = `<b>Checklist</b><div class="req" id="reqList"></div>`;
+  wrap.appendChild(reqBox);
+
+  const reqList = reqBox.querySelector("#reqList");
+
+  function check(){
+    if(!isRunning){ setStatus("Press <b>Start</b> first.", "bad"); return; }
+    const text = ta.value.trim();
+    const timeMs = Date.now()-startTime;
+
+    const checks = buildChecks(deckKey, currentPrompt, text);
+    reqList.innerHTML = "";
+    let okCount = 0;
+    checks.forEach(c=>{
+      const row = document.createElement("div");
+      row.className = "item";
+      row.innerHTML = `<span class="dot ${c.ok?"good":"bad"}"></span><div><b>${c.label}</b><div class="mini">${c.tip}</div></div>`;
+      reqList.appendChild(row);
+      if(c.ok) okCount++;
+    });
+
+    const words = wordCount(text);
+    const targetOk = deckKey==="t1" ? (words>=140 && words<=220) : (words>=160 && words<=210);
+    const total = checks.length + 1;
+    const scoreRaw = okCount + (targetOk?1:0);
+
+    if(scoreRaw === total){
+      const score = timeMs < 60000 ? 70 : timeMs < 90000 ? 55 : 40;
+      addXP(score);
+      setStatus(`✅ Checklist complete + good length! +${score} XP. Time: <b>${fmtTime(timeMs)}</b>`, "good");
+      stopTimer(); isRunning=false;
+    } else {
+      miss();
+      setStatus(`⚠️ Not complete yet. Passed <b>${scoreRaw}/${total}</b> checks. Streak reset.`, "bad");
+    }
+  }
+
+  const controls = document.createElement("div");
+  controls.className = "row";
+  controls.style.marginTop = "10px";
+  controls.innerHTML = `
+    <button class="good" id="checkFill">Check</button>
+    <button class="primary" id="pasteTemplate">Paste Template</button>
+    <button class="bad" id="clearFill">Clear</button>
+  `;
+  controls.querySelector("#checkFill").onclick = check;
+  controls.querySelector("#clearFill").onclick = ()=>{ ta.value=""; updateWordCount(); };
+  controls.querySelector("#pasteTemplate").onclick = ()=>{
+    ta.value = seedFromPrompt(deckKey, currentPrompt, true);
+    updateWordCount();
+  };
+  wrap.appendChild(controls);
+
+  // Hint text
+  el("hintBox").innerHTML = deckKey==="t1"
+    ? "Task 1: Use 2 short paragraphs. Include: what happened + what you tried + request + timeline + availability + polite closing."
+    : "Task 2: 4 paragraphs. Add 2 reasons and 2 examples. Keep sentences short and use connectors (First, For example, Second, However, Therefore).";
+
+  return wrap;
+}
+
+function renderSprint(){
+  const wrap = document.createElement("div");
+
+  const info = document.createElement("div");
+  info.className = "hint";
+  info.innerHTML = `
+    <b>Prompt Sprint:</b> write like the real test. Use the checklist to make sure you hit everything.
+    <br><span class="mini">Tip: short sentences = fewer mistakes.</span>
+  `;
+  wrap.appendChild(info);
+
+  const ta = document.createElement("textarea");
+  ta.placeholder = deckKey==="t1"
+    ? "Write the full email here (150–200 words)."
+    : "Write the full opinion response here (170–190 words, 4 paragraphs).";
+  ta.addEventListener("input", updateWordCount);
+  wrap.appendChild(ta);
+
+  const reqBox = document.createElement("div");
+  reqBox.className = "status";
+  reqBox.innerHTML = `<b>Auto-check (simple)</b><div class="req" id="reqList"></div>`;
+  wrap.appendChild(reqBox);
+
+  const reqList = reqBox.querySelector("#reqList");
+
+  function check(){
+    if(!isRunning){ setStatus("Press <b>Start</b> first.", "bad"); return; }
+    const text = ta.value.trim();
+    const timeMs = Date.now()-startTime;
+
+    const checks = buildChecks(deckKey, currentPrompt, text, true);
+    reqList.innerHTML = "";
+    let okCount = 0;
+    checks.forEach(c=>{
+      const row = document.createElement("div");
+      row.className = "item";
+      row.innerHTML = `<span class="dot ${c.ok?"good":"bad"}"></span><div><b>${c.label}</b><div class="mini">${c.tip}</div></div>`;
+      reqList.appendChild(row);
+      if(c.ok) okCount++;
+    });
+
+    const words = wordCount(text);
+    const targetOk = deckKey==="t1" ? (words>=140 && words<=220) : (words>=160 && words<=210);
+    const total = checks.length + 1;
+    const scoreRaw = okCount + (targetOk?1:0);
+
+    // Score: encourage finishing all checkboxes, not perfection
+    const score = Math.max(10, scoreRaw*12 - Math.floor(timeMs/12000));
+    if(scoreRaw === total){
+      addXP(score);
+      setStatus(`✅ Sprint complete! +${score} XP. Time: <b>${fmtTime(timeMs)}</b>`, "good");
+      stopTimer(); isRunning=false;
+    } else {
+      setStatus(`🟡 Keep going: <b>${scoreRaw}/${total}</b> checks passed.`, "");
+    }
+  }
+
+  const controls = document.createElement("div");
+  controls.className = "row";
+  controls.style.marginTop = "10px";
+  controls.innerHTML = `
+    <button class="good" id="checkSprint">Check</button>
+    <button class="primary" id="showRubric">Show “CLB 9” checklist</button>
+    <button class="bad" id="clearSprint">Clear</button>
+  `;
+  controls.querySelector("#checkSprint").onclick = check;
+  controls.querySelector("#clearSprint").onclick = ()=>{ ta.value=""; updateWordCount(); reqList.innerHTML=""; };
+  controls.querySelector("#showRubric").onclick = ()=>{
+    const txt = deckKey==="t1"
+      ? `Task 1 CLB 9 checklist:
+• 2 paragraphs
+• mentions ID/order/unit if relevant
+• says what you tried
+• asks for action + proof/details
+• requests timeline (by Friday / within 48h)
+• offers availability (after 6pm / weekend)
+• polite closing`
+      : `Task 2 CLB 9 checklist:
+• 4 paragraphs
+• clear choice + 2 reasons in intro
+• 1 concrete example per reason (number/time/place)
+• 1 counterpoint + “However”
+• 170–190 words
+• connectors: First / For example / Second / However / Therefore`;
+    setHint(txt.replaceAll("\n","<br>"));
+  };
+  wrap.appendChild(controls);
+
+  // Hint text
+  el("hintBox").innerHTML = "Sprint mode checks basics (not perfect scoring). Your real goal: complete all bullets + clean structure.";
+  return wrap;
+}
+
+/* =========================
+   Checks + helpers
+   ========================= */
+function buildChecks(deckKey, prompt, text, sprint=false){
+  const lc = text.toLowerCase();
+
+  if(deckKey==="t1"){
+    return [
+      { label:"Includes greeting and close",
+        ok: /dear\s+\w+/i.test(text) && /(regards|sincerely|kind regards|best regards)/i.test(text),
+        tip:"Start with “Dear …,” and end with “Kind regards,” + your name."
+      },
+      { label:"Explains the problem + time",
+        ok: /(past|for the last|for the past|over the last|since)/i.test(text) && /(day|week|month|months|night)/i.test(text),
+        tip:"Add: “For the past month…” + what’s happening."
+      },
+      { label:"Says what you already tried",
+        ok: /(i have|i’ve)\s+(already\s+)?(checked|tried|adjusted|emailed|called|asked)/i.test(text),
+        tip:"Write one line: “I have already …, but it continues.”"
+      },
+      { label:"Requests action + timeline",
+        ok: /(could you|please)\s+(arrange|investigate|send|confirm|schedule|inspect|repair)/i.test(text) && /(by|within|as soon as|this week|48 hours|tomorrow|friday|monday)/i.test(text),
+        tip:"Ask for action AND say “by Friday/within 48 hours/this week.”"
+      },
+      { label:"Mentions a solution (refund/replacement/inspection/repair)",
+        ok: /(refund|replacement|inspect|inspection|repair|technician|fix)/i.test(text),
+        tip:"Say what you want: “inspection/repair” or “replacement/refund.”"
+      }
+    ];
+  }
+
+  // Task 2 checks
+  return [
+    { label:"Clear opinion (choice stated)",
+      ok: /(in my opinion|i believe|i think)/i.test(text),
+      tip:"Start: “In my opinion, Option A/B …”"
+    },
+    { label:"Has 2 reasons (First + Second)",
+      ok: /(first,)/i.test(text) && /(second,)/i.test(text),
+      tip:"Use “First,” and “Second,”."
+    },
+    { label:"Has examples",
+      ok: /(for example|for instance)/i.test(text),
+      tip:"Add at least one “For example, …”."
+    },
+    { label:"Has counterpoint + however",
+      ok: /(admittedly|although|even though)/i.test(text) && /(however,)/i.test(text),
+      tip:"Add: “Admittedly…, however…”"
+    },
+    { label:"Has a conclusion (overall/therefore)",
+      ok: /(overall|therefore)/i.test(text),
+      tip:"End with “Therefore/Overall, …”."
+    }
+  ];
+}
+
+function seedFromPrompt(deckKey, prompt, pasteTemplate=false){
+  if(!prompt) return "";
+  if(deckKey==="t1"){
+    const to = prompt.details.to || "[Name]";
+    const id = prompt.details.id ? ` (${prompt.details.id})` : "";
+    const unit = prompt.details.id && prompt.details.id.toLowerCase().includes("unit") ? ` ${prompt.details.id}` : "";
+    if(pasteTemplate){
+      return `Dear ${to},\n\nI hope you’re doing well. I’m writing regarding ${prompt.title.toLowerCase()}${id}.\n\nFor the past [time], [problem]. To troubleshoot, I have already [what you tried], but the issue continues.\n\nCould you please [request action] and confirm the next steps? If possible, please confirm the expected timeline by [deadline]. I am available [availability].\n\nThank you for your assistance. I look forward to your response.\n\nKind regards,\n[Your Name]`;
+    }
+    // Light seed for Fill-in
+    return `Dear ${to},\n\nI’m writing regarding ${prompt.title.toLowerCase()}${id}. For the past [time], [problem].\nI have already [what you tried], but the issue continues.\n\nCould you please [request action] and confirm the timeline by [deadline]? I am available [availability].\n\nKind regards,\n[Your Name]`;
+  } else {
+    const a = prompt.details.a || "Option A";
+    const b = prompt.details.b || "Option B";
+    if(pasteTemplate){
+      return `In my opinion, ${a} is the better choice because [reason 1] and [reason 2].\n\nFirst, [reason 1]. For example, [example with a number/time/place]. As a result, [benefit].\n\nSecond, [reason 2]. For instance, [example]. Therefore, [benefit].\n\nAdmittedly, ${b} has benefits; however, ${a} helps more people overall. Overall, the city/company should choose ${a}.`;
+    }
+    return `In my opinion, ${a} is the better choice because [reason 1] and [reason 2].\n\nFirst, [reason 1]. For example, [example]. As a result, [benefit].\n\nSecond, [reason 2]. For instance, [example]. Therefore, [benefit].\n\nAdmittedly, ${b} has benefits; however, ${a} helps more people overall.`;
+  }
+}
+
+function wordCount(text){
+  const m = text.trim().match(/\b[\w’']+\b/g);
+  return m ? m.length : 0;
+}
+function updateWordCount(){
+  const area = el("playArea");
+  const ta = area.querySelector("textarea");
+  const w = ta ? wordCount(ta.value) : 0;
+  el("wordCount").textContent = w;
+}
+
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function arraysEqual(a,b){
+  if(a.length!==b.length) return false;
+  for(let i=0;i<a.length;i++) if(a[i]!==b[i]) return false;
+  return true;
+}
+function escapeHtml(str){
+  return str.replace(/[&<>"']/g, (m)=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
+
+/* =========================
+   Controls
+   ========================= */
+el("tabBlocks").onclick = ()=>{ setTabBtn("tabBlocks"); setMode("blocks"); };
+el("tabFill").onclick   = ()=>{ setTabBtn("tabFill"); setMode("fill"); };
+el("tabSprint").onclick = ()=>{ setTabBtn("tabSprint"); setMode("sprint"); };
+
+function setTabBtn(activeId){
+  ["tabBlocks","tabFill","tabSprint"].forEach(id=>{
+    el(id).classList.toggle("primary", id===activeId);
+  });
+}
+
+el("deckSelect").onchange = (e)=> setDeck(e.target.value);
+el("newRound").onclick = ()=> newRound();
+
+el("start").onclick = ()=>{
+  if(isRunning) { setStatus("Already running ✅", "good"); return; }
+  isRunning = true;
+  setStatus("Go! Build or write, then hit <b>Check</b> (inside the mode).", "good");
+  stopTimer();
+  startTimer();
+};
+
+el("reset").onclick = ()=>{
+  miss();
+  isRunning = false;
+  stopTimer();
+  el("timer").textContent = "00:00";
+  setStatus("Reset done. New round loaded.", "");
+  newRound();
+};
+
+el("showHint").onclick = ()=>{
+  const hb = el("hintBox");
+  hb.style.display = hb.style.display==="none" ? "block" : "none";
+};
+
+document.addEventListener("keydown",(e)=>{
+  if(e.target && (e.target.tagName==="TEXTAREA" || e.target.tagName==="INPUT")) return;
+  const k = e.key.toLowerCase();
+  if(k==="s") el("start").click();
+  if(k==="r") el("reset").click();
+  if(k==="h") el("showHint").click();
+});
+
+updateTopStats();
+setDeck("t1");
+newRound();
+render();
+
+</script>
+</body>
+</html>
