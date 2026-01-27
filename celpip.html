@@ -1,330 +1,143 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <title>CELPIP Mirror – 15 New Prompts</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <style>
-    /* ---- copied palette & spacing from celtestpip.com ---- */
-    :root {
-      --red: #e01e37;
-      --grey: #f5f5f5;
-      --dark: #222;
-      --border: #ddd;
-    }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: var(--grey);
-      color: var(--dark);
-      display: flex;
-      min-height: 100vh;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
-    }
-    .card {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      max-width: 700px;
-      width: 100%;
-      padding: 2rem;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
-    }
-    h1 { font-size: 1.5rem; margin-top: 0; }
-    .timer {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--red);
-      text-align: center;
-      margin-bottom: 1rem;
-    }
-    textarea {
-      width: 100%;
-      min-height: 200px;
-      resize: vertical;
-      font-size: 1rem;
-      padding: 0.75rem;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      font-family: inherit;
-    }
-    .step {
-      margin: 1rem 0;
-      padding: 1rem;
-      background: var(--grey);
-      border-radius: 4px;
-    }
-    .step h3 { margin: 0 0 0.5rem; font-size: 1.1rem; }
-    .step ul { margin: 0; padding-left: 1.2rem; }
-    button {
-      cursor: pointer;
-      border: none;
-      background: var(--red);
-      color: #fff;
-      font-weight: 700;
-      padding: 0.75rem 1.5rem;
-      border-radius: 4px;
-      margin-top: 1rem;
-    }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    #helperText { font-size: 0.9rem; color: #555; margin-top: 0.5rem; }
-    #wordCount { text-align: right; font-size: 0.9rem; color: #666; margin-bottom: 0.5rem; }
-  </style>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>CELPIP Clone – 15 New Prompts</title>
+<style>
+/* ---- lifted from celtestpip.com free page ---- */
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:#f5f5f5;color:#222;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:1rem}
+.card{background:#fff;border:1px solid #ddd;border-radius:8px;max-width:700px;width:100%;padding:2rem;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+h1{font-size:1.5rem;margin-top:0}
+.timer{font-size:2rem;font-weight:700;color:#e01e37;text-align:center;margin-bottom:1rem}
+textarea{width:100%;min-height:200px;resize:vertical;font-size:1rem;padding:.75rem;border:1px solid #ddd;border-radius:4px;font-family:inherit}
+.step{margin:1rem 0;padding:1rem;background:#f5f5f5;border-radius:4px}
+.step h3{margin:0 0 .5rem;font-size:1.1rem}
+.step ul{margin:0;padding-left:1.2rem}
+button{cursor:pointer;border:none;background:#e01e37;color:#fff;font-weight:700;padding:.75rem 1.5rem;border-radius:4px;margin-top:1rem}
+button:disabled{opacity:.5;cursor:not-allowed}
+#wordCount{text-align:right;font-size:.9rem;color:#666;margin-bottom:.5rem}
+</style>
 </head>
 <body>
-  <div class="card">
-    <h1>CELPIP Writing Practice <span id="promptNum"></span></h1>
-    <div class="timer" id="timer">27:00</div>
+<div class="card">
+<h1>Writing Task <span id="num"></span></h1>
+<div class="timer" id="timer">27:00</div>
+<div id="promptText"></div>
+<div id="wordCount">Words: <span id="wc">0</span> (120-150)</div>
+<textarea id="writingBox" placeholder="Write your answer here…" spellcheck="false"></textarea>
 
-    <div id="promptBox"></div>
+<div class="step" id="s1"><h3>Step 1 – Purpose</h3><ul id="ul1"></ul></div>
+<div class="step" id="s2"><h3>Step 2 – Details / Reason 1</h3><ul id="ul2"></ul></div>
+<div class="step" id="s3"><h3>Step 3 – Details / Reason 2</h3><ul id="ul3"></ul></div>
+<div class="step" id="s4"><h3>Step 4 – Close / Action</h3><ul id="ul4"></ul></div>
 
-    <div id="wordCount">Words: <span id="wc">0</span> (aim 120-150)</div>
-    <textarea id="writingBox" placeholder="Write your answer here…" spellcheck="false"></textarea>
-    <div id="helperText">Use the 4 steps below to structure your answer.</div>
+<button disabled="" id="nextBtn">Next</button>
+</div>
 
-    <div class="step" id="step1">
-      <h3>Step 1 – Purpose</h3>
-      <ul id="purposeBullets"></ul>
-    </div>
-    <div class="step" id="step2">
-      <h3>Step 2 – Details / Reason 1</h3>
-      <ul id="detail1Bullets"></ul>
-    </div>
-    <div class="step" id="step3">
-      <h3>Step 3 – Details / Reason 2</h3>
-      <ul id="detail2Bullets"></ul>
-    </div>
-    <div class="step" id="step4">
-      <h3>Step 4 – Close / Action</h3>
-      <ul id="closeBullets"></ul>
-    </div>
+<script>
+/* ===== 15 NEW PROMPTS (same structure) ===== */
+const prompts=[
+{
+text:"You bought a pair of running shoes online, but the wrong size arrived and the colour is not what you ordered. Write an email to customer service (120-150 words).",
+bullets:[["State order number","Say why you are writing"],["Explain wrong size and colour"],["Ask for exchange or refund","Offer to return shoes"] ,["Thank for help","Give contact info"]]
+},
+{
+text:"The city wants to remove a children’s playground to build more parking. Give your opinion and two reasons (120-150 words).",
+bullets:[["State opinion: oppose"],["Reason 1: kids need safe play area"],["Reason 2: green space reduces heat"],["Suggest other parking solutions"]]
+},
+{
+text:"Your neighbour’s dog barks every night. Write a polite letter explaining the problem and asking for help (120-150 words).",
+bullets:[["Friendly greeting","Explain purpose"],["Describe time and noise"],["Request: keep dog inside at night"],["Hope to stay good neighbours"]]
+},
+{
+text:"A friend is moving to Canada in winter. Write an email giving TWO pieces of advice for dealing with snow and cold (120-150 words).",
+bullets:[["Greeting & say you understand"],["Advice 1: winter tires"],["Advice 2: dress in layers"],["Offer further help"]]
+},
+{
+text:"The heating in your apartment stops working at night. Write an email to the landlord (120-150 words).",
+bullets:[["State problem and urgency"],["Say when it stops","Mention cold temperature"],["Request repair date"],["Warn about pipe freeze","Thank"]]
+},
+{
+text:"You need two days off next week for your citizenship ceremony. Write to your supervisor (120-150 words).",
+bullets:[["Request leave dates"],["Explain: citizenship oath"],["Assure work finished early"],["Ask for approval"]]
+},
+{
+text:"The local library wants to cancel Sunday story-time to save money. Give your opinion and two reasons (120-150 words).",
+bullets:[["Opinion: keep program"],["Reason 1: early literacy"],["Reason 2: free family activity"],["Suggest small fundraiser"]]
+},
+{
+text:"You left your wallet on the bus. Write to transit lost-property (120-150 words).",
+bullets:[["Report lost wallet"],["Describe colour, contents"],["Give phone / email"],["Thank in advance"]]
+},
+{
+text:"You promised to return a textbook today but forgot it at home. Apologise and offer a solution (120-150 words).",
+bullets:[["Apologise clearly"],["Brief reason"],["Offer: bring tomorrow"],["Promise again"]]
+},
+{
+text:"You are hosting a pot-luck for new neighbours. Write an inviting email (120-150 words).",
+bullets:[["Warm greeting & invite"],["Date, time, location"],["Ask to bring one dish"],["RSVP request"]]
+},
+{
+text:"Your office chair is broken. Ask admin for a new one (120-150 words).",
+bullets:[["State chair broken"],["Back pain / productivity"],["Request replacement"],["Offer to pick model"]]
+},
+{
+text:"The city is considering a 30 km/h speed limit on residential streets. Give your opinion (120-150 words).",
+bullets:[["State opinion"],["Reason 1: child safety"],["Reason 2: less noise"],["Brief conclusion"]]
+},
+{
+text:"You volunteer at a food bank and want to thank the coordinator (120-150 words).",
+bullets:[["Thank for opportunity"],["Task you enjoyed"],["What you learned"],["Hope to return"]]
+},
+{
+text:"You borrowed a camera and must return it today but left it at home. Apologise (120-150 words).",
+bullets:[["Apologise"],["Explain briefly"],["Solution: courier tomorrow"],["Sorry again"]]
+},
+{
+text:"The city plans to ban single-use plastic bags. Give your opinion (120-150 words).",
+bullets:[["State opinion"],["Reason 1: environment"],["Reason 2: shopper cost"],["Suggest reusable-bag program"]]
+}
+];
 
-    <button id="nextBtn">Next</button>
-  </div>
+/* ===== TIMER ===== */
+let idx=0,sec=27*60,timer=null;
+const timerEl=document.getElementById("timer");
+const box=document.getElementById("writingBox");
+const wcEl=document.getElementById("wc");
+const nextBtn=document.getElementById("nextBtn");
 
-  <script>
-    /* ===== PROMPT BANK ===== */
-    const prompts = [
-      {
-        type: "email",
-        text: "You recently bought a wireless printer online. When it arrived, the USB cable was missing and the instruction booklet was for a different model. Write an email to the customer-service department (120-150 words).",
-        steps: [
-          ["Say why you are writing", "Mention order number & date"],
-          ["Explain what was missing (USB cable)", "Explain wrong booklet problem"],
-          ["Say what you want: send cable + correct booklet or small refund"],
-          ["Thank them in advance", "Offer contact details"]
-        ]
-      },
-      {
-        type: "survey",
-        text: "The city is thinking of banning all single-use plastic bags in grocery stores. Give your opinion and two reasons (120-150 words).",
-        steps: [
-          ["State your opinion (support or oppose)"],
-          ["Reason 1: environment / ocean animals"],
-          ["Reason 2: inconvenience / cost for shoppers"],
-          ["Brief conclusion / suggest reusable-bag program"]
-        ]
-      },
-      {
-        type: "complaint",
-        text: "Your neighbour often parks his truck in front of your driveway, making it hard for you to leave. Write a polite letter explaining the problem and asking for help (120-150 words).",
-        steps: [
-          ["Friendly greeting", "Explain purpose politely"],
-          ["Describe when & how the truck blocks you"],
-          ["Request: please leave driveway clear"],
-          ["Hope to stay good neighbours", "Say thanks"]
-        ]
-      },
-      {
-        type: "advice",
-        text: "A friend who just arrived in Canada is scared of driving in winter snow. Write an email giving TWO pieces of advice and short explanations (120-150 words).",
-        steps: [
-          ["Greeting & say you understand the worry"],
-          ["Advice 1: buy winter tires – better grip"],
-          ["Advice 2: drive slowly & keep longer distance"],
-          ["Encourage friend & offer practice together"]
-        ]
-      },
-      {
-        type: "rental",
-        text: "The heating in your apartment stops working at night. Write an email to the landlord describing the problem and requesting urgent repair (120-150 words).",
-        steps: [
-          ["State purpose: heating broken"],
-          ["Say when it stops, how cold it gets"],
-          ["Request: send technician asap"],
-          ["Warn pipes may freeze", "Thank for quick help"]
-        ]
-      },
-      {
-        type: "boss",
-        text: "You need next Friday off to attend your citizenship ceremony. Write an email to your supervisor requesting leave and explaining why it is important (120-150 words).",
-        steps: [
-          ["Request morning/afternoon off on Friday"],
-          ["Explain: citizenship oath, once-in-life"],
-          ["Assure: finish weekly report early"],
-          ["Ask for approval", "Say thanks"]
-        ]
-      },
-      {
-        type: "city",
-        text: "The city plans to turn the only park in your neighbourhood into a parking lot. Write a letter to the city giving your opinion and two reasons to keep the park (120-150 words).",
-        steps: [
-          ["State opinion: oppose the plan"],
-          ["Reason 1: children need space to play"],
-          ["Reason 2: green area reduces summer heat"],
-          ["Suggest other parking solutions"]
-        ]
-      },
-      {
-        type: "invite",
-        text: "You are organising a small pot-luck dinner for new immigrants in your building. Write an email inviting them and giving two details (120-150 words).",
-        steps: [
-          ["Warm greeting & invite"],
-          ["Detail 1: date, time, location"],
-          ["Detail 2: bring one dish to share"],
-          ["Ask to RSVP", "Say you look forward"]
-        ]
-      },
-      {
-        type: "apology",
-        text: "You promised to return your classmate’s textbook today but left it at home. Write an email apologising and offering a solution (120-150 words).",
-        steps: [
-          ["Apologise clearly"],
-          ["Explain briefly why you forgot"],
-          ["Offer solution: bring tomorrow / mail"],
-          ["Promise again", "Say sorry once more"]
-        ]
-      },
-      {
-        type: "survey",
-        text: "The local library wants to stop buying print newspapers to save money. Give your opinion and two reasons (120-150 words).",
-        steps: [
-          ["State opinion: keep newspapers"],
-          ["Reason 1: seniors prefer print"],
-          ["Reason 2: reliable local news source"],
-          ["Suggest small budget cut elsewhere"]
-        ]
-      },
-      {
-        type: "email",
-        text: "You left your wallet on the city bus this morning. Write an email to the transit lost-property office describing the wallet and what to do if found (120-150 words).",
-        steps: [
-          ["Purpose: report lost wallet"],
-          ["Description: colour, brand, contents (cards, ID)"],
-          ["Contact info / small reward"],
-          ["Thank in advance"]
-        ]
-      },
-      {
-        type: "neighbour",
-        text: "You will be away for ten days and need someone to collect your mail and water two plants. Write a polite note to a neighbour offering something in return (120-150 words).",
-        steps: [
-          ["Friendly greeting & ask for help"],
-          ["Instructions: mail on table, water twice"],
-          ["Offer: fresh pastry / dog-walk"],
-          ["Give phone number", "Say thanks"]
-        ]
-      },
-      {
-        type: "boss",
-        text: "Your office chair is broken and hurts your back. Write an email to office admin requesting a new chair and giving two reasons (120-150 words).",
-        steps: [
-          ["Purpose: request replacement chair"],
-          ["Reason 1: broken wheel / back pain"],
-          ["Reason 2: affects productivity"],
-          ["Ask for timeline", "Offer to pick model"]
-        ]
-      },
-      {
-        type: "survey",
-        text: "The city is considering a 30 km/h speed limit in all residential streets. Give your opinion and two reasons (120-150 words).",
-        steps: [
-          ["State opinion: support / oppose"],
-          ["Reason 1: safety for kids"],
-          ["Reason 2: longer commute vs saved lives"],
-          ["Brief conclusion"]
-        ]
-      },
-      {
-        type: "email",
-        text: "You have just finished a short-term volunteer job at a local food bank. Write an email to the volunteer coordinator thanking them and describing one thing you enjoyed (120-150 words).",
-        steps: [
-          ["Thank coordinator for opportunity"],
-          ["Describe enjoyable task: sorting, packing, meeting people"],
-          ["Say what you learned"],
-          ["Hope to volunteer again"]
-        ]
-      }
-    ];
+function runTimer(){
+timer=setInterval(()=>{
+sec--;
+const min=String(Math.floor(sec/60)).padStart(2,'0');
+const sec2=String(sec%60).padStart(2,'0');
+timerEl.textContent=min+":"+sec2;
+if(sec<=0){clearInterval(timer);nextBtn.disabled=false;}
+},1000);
+}
 
-    /* ===== STATE ===== */
-    let idx = 0;
-    let timerInt = null;
-    let seconds = 27 * 60;
+/* ===== LOAD PROMPT ===== */
+function loadPrompt(){
+const p=prompts[idx];
+document.getElementById("num").textContent="("+ (idx+1)+"/"+prompts.length+")";
+document.getElementById("promptText").innerHTML="<p>"+p.text+"</p>";
+["ul1","ul2","ul3","ul4"].forEach((id,i)=>document.getElementById(id).innerHTML=p.bullets[i].map(b=>"<li>"+b+"</li>").join(""));
+sec=27*60;timerEl.textContent="27:00";box.value="";wcEl.textContent="0";nextBtn.disabled=true;runTimer();
+}
 
-    /* ===== DOM ===== */
-    const timerEl = document.getElementById("timer");
-    const promptNumEl = document.getElementById("promptNum");
-    const promptBox = document.getElementById("promptBox");
-    const wcEl = document.getElementById("wc");
-    const box = document.getElementById("writingBox");
-    const nextBtn = document.getElementById("nextBtn");
+/* ===== WORD COUNT ===== */
+box.addEventListener("input",()=>{
+const w=box.value.trim().split(/\s+/).filter(Boolean).length;
+wcEl.textContent=w;
+if(w>=120&&w<=150)wcEl.style.color="green";else wcEl.style.color="red";
+if(w>5)nextBtn.disabled=false;
+});
 
-    /* ===== TIMER ===== */
-    function runTimer() {
-      timerInt = setInterval(() => {
-        seconds--;
-        const min = String(Math.floor(seconds / 60)).padStart(2, "0");
-        const sec = String(seconds % 60).padStart(2, "0");
-        timerEl.textContent = `${min}:${sec}`;
-        if (seconds <= 0) {
-          clearInterval(timerInt);
-          nextBtn.disabled = false;
-          nextBtn.textContent = "Time up – Next";
-        }
-      }, 1000);
-    }
+/* ===== NEXT ===== */
+nextBtn.onclick=()=>{clearInterval(timer);idx=(idx+1)%prompts.length;loadPrompt();};
 
-    /* ===== LOAD PROMPT ===== */
-    function loadPrompt() {
-      const p = prompts[idx];
-      promptNumEl.textContent = `(#${idx + 1}/${prompts.length})`;
-      promptBox.innerHTML = `<p>${p.text}</p>`;
-      // fill bullets
-      const steps = ["purposeBullets", "detail1Bullets", "detail2Bullets", "closeBullets"];
-      steps.forEach((id, i) => {
-        const ul = document.getElementById(id);
-        ul.innerHTML = p.steps[i].map(b => `<li>${b}</li>`).join("");
-      });
-      seconds = 27 * 60;
-      timerEl.textContent = "27:00";
-      box.value = "";
-      wcEl.textContent = "0";
-      nextBtn.textContent = "Next";
-      nextBtn.disabled = true;
-      runTimer();
-    }
-
-    /* ===== WORD COUNT ===== */
-    box.addEventListener("input", () => {
-      const words = box.value.trim().split(/\s+/).filter(Boolean).length;
-      wcEl.textContent = words;
-      if (words >= 120 && words <= 150) wcEl.style.color = "green";
-      else wcEl.style.color = "red";
-      if (words > 10) nextBtn.disabled = false;
-    });
-
-    /* ===== NEXT BUTTON ===== */
-    nextBtn.onclick = () => {
-      clearInterval(timerInt);
-      idx = (idx + 1) % prompts.length;
-      loadPrompt();
-    };
-
-    /* ===== START ===== */
-    loadPrompt();
-  </script>
+/* ===== START ===== */
+loadPrompt();
+</script>
 </body>
 </html>
