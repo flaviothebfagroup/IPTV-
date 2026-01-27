@@ -2,25 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>CELPIP Mega-Trainer (15 prompts + 12 reading sets)</title>
+  <title>CELPIP Mirror – 15 New Prompts</title>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <style>
+    /* ---- copied palette & spacing from celtestpip.com ---- */
     :root {
-      --accent: #00c2ff;
-      --bg: #0f172a;
-      --card: #1e293b;
-      --text: #e2e8f0;
-      --wrong: #f87171;
-      --right: #34d399;
-      --warn: #fbbf24;
+      --red: #e01e37;
+      --grey: #f5f5f5;
+      --dark: #222;
+      --border: #ddd;
     }
     body {
       margin: 0;
-      font-family: system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--grey);
+      color: var(--dark);
       display: flex;
       min-height: 100vh;
       align-items: center;
@@ -28,653 +24,307 @@
       padding: 1rem;
     }
     .card {
-      background: var(--card);
-      border-radius: 12px;
-      padding: 2rem;
-      max-width: 900px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      max-width: 700px;
       width: 100%;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-      position: relative;
+      padding: 2rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
     }
-    h1 { margin-top: 0; text-align: center; }
+    h1 { font-size: 1.5rem; margin-top: 0; }
+    .timer {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--red);
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    textarea {
+      width: 100%;
+      min-height: 200px;
+      resize: vertical;
+      font-size: 1rem;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+    }
+    .step {
+      margin: 1rem 0;
+      padding: 1rem;
+      background: var(--grey);
+      border-radius: 4px;
+    }
+    .step h3 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+    .step ul { margin: 0; padding-left: 1.2rem; }
     button {
       cursor: pointer;
       border: none;
-      background: var(--accent);
-      color: #0f172a;
+      background: var(--red);
+      color: #fff;
       font-weight: 700;
-      padding: 0.6rem 1.2rem;
-      border-radius: 6px;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
       margin-top: 1rem;
     }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
-    textarea {
-      width: 100%;
-      resize: vertical;
-      min-height: 160px;
-      font-size: 1rem;
-      padding: 0.6rem;
-      border-radius: 6px;
-      border: 1px solid #334155;
-      background: #0f172a;
-      color: var(--text);
-    }
-    .timer {
-      font-size: 1.2rem;
-      text-align: center;
-      margin-bottom: 1rem;
-    }
-    .streak {
-      text-align: center;
-      font-size: 1.1rem;
-      margin-bottom: 0.5rem;
-    }
-    .feedback {
-      margin-top: 1rem;
-      padding: 0.8rem;
-      border-radius: 6px;
-      font-weight: 600;
-    }
-    .feedback.right { background: var(--right); color: #0f172a; }
-    .feedback.wrong { background: var(--wrong); color: #0f172a; }
-    .feedback.warn { background: var(--warn); color: #0f172a; }
-    ol li { margin-bottom: 0.5rem; }
-    details { margin-top: 1.5rem; font-size: 0.9rem; }
-    summary { font-weight: 600; }
-
-    /* progress bar */
-    #progressBar {
-      height: 10px;
-      background: #334155;
-      border-radius: 5px;
-      overflow: hidden;
-      margin-bottom: 1rem;
-    }
-    #progressFill {
-      height: 100%;
-      background: var(--accent);
-      width: 100%;
-      transition: width 1s linear;
-    }
-
-    /* dual-pane reading */
-    .readingGrid {
-      display: grid;
-      grid-template-columns: 55% 40%;
-      gap: 1.5rem;
-    }
-    .passageCol {
-      max-height: 60vh;
-      overflow-y: auto;
-      border-right: 1px solid #334155;
-      padding-right: 1rem;
-    }
-    .questionCol { padding-left: 1rem; }
-
-    /* highlight */
-    .highlight {
-      background: #fef08a;
-      color: #0f172a;
-      cursor: pointer;
-    }
-
-    /* voice recorder */
-    #voicePanel {
-      margin-top: 1rem;
-      font-size: 0.9rem;
-    }
-    #recordBtn {
-      background: var(--wrong);
-    }
-    #stopBtn {
-      background: var(--right);
-    }
-
-    /* checklist modal */
-    #checklistModal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.7);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-    }
-    #checklistContent {
-      background: var(--card);
-      padding: 1.5rem;
-      border-radius: 8px;
-      max-width: 500px;
-      width: 90%;
-    }
-    #checklistContent ul {
-      list-style: none;
-      padding: 0;
-    }
-    #checklistContent li {
-      margin-bottom: 0.5rem;
-    }
-    #checklistContent input {
-      margin-right: 0.5rem;
-    }
+    #helperText { font-size: 0.9rem; color: #555; margin-top: 0.5rem; }
+    #wordCount { text-align: right; font-size: 0.9rem; color: #666; margin-bottom: 0.5rem; }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>CELPIP Mega-Trainer</h1>
-    <div class="streak">Streak: <span id="streak">0</span> | Best: <span id="best">0</span></div>
-    <div id="progressBar"><div id="progressFill"></div></div>
-    <div class="timer" id="timer">Press Start</div>
+    <h1>CELPIP Writing Practice <span id="promptNum"></span></h1>
+    <div class="timer" id="timer">27:00</div>
 
-    <!-- Writing -->
-    <div id="writing" hidden>
-      <h2>Writing Task</h2>
-      <p id="writingPrompt"></p>
-      <div id="wordCount">Words: <span id="wc">0</span> (aim 120-150)</div>
-      <textarea id="writingBox" placeholder="Write your response…" spellcheck="false"></textarea>
-      <div id="spellErrors" class="feedback warn" hidden></div>
-      <button id="writingSubmit">Submit</button>
-      <div id="writingFeedback" class="feedback" hidden></div>
-      <details id="structHints" hidden>
-        <summary>Structural hints for this task</summary>
-        <ul id="hintsList"></ul>
-      </details>
-      <!-- Voice pivot -->
-      <div id="voicePanel" hidden>
-        <strong>Speaking pivot (30 s):</strong><br>
-        <button id="recordBtn">Record</button>
-        <button id="stopBtn" disabled>Stop</button>
-        <span id="voiceTimer"></span>
-        <audio id="voicePlayback" controls style="display:block;margin-top:0.5rem"></audio>
-      </div>
+    <div id="promptBox"></div>
+
+    <div id="wordCount">Words: <span id="wc">0</span> (aim 120-150)</div>
+    <textarea id="writingBox" placeholder="Write your answer here…" spellcheck="false"></textarea>
+    <div id="helperText">Use the 4 steps below to structure your answer.</div>
+
+    <div class="step" id="step1">
+      <h3>Step 1 – Purpose</h3>
+      <ul id="purposeBullets"></ul>
+    </div>
+    <div class="step" id="step2">
+      <h3>Step 2 – Details / Reason 1</h3>
+      <ul id="detail1Bullets"></ul>
+    </div>
+    <div class="step" id="step3">
+      <h3>Step 3 – Details / Reason 2</h3>
+      <ul id="detail2Bullets"></ul>
+    </div>
+    <div class="step" id="step4">
+      <h3>Step 4 – Close / Action</h3>
+      <ul id="closeBullets"></ul>
     </div>
 
-    <!-- Reading -->
-    <div id="reading" hidden>
-      <h2>Reading Task</h2>
-      <div class="readingGrid">
-        <div class="passageCol" id="passageCol"></div>
-        <div class="questionCol">
-          <p id="question"></p>
-          <ol type="A" id="choices"></ol>
-          <button id="nextReading">Next</button>
-          <div id="readingFeedback" class="feedback" hidden></div>
-        </div>
-      </div>
-    </div>
-
-    <button id="startBtn">Start Game</button>
-    <button id="rehearsalBtn">Night-before rehearsal</button>
-
-    <!-- Checklist modal -->
-    <div id="checklistModal">
-      <div id="checklistContent">
-        <h3>Quick Checklist</h3>
-        <ul id="checklist"></ul>
-        <button id="checklistOk">I checked → Submit</button>
-      </div>
-    </div>
+    <button id="nextBtn">Next</button>
   </div>
 
   <script>
     /* ===== PROMPT BANK ===== */
-    const writingPrompts = [
+    const prompts = [
       {
         type: "email",
-        text: "You recently bought a vacuum cleaner online. When it arrived, the box was missing an accessory that was advertised. Write an email to the customer-service department (120-150 words).",
-        hints: ["Para 1 – Purpose: I am writing to report a missing accessory…", "Para 2 – Details: order number, date, what is missing.", "Para 3 – Action: send part / refund.", "Para 4 – Close: polite ending."]
+        text: "You recently bought a wireless printer online. When it arrived, the USB cable was missing and the instruction booklet was for a different model. Write an email to the customer-service department (120-150 words).",
+        steps: [
+          ["Say why you are writing", "Mention order number & date"],
+          ["Explain what was missing (USB cable)", "Explain wrong booklet problem"],
+          ["Say what you want: send cable + correct booklet or small refund"],
+          ["Thank them in advance", "Offer contact details"]
+        ]
       },
       {
         type: "survey",
-        text: "Your city is asking residents whether the community pool should stay open year-round. Give your opinion and two reasons (120-150 words).",
-        hints: ["Para 1 – Opinion (I strongly support…)", "Para 2 – Reason 1 + example", "Para 3 – Reason 2 + example", "Avoid contractions in formal surveys."]
-      },
-      {
-        type: "email",
-        text: "A friend has asked you to recommend a good place to learn English in your city. Write an email describing one school and explaining why it is suitable (120-150 words).",
-        hints: ["Para 1 – Purpose: happy to recommend…", "Para 2 – Details: location, price, features.", "Para 3 – Personal experience.", "Para 4 – Offer further help."]
+        text: "The city is thinking of banning all single-use plastic bags in grocery stores. Give your opinion and two reasons (120-150 words).",
+        steps: [
+          ["State your opinion (support or oppose)"],
+          ["Reason 1: environment / ocean animals"],
+          ["Reason 2: inconvenience / cost for shoppers"],
+          ["Brief conclusion / suggest reusable-bag program"]
+        ]
       },
       {
         type: "complaint",
-        text: "Your neighbour’s dog barks every night. Write a polite letter explaining the problem and suggesting a solution (120-150 words).",
-        hints: ["Para 1 – Friendly greeting + purpose.", "Para 2 – Describe problem briefly.", "Para 3 – Suggest solution / compromise.", "Para 4 – Hope to resolve amicably."]
+        text: "Your neighbour often parks his truck in front of your driveway, making it hard for you to leave. Write a polite letter explaining the problem and asking for help (120-150 words).",
+        steps: [
+          ["Friendly greeting", "Explain purpose politely"],
+          ["Describe when & how the truck blocks you"],
+          ["Request: please leave driveway clear"],
+          ["Hope to stay good neighbours", "Say thanks"]
+        ]
       },
       {
         type: "advice",
-        text: "Your cousin will move to Canada next winter. Write an email with TWO pieces of advice for dealing with cold weather (120-150 words).",
-        hints: ["Para 1 – Greeting + purpose.", "Para 2 – Advice 1 (clothing) + example.", "Para 3 – Advice 2 (driving) + example.", "Para 4 – Encouragement + close."]
+        text: "A friend who just arrived in Canada is scared of driving in winter snow. Write an email giving TWO pieces of advice and short explanations (120-150 words).",
+        steps: [
+          ["Greeting & say you understand the worry"],
+          ["Advice 1: buy winter tires – better grip"],
+          ["Advice 2: drive slowly & keep longer distance"],
+          ["Encourage friend & offer practice together"]
+        ]
       },
       {
         type: "rental",
-        text: "You rented an apartment but the fridge stopped working. Write an email to the landlord explaining the issue and requesting action (120-150 words).",
-        hints: ["Para 1 – Purpose: reporting broken fridge.", "Para 2 – Details: when, model, inconvenience.", "Para 3 – Request: repair / replacement date.", "Para 4 – Thank in advance."]
+        text: "The heating in your apartment stops working at night. Write an email to the landlord describing the problem and requesting urgent repair (120-150 words).",
+        steps: [
+          ["State purpose: heating broken"],
+          ["Say when it stops, how cold it gets"],
+          ["Request: send technician asap"],
+          ["Warn pipes may freeze", "Thank for quick help"]
+        ]
       },
       {
         type: "boss",
-        text: "Your office is too cold. Write an email to your manager requesting a temperature adjustment and giving two reasons (120-150 words).",
-        hints: ["Para 1 – Purpose: request temperature change.", "Para 2 – Reason 1: productivity drop.", "Para 3 – Reason 2: health / sick days.", "Para 4 – Offer to discuss solutions."]
+        text: "You need next Friday off to attend your citizenship ceremony. Write an email to your supervisor requesting leave and explaining why it is important (120-150 words).",
+        steps: [
+          ["Request morning/afternoon off on Friday"],
+          ["Explain: citizenship oath, once-in-life"],
+          ["Assure: finish weekly report early"],
+          ["Ask for approval", "Say thanks"]
+        ]
       },
       {
         type: "city",
-        text: "The city plans to remove a children’s playground to build parking. Write a letter to the city council giving your opinion and two reasons (120-150 words).",
-        hints: ["Para 1 – State opinion (oppose).", "Para 2 – Reason 1: health / exercise.", "Para 3 – Reason 2: community friendships.", "Para 4 – Suggest alternative location."]
+        text: "The city plans to turn the only park in your neighbourhood into a parking lot. Write a letter to the city giving your opinion and two reasons to keep the park (120-150 words).",
+        steps: [
+          ["State opinion: oppose the plan"],
+          ["Reason 1: children need space to play"],
+          ["Reason 2: green area reduces summer heat"],
+          ["Suggest other parking solutions"]
+        ]
       },
       {
         type: "invite",
-        text: "You will host a small reunion for old classmates. Write an email inviting them and giving two details about the event (120-150 words).",
-        hints: ["Para 1 – Warm greeting + invite.", "Para 2 – Detail 1: date, time, place.", "Para 3 – Detail 2: food / activity.", "Para 4 – Ask for RSVP."]
+        text: "You are organising a small pot-luck dinner for new immigrants in your building. Write an email inviting them and giving two details (120-150 words).",
+        steps: [
+          ["Warm greeting & invite"],
+          ["Detail 1: date, time, location"],
+          ["Detail 2: bring one dish to share"],
+          ["Ask to RSVP", "Say you look forward"]
+        ]
       },
       {
         type: "apology",
-        text: "You promised to return a borrowed camera today but you forgot it at home. Write an email apologising and giving a solution (120-150 words).",
-        hints: ["Para 1 – Apologise clearly.", "Para 2 – Explain reason briefly.", "Para 3 – Offer solution: drop tomorrow / courier.", "Para 4 – Promise again + sorry."]
+        text: "You promised to return your classmate’s textbook today but left it at home. Write an email apologising and offering a solution (120-150 words).",
+        steps: [
+          ["Apologise clearly"],
+          ["Explain briefly why you forgot"],
+          ["Offer solution: bring tomorrow / mail"],
+          ["Promise again", "Say sorry once more"]
+        ]
       },
       {
         type: "survey",
-        text: "The local library wants to cancel Sunday story-time to save money. Give your opinion and two reasons (120-150 words).",
-        hints: ["Para 1 – Opinion: keep program.", "Para 2 – Reason 1: early literacy.", "Para 3 – Reason 2: parents free activity.", "Para 4 – Suggest fundraising alternative."]
+        text: "The local library wants to stop buying print newspapers to save money. Give your opinion and two reasons (120-150 words).",
+        steps: [
+          ["State opinion: keep newspapers"],
+          ["Reason 1: seniors prefer print"],
+          ["Reason 2: reliable local news source"],
+          ["Suggest small budget cut elsewhere"]
+        ]
       },
       {
         type: "email",
-        text: "You left your bag on the city bus yesterday. Write an email to the transit lost-property office describing the bag and what to do if found (120-150 words).",
-        hints: ["Para 1 – Purpose: report lost bag.", "Para 2 – Description: colour, size, contents.", "Para 3 – Contact details / reward.", "Para 4 – Thank in advance."]
-      },
-      {
-        type: "boss",
-        text: "You need two days off next week for a family wedding. Write an email to your supervisor requesting leave and explaining the situation (120-150 words).",
-        hints: ["Para 1 – Request time off.", "Para 2 – Explain: wedding, travel.", "Para 3 – Assure coverage: finish tasks early.", "Para 4 – Ask for approval."]
+        text: "You left your wallet on the city bus this morning. Write an email to the transit lost-property office describing the wallet and what to do if found (120-150 words).",
+        steps: [
+          ["Purpose: report lost wallet"],
+          ["Description: colour, brand, contents (cards, ID)"],
+          ["Contact info / small reward"],
+          ["Thank in advance"]
+        ]
       },
       {
         type: "neighbour",
-        text: "You will be away for a week and need someone to water your plants. Write a polite note to a neighbour asking for help and offering something in return (120-150 words).",
-        hints: ["Para 1 – Friendly greeting + ask.", "Para 2 – Instructions: how often, where.", "Para 3 – Offer: fresh muffins / favour.", "Para 4 – Thanks + contact."]
+        text: "You will be away for ten days and need someone to collect your mail and water two plants. Write a polite note to a neighbour offering something in return (120-150 words).",
+        steps: [
+          ["Friendly greeting & ask for help"],
+          ["Instructions: mail on table, water twice"],
+          ["Offer: fresh pastry / dog-walk"],
+          ["Give phone number", "Say thanks"]
+        ]
+      },
+      {
+        type: "boss",
+        text: "Your office chair is broken and hurts your back. Write an email to office admin requesting a new chair and giving two reasons (120-150 words).",
+        steps: [
+          ["Purpose: request replacement chair"],
+          ["Reason 1: broken wheel / back pain"],
+          ["Reason 2: affects productivity"],
+          ["Ask for timeline", "Offer to pick model"]
+        ]
       },
       {
         type: "survey",
-        text: "The city is considering a new rule that all dogs must be on a leash in public parks. Give your opinion and two reasons (120-150 words).",
-        hints: ["Para 1 – Opinion: support / oppose.", "Para 2 – Reason 1: safety / fear.", "Para 3 – Reason 2: wildlife protection.", "Para 4 – Brief conclusion."]
-      }
-    ];
-
-    /* ===== READING BANK ===== */
-    const readingBank = [
-      {
-        passage: `Many Canadian cities now offer "green bins" for organic waste. These bins accept food scraps, paper towels, and garden trimmings. The material is turned into compost, which is sold to farmers and gardeners. This program reduces landfill use and cuts greenhouse gases.`,
-        q: "What is the main purpose of the green-bin program?",
-        choices: ["To produce cheap compost for farmers", "To decrease landfill waste and emissions", "To collect garden trimmings only", "To replace garbage trucks"],
-        ans: 1
+        text: "The city is considering a 30 km/h speed limit in all residential streets. Give your opinion and two reasons (120-150 words).",
+        steps: [
+          ["State opinion: support / oppose"],
+          ["Reason 1: safety for kids"],
+          ["Reason 2: longer commute vs saved lives"],
+          ["Brief conclusion"]
+        ]
       },
       {
-        passage: `Employers in Canada often look for "soft skills" such as teamwork, communication, and problem-solving. Technical knowledge is important, but the ability to work well with others can decide who gets promoted. Job seekers should give examples of these skills in interviews.`,
-        q: "According to the passage, which factor most influences promotions?",
-        choices: ["University degrees", "Years of experience", "Soft skills", "Technical certificates"],
-        ans: 2
-      },
-      {
-        passage: `Community gardens are shared spaces where people grow vegetables and flowers. Plots are rented for a small fee, and tools are provided. These gardens increase access to fresh food and create friendships among neighbours. Some cities even offer beginner workshops each spring.`,
-        q: "Which statement is true about community gardens?",
-        choices: ["They are free for all residents", "They include training sessions", "They sell vegetables to supermarkets", "They are run by the federal government"],
-        ans: 1
-      },
-      {
-        passage: `In 2023, the Canadian government increased the minimum wage in several provinces. This change aims to help workers cope with rising living costs. However, some small-business owners worry that higher wages may force them to reduce staff hours or increase prices for customers.`,
-        q: "Why did the government raise the minimum wage?",
-        choices: ["To reduce unemployment", "To help workers with living costs", "To support small businesses", "To increase tax revenue"],
-        ans: 1
-      },
-      {
-        passage: `A new study shows that taking short walks during the workday improves concentration and reduces stress. Even ten minutes outside can boost mood and creativity. Many companies now encourage employees to hold "walking meetings" instead of sitting in conference rooms.`,
-        q: "What is the main benefit of walking meetings mentioned in the passage?",
-        choices: ["Saving office space", "Improving concentration and reducing stress", "Reducing meeting time", "Cutting travel costs"],
-        ans: 1
-      },
-      {
-        passage: `Public libraries in Canada now lend more than books. Patrons can borrow tools, musical instruments, and even sports equipment. This "Library of Things" program helps residents save money and reduce waste by sharing items that are used only occasionally.`,
-        q: "What is the purpose of the 'Library of Things'?",
-        choices: ["To increase book borrowing", "To help residents save money and reduce waste", "To sell old library items", "To collect donations for charity"],
-        ans: 1
-      },
-      {
-        passage: `Canada has two official languages: English and French. All federal services must be available in both. Many job postings prefer candidates who can speak both languages, especially in government and customer-service roles. Free language classes are offered in most cities.`,
-        q: "Why do some jobs require both English and French?",
-        choices: ["Because all Canadians speak both", "Because federal services must be bilingual", "Because French is required in every province", "Because English classes are expensive"],
-        ans: 1
-      },
-      {
-        passage: `Electric scooters have become popular in urban areas, but they also cause problems. Riders often use sidewalks, endangering pedestrians. Cities are now creating bike-lane networks and speed limits for scooters. Helmets are recommended but not required for adults.`,
-        q: "What problem is mentioned about electric scooters?",
-        choices: ["They are too expensive", "They block car traffic", "They endanger pedestrians on sidewalks", "They cannot be parked downtown"],
-        ans: 2
-      },
-      {
-        passage: `Many Canadians now work from home at least part of the week. This trend saves commuting time and reduces traffic. Employers benefit from lower office costs, while employees report better work-life balance. Some companies even offer money to set up a home office.`,
-        q: "Which benefit of working from home is mentioned for employers?",
-        choices: ["Higher employee salaries", "Lower office costs", "More vacation days", "Longer working hours"],
-        ans: 1
-      },
-      {
-        passage: `Each winter, Canadian cities open outdoor skating rinks that are free to use. These rinks are maintained by city staff and are lit at night. Families, children, and seniors all enjoy skating. Some rinks also offer free loaner skates and basic skating lessons on weekends.`,
-        q: "What service is offered at some outdoor rinks?",
-        choices: ["Free skate rentals and lessons", "Indoor heated seating", "Discounted hockey gear", "Paid parking nearby"],
-        ans: 0
-      },
-      {
-        passage: `Food-delivery apps have grown rapidly, but restaurants complain about high commission fees, sometimes 30 % of each order. To save money, some restaurants now encourage customers to order directly by phone or through their own websites, offering small discounts for direct orders.`,
-        q: "Why do restaurants prefer direct orders?",
-        choices: ["They can charge higher prices", "They avoid high app commission fees", "They receive faster payment", "They get free advertising"],
-        ans: 1
-      },
-      {
-        passage: `Canada’s new anti-spam law requires businesses to obtain consent before sending marketing emails. Messages must include a clear way to unsubscribe. Fines for breaking the law can be very high. As a result, many companies now use double opt-in systems to confirm subscriber consent.`,
-        q: "What must marketing emails include under the new law?",
-        choices: ["A discount code", "A clear unsubscribe option", "A phone number", "A French translation"],
-        ans: 1
+        type: "email",
+        text: "You have just finished a short-term volunteer job at a local food bank. Write an email to the volunteer coordinator thanking them and describing one thing you enjoyed (120-150 words).",
+        steps: [
+          ["Thank coordinator for opportunity"],
+          ["Describe enjoyable task: sorting, packing, meeting people"],
+          ["Say what you learned"],
+          ["Hope to volunteer again"]
+        ]
       }
     ];
 
     /* ===== STATE ===== */
-    let streak = 0, best = +(localStorage.getItem("celpip-best") || 0);
-    let timer = null, seconds = 0;
-    let currentW = null, currentR = null, roundPassed = false;
-    let errorLog = JSON.parse(localStorage.getItem("celpip-errors") || "{}");
+    let idx = 0;
+    let timerInt = null;
+    let seconds = 27 * 60;
 
     /* ===== DOM ===== */
-    const els = {
-      streak: document.getElementById("streak"),
-      best: document.getElementById("best"),
-      timer: document.getElementById("timer"),
-      progressFill: document.getElementById("progressFill"),
-      startBtn: document.getElementById("startBtn"),
-      rehearsalBtn: document.getElementById("rehearsalBtn"),
-      writing: document.getElementById("writing"),
-      writingPrompt: document.getElementById("writingPrompt"),
-      writingBox: document.getElementById("writingBox"),
-      wordCount: document.getElementById("wc"),
-      spellErrors: document.getElementById("spellErrors"),
-      writingSubmit: document.getElementById("writingSubmit"),
-      writingFeedback: document.getElementById("writingFeedback"),
-      structHints: document.getElementById("structHints"),
-      hintsList: document.getElementById("hintsList"),
-      voicePanel: document.getElementById("voicePanel"),
-      recordBtn: document.getElementById("recordBtn"),
-      stopBtn: document.getElementById("stopBtn"),
-      voiceTimer: document.getElementById("voiceTimer"),
-      voicePlayback: document.getElementById("voicePlayback"),
-      reading: document.getElementById("reading"),
-      passageCol: document.getElementById("passageCol"),
-      question: document.getElementById("question"),
-      choices: document.getElementById("choices"),
-      nextReading: document.getElementById("nextReading"),
-      readingFeedback: document.getElementById("readingFeedback"),
-      checklistModal: document.getElementById("checklistModal"),
-      checklist: document.getElementById("checklist"),
-      checklistOk: document.getElementById("checklistOk")
-    };
-    els.best.textContent = best;
+    const timerEl = document.getElementById("timer");
+    const promptNumEl = document.getElementById("promptNum");
+    const promptBox = document.getElementById("promptBox");
+    const wcEl = document.getElementById("wc");
+    const box = document.getElementById("writingBox");
+    const nextBtn = document.getElementById("nextBtn");
 
-    /* ===== UTILS ===== */
-    function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-    function clbScore(text) {
-      const words = text.trim().split(/\s+/).filter(Boolean).length;
-      const sentences = text.split(/[.!?]+/).filter(Boolean).length || 1;
-      const syllables = text.replace(/[^a-zA-Z]/g, "").split("").filter(c => /[aeiouAEIOU]/.test(c)).length || 1;
-      const avgSentLen = words / sentences;
-      const spellErr = (text.match(/\b(?:teh|recieve|neighbour|acheive|embarass|seperate|definately|occured|begining|beleive)\b/gi) || []).length;
-      const vocab = new Set(text.toLowerCase().match(/\b[a-z]{4,}\b/g)).size;
-      let score = 4;
-      if (words >= 120 && words <= 160) score++;
-      if (avgSentLen <= 20 && avgSentLen >= 10) score++;
-      if (vocab >= 30) score++;
-      if (spellErr === 0) score++;
-      if (text.includes("?") || text.includes("!")) score++;
-      return Math.min(12, score);
-    }
-
-    /* ===== PROGRESS BAR ===== */
-    function startProgress(total) {
-      clearInterval(timer);
-      let left = total;
-      els.progressFill.style.transition = "none";
-      els.progressFill.style.width = "100%";
-      setTimeout(() => {
-        els.progressFill.style.transition = `width ${total}s linear`;
-        els.progressFill.style.width = "0%";
-      }, 100);
-      timer = setInterval(() => {
-        left--;
-        if (left <= 0) clearInterval(timer);
+    /* ===== TIMER ===== */
+    function runTimer() {
+      timerInt = setInterval(() => {
+        seconds--;
+        const min = String(Math.floor(seconds / 60)).padStart(2, "0");
+        const sec = String(seconds % 60).padStart(2, "0");
+        timerEl.textContent = `${min}:${sec}`;
+        if (seconds <= 0) {
+          clearInterval(timerInt);
+          nextBtn.disabled = false;
+          nextBtn.textContent = "Time up – Next";
+        }
       }, 1000);
     }
 
-    /* ===== WRITING ===== */
-    function pickPrompt() {
-      // simple error-targeting: pick type that had lowest CLB last time
-      const types = ["email", "survey", "complaint", "advice", "rental", "boss", "city", "invite", "apology"];
-      let weakest = types[0];
-      let min = 10;
-      for (const t of types) {
-        if ((errorLog[t] || 10) < min) { min = errorLog[t]; weakest = t; }
-      }
-      const pool = writingPrompts.filter(p => p.type === weakest);
-      return shuffle(pool)[0] || shuffle(writingPrompts)[0];
-    }
-
-    function startWriting() {
-      roundPassed = false;
-      currentW = pickPrompt();
-      els.writingPrompt.textContent = currentW.text;
-      els.writingBox.value = "";
-      els.wordCount.textContent = "0";
-      els.spellErrors.hidden = true;
-      els.writingFeedback.hidden = true;
-      els.structHints.hidden = true;
-      els.voicePanel.hidden = true;
-      els.writingSubmit.disabled = false;
-      els.reading.hidden = true;
-      els.writing.hidden = false;
-      startProgress(27 * 60);
-      runTimer(27 * 60, s => {
-        const min = String(Math.floor(s / 60)).padStart(2, "0");
-        const sec = String(s % 60).padStart(2, "0");
-        els.timer.textContent = `Writing: ${min}:${sec}`;
-      }, () => {
-        els.writingSubmit.disabled = true;
-        if (!els.writingBox.value.trim()) {
-          els.writingFeedback.textContent = "Time up! No text entered.";
-          els.writingFeedback.className = "feedback wrong";
-          els.writingFeedback.hidden = false;
-          setTimeout(startReading, 1500);
-        }
+    /* ===== LOAD PROMPT ===== */
+    function loadPrompt() {
+      const p = prompts[idx];
+      promptNumEl.textContent = `(#${idx + 1}/${prompts.length})`;
+      promptBox.innerHTML = `<p>${p.text}</p>`;
+      // fill bullets
+      const steps = ["purposeBullets", "detail1Bullets", "detail2Bullets", "closeBullets"];
+      steps.forEach((id, i) => {
+        const ul = document.getElementById(id);
+        ul.innerHTML = p.steps[i].map(b => `<li>${b}</li>`).join("");
       });
+      seconds = 27 * 60;
+      timerEl.textContent = "27:00";
+      box.value = "";
+      wcEl.textContent = "0";
+      nextBtn.textContent = "Next";
+      nextBtn.disabled = true;
+      runTimer();
     }
 
-    els.writingBox.addEventListener("input", () => {
-      const txt = els.writingBox.value;
-      const words = txt.trim().split(/\s+/).filter(Boolean).length;
-      els.wordCount.textContent = words;
-      // spell check demo list
-      const errs = txt.match(/\b(?:teh|recieve|neighbour|acheive|embarass|seperate|definately|occured|begining|beleive)\b/gi) || [];
-      if (errs.length) {
-        els.spellErrors.textContent = `Possible spelling: ${errs.join(", ")}`;
-        els.spellErrors.hidden = false;
-      } else els.spellErrors.hidden = true;
+    /* ===== WORD COUNT ===== */
+    box.addEventListener("input", () => {
+      const words = box.value.trim().split(/\s+/).filter(Boolean).length;
+      wcEl.textContent = words;
+      if (words >= 120 && words <= 150) wcEl.style.color = "green";
+      else wcEl.style.color = "red";
+      if (words > 10) nextBtn.disabled = false;
     });
 
-    /* ===== CHECKLIST ===== */
-    const checklistItems = [
-      "Started sentence with capital letter",
-      "Used at least one compound sentence (; , and, but)",
-      "Included polite greeting / closing",
-      "Task type structure followed (4 para email or 3 para survey)",
-      "Word count 120-150",
-      "No repeated spelling errors"
-    ];
-    function showChecklist() {
-        els.checklist.innerHTML = "";
-        checklistItems.forEach((item, idx) => {
-          const li = document.createElement("li");
-          const cb = document.createElement("input");
-          cb.type = "checkbox"; cb.id = `ck${idx}`;
-          const lb = document.createElement("label");
-          lb.htmlFor = `ck${idx}`; lb.textContent = item;
-          li.append(cb, lb);
-          els.checklist.appendChild(li);
-        });
-        els.checklistModal.style.display = "flex";
-    }
-    els.writingSubmit.onclick = () => showChecklist();
-    els.checklistOk.onclick = () => {
-        els.checklistModal.style.display = "none";
-        submitWriting();
+    /* ===== NEXT BUTTON ===== */
+    nextBtn.onclick = () => {
+      clearInterval(timerInt);
+      idx = (idx + 1) % prompts.length;
+      loadPrompt();
     };
-
-    function submitWriting() {
-      clearInterval(timer);
-      const text = els.writingBox.value.trim();
-      const score = clbScore(text);
-      const pass = score >= 7;
-      if (pass) roundPassed = true;
-      // log by type
-      errorLog[currentW.type] = Math.max(errorLog[currentW.type] || 0, score);
-      localStorage.setItem("celpip-errors", JSON.stringify(errorLog));
-      els.writingFeedback.textContent = `Estimated CLB: ${score}/12 ${pass ? "✓ Pass" : "✗ Needs work"}`;
-      els.writingFeedback.className = pass ? "feedback right" : "feedback wrong";
-      els.writingFeedback.hidden = false;
-      // hints
-      els.hintsList.innerHTML = currentW.hints.map(h => `<li>${h}</li>`).join("");
-      els.structHints.hidden = false;
-      // voice pivot
-      els.voicePanel.hidden = false;
-      setTimeout(startReading, 2500);
-    }
-
-    /* ===== VOICE ===== */
-    let mediaRecorder, audioChunks = [];
-    els.recordBtn.onclick = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
-      audioChunks = [];
-      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunks, { type: "audio/webm" });
-        els.voicePlayback.src = URL.createObjectURL(blob);
-        stream.getTracks().forEach(t => t.stop());
-      };
-      mediaRecorder.start();
-      els.recordBtn.disabled = true;
-      els.stopBtn.disabled = false;
-      let v = 30;
-      els.voiceTimer.textContent = v + "s";
-      const vt = setInterval(() => {
-        v--;
-        els.voiceTimer.textContent = v + "s";
-        if (v <= 0) {
-          clearInterval(vt);
-          mediaRecorder.stop();
-          els.recordBtn.disabled = false;
-          els.stopBtn.disabled = true;
-        }
-      }, 1000);
-    };
-    els.stopBtn.onclick = () => {
-      mediaRecorder.stop();
-      els.recordBtn.disabled = false;
-      els.stopBtn.disabled = true;
-    };
-
-    /* ===== READING ===== */
-    function startReading() {
-      els.writing.hidden = true;
-      els.reading.hidden = false;
-      els.readingFeedback.hidden = true;
-      currentR = shuffle([...readingBank])[0];
-      // highlight-able passage
-      const words = currentR.passage.split(" ");
-      els.passageCol.innerHTML = "";
-      words.forEach(w => {
-        const span = document.createElement("span");
-        span.textContent = w + " ";
-        span.onclick = () => span.classList.toggle("highlight");
-        els.passageCol.appendChild(span);
-      });
-      els.question.textContent = currentR.q;
-      els.choices.innerHTML = "";
-      currentR.choices.forEach((c, i) => {
-        const li = document.createElement("li");
-        const btn = document.createElement("button");
-        btn.textContent = c;
-        btn.onclick = () => checkReading(i);
-        li.appendChild(btn);
-        els.choices.appendChild(li);
-      });
-      startProgress(90);
-      runTimer(90, s => els.timer.textContent = `Reading: ${s}s`, () => {
-        els.readingFeedback.textContent = "Time up!";
-        els.readingFeedback.className = "feedback wrong";
-        els.readingFeedback.hidden = false;
-        disableChoices();
-        setTimeout(endRound, 1500);
-      });
-    }
-
-    function checkReading(idx) {
-      clearInterval(timer);
-      disableChoices();
-      const correct = idx === currentR.ans;
-      if (!correct) roundPassed = false;
-      els.readingFeedback.textContent = correct ? "Correct!" : `Wrong! Answer: ${["A", "B", "C", "D"][currentR.ans]}`;
-      els.readingFeedback.className = correct ? "feedback right" : "feedback wrong";
-      els.readingFeedback.hidden = false;
-      setTimeout(endRound, 1500);
-    }
-
-    function disableChoices() { [...els.choices.querySelectorAll("button")].forEach(b => b.disabled = true); }
-
-    /* ===== ROUND END ===== */
-    function endRound() {
-      if (roundPassed) {
-        streak++;
-        if (streak > best) { best = streak; localStorage.setItem("celpip-best", best); els.best.textContent = best; }
-      } else streak = 0;
-      els.streak.textContent = streak;
-      els.startBtn.textContent = "Next Round";
-      els.startBtn.hidden = false;
-      els.timer.textContent = "Round over";
-      els.reading.hidden = true;
-    }
-
-    /* ===== REHEARSAL MODE ===== */
-    els.rehearsalBtn.onclick = async () => {
-      // one writing + 3 reading back-to-back
-      alert("Rehearsal: Writing 27 min → 3 Reading Qs → auto PDF");
-      startWriting();
-      // after writing ends we inject 3 reading passes
-      const oldEnd = endRound;
-      let reads = 0;
-      endRound = () => {
-        reads++;
-        if (reads < 3) startReading();
-        else {
-          endRound = oldEnd;
-          exportPDF();
-          endRound();
-        }
-      };
-    };
-
-    /* ===== PDF EXPORT ===== */
-    function exportPDF() {
-      const doc = new jspdf.jsPDF();
-      doc.setFontSize(12);
-      doc.text("CELPIP Rehearsal Report", 10, 10);
-      doc.text(`Date: ${new Date().toLocaleString()}`, 10, 20);
-      doc.text(`Final CLB Estimate: ${clbScore(els.writingBox.value)}`, 10, 30);
-      doc.text(`Reading correct: ${streak}`, 10, 40);
-      doc.save("celpip-rehearsal.pdf");
-    }
 
     /* ===== START ===== */
-    els.startBtn.onclick = () => { els.startBtn.hidden = true; startWriting(); };
+    loadPrompt();
   </script>
 </body>
 </html>
