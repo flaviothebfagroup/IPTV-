@@ -1,632 +1,373 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CELPIP Writing Practice (Simple)</title>
+  <meta charset="UTF-8" />
+  <title>CELPIP Speed-Study Game</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    :root{
-      --bg:#0b0f14;
-      --card:#121926;
-      --muted:#93a4b8;
-      --text:#e9f0f7;
-      --line:#223047;
-      --accent:#ff9500;
-      --ok:#34c759;
-      --warn:#ffd60a;
-      --bad:#ff453a;
+    :root {
+      --accent: #00c2ff;
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #e2e8f0;
+      --wrong: #f87171;
+      --right: #34d399;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      background: radial-gradient(1200px 700px at 10% 0%, #182234 0%, transparent 55%),
-                  radial-gradient(900px 600px at 90% 10%, #2a1f12 0%, transparent 60%),
-                  var(--bg);
-      color:var(--text);
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
     }
-    .wrap{max-width:1100px;margin:0 auto;padding:18px}
-    header{
-      display:flex;gap:12px;align-items:center;justify-content:space-between;
-      padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:rgba(18,25,38,.78);
-      backdrop-filter: blur(10px);
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 600px;
+      width: 90%;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     }
-    .title{display:flex;flex-direction:column;gap:2px}
-    h1{font-size:18px;margin:0}
-    .sub{font-size:13px;color:var(--muted)}
-    .row{display:grid;grid-template-columns: 1.2fr .8fr; gap:14px; margin-top:14px}
-    @media (max-width: 920px){ .row{grid-template-columns:1fr} }
-    .card{
-      border:1px solid var(--line);
-      border-radius:14px;
-      background:rgba(18,25,38,.78);
-      backdrop-filter: blur(10px);
-      padding:14px;
+    h1 {
+      margin-top: 0;
+      text-align: center;
     }
-    .toolbar{
-      display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
-      margin-bottom:10px
+    button {
+      cursor: pointer;
+      border: none;
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: 700;
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      margin-top: 1rem;
     }
-    .leftTools,.rightTools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-    label{font-size:12px;color:var(--muted)}
-    select, button{
-      border:1px solid var(--line);
-      background:#0e1522;
-      color:var(--text);
-      padding:10px 12px;
-      border-radius:12px;
-      font-size:13px;
-      cursor:pointer;
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
-    button.primary{border-color:rgba(255,149,0,.55); background:rgba(255,149,0,.12)}
-    button:active{transform: translateY(1px)}
-    .stats{display:grid;grid-template-columns: repeat(4,1fr); gap:10px; margin-top:10px}
-    @media (max-width: 520px){ .stats{grid-template-columns: repeat(2,1fr);} }
-    .pill{
-      border:1px solid var(--line);
-      background:#0d1421;
-      border-radius:12px;
-      padding:10px;
-      min-height:52px;
+    textarea {
+      width: 100%;
+      resize: vertical;
+      min-height: 120px;
+      font-size: 1rem;
+      padding: 0.6rem;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: var(--text);
     }
-    .pill .k{font-size:12px;color:var(--muted)}
-    .pill .v{font-size:16px;margin-top:4px}
-    textarea{
-      width:100%;
-      min-height:340px;
-      resize:vertical;
-      padding:14px;
-      border-radius:14px;
-      border:1px solid var(--line);
-      outline:none;
-      background:#0b1220;
-      color:var(--text);
-      font-size:15px;
-      line-height:1.45;
+    .timer {
+      font-size: 1.2rem;
+      text-align: center;
+      margin-bottom: 1rem;
     }
-    textarea:focus{border-color:rgba(255,149,0,.55); box-shadow:0 0 0 3px rgba(255,149,0,.08)}
-    .sectionTitle{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px 0}
-    .sectionTitle h2{font-size:14px;margin:0}
-    .muted{color:var(--muted);font-size:12px}
-    .list{display:flex;flex-direction:column;gap:10px}
-    .item{
-      border:1px solid var(--line);
-      background:#0d1421;
-      border-radius:12px;
-      padding:10px;
+    .streak {
+      text-align: center;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
     }
-    .badge{
-      display:inline-flex;align-items:center;gap:6px;
-      padding:5px 9px;border-radius:999px;border:1px solid var(--line);
-      font-size:12px;color:var(--muted);background:#0b1220;
-      margin-right:6px;margin-bottom:6px;
+    .feedback {
+      margin-top: 1rem;
+      padding: 0.8rem;
+      border-radius: 6px;
+      font-weight: 600;
     }
-    .badge.ok{border-color:rgba(52,199,89,.35); color:#b7f7c7}
-    .badge.warn{border-color:rgba(255,214,10,.35); color:#fff1a8}
-    .badge.bad{border-color:rgba(255,69,58,.35); color:#ffb3ad}
-    .chips{display:flex;flex-wrap:wrap;gap:8px}
-    .chip{
-      border:1px solid var(--line);
-      background:#0b1220;
-      color:var(--text);
-      border-radius:999px;
-      padding:7px 10px;
-      font-size:12px;
-      cursor:pointer;
-      user-select:none;
+    .feedback.right {
+      background: var(--right);
+      color: #0f172a;
     }
-    .chip:hover{border-color:rgba(255,149,0,.55)}
-    .toast{
-      position:fixed;left:50%;bottom:20px;transform:translateX(-50%);
-      background:rgba(18,25,38,.95);
-      border:1px solid var(--line);
-      color:var(--text);
-      padding:10px 12px;
-      border-radius:12px;
-      font-size:13px;
-      opacity:0; pointer-events:none;
-      transition:opacity .18s ease;
+    .feedback.wrong {
+      background: var(--wrong);
+      color: #0f172a;
     }
-    .toast.show{opacity:1}
-    .smallBtn{padding:8px 10px;font-size:12px}
-    .hr{height:1px;background:var(--line);margin:10px 0}
+    ol li {
+      margin-bottom: 0.5rem;
+    }
+    details {
+      margin-top: 1.5rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    summary {
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="title">
-        <h1>CELPIP Writing Practice (Simple)</h1>
-        <div class="sub">Write → check structure → copy prompt → paste into ChatGPT for CLB feedback.</div>
-      </div>
-      <div class="rightTools">
-        <button class="smallBtn" id="btnReset">Clear</button>
-        <button class="smallBtn" id="btnSave">Save draft</button>
-        <button class="smallBtn" id="btnLoad">Load</button>
-      </div>
-    </header>
+  <div class="card">
+    <h1>CELPIP Speed-Study</h1>
 
-    <div class="row">
-      <!-- LEFT -->
-      <div class="card">
-        <div class="toolbar">
-          <div class="leftTools">
-            <div>
-              <label for="task">Task</label><br/>
-              <select id="task">
-                <option value="task1">Task 1 (Email)</option>
-                <option value="task2">Task 2 (Survey / Opinion)</option>
-              </select>
-            </div>
-            <div>
-              <label for="mode">Mode</label><br/>
-              <select id="mode">
-                <option value="easy">Easy (more hints)</option>
-                <option value="hard">Hard (test-like)</option>
-              </select>
-            </div>
-            <div>
-              <label for="target">Target</label><br/>
-              <select id="target">
-                <option value="clb7">CLB 7</option>
-                <option value="clb9" selected>CLB 9</option>
-                <option value="clb10">CLB 10+</option>
-              </select>
-            </div>
-          </div>
+    <div class="streak">Streak: <span id="streak">0</span> | Best: <span id="best">0</span></div>
+    <div class="timer" id="timer">Press Start</div>
 
-          <div class="rightTools">
-            <button id="btnTemplate">Show template</button>
-            <button id="btnQuickFix">Quick suggestions</button>
-            <button class="primary" id="btnCopyPrompt">Copy “Check with ChatGPT” prompt</button>
-            <button class="primary" id="btnOpenChatGPT">Open ChatGPT</button>
-          </div>
-        </div>
-
-        <textarea id="text" placeholder="Write your response here…"></textarea>
-
-        <div class="stats">
-          <div class="pill"><div class="k">Words</div><div class="v" id="words">0</div></div>
-          <div class="pill"><div class="k">Sentences</div><div class="v" id="sentences">0</div></div>
-          <div class="pill"><div class="k">Paragraphs</div><div class="v" id="paras">0</div></div>
-          <div class="pill"><div class="k">Connectors used</div><div class="v" id="connectors">0</div></div>
-        </div>
-
-        <div class="hr"></div>
-
-        <div class="sectionTitle">
-          <h2>Structure Check</h2>
-          <div class="muted" id="hintLine"></div>
-        </div>
-        <div class="chips" id="checks"></div>
-      </div>
-
-      <!-- RIGHT -->
-      <div class="card">
-        <div class="sectionTitle">
-          <h2>Tools (offline + simple)</h2>
-          <div class="muted">Click chips to insert.</div>
-        </div>
-
-        <div class="item">
-          <div class="muted">High-value connectors (helps coherence)</div>
-          <div class="chips" id="connectorChips"></div>
-        </div>
-
-        <div class="item">
-          <div class="muted">Upgraded vocabulary (swap simple words)</div>
-          <div class="chips" id="vocabChips"></div>
-        </div>
-
-        <div class="item">
-          <div class="muted">Top repeated words (aim to reduce)</div>
-          <div class="chips" id="repeatChips"></div>
-        </div>
-
-        <div class="item">
-          <div class="muted">Template / Feedback</div>
-          <div class="list">
-            <div id="templateBox" class="muted">Click “Show template”.</div>
-            <div id="suggestionsBox" class="muted">Click “Quick suggestions”.</div>
-          </div>
-        </div>
-
-        <div class="item">
-          <div class="muted">How the “Check with ChatGPT” button works</div>
-          <div class="muted">
-            It copies a prompt + your writing to your clipboard. Then you open ChatGPT and paste it.
-            (No API keys, no complicated setup.)
-          </div>
-        </div>
-      </div>
+    <div id="writing" hidden>
+      <h2>Writing Challenge</h2>
+      <p id="writingPrompt"></p>
+      <textarea id="writingBox" placeholder="Type a quick outline (≥40 words)…"></textarea>
+      <button id="writingSubmit">Submit</button>
+      <div id="writingFeedback" class="feedback" hidden></div>
     </div>
+
+    <div id="reading" hidden>
+      <h2>Reading Challenge</h2>
+      <p id="passage"></p>
+      <ol type="A" id="choices"></ol>
+      <button id="nextReading">Next</button>
+      <div id="readingFeedback" class="feedback" hidden></div>
+    </div>
+
+    <button id="startBtn">Start Game</button>
+
+    <details>
+      <summary>How to use & Tips</summary>
+      <ul>
+        <li>Each round = 1 writing task + 1 reading task.</li>
+        <li>Writing timer 30 s: aim for ≥40 words; clarity score turns green ≥60.</li>
+        <li>Reading timer 90 s per question; pick the best option.</li>
+        <li>Streak increases only when both tasks in a round are passed.</li>
+        <li>All data stays in your browser; export via console → localStorage.</li>
+      </ul>
+    </details>
   </div>
 
-  <div class="toast" id="toast"></div>
-
   <script>
-    const el = (id) => document.getElementById(id);
-
-    const text = el("text");
-    const wordsEl = el("words");
-    const sentencesEl = el("sentences");
-    const parasEl = el("paras");
-    const connectorsEl = el("connectors");
-    const checksEl = el("checks");
-    const templateBox = el("templateBox");
-    const suggestionsBox = el("suggestionsBox");
-    const hintLine = el("hintLine");
-
-    const taskSel = el("task");
-    const modeSel = el("mode");
-    const targetSel = el("target");
-
-    const connectorChips = el("connectorChips");
-    const vocabChips = el("vocabChips");
-    const repeatChips = el("repeatChips");
-
-    const toast = el("toast");
-
-    const CONNECTORS = [
-      "However,", "Therefore,", "Moreover,", "In addition,", "For example,",
-      "On the other hand,", "As a result,", "From my perspective,",
-      "To be specific,", "That said,", "In conclusion,"
+    /* ===== DATA ===== */
+    const writingPrompts = [
+      "Write an email to your neighbour asking to water your plants for a week while you are away.",
+      "A survey asks: 'Should the city build a new skate park?' Give your opinion and reasons.",
+      "You left your bag on the bus. Write a letter to the transit company describing the bag and what to do if found.",
+      "Your friend is moving to Canada. Write an email giving two pieces of advice for settling in.",
+      "The library wants to cancel weekend story-time. Write an email explaining why it should continue."
     ];
 
-    // Simple offline “upgrade” swaps (not perfect — just helpful)
-    const VOCAB_UPGRADES = [
-      ["good", "beneficial"],
-      ["bad", "unfavorable"],
-      ["big", "significant"],
-      ["small", "minor"],
-      ["help", "assist"],
-      ["need", "require"],
-      ["think", "believe"],
-      ["important", "essential"],
-      ["problem", "issue"],
-      ["fix", "resolve"],
-      ["get", "obtain"],
-      ["use", "utilize"]
+    const readingSets = [
+      {
+        passage: `Many Canadian cities now offer "green bins" for organic waste. These bins accept food scraps, paper towels, and garden trimmings. The material is turned into compost, which is sold to farmers and gardeners. This program reduces landfill use and cuts greenhouse gases.`,
+        question: "What is the main purpose of the green-bin program?",
+        choices: [
+          "To produce cheap compost for farmers",
+          "To decrease landfill waste and emissions",
+          "To collect garden trimmings only",
+          "To replace garbage trucks"
+        ],
+        answer: 1
+      },
+      {
+        passage: `Employers in Canada often look for "soft skills" such as teamwork, communication, and problem-solving. Technical knowledge is important, but the ability to work well with others can decide who gets promoted. Job seekers should give examples of these skills in interviews.`,
+        question: "According to the passage, which factor most influences promotions?",
+        choices: [
+          "University degrees",
+          "Years of experience",
+          "Soft skills",
+          "Technical certificates"
+        ],
+        answer: 2
+      },
+      {
+        passage: `Community gardens are shared spaces where people grow vegetables and flowers. Plots are rented for a small fee, and tools are provided. These gardens increase access to fresh food and create friendships among neighbours. Some cities even offer beginner workshops each spring.`,
+        question: "Which statement is true about community gardens?",
+        choices: [
+          "They are free for all residents",
+          "They include training sessions",
+          "They sell vegetables to supermarkets",
+          "They are run by the federal government"
+        ],
+        answer: 1
+      }
     ];
 
-    function showToast(msg){
-      toast.textContent = msg;
-      toast.classList.add("show");
-      setTimeout(()=>toast.classList.remove("show"), 1400);
-    }
+    /* ===== STATE ===== */
+    let streak = 0;
+    let best = +(localStorage.getItem("celpip-best") || 0);
+    let timer = null;
+    let seconds = 0;
+    let currentWriting = "";
+    let currentReading = null;
+    let roundPassed = false;
 
-    function insertAtCursor(str){
-      const start = text.selectionStart;
-      const end = text.selectionEnd;
-      const before = text.value.slice(0, start);
-      const after = text.value.slice(end);
-      text.value = before + str + after;
-      const pos = start + str.length;
-      text.setSelectionRange(pos, pos);
-      text.focus();
-      updateAll();
-    }
+    /* ===== DOM ===== */
+    const els = {
+      streak: document.getElementById("streak"),
+      best: document.getElementById("best"),
+      timer: document.getElementById("timer"),
+      startBtn: document.getElementById("startBtn"),
+      writing: document.getElementById("writing"),
+      writingPrompt: document.getElementById("writingPrompt"),
+      writingBox: document.getElementById("writingBox"),
+      writingSubmit: document.getElementById("writingSubmit"),
+      writingFeedback: document.getElementById("writingFeedback"),
+      reading: document.getElementById("reading"),
+      passage: document.getElementById("passage"),
+      choices: document.getElementById("choices"),
+      nextReading: document.getElementById("nextReading"),
+      readingFeedback: document.getElementById("readingFeedback")
+    };
+    els.best.textContent = best;
 
-    function countWords(s){
-      const w = s.trim().match(/\b[\w’'-]+\b/g);
-      return w ? w.length : 0;
-    }
-    function countSentences(s){
-      const m = s.trim().match(/[^.!?]+[.!?]+/g);
-      if (!s.trim()) return 0;
-      return m ? m.length : Math.max(1, s.split(/\n+/).filter(Boolean).length); // fallback
-    }
-    function countParagraphs(s){
-      const paras = s.trim().split(/\n\s*\n/).filter(p => p.trim().length);
-      return s.trim().length ? paras.length : 0;
-    }
-
-    function connectorCount(s){
-      const lower = s.toLowerCase();
-      let c = 0;
-      for (const w of CONNECTORS){
-        const token = w.toLowerCase().replace(",", "");
-        if (lower.includes(token)) c++;
+    /* ===== UTILS ===== */
+    function shuffle(a) {
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
       }
-      return c;
+      return a;
+    }
+    function readability(text) {
+      // Simple Flesch Reading Ease-ish (scaled 0-100)
+      const words = text.trim().split(/\s+/).length || 1;
+      const sentences = text.split(/[.!?]+/).filter(Boolean).length || 1;
+      const syllables = text.replace(/[^a-zA-Z]/g, "")
+        .split("")
+        .filter(c => /[aeiouAEIOU]/.test(c)).length;
+      const score = Math.max(
+        0,
+        Math.min(
+          100,
+          206.835 - 1.015 * (words / sentences) - 84.6 * (syllables / words)
+        )
+      );
+      return Math.round(score);
     }
 
-    function buildChecks(){
-      const s = text.value;
-      const wc = countWords(s);
-      const sc = countSentences(s);
-      const pc = countParagraphs(s);
-      const cc = connectorCount(s);
-
-      wordsEl.textContent = wc;
-      sentencesEl.textContent = sc;
-      parasEl.textContent = pc;
-      connectorsEl.textContent = cc;
-
-      const mode = modeSel.value;
-      const task = taskSel.value;
-
-      // Suggested min words (practical targets)
-      const minWords = (task === "task1") ? 150 : 200;
-      const targetWords = (task === "task1") ? 180 : 240;
-
-      hintLine.textContent = (mode === "easy")
-        ? `Aim: ${minWords}+ words (sweet spot ~${targetWords}), 2+ paragraphs, clear purpose + details.`
-        : `Test mode: write naturally; check word count + clarity.`;
-
-      const checks = [];
-
-      // Word count
-      if (wc >= minWords) checks.push(["ok", `Word count ✅ (${wc})`]);
-      else if (wc >= Math.floor(minWords * 0.75)) checks.push(["warn", `Word count nearly there (${wc}/${minWords})`]);
-      else checks.push(["bad", `Word count low (${wc}/${minWords})`]);
-
-      // Paragraphs
-      if (pc >= 2) checks.push(["ok", `Paragraphs ✅ (${pc})`]);
-      else checks.push(["warn", `Add paragraphs (aim 2+)`]);
-
-      // Connectors
-      if (cc >= 3) checks.push(["ok", `Connectors ✅ (${cc})`]);
-      else if (cc >= 1) checks.push(["warn", `Add 2–3 connectors`]);
-      else checks.push(["warn", `Add connectors (However, Therefore, etc.)`]);
-
-      // Task-specific
-      if (task === "task1"){
-        // email basics
-        const hasGreeting = /dear|hello|hi\s/i.test(s);
-        const hasClosing = /sincerely|best regards|thank you|kind regards/i.test(s);
-        checks.push([hasGreeting ? "ok":"warn", hasGreeting ? "Greeting ✅" : "Add greeting (Dear…, Hello…)" ]);
-        checks.push([hasClosing ? "ok":"warn", hasClosing ? "Closing ✅" : "Add closing (Thank you…, Sincerely…)" ]);
-      } else {
-        // opinion / survey basics
-        const hasOpinion = /i believe|in my opinion|from my perspective|i think/i.test(s.toLowerCase());
-        const hasExample = /for example|for instance|such as/i.test(s.toLowerCase());
-        checks.push([hasOpinion ? "ok":"warn", hasOpinion ? "Opinion stated ✅" : "State your opinion clearly"]);
-        checks.push([hasExample ? "ok":"warn", hasExample ? "Example/details ✅" : "Add 1 example/detail"]);
-      }
-
-      // Basic “readability” hint
-      const avgSentLen = sc ? (wc / sc) : 0;
-      if (avgSentLen > 26) checks.push(["warn", `Sentences a bit long (avg ~${avgSentLen.toFixed(1)} words). Split 1–2.`]);
-      else checks.push(["ok", `Sentence length ✅ (avg ~${avgSentLen.toFixed(1)})`]);
-
-      checksEl.innerHTML = "";
-      for (const [kind, label] of checks){
-        const span = document.createElement("span");
-        span.className = `badge ${kind}`;
-        span.textContent = label;
-        checksEl.appendChild(span);
-      }
+    /* ===== TIMING ===== */
+    function runTimer(limit, onTick, onEnd) {
+      clearInterval(timer);
+      seconds = limit;
+      onTick(seconds);
+      timer = setInterval(() => {
+        seconds--;
+        onTick(seconds);
+        if (seconds <= 0) {
+          clearInterval(timer);
+          onEnd();
+        }
+      }, 1000);
     }
 
-    function buildConnectorChips(){
-      connectorChips.innerHTML = "";
-      for (const c of CONNECTORS){
-        const chip = document.createElement("div");
-        chip.className = "chip";
-        chip.textContent = c;
-        chip.onclick = ()=>insertAtCursor((text.value && !text.value.endsWith(" ") ? " " : "") + c + " ");
-        connectorChips.appendChild(chip);
-      }
+    /* ===== WRITING ROUND ===== */
+    function startWriting() {
+      roundPassed = false;
+      currentWriting = shuffle([...writingPrompts])[0];
+      els.writingPrompt.textContent = currentWriting;
+      els.writingBox.value = "";
+      els.writingFeedback.hidden = true;
+      els.writingSubmit.disabled = false;
+      els.reading.hidden = true;
+      els.writing.hidden = false;
+
+      runTimer(
+        30,
+        (s) => (els.timer.textContent = `Writing time: ${s}s`),
+        () => {
+          els.writingSubmit.disabled = true;
+          if (!els.writingBox.value.trim()) {
+            els.writingFeedback.textContent = "Time up! No text entered.";
+            els.writingFeedback.className = "feedback wrong";
+            els.writingFeedback.hidden = false;
+            setTimeout(startReading, 1500);
+          }
+        }
+      );
     }
 
-    function buildVocabChips(){
-      vocabChips.innerHTML = "";
-      for (const [plain, upgraded] of VOCAB_UPGRADES){
-        const chip = document.createElement("div");
-        chip.className = "chip";
-        chip.textContent = `${plain} → ${upgraded}`;
-        chip.onclick = ()=>insertAtCursor(`${upgraded}`);
-        vocabChips.appendChild(chip);
-      }
-    }
-
-    function buildRepeats(){
-      const s = text.value.toLowerCase();
-      const words = (s.match(/\b[a-z’'-]+\b/g) || [])
-        .filter(w => w.length > 3 && !["this","that","with","have","from","they","them","there","your","would","will","about","because"].includes(w));
-      const freq = new Map();
-      for (const w of words) freq.set(w, (freq.get(w)||0)+1);
-
-      const top = [...freq.entries()]
-        .sort((a,b)=>b[1]-a[1])
-        .slice(0, 10)
-        .filter(([,n])=>n>=3);
-
-      repeatChips.innerHTML = "";
-      if (!top.length){
-        const span = document.createElement("span");
-        span.className = "muted";
-        span.textContent = "No heavy repeats (nice).";
-        repeatChips.appendChild(span);
+    els.writingSubmit.onclick = () => {
+      clearInterval(timer);
+      const text = els.writingBox.value.trim();
+      if (text.split(/\s+/).length < 20) {
+        els.writingFeedback.textContent =
+          "Too short! Aim for at least 40 words.";
+        els.writingFeedback.className = "feedback wrong";
+        els.writingFeedback.hidden = false;
+        setTimeout(startReading, 1500);
         return;
       }
-      for (const [w,n] of top){
-        const chip = document.createElement("div");
-        chip.className = "chip";
-        chip.textContent = `${w} ×${n}`;
-        chip.onclick = ()=>insertAtCursor(`(${w})`);
-        repeatChips.appendChild(chip);
-      }
-    }
-
-    function showTemplate(){
-      const task = taskSel.value;
-      const mode = modeSel.value;
-
-      if (task === "task1"){
-        templateBox.innerHTML =
-`<b>Task 1 (Email) template</b><br><br>
-<b>Greeting</b><br>
-Dear [Name],<br><br>
-<b>Purpose</b><br>
-I’m writing to [reason].<br><br>
-<b>Details</b><br>
-• First detail (time/place).<br>
-• Second detail (what you need).<br>
-• Optional: short explanation / impact.<br><br>
-<b>Request / Next step</b><br>
-Could you please [request]?<br><br>
-<b>Closing</b><br>
-Thank you for your time.<br>
-Sincerely,<br>
-[Your Name]`;
-      } else {
-        templateBox.innerHTML =
-`<b>Task 2 (Survey/Opinion) template</b><br><br>
-<b>Position</b><br>
-From my perspective, I believe [your opinion].<br><br>
-<b>Reason 1 + example</b><br>
-First, [reason]. For example, [specific example].<br><br>
-<b>Reason 2 + example</b><br>
-Moreover, [reason]. For instance, [detail].<br><br>
-<b>Wrap-up</b><br>
-Therefore, I recommend [recommendation].`;
-      }
-
-      if (mode === "easy"){
-        templateBox.innerHTML += `<br><br><span class="muted">Easy tip: keep it 2–3 paragraphs, add 2–4 connectors, and include 1 concrete example.</span>`;
-      } else {
-        templateBox.innerHTML += `<br><br><span class="muted">Hard mode: don’t overthink—focus on clarity + specific details.</span>`;
-      }
-    }
-
-    function quickSuggestions(){
-      const s = text.value.trim();
-      if (!s){
-        suggestionsBox.textContent = "Write something first 🙂";
-        return;
-      }
-
-      const task = taskSel.value;
-      const target = targetSel.value;
-
-      const tips = [];
-      const wc = countWords(s);
-
-      if (task === "task1"){
-        tips.push("✅ Email checklist: greeting + purpose + details + request + closing.");
-        tips.push("Add 1–2 specifics (date/time/location) to sound real.");
-      } else {
-        tips.push("✅ Opinion checklist: clear opinion + 2 reasons + 1 example + conclusion.");
-        tips.push("Make your examples concrete (numbers, place, situation).");
-      }
-
-      if (target === "clb9"){
-        tips.push("CLB 9 vibe: clear structure + good connectors + varied vocabulary (but still natural).");
-      } else if (target === "clb10"){
-        tips.push("CLB 10+ vibe: very clear logic + precise wording + almost no grammar mistakes.");
-      } else {
-        tips.push("CLB 7 vibe: keep it simple, correct, and organized.");
-      }
-
-      if (wc < ((task==="task1")?150:200)) tips.push("Word count is low — add one more paragraph with details.");
-
-      // “Reading 5 fix” style: push clarity + paraphrase
-      tips.push("Before you finish: re-read once and fix 3 things: articles (a/the), verb tense, and punctuation.");
-
-      suggestionsBox.innerHTML = tips.map(t=>`• ${t}`).join("<br>");
-    }
-
-    function buildChatGPTPrompt(){
-      const writing = text.value.trim();
-      const task = taskSel.value;
-      const target = targetSel.value;
-
-      const header =
-`You are an official CELPIP Writing examiner and tutor.
-
-Goal: estimate my CLB level and CELPIP level for this response, and help me improve.
-Target: ${target.toUpperCase()}.
-
-Please do ALL of the following:
-1) Give an estimated CLB + CELPIP level for EACH criterion:
-   - Task fulfillment / Content
-   - Coherence & organization
-   - Vocabulary range & precision
-   - Grammar accuracy & variety
-2) Give ONE overall estimated CELPIP level (1–12) and overall CLB.
-3) List my TOP 5 fixes (most important first).
-4) Give a stronger revised version (same meaning, natural English, not too fancy).
-5) Give 10 “upgrade phrases” I can reuse (connectors + polite phrases).
-
-Here is the task type: ${task === "task1" ? "CELPIP Task 1 (Email)" : "CELPIP Task 2 (Survey/Opinion)"}.
-
-My response:
-"""`;
-
-      const footer = `"""
-Be strict but fair. If something is unclear, tell me exactly where and how to fix it.`;
-
-      return header + "\n" + writing + "\n" + footer;
-    }
-
-    async function copyPrompt(){
-      const writing = text.value.trim();
-      if (!writing){
-        showToast("Write something first.");
-        return;
-      }
-      const prompt = buildChatGPTPrompt();
-      try{
-        await navigator.clipboard.writeText(prompt);
-        showToast("Copied. Paste into ChatGPT.");
-      } catch(e){
-        // fallback
-        const ta = document.createElement("textarea");
-        ta.value = prompt;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-        showToast("Copied (fallback). Paste into ChatGPT.");
-      }
-    }
-
-    function updateAll(){
-      buildChecks();
-      buildRepeats();
-    }
-
-    // Buttons
-    el("btnTemplate").onclick = ()=>{ showTemplate(); showToast("Template updated."); };
-    el("btnQuickFix").onclick = ()=>{ quickSuggestions(); showToast("Suggestions updated."); };
-    el("btnCopyPrompt").onclick = copyPrompt;
-    el("btnOpenChatGPT").onclick = ()=>{
-      window.open("https://chatgpt.com/", "_blank", "noopener,noreferrer");
-      showToast("ChatGPT opened. Paste the prompt.");
+      const score = readability(text);
+      const pass = score >= 60;
+      if (pass) roundPassed = true;
+      els.writingFeedback.textContent = `Clarity score: ${score}/100 ${
+        pass ? "✓ Pass" : "✗ Try shorter sentences"
+      }`;
+      els.writingFeedback.className = pass ? "feedback right" : "feedback wrong";
+      els.writingFeedback.hidden = false;
+      setTimeout(startReading, 1500);
     };
 
-    el("btnReset").onclick = ()=>{
-      text.value = "";
-      templateBox.textContent = "Click “Show template”.";
-      suggestionsBox.textContent = "Click “Quick suggestions”.";
-      updateAll();
-      showToast("Cleared.");
-    };
+    /* ===== READING ROUND ===== */
+    function startReading() {
+      els.writing.hidden = true;
+      els.reading.hidden = false;
+      els.readingFeedback.hidden = true;
+      currentReading = shuffle([...readingSets])[0];
 
-    el("btnSave").onclick = ()=>{
-      localStorage.setItem("celpip_draft_v1", text.value);
-      showToast("Saved.");
-    };
-    el("btnLoad").onclick = ()=>{
-      const v = localStorage.getItem("celpip_draft_v1") || "";
-      text.value = v;
-      updateAll();
-      showToast("Loaded.");
-    };
+      els.passage.textContent = currentReading.passage;
+      els.choices.innerHTML = "";
+      currentReading.choices.forEach((c, i) => {
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.textContent = c;
+        btn.onclick = () => checkReading(i);
+        li.appendChild(btn);
+        els.choices.appendChild(li);
+      });
 
-    // Live updates
-    text.addEventListener("input", updateAll);
-    taskSel.addEventListener("change", ()=>{ showTemplate(); updateAll(); });
-    modeSel.addEventListener("change", ()=>{ showTemplate(); updateAll(); });
-    targetSel.addEventListener("change", updateAll);
+      runTimer(
+        90,
+        (s) => (els.timer.textContent = `Reading time: ${s}s`),
+        () => {
+          els.readingFeedback.textContent = "Time up!";
+          els.readingFeedback.className = "feedback wrong";
+          els.readingFeedback.hidden = false;
+          disableChoices();
+          setTimeout(endRound, 1500);
+        }
+      );
+    }
 
-    // Build chips
-    buildConnectorChips();
-    buildVocabChips();
-    showTemplate();
-    updateAll();
+    function checkReading(idx) {
+      clearInterval(timer);
+      disableChoices();
+      const correct = idx === currentReading.answer;
+      if (!correct) roundPassed = false;
+      els.readingFeedback.textContent = correct
+        ? "Correct!"
+        : `Wrong! Answer: ${["A", "B", "C", "D"][currentReading.answer]}`;
+      els.readingFeedback.className = correct ? "feedback right" : "feedback wrong";
+      els.readingFeedback.hidden = false;
+      setTimeout(endRound, 1500);
+    }
+
+    function disableChoices() {
+      [...els.choices.querySelectorAll("button")].forEach((b) => (b.disabled = true));
+    }
+
+    /* ===== ROUND END ===== */
+    function endRound() {
+      if (roundPassed) {
+        streak++;
+        if (streak > best) {
+          best = streak;
+          localStorage.setItem("celpip-best", best);
+          els.best.textContent = best;
+        }
+      } else {
+        streak = 0;
+      }
+      els.streak.textContent = streak;
+      els.startBtn.textContent = "Next Round";
+      els.startBtn.hidden = false;
+      els.timer.textContent = "Round over";
+      els.reading.hidden = true;
+    }
+
+    /* ===== START ===== */
+    els.startBtn.onclick = () => {
+      els.startBtn.hidden = true;
+      startWriting();
+    };
   </script>
 </body>
 </html>
