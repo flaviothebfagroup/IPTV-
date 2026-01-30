@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>BFA Support</title>
 
-<!-- Optional: helps some networks resolve faster -->
 <link rel="preconnect" href="https://js-na3.hs-scripts.com" crossorigin>
 <link rel="preconnect" href="https://js.hs-scripts.com" crossorigin>
 <link rel="preconnect" href="https://js.hs-analytics.net" crossorigin>
@@ -73,14 +72,20 @@
     backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
     -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
   }
-  .toprow{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px}
+  .toprow{
+    max-width:1100px;margin:0 auto;
+    display:flex;align-items:center;gap:10px;
+  }
   .brand{display:flex;align-items:center;gap:10px;min-width:0}
   .logo{
     width:32px;height:32px;border-radius:9px;border:1px solid var(--border);
     background:#fff center/cover no-repeat;
     flex:0 0 auto;
   }
-  .logotxt{font-weight:950;letter-spacing:.2px;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .logotxt{
+    font-weight:950;letter-spacing:.2px;font-size:18px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
   .actions{margin-left:auto;display:flex;gap:8px;align-items:center}
 
   .chip{
@@ -94,6 +99,21 @@
   .chip:hover{border-color:var(--accent);transform:translateY(-1px);filter:brightness(1.03)}
   .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
   .ic{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none}
+
+  /* Mobile hamburger */
+  #hamburger{
+    display:none;
+    height:40px;min-width:40px;padding:0 10px;
+    border-radius:9999px;border:1.5px solid var(--borderStrong);
+    background:var(--tile); color:var(--accent);
+    align-items:center;justify-content:center; cursor:pointer;
+  }
+  #hamburger .ic{width:20px;height:20px;stroke:var(--accent);stroke-width:2.4}
+
+  @media (max-width:760px){
+    .actions{display:none;}
+    #hamburger{display:inline-flex;}
+  }
 
   /* Card */
   .wrap{max-width:1100px;margin:0 auto;padding:18px}
@@ -127,11 +147,7 @@
   }
   .badgeDot{width:10px;height:10px;border-radius:99px;background:#22c55e;display:inline-block}
 
-  .card-body{
-    position:relative;
-    padding:0;
-    background:transparent;
-  }
+  .card-body{position:relative;padding:0;background:transparent;}
 
   /* Desktop inline embed mount */
   #hsMount{
@@ -140,8 +156,6 @@
     min-height:560px;
     max-height:860px;
   }
-
-  /* Force HubSpot inline containers to fill */
   #hubspot-conversations-inline-parent{
     width:100% !important;
     height:100% !important;
@@ -156,11 +170,8 @@
     background:transparent !important;
   }
 
-  /* Mobile CTA (instead of blank embed area) */
-  .mobileCta{
-    display:none;
-    padding:22px 16px 18px;
-  }
+  /* Mobile CTA */
+  .mobileCta{display:none;padding:22px 16px 18px;}
   .ctaBox{
     max-width:520px;margin:0 auto;
     background:var(--tile);
@@ -181,6 +192,14 @@
   body.dark .ctaBtn{background:#111;color:#fff}
   .ctaBtn.primary{border-color:var(--accent);color:var(--accent);background:transparent}
 
+  @media (max-width:760px){
+    .wrap{padding:14px}
+    .h1{font-size:22px}
+    #hsMount{display:none}
+    .mobileCta{display:block}
+  }
+
+  /* Toast */
   .toast{
     position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
     background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:1000;
@@ -192,22 +211,50 @@
   .toast.show{opacity:1}
   .toast.err{background:#ff453a;color:#fff}
 
-  @media (max-width:760px){
-    .wrap{padding:14px}
-    .h1{font-size:22px}
-
-    /* On mobile: hide inline embed area, show CTA */
-    #hsMount{display:none}
-    .mobileCta{display:block}
+  /* ===========================
+     MOBILE SHEET (hamburger menu)
+  =========================== */
+  #sheet{
+    position:fixed; inset:0; z-index:9999; display:none;
   }
+  #sheet.open{display:block}
+  #sheet .back{
+    position:absolute; inset:0;
+    background:rgba(0,0,0,.42);
+    backdrop-filter:blur(2px);
+    -webkit-backdrop-filter:blur(2px);
+  }
+  #sheet .panel{
+    position:absolute; right:0; top:0; height:100%; width:min(86vw,360px);
+    background:rgba(255,255,255,.92);
+    border-left:1px solid rgba(15,23,42,.18);
+    box-shadow:var(--shadow);
+    padding:16px; display:flex; flex-direction:column; gap:14px;
+    backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    transform:translateX(100%); transition:transform .22s ease-out;
+    will-change:transform;
+  }
+  body.dark #sheet .panel{
+    background:rgba(21,21,23,.92);
+    border-left:1px solid rgba(255,255,255,.20);
+  }
+  #sheet.open .panel{ transform:translateX(0); }
+  .sheetTitle{font-weight:1000;font-size:16px;margin:2px 0 0}
+  .sheetSub{color:var(--muted);font-size:12px;margin:0}
+  .sheetBtns{display:grid;gap:10px;margin-top:8px}
+  .sheetBtns .chip{width:100%;justify-content:center;height:44px}
+  .sheetCloseRow{display:flex;justify-content:space-between;align-items:center}
+  .xbtn{
+    height:38px;min-width:38px;border-radius:999px;border:1.5px solid var(--borderStrong);
+    background:var(--tile);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  }
+  .xbtn .ic{width:18px;height:18px;stroke-width:2.4}
 
   a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
 
 <script>
-  // =====================
-  // HubSpot config (must be set BEFORE loading the script)
-  // =====================
   const HS_PORTAL_ID = "342895404";
   const HS_HUBLET = "na3";
 
@@ -215,12 +262,9 @@
     (window.matchMedia && matchMedia("(max-width:760px)").matches) ||
     /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-  window.hsConversationsSettings = {
-    loadImmediately: false
-  };
-
-  if (!isMobile()) {
-    // IMPORTANT: set this before loading the script so inline embed works reliably
+  // Set BEFORE loading HubSpot
+  window.hsConversationsSettings = { loadImmediately:false };
+  if (!isMobile()){
     window.hsConversationsSettings.inlineEmbedSelector = "#hsMount";
   }
 
@@ -255,7 +299,6 @@
       return true;
     }catch(e){ return false; }
   }
-
   function retryChat(){
     if (!hsReady()) return false;
     try{
@@ -264,7 +307,6 @@
       return true;
     }catch(e){ return false; }
   }
-
   function newChat(){
     if (!hsReady()) return false;
     try{
@@ -274,7 +316,6 @@
     }catch(e){ return false; }
   }
 
-  // Load script with fallback (some blockers hit one domain but not the other)
   function loadScriptWithFallback(urls){
     return new Promise((resolve,reject)=>{
       let i = 0;
@@ -293,7 +334,6 @@
   }
 
   async function bootHubSpot(){
-    // Note: HubSpot loader and chat can involve multiple domains (tracking + chat).
     const urls = [
       `https://js-${HS_HUBLET}.hs-scripts.com/${HS_PORTAL_ID}.js`,
       `https://js.hs-scripts.com/${HS_PORTAL_ID}.js`
@@ -302,34 +342,36 @@
     try{
       await loadScriptWithFallback(urls);
 
-      // Wait for widget to exist
       const start = Date.now();
       while (!hsReady() && Date.now() - start < 12000){
         await new Promise(r=>setTimeout(r, 200));
       }
       if (!hsReady()){
-        toast("HubSpot loaded, but chat widget didn’t initialize.", true);
+        toast("HubSpot loaded, but chat didn’t initialize.", true);
         return;
       }
 
-      // Open immediately (mobile will go full-screen overlay)
+      // Open immediately on mobile helps when there is no small-screen toggle
       openChat();
 
     }catch(e){
-      toast("HubSpot is blocked on this phone (Content Blocker / AdBlock DNS).", true);
-
-      // Helpful note inside the page (mobile)
+      toast("HubSpot blocked on this phone/network.", true);
       const note = document.getElementById("blockerNote");
       if (note){
         note.textContent =
-          "Looks like HubSpot is blocked on this device/network. Disable Safari content blockers or allowlist: js-na3.hs-scripts.com, js.hs-scripts.com, js.hs-analytics.net, api.usemessages.com";
+          "HubSpot is being blocked on this device/network. Try disabling Safari content blockers or allowlisting: js-na3.hs-scripts.com, js.hs-scripts.com, js.hs-analytics.net, api.usemessages.com";
       }
     }
   }
 
+  // Mobile sheet
+  function openSheet(){ document.getElementById("sheet").classList.add("open"); }
+  function closeSheet(){ document.getElementById("sheet").classList.remove("open"); }
+
   document.addEventListener("DOMContentLoaded", ()=>{
     initTheme();
 
+    // Desktop buttons
     document.getElementById("btnTheme").addEventListener("click", ()=>{
       const dark = document.body.classList.contains("dark");
       setTheme(dark ? "light" : "dark");
@@ -357,6 +399,20 @@
       });
     }
 
+    // Hamburger sheet
+    document.getElementById("hamburger").addEventListener("click", openSheet);
+    document.getElementById("sheetBack").addEventListener("click", closeSheet);
+    document.getElementById("sheetClose").addEventListener("click", closeSheet);
+
+    // Sheet buttons (same actions)
+    document.getElementById("sheetNew").addEventListener("click", ()=>{ closeSheet(); newChat() || toast("Chat not ready yet…", true); });
+    document.getElementById("sheetRetry").addEventListener("click", ()=>{ closeSheet(); retryChat() || toast("Chat not ready yet…", true); });
+    document.getElementById("sheetTheme").addEventListener("click", ()=>{
+      closeSheet();
+      const dark = document.body.classList.contains("dark");
+      setTheme(dark ? "light" : "dark");
+    });
+
     bootHubSpot();
 
     document.addEventListener("visibilitychange", ()=>{
@@ -374,6 +430,7 @@
         <div class="logotxt">BFA Support</div>
       </div>
 
+      <!-- Desktop actions -->
       <div class="actions">
         <button class="chip" id="btnNew" type="button">
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
@@ -388,6 +445,13 @@
           Theme
         </button>
       </div>
+
+      <!-- Mobile hamburger -->
+      <button id="hamburger" type="button" aria-label="Menu">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16"/>
+        </svg>
+      </button>
     </div>
   </div>
 
@@ -417,12 +481,12 @@
         <!-- Desktop inline embed -->
         <div id="hsMount"></div>
 
-        <!-- Mobile CTA (clean, centered, no “box-in-box”) -->
+        <!-- Mobile CTA -->
         <div class="mobileCta">
           <div class="ctaBox">
             <p class="ctaTitle">Open BFA Support Chat</p>
             <p class="ctaText" id="blockerNote">
-              If the chat doesn’t appear, tap Open chat. If it still fails, your phone/network is blocking HubSpot scripts.
+              If the chat doesn’t open, your phone/network might be blocking HubSpot.
             </p>
             <div class="ctaBtns">
               <button class="ctaBtn primary" id="btnOpenMobile" type="button">
@@ -437,6 +501,37 @@
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Sheet -->
+  <div id="sheet" aria-hidden="true">
+    <div class="back" id="sheetBack"></div>
+    <div class="panel" role="dialog" aria-label="Menu">
+      <div class="sheetCloseRow">
+        <div>
+          <div class="sheetTitle">BFA Support</div>
+          <p class="sheetSub">Quick actions</p>
+        </div>
+        <button class="xbtn" id="sheetClose" type="button" aria-label="Close menu">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+
+      <div class="sheetBtns">
+        <button class="chip" id="sheetNew" type="button">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          New chat
+        </button>
+        <button class="chip" id="sheetRetry" type="button">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+          Retry
+        </button>
+        <button class="chip accent" id="sheetTheme" type="button">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+          Theme
+        </button>
       </div>
     </div>
   </div>
