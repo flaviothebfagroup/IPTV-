@@ -35,7 +35,6 @@
     color:var(--fg);
   }
 
-  /* Deep layered gradient for 1920×1080 TV */
   body{
     background:
       radial-gradient(circle at -10% 0%, #fff1d9 0%, #ffcb83 18%, transparent 35%),
@@ -67,7 +66,6 @@
     border:1px solid rgba(255,255,255,.78);
   }
 
-  /* HEADER — more hierarchy */
   .shell-header{
     display:flex;
     align-items:center;
@@ -121,9 +119,7 @@
     background:#ff6a00;
   }
 
-  .brand-text{
-    min-width:0;
-  }
+  .brand-text{min-width:0;}
   .brand-title{
     font-size:22px;
     font-weight:800;
@@ -174,7 +170,6 @@
     gap:14px;
   }
 
-  /* HERO — big 16:9 with liquid glass */
   .hero-wrap{
     flex:1;
     min-height:0;
@@ -211,7 +206,7 @@
     position:relative;
     width:100%;
     height:0;
-    padding-top:56.25%; /* 16:9 */
+    padding-top:56.25%;
   }
   .hero-16x9 video{
     position:absolute;
@@ -240,9 +235,7 @@
     -webkit-backdrop-filter:blur(18px) saturate(180%);
   }
 
-  .hero-left{
-    max-width:70%;
-  }
+  .hero-left{max-width:70%;}
   .hero-kicker{
     font-size:10px;
     letter-spacing:.18em;
@@ -283,8 +276,6 @@
     box-shadow:0 0 8px rgba(34,197,94,.9);
   }
 
-  /* DOCK */
-
   .dock-shell{
     border-radius:var(--card-radius);
     background:radial-gradient(circle at 0% 0%,rgba(255,255,255,.95),rgba(248,244,239,.96));
@@ -304,15 +295,12 @@
     justify-content:space-between;
     align-items:center;
   }
-  .dock-title span:last-child{
-    font-weight:500;
-  }
+  .dock-title span:last-child{font-weight:500;}
 
   .dock{
     display:grid;
     grid-auto-rows:1fr;
     gap:9px;
-    /* For 1920×1080: 4–5 tiles in a row, all 16:9 */
     grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
   }
 
@@ -320,8 +308,7 @@
     position:relative;
     border-radius:18px;
     background:radial-gradient(circle at top,#020617,#020617);
-    box-shadow:
-      0 12px 28px rgba(15,23,42,.35);
+    box-shadow:0 12px 28px rgba(15,23,42,.35);
     border:1px solid rgba(15,23,42,.85);
     overflow:hidden;
     cursor:pointer;
@@ -338,7 +325,7 @@
     position:relative;
     width:100%;
     height:0;
-    padding-top:56.25%; /* 16:9 */
+    padding-top:56.25%;
   }
 
   .dock-item video{
@@ -377,12 +364,11 @@
   .dock-status{
     font-size:10px;
     color:#cbd5f5;
-    opacity:.9;
+    opacity:.95;
   }
   .dock-status.err{color:#fecaca;}
   .dock-status.idle{color:#9ca3af;}
 
-  /* ACTIVE DOCK TILE (hero selected) */
   .dock-item-active{
     transform:translateY(-4px) scale(1.04);
     border-color:rgba(255,149,0,.95);
@@ -433,6 +419,7 @@
   }
 </style>
 </head>
+
 <body>
 <div class="frame">
   <div class="shell">
@@ -455,7 +442,6 @@
     </header>
 
     <section class="layout">
-      <!-- HERO -->
       <div class="hero-wrap">
         <div class="hero-shell">
           <div class="hero-glow"></div>
@@ -476,7 +462,6 @@
         </div>
       </div>
 
-      <!-- DOCK -->
       <div class="dock-shell">
         <div class="dock-title">
           <span>Channel dock</span>
@@ -485,7 +470,7 @@
         <div id="dock" class="dock"></div>
       </div>
 
-      <div class="hint">If BrightSign looks choppy, try fewer channels or lower-bitrate streams — layout and design stay the same.</div>
+      <div class="hint">All dock tiles are live (heavy). If a stream freezes, it auto-restarts.</div>
     </section>
   </div>
 
@@ -494,49 +479,33 @@
 
 <script>
   // ===============================
-  // 1) SIMPLE CONFIG — EDIT ONLY THIS
+  // CONFIG (edit this only)
   // ===============================
   const CONFIG = {
-    ROTATE_SECONDS: 25, // hero auto-rotate delay
+    ROTATE_SECONDS: 25,
+
+    // Stability tuning for "many streams at once"
+    HERO_BUFFER_SEC: 14,
+    DOCK_BUFFER_SEC: 6,
+    WATCHDOG_INTERVAL_MS: 5000, // checks every 5s
+    WATCHDOG_STRIKES: 3,        // ~15s stuck -> restart
+    RESTART_BACKOFF_MS: 1200,
+
     channels: [
-      {
-        name: "Sport 1",
-        url: "https://amg02298-nuvyoo-amg02298c4-tablo-us-8942.playouts.now.amagi.tv/playlist.m3u8"
-      },
-      {
-        name: "Sport 2",
-        url: "https://amg01334-amg01334c2-tablo-us-7356.playouts.now.amagi.tv/playlist.m3u8"
-      },
-      {
-        name: "Sport 3",
-        url: "https://fl31.moveonjoy.com/CBS_SPORTS_NETWORK/index.m3u8"
-      },
-      {
-        name: "Sport 4",
-        url: "https://37b4c228.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/UmFrdXRlblRWLWZyX0ZJRkFQbHVzRnJlbmNoX0hMUw/playlist.m3u8"
-      },
-      {
-        name: "Sport 5",
-        url: "https://amg01416-amg01416c4-tablo-us-4553.playouts.now.amagi.tv/playlist.m3u8"
-      },
-            {
-      name: "Sport 6",
-        url: "https://dazn-combat-rakuten.amagi.tv/hls/amagi_hls_data_rakutenAA-dazn-combat-rakuten/CDN/master.m3u8"
-      },
-      {
-      name: "Sport 7",
-        url: "https://fl1.moveonjoy.com/SNY/index.m3u8"
-      },
-      // Add more if you like:
-      // { name:"Extra 1", url:"https://..." },
-      // { name:"Extra 2", url:"https://..." },
+      { name: "Sport 1", url: "https://amg02298-nuvyoo-amg02298c4-tablo-us-8942.playouts.now.amagi.tv/playlist.m3u8" },
+      { name: "Sport 2", url: "https://amg01334-amg01334c2-tablo-us-7356.playouts.now.amagi.tv/playlist.m3u8" },
+      { name: "Sport 3", url: "https://fl31.moveonjoy.com/CBS_SPORTS_NETWORK/index.m3u8" },
+      { name: "Sport 4", url: "https://37b4c228.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/UmFrdXRlblRWLWZyX0ZJRkFQbHVzRnJlbmNoX0hMUw/playlist.m3u8" },
+      { name: "Sport 5", url: "https://amg01416-amg01416c4-tablo-us-4553.playouts.now.amagi.tv/playlist.m3u8" },
+      { name: "Sport 6", url: "https://dazn-combat-rakuten.amagi.tv/hls/amagi_hls_data_rakutenAA-dazn-combat-rakuten/CDN/master.m3u8" },
+      { name: "Sport 7", url: "https://fl1.moveonjoy.com/SNY/index.m3u8" }
     ]
   };
 
   // ===============================
-  // 2) RUNTIME
+  // RUNTIME
   // ===============================
-  const isUrl       = u => /^https?:\/\/\S+$/i.test((u||'').trim());
+  const isUrl = u => /^https?:\/\/\S+$/i.test((u||'').trim());
   const statusLabel = document.getElementById('statusLabel');
   const errBanner   = document.getElementById('errBanner');
   const dock        = document.getElementById('dock');
@@ -547,10 +516,14 @@
   const heroMetaEl  = document.getElementById('heroMeta');
   const heroTagText = document.getElementById('heroTagText');
 
-  let CHANNELS   = [];
-  let heroIndex  = 0;
-  let heroHls    = null;
-  let rotateTimer = null;
+  let CHANNELS = [];
+  let heroIndex = 0;
+
+  // track per-video stream state (for watchdog + restarts)
+  const streams = new Map(); // videoEl -> { kind, url, statusEl, hls, lastTime, strikes, restarting }
+
+  let heroRotateTimer = null;
+  let watchdogTimer = null;
 
   function showBanner(msg){
     errBanner.textContent = msg;
@@ -560,170 +533,208 @@
     errBanner.style.display = 'none';
   }
 
-  function attachDockStream(video, url, statusEl){
-    statusEl.textContent = 'Loading…';
-    statusEl.className = 'dock-status';
+  function setStatus(statusEl, text, cls){
+    if (!statusEl) return;
+    statusEl.textContent = text;
+    statusEl.className = 'dock-status' + (cls ? (' ' + cls) : '');
+  }
 
+  function unload(video){
+    const st = streams.get(video);
+    if (st?.hls){
+      try { st.hls.destroy(); } catch(e){}
+    }
+    streams.delete(video);
+
+    try { video.pause(); } catch(e){}
+    video.removeAttribute('src');
+    try { video.load(); } catch(e){}
+  }
+
+  function makeHls(video, url, kind){
+    const maxBuf = (kind === 'hero' ? CONFIG.HERO_BUFFER_SEC : CONFIG.DOCK_BUFFER_SEC);
+
+    return new Hls({
+      // Avoid spawning a worker per dock tile (too many workers can destabilize some setups)
+      enableWorker: (kind === 'hero'),
+      lowLatencyMode: (kind === 'hero'),
+
+      // Smaller buffers reduce "runs fine then dies" behavior
+      backBufferLength: 0,
+      maxBufferLength: maxBuf,
+      maxMaxBufferLength: maxBuf * 2,
+
+      // Thumbnails: prefer lower renditions if available
+      capLevelToPlayerSize: true,
+      useDevicePixelRatio: false,
+
+      // Fail faster instead of retrying forever
+      manifestLoadingMaxRetry: 3,
+      fragLoadingMaxRetry: 3,
+      fragLoadingRetryDelay: 1000,
+      fragLoadingMaxRetryTimeout: 8000
+    });
+  }
+
+  function restartStream(video, reason){
+    const st = streams.get(video);
+    if (!st || st.restarting) return;
+    st.restarting = true;
+
+    if (st.kind === 'hero'){
+      heroMetaEl.textContent = reason || 'Restarting…';
+    } else {
+      setStatus(st.statusEl, reason || 'Restarting…', 'idle');
+    }
+
+    setTimeout(() => {
+      st.restarting = false;
+      attachStream(video, st.url, st.statusEl, st.kind);
+    }, CONFIG.RESTART_BACKOFF_MS);
+  }
+
+  function attachStream(video, url, statusEl, kind){
     if (!isUrl(url)){
-      statusEl.textContent = 'No URL';
-      statusEl.classList.add('err');
+      if (kind === 'hero'){
+        heroMetaEl.textContent = 'No URL';
+      } else {
+        setStatus(statusEl, 'No URL', 'err');
+      }
       return;
     }
 
+    unload(video);
+
+    // create state
+    streams.set(video, {
+      kind,
+      url,
+      statusEl,
+      hls: null,
+      lastTime: -1,
+      strikes: 0,
+      restarting: false
+    });
+
+    if (kind === 'hero'){
+      heroMetaEl.textContent = 'Loading…';
+    } else {
+      setStatus(statusEl, 'Loading…', '');
+    }
+
+    // HLS.js path (Chrome, most TVs)
     if (window.Hls && Hls.isSupported()){
-      const hls = new Hls({
-        enableWorker:true,
-        lowLatencyMode:false
-      });
+      const hls = makeHls(video, url, kind);
+      const st = streams.get(video);
+      st.hls = hls;
+
       hls.loadSource(url);
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().then(()=>{
-          statusEl.textContent = 'LIVE';
-        }).catch(err=>{
-          console.warn('Dock autoplay blocked', err);
-          statusEl.textContent = 'Tap';
-          statusEl.classList.add('idle');
+        video.play().then(() => {
+          if (kind === 'hero') heroMetaEl.textContent = 'LIVE • HLS.js';
+          else setStatus(statusEl, 'LIVE', '');
+        }).catch(() => {
+          if (kind === 'hero') heroMetaEl.textContent = 'Tap to play';
+          else setStatus(statusEl, 'Tap', 'idle');
         });
       });
 
-      hls.on(Hls.Events.ERROR, (_, data)=>{
-        if (data && data.fatal){
-          console.error('Dock fatal HLS error', data);
-          statusEl.textContent = 'Error';
-          statusEl.classList.add('err');
+      hls.on(Hls.Events.ERROR, (_, data) => {
+        if (!data) return;
+
+        // Non-fatal errors can happen—don’t spam restarts.
+        if (!data.fatal) return;
+
+        const st2 = streams.get(video);
+        if (!st2) return;
+
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          // try restart load; if it still fails watchdog will restart
+          if (kind === 'hero') heroMetaEl.textContent = 'Reconnecting…';
+          else setStatus(statusEl, 'Reconnecting…', 'idle');
+          try { hls.startLoad(); } catch(e) { restartStream(video, 'Net error…'); }
+          return;
         }
+
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          if (kind === 'hero') heroMetaEl.textContent = 'Recovering…';
+          else setStatus(statusEl, 'Recovering…', 'idle');
+          try { hls.recoverMediaError(); } catch(e) { restartStream(video, 'Media error…'); }
+          return;
+        }
+
+        restartStream(video, 'Error…');
       });
 
-      video._hlsDock = hls;
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')){
-      video.src = url;
-      video.play().then(()=>{
-        statusEl.textContent = 'LIVE';
-      }).catch(err=>{
-        console.warn('Dock autoplay blocked (native)', err);
-        statusEl.textContent = 'Tap';
-        statusEl.classList.add('idle');
-      });
-    } else {
-      video.src = url;
-      statusEl.textContent = 'HLS?';
-      statusEl.classList.add('idle');
+      video.onerror = () => restartStream(video, 'Video error…');
+
+      return;
     }
 
-    video.onerror = () => {
-      statusEl.textContent = 'Video error';
-      statusEl.classList.add('err');
-    };
+    // Native HLS (Safari)
+    if (video.canPlayType('application/vnd.apple.mpegurl')){
+      video.src = url;
+      video.play().then(() => {
+        if (kind === 'hero') heroMetaEl.textContent = 'LIVE • native';
+        else setStatus(statusEl, 'LIVE', '');
+      }).catch(() => {
+        if (kind === 'hero') heroMetaEl.textContent = 'Tap to play';
+        else setStatus(statusEl, 'Tap', 'idle');
+      });
+      video.onerror = () => restartStream(video, 'Video error…');
+      return;
+    }
+
+    // fallback
+    video.src = url;
+    if (kind === 'hero') heroMetaEl.textContent = 'HLS not supported';
+    else setStatus(statusEl, 'HLS?', 'idle');
   }
 
   function loadHero(idx){
     if (!CHANNELS.length) return;
-    if (idx < 0) idx = 0;
-    if (idx >= CHANNELS.length) idx = 0;
-    heroIndex = idx;
+    heroIndex = (idx + CHANNELS.length) % CHANNELS.length;
+    const ch = CHANNELS[heroIndex];
 
-    const ch = CHANNELS[idx];
+    heroNameEl.textContent = ch.name || `Channel ${heroIndex+1}`;
+    heroTagText.textContent = `LIVE • ${heroIndex+1}/${CHANNELS.length}`;
+    hideBanner();
 
-    heroNameEl.textContent = ch.name || `Channel ${idx+1}`;
-    heroMetaEl.textContent = 'Loading…';
-    heroTagText.textContent = `LIVE • ${idx+1}/${CHANNELS.length}`;
-
-    // Highlight active dock tile clearly
-    const items = dock.querySelectorAll('.dock-item');
-    items.forEach((el, i)=>{
-      if (i === idx) el.classList.add('dock-item-active');
-      else el.classList.remove('dock-item-active');
+    // highlight active dock tile
+    dock.querySelectorAll('.dock-item').forEach((el, i)=>{
+      el.classList.toggle('dock-item-active', i === heroIndex);
     });
 
-    // Reset hero video + HLS
-    hideBanner();
-    heroVideo.src = '';
-    heroVideo.muted = true;
-    if (heroHls){
-      try{ heroHls.destroy(); }catch(e){}
-      heroHls = null;
+    attachStream(heroVideo, ch.url, null, 'hero');
+
+    // safer rotation (no overlap)
+    if (heroRotateTimer) clearTimeout(heroRotateTimer);
+    if (CHANNELS.length > 1){
+      heroRotateTimer = setTimeout(() => {
+        loadHero(heroIndex + 1);
+      }, (CONFIG.ROTATE_SECONDS || 25) * 1000);
     }
-
-    const url = ch.url;
-    if (!isUrl(url)){
-      heroMetaEl.textContent = 'No URL';
-      return;
-    }
-
-    if (window.Hls && Hls.isSupported()){
-      heroHls = new Hls({
-        enableWorker:true,
-        lowLatencyMode:true
-      });
-      heroHls.loadSource(url);
-      heroHls.attachMedia(heroVideo);
-
-      heroHls.on(Hls.Events.MANIFEST_PARSED, ()=>{
-        heroVideo.play().then(()=>{
-          heroMetaEl.textContent = 'LIVE • HLS.js';
-        }).catch(err=>{
-          console.warn('Hero autoplay blocked', err);
-          heroMetaEl.textContent = 'Tap to play';
-          showBanner('Hero autoplay blocked on desktop. On BrightSign it should start automatically.');
-        });
-      });
-
-      heroHls.on(Hls.Events.ERROR, (_, data)=>{
-        if (data && data.fatal){
-          console.error('Hero fatal HLS error', data);
-          heroMetaEl.textContent = 'Stream error';
-          showBanner('Hero stream error — check URL/bitrate.');
-        }
-      });
-    } else if (heroVideo.canPlayType('application/vnd.apple.mpegurl')){
-      heroVideo.src = url;
-      heroVideo.play().then(()=>{
-        heroMetaEl.textContent = 'LIVE • native';
-      }).catch(err=>{
-        console.warn('Hero autoplay blocked (native)', err);
-        heroMetaEl.textContent = 'Tap to play';
-        showBanner('Hero autoplay blocked on desktop, tap to start.');
-      });
-    } else {
-      heroVideo.src = url;
-      heroMetaEl.textContent = 'HLS not fully supported';
-    }
-
-    heroVideo.onerror = () => {
-      heroMetaEl.textContent = 'Video error';
-      showBanner('Hero video error.');
-    };
-
-    restartHeroRotation();
-  }
-
-  function restartHeroRotation(){
-    if (rotateTimer) clearInterval(rotateTimer);
-    if (CHANNELS.length <= 1) return;
-    const delay = (CONFIG.ROTATE_SECONDS || 25) * 1000;
-    rotateTimer = setInterval(()=>{
-      const next = (heroIndex + 1) % CHANNELS.length;
-      loadHero(next);
-    }, delay);
   }
 
   function buildDock(){
     dock.innerHTML = '';
-    CHANNELS.forEach((ch, idx)=>{
+
+    CHANNELS.forEach((ch, idx) => {
       const item = document.createElement('button');
       item.type = 'button';
       item.className = 'dock-item';
-      item.dataset.index = String(idx);
 
       const inner = document.createElement('div');
       inner.className = 'dock-item-inner';
 
       const v = document.createElement('video');
-      v.autoplay    = true;
-      v.muted       = true;
+      v.autoplay = true;
+      v.muted = true;
       v.playsInline = true;
+      v.preload = 'metadata';
+      v.disablePictureInPicture = true;
 
       const overlay = document.createElement('div');
       overlay.className = 'dock-overlay';
@@ -743,18 +754,47 @@
       item.appendChild(inner);
       dock.appendChild(item);
 
-      // All channels play in dock
-      attachDockStream(v, ch.url, statusEl);
+      // ALL dock tiles live (your requirement)
+      attachStream(v, ch.url, statusEl, 'dock');
 
-      // Optional click for testing on laptop; on TV it just runs.
-      item.addEventListener('click', ()=> loadHero(idx));
+      item.addEventListener('click', () => loadHero(idx));
     });
 
     dockSummary.textContent = `${CHANNELS.length} channel${CHANNELS.length>1?'s':''} live in dock`;
   }
 
+  function startWatchdog(){
+    if (watchdogTimer) clearInterval(watchdogTimer);
+
+    watchdogTimer = setInterval(() => {
+      streams.forEach((st, video) => {
+        // skip if restarting
+        if (st.restarting) return;
+
+        // only check if the video should be playing
+        if (video.paused || video.ended) { st.strikes = 0; st.lastTime = video.currentTime; return; }
+
+        // must have some data
+        if (video.readyState < 2) return;
+
+        const t = video.currentTime;
+
+        if (t === st.lastTime) st.strikes++;
+        else st.strikes = 0;
+
+        st.lastTime = t;
+
+        if (st.strikes >= CONFIG.WATCHDOG_STRIKES){
+          st.strikes = 0;
+          restartStream(video, 'Stalled…');
+        }
+      });
+    }, CONFIG.WATCHDOG_INTERVAL_MS);
+  }
+
   function init(){
     CHANNELS = CONFIG.channels.filter(c => c && isUrl(c.url));
+
     if (!CHANNELS.length){
       statusLabel.textContent = 'No valid channels configured';
       showBanner('Add at least one channel with a valid URL in CONFIG.channels.');
@@ -764,24 +804,17 @@
     statusLabel.textContent = `Hero + dock • ${CHANNELS.length} channel(s)`;
     buildDock();
     loadHero(0);
+    startWatchdog();
   }
 
   document.addEventListener('DOMContentLoaded', init);
 
-  window.addEventListener('beforeunload', ()=>{
-    if (rotateTimer) clearInterval(rotateTimer);
-    if (heroHls){
-      try{ heroHls.destroy(); }catch(e){}
-    }
-    document.querySelectorAll('video').forEach(v=>{
-      if (v._hlsDock){
-        try{ v._hlsDock.destroy(); }catch(e){}
-      }
-    });
+  window.addEventListener('beforeunload', () => {
+    if (heroRotateTimer) clearTimeout(heroRotateTimer);
+    if (watchdogTimer) clearInterval(watchdogTimer);
+    // unload all videos
+    document.querySelectorAll('video').forEach(v => unload(v));
   });
 </script>
-  <!-- Start of HubSpot Embed Code -->
-  <script type="text/javascript" id="hs-script-loader" async defer src="//js-na3.hs-scripts.com/342895404.js"></script>
-<!-- End of HubSpot Embed Code -->
 </body>
 </html>
