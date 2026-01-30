@@ -6,13 +6,8 @@
   <title>BFA — Support Chat</title>
 
   <style>
-    /* =========================================================
-       Tokens (visual only — logic untouched)
-    ========================================================= */
     :root{
       --accent:#ff9500;
-
-      /* Gradient stops (your values) */
       --bg-start:#fff4e4;
       --bg-mid:#ffd293;
       --bg-end:#ff9500;
@@ -20,17 +15,14 @@
       --fg:#111;
       --muted:#6e6e73;
 
-      /* Glass surfaces */
       --panel:rgba(255,255,255,.58);
       --tile:rgba(255,255,255,.46);
       --tileHover:rgba(255,149,0,.08);
 
-      /* Borders + shadows */
       --border:rgba(15,23,42,.10);
       --borderStrong:rgba(15,23,42,.18);
       --shadow:0 14px 34px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.05);
 
-      /* Glass tuning */
       --glass-blur:16px;
       --glass-sat:140%;
     }
@@ -55,28 +47,19 @@
 
     *{box-sizing:border-box}
     html,body{height:100%}
-
     body{
       margin:0;
       color:var(--fg);
       font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
-      background:transparent; /* gradient is painted by ::before */
+      background:transparent;
       overflow-x:hidden;
     }
-
-    /* Full-viewport gradient (non-cropping) */
     body::before{
       content:"";
       position:fixed; inset:0; z-index:-1; pointer-events:none;
       background:linear-gradient(180deg,var(--bg-start) 0%, var(--bg-mid) 52%, var(--bg-end) 100%);
     }
 
-    a{color:inherit;text-decoration:none}
-    .muted{color:var(--muted)}
-
-    /* =========================================================
-       Topbar (frosted look, mobile-first)
-    ========================================================= */
     .topbar{
       position:sticky; top:0; z-index:100;
       background:var(--panel);
@@ -119,7 +102,6 @@
       gap:8px;
       align-items:center;
     }
-
     .chip{
       height:36px;
       padding:0 12px;
@@ -148,9 +130,6 @@
       flex:0 0 auto;
     }
 
-    /* =========================================================
-       Centered chat card (mobile priority)
-    ========================================================= */
     .wrap{
       max-width:980px;
       margin:0 auto;
@@ -209,8 +188,9 @@
       text-overflow:ellipsis;
     }
 
-    /* ✅ MOBILE FIX: use svh (safe viewport height) so container always has height */
+    /* ✅ MOBILE-SAFE HEIGHT */
     .chatBody{
+      position:relative;
       height: min(760px, calc(100svh - 168px));
       height: min(760px, calc(100vh - 168px)); /* fallback */
       background:rgba(255,255,255,.20);
@@ -226,7 +206,6 @@
       display:block !important;
     }
 
-    /* Loading / fallback overlay */
     .loading{
       position:absolute;
       inset:0;
@@ -239,7 +218,7 @@
       font-size:13px;
     }
     .loading .box{
-      max-width:520px;
+      max-width:560px;
       background:var(--tile);
       border:1px solid var(--border);
       border-radius:16px;
@@ -264,6 +243,12 @@
       border-color:var(--accent);
       color:var(--accent);
     }
+    .errorLine{
+      margin-top:10px;
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.35;
+    }
 
     @media (max-width:520px){
       .wrap{padding:12px}
@@ -278,72 +263,20 @@
   </style>
 
   <script>
-    /**
-     * HubSpot settings:
-     * - inlineEmbedSelector mounts chat inside #chat
-     * - loadImmediately: false (we control load for reliability)
-     * - hideNewThreadLink: keeps the UI clean
-     * - disableInitialInputFocus: avoids weird mobile keyboard popping immediately
-     */
+    // =========================
+    // HubSpot config (MUST exist before script initializes)
+    // =========================
     window.hsConversationsSettings = {
       loadImmediately: false,
       inlineEmbedSelector: "#chat",
       hideNewThreadLink: true,
-      disableInitialInputFocus: true
-      // enableWidgetCookieBanner: true,  // optional
-      // disableAttachment: true,         // optional
-      // avoidInlineStyles: true          // optional
+      disableInitialInputFocus: true,
+      avoidInlineStyles: true
     };
 
-    // Robust loader: handles cases where the SDK arrives late on mobile
-    function ensureHubSpotLoaded({ openToNewThread = false } = {}) {
-      const started = Date.now();
-      const timeoutMs = 20000; // 20s
-
-      const tick = () => {
-        const api = window.HubSpotConversations;
-        const hasWidget = api && api.widget && typeof api.widget.load === "function";
-
-        if (hasWidget) {
-          try {
-            const status = api.widget.status ? api.widget.status() : { loaded: false };
-
-            if (!status.loaded) {
-              api.widget.load({ widgetOpen: true });
-            }
-
-            // If you want a fresh thread:
-            if (openToNewThread && typeof api.widget.refresh === "function") {
-              api.widget.refresh({ openToNewThread: true });
-            }
-
-            // In inline embed mode, open() is harmless but helps on some setups
-            if (typeof api.widget.open === "function") {
-              api.widget.open();
-            }
-
-            // hide loader
-            document.getElementById("loading").style.display = "none";
-            return;
-          } catch (e) {
-            // keep trying
-          }
-        }
-
-        if (Date.now() - started > timeoutMs) {
-          // show fallback help
-          const msg = document.getElementById("fallbackMsg");
-          if (msg) msg.style.display = "block";
-          return;
-        }
-
-        setTimeout(tick, 300);
-      };
-
-      tick();
-    }
-
-    // Theme: query param ?dark=1 / ?light=1
+    // =========================
+    // Theme helper
+    // =========================
     function initTheme() {
       const qs = new URLSearchParams(location.search);
       const forceDark = qs.get("dark") === "1";
@@ -355,45 +288,182 @@
       else if (prefersDark) document.body.classList.add("dark");
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
+    // =========================
+    // UI helpers
+    // =========================
+    function setStatus(text){
+      const el = document.getElementById("statusText");
+      if (el) el.textContent = text;
+    }
+    function showError(msg){
+      const el = document.getElementById("errorText");
+      if (el) el.textContent = msg;
+      const box = document.getElementById("errorBox");
+      if (box) box.style.display = "block";
+    }
+    function hideLoader(){
+      const loading = document.getElementById("loading");
+      if (loading) loading.style.display = "none";
+    }
+    function showLoader(){
+      const loading = document.getElementById("loading");
+      if (loading) loading.style.display = "flex";
+    }
+
+    // =========================
+    // Load HubSpot script reliably (no protocol-relative)
+    // =========================
+    const HS_PORTAL_ID = "342895404";
+    const HS_HUBLET = "na3";
+    const HS_SRC = `https://js-${HS_HUBLET}.hs-scripts.com/${HS_PORTAL_ID}.js`;
+
+    function loadHubSpotScriptOnce(){
+      return new Promise((resolve, reject) => {
+        if (document.getElementById("hs-script-loader")) return resolve();
+
+        const s = document.createElement("script");
+        s.id = "hs-script-loader";
+        s.src = HS_SRC;
+        s.async = true;
+        s.defer = true;
+
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error("HubSpot script failed to load."));
+
+        document.head.appendChild(s);
+      });
+    }
+
+    // =========================
+    // Main load/refresh logic
+    // =========================
+    function tryMountChat({ openToNewThread = false } = {}){
+      const api = window.HubSpotConversations;
+      if (!api || !api.widget) return false;
+
+      try{
+        const st = api.widget.status ? api.widget.status() : { loaded:false };
+
+        // If not loaded, load it
+        if (!st.loaded) {
+          api.widget.load({ widgetOpen: true });
+        } else {
+          api.widget.open && api.widget.open();
+        }
+
+        // Optional: force a fresh thread
+        if (openToNewThread && typeof api.widget.refresh === "function") {
+          api.widget.refresh({ openToNewThread: true });
+        }
+
+        return true;
+      } catch(e){
+        return false;
+      }
+    }
+
+    function ensureChat({ openToNewThread = false } = {}){
+      showLoader();
+      setStatus("Loading chat…");
+
+      const start = Date.now();
+      const softTimeout = 12000;  // show helpful message after 12s
+      const hardTimeout = 25000;  // give up after 25s
+      let didAttachWidgetLoaded = false;
+
+      const tick = () => {
+        const api = window.HubSpotConversations;
+
+        // If API exists, bind widgetLoaded event (best signal) :contentReference[oaicite:3]{index=3}
+        if (api && !didAttachWidgetLoaded && typeof api.on === "function") {
+          didAttachWidgetLoaded = true;
+          api.on("widgetLoaded", () => {
+            hideLoader();
+            setStatus("Chat ready");
+          });
+        }
+
+        // Try to mount
+        const ok = tryMountChat({ openToNewThread });
+
+        // If iframe exists, we’re basically there
+        const iframe = document.getElementById("hubspot-conversations-inline-iframe");
+        if (ok && iframe) {
+          // Some iOS cases don’t fire widgetLoaded — hide loader anyway once iframe appears
+          hideLoader();
+          setStatus("Chat ready");
+          return;
+        }
+
+        const elapsed = Date.now() - start;
+
+        if (elapsed > softTimeout) {
+          setStatus("Still loading…");
+          showError(
+            "If this works on desktop but not mobile, check HubSpot Chatflow settings: enable showing on small screens / Mobile display behavior, and make sure this URL is targeted."
+          );
+        }
+
+        if (elapsed > hardTimeout) {
+          showError(
+            "Chat still didn’t load. Most common causes: (1) mobile display disabled in the chatflow, (2) targeting rules don’t include this page, or (3) Safari content blocker blocked HubSpot. Tap Retry."
+          );
+          return;
+        }
+
+        setTimeout(tick, 350);
+      };
+
+      tick();
+    }
+
+    // hsConversationsOnReady is the official helper :contentReference[oaicite:4]{index=4}
+    window.hsConversationsOnReady = [
+      () => {
+        const qs = new URLSearchParams(location.search);
+        ensureChat({ openToNewThread: qs.get("new") === "1" });
+      }
+    ];
+
+    document.addEventListener("DOMContentLoaded", async () => {
       initTheme();
 
       const qs = new URLSearchParams(location.search);
       const wantNew = qs.get("new") === "1";
 
-      // Buttons
-      const newBtn = document.getElementById("newChatBtn");
-      const themeBtn = document.getElementById("themeBtn");
-      const retryBtn = document.getElementById("retryBtn");
-
-      newBtn.addEventListener("click", () => {
-        ensureHubSpotLoaded({ openToNewThread: true });
+      document.getElementById("newChatBtn").addEventListener("click", () => {
+        ensureChat({ openToNewThread: true });
       });
 
-      themeBtn.addEventListener("click", () => {
+      document.getElementById("themeBtn").addEventListener("click", () => {
         document.body.classList.toggle("dark");
       });
 
-      retryBtn.addEventListener("click", () => {
-        document.getElementById("fallbackMsg").style.display = "none";
-        ensureHubSpotLoaded({ openToNewThread: wantNew });
+      document.getElementById("retryBtn").addEventListener("click", () => {
+        document.getElementById("errorBox").style.display = "none";
+        ensureChat({ openToNewThread: wantNew });
       });
 
-      // Kick off load
-      ensureHubSpotLoaded({ openToNewThread: wantNew });
+      // Load HubSpot script now (reliable on iOS)
+      try{
+        await loadHubSpotScriptOnce();
+        // Start mount attempts immediately (don’t wait only for onReady)
+        ensureChat({ openToNewThread: wantNew });
+      }catch(e){
+        showLoader();
+        setStatus("Chat blocked");
+        showError("HubSpot script failed to load on this device. Disable Safari Content Blockers and try again.");
+      }
     });
 
-    // Use hsConversationsOnReady too (best practice)
-    window.hsConversationsOnReady = [
-      () => {
-        const qs = new URLSearchParams(location.search);
-        ensureHubSpotLoaded({ openToNewThread: qs.get("new") === "1" });
+    // iOS can pause JS when switching tabs; re-check when returning
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        const iframe = document.getElementById("hubspot-conversations-inline-iframe");
+        if (!iframe) ensureChat({ openToNewThread: false });
       }
-    ];
+    });
   </script>
-
-  <!-- HubSpot portal script (your existing one) -->
-  <script async defer id="hs-script-loader" src="//js-na3.hs-scripts.com/342895404.js"></script>
 </head>
 
 <body>
@@ -411,7 +481,6 @@
 
       <div class="actions">
         <button class="chip" id="newChatBtn" type="button" title="Start a new chat">
-          <!-- Headset icon -->
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 12a8 8 0 0 1 16 0"></path>
             <path d="M4 12v6a2 2 0 0 0 2 2h2v-6H6a2 2 0 0 1-2-2Z"></path>
@@ -443,23 +512,25 @@
               <path d="M12 19c2.2 0 4-1.3 4-3"></path>
             </svg>
           </b>
-          <span class="muted">We usually reply quickly during business hours.</span>
+          <span class="muted" id="statusText">Starting…</span>
         </div>
       </div>
 
-      <div class="chatBody" style="position:relative;">
-        <!-- HubSpot mounts here -->
+      <div class="chatBody">
         <div id="chat" style="width:100%;height:100%;"></div>
 
-        <!-- Loader + fallback -->
         <div id="loading" class="loading">
           <div class="box">
             <b>Loading chat…</b><br/>
-            <span class="muted">If it doesn’t appear in ~10 seconds, tap Retry.</span>
+            <span class="muted">If it doesn’t appear, tap Retry.</span>
 
-            <div class="btnRow" id="fallbackMsg" style="display:none;">
+            <div class="btnRow">
               <button class="miniBtn primary" id="retryBtn" type="button">Retry</button>
-              <button class="miniBtn" type="button" onclick="location.href=location.href + (location.search ? '&' : '?') + 'new=1'">New thread</button>
+              <button class="miniBtn" type="button" onclick="location.href=location.pathname + '?new=1'">New thread</button>
+            </div>
+
+            <div id="errorBox" class="errorLine" style="display:none;">
+              <div id="errorText"></div>
             </div>
           </div>
         </div>
