@@ -132,6 +132,7 @@
     border-bottom:1px solid var(--border);
     display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
     background:linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0));
+    flex-shrink:0;
   }
   body.dark .card-head{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0))}
 
@@ -154,30 +155,51 @@
   }
   .badgeDot{width:10px;height:10px;border-radius:99px;background:#22c55e;display:inline-block}
 
-  .card-body{position:relative;flex:1;min-height:520px;background:transparent}
+  /* ===== FIXED: Card body fills remaining space ===== */
+  .card-body{
+    position:relative;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-height:0; /* Important for flex child to shrink properly */
+    background:transparent;
+  }
 
-  /* HubSpot inline mount fills card body */
+  /* ===== FIXED: HubSpot container fills all available height ===== */
   #hsMount{
     width:100%;
-    height:100%;
-    min-height:520px;
+    flex:1;
     position:relative;
     overflow:hidden;
+    display:flex;
+    flex-direction:column;
   }
+
+  /* HubSpot inline parent - force full height */
   #hubspot-conversations-inline-parent{
     width:100% !important;
-    height:100% !important;
-    position:absolute !important;
-    inset:0 !important;
+    flex:1 !important;
+    position:relative !important;
+    display:flex !important;
+    flex-direction:column !important;
   }
+
+  /* HubSpot iframe - force full height and remove promotional banner */
   #hubspot-conversations-inline-iframe{
     width:100% !important;
-    height:100% !important;
+    flex:1 !important;
+    min-height:100% !important;
     border:0 !important;
     display:block !important;
     background:transparent !important;
-    position:absolute !important;
-    inset:0 !important;
+  }
+
+  /* Hide HubSpot promotional banner */
+  #hubspot-conversations-inline-parent [class*="promo"],
+  #hubspot-conversations-inline-parent [class*="banner"],
+  #hubspot-conversations-inline-parent [class*="upgrade"],
+  #hubspot-conversations-inline-parent a[href*="hubspot.com"]{
+    display:none !important;
   }
 
   /* Clean fallback (only shows if blocked) */
@@ -274,7 +296,7 @@
       let i = 0;
       const tryNext = () => {
         if (i >= urls.length) return reject(new Error("HubSpot script blocked"));
-        const src = urls[i++].trim(); // FIX: trim whitespace
+        const src = urls[i++].trim();
         const s = document.createElement("script");
         s.async = true; s.defer = true; s.src = src;
         s.onload = () => resolve(src);
@@ -285,11 +307,36 @@
     });
   }
 
+  // ===== FIXED: Force HubSpot to fill container =====
+  function forceHubSpotFullHeight() {
+    // Remove the promotional banner that HubSpot injects
+    const promoBanners = document.querySelectorAll(
+      '#hubspot-conversations-inline-parent [class*="promo"], ' +
+      '#hubspot-conversations-inline-parent [class*="banner"], ' +
+      '#hubspot-conversations-inline-parent a[href*="hubspot.com"]'
+    );
+    promoBanners.forEach(el => el.remove());
+
+    // Force iframe height
+    const iframe = document.querySelector('#hubspot-conversations-inline-iframe');
+    if (iframe) {
+      iframe.style.height = '100%';
+      iframe.style.minHeight = '100%';
+    }
+
+    // Force parent container
+    const parent = document.querySelector('#hubspot-conversations-inline-parent');
+    if (parent) {
+      parent.style.height = '100%';
+      parent.style.display = 'flex';
+      parent.style.flexDirection = 'column';
+    }
+  }
+
   async function bootHubSpot(){
-    // FIX: Removed space in URL that was breaking mobile loading
     const urls = [
       `https://js-${HS_HUBLET}.hs-scripts.com/${HS_PORTAL_ID}.js`,
-      `https://js.hs-scripts.com/${HS_PORTAL_ID}.js` // FIX: removed space
+      `https://js.hs-scripts.com/${HS_PORTAL_ID}.js`
     ];
 
     try{
@@ -302,38 +349,41 @@
       }
 
       if (!hsReady()){
-        // Script loaded but widget didn't initialize
         document.getElementById("fallback").classList.add("show");
         document.getElementById("fbText").textContent =
           "HubSpot loaded, but the chat didn't initialize. In HubSpot, confirm this chatflow is ON and allowed for this domain.";
         return;
       }
 
-      // MOBILE FIX: Refresh widget when container resizes (keyboard open/close, orientation change)
-      let resizeTimer;
-      const resizeObserver = new ResizeObserver((entries) => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-          if (hsReady()) {
-            try { 
-              window.HubSpotConversations.widget.refresh({ openToNewThread:false }); 
-            } catch(e) {}
-          }
-        }, 250);
+      // ===== FIXED: Apply height fixes after HubSpot loads =====
+      setTimeout(forceHubSpotFullHeight, 500);
+      setTimeout(forceHubSpotFullHeight, 1500); // Retry after full render
+
+      // Watch for HubSpot DOM changes and reapply fixes
+      const observer = new MutationObserver(() => {
+        forceHubSpotFullHeight();
       });
       
       const mount = document.getElementById('hsMount');
-      if (mount) resizeObserver.observe(mount);
+      if (mount) {
+        observer.observe(mount, { childList: true, subtree: true });
+      }
 
-      // Try to keep it fresh when user returns to tab
+      // Handle resize/keyboard
+      let resizeTimer;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(forceHubSpotFullHeight, 250);
+      });
+
+      // Refresh on visibility change
       document.addEventListener("visibilitychange", ()=>{
         if (!document.hidden){
-          try{ window.HubSpotConversations.widget.refresh({ openToNewThread:false }); }catch(e){}
+          setTimeout(forceHubSpotFullHeight, 300);
         }
       });
 
     }catch(e){
-      // Script blocked
       document.getElementById("fallback").classList.add("show");
       document.getElementById("fbText").textContent =
         "HubSpot is being blocked on this phone/network (very common with iOS privacy/DNS/adblock). Disable blockers or use Email/WhatsApp below.";
@@ -342,15 +392,24 @@
 
   function retryChat(){
     if (!hsReady()) return;
-    try{ window.HubSpotConversations.widget.refresh({ openToNewThread:false }); }catch(e){}
+    try{ 
+      window.HubSpotConversations.widget.refresh({ openToNewThread:false }); 
+      setTimeout(forceHubSpotFullHeight, 500);
+    }catch(e){}
   }
+  
   function newChat(){
     if (!hsReady()) return;
-    try{ window.HubSpotConversations.clear({ resetWidget:true }); }catch(e){}
-    setTimeout(()=>retryChat(), 300);
+    try{ 
+      window.HubSpotConversations.clear({ resetWidget:true }); 
+    }catch(e){}
+    setTimeout(()=>{
+      retryChat();
+      setTimeout(forceHubSpotFullHeight, 500);
+    }, 300);
   }
 
-  // Mobile sheet functions with scroll lock
+  // Mobile sheet functions
   function openSheet(){ 
     document.getElementById("sheet").classList.add("open"); 
     document.body.classList.add("sheet-open");
@@ -362,7 +421,7 @@
     document.getElementById("sheet").setAttribute("aria-hidden", "true");
   }
 
-  // Mobile viewport height fix (handles iOS Safari dynamic toolbars)
+  // Mobile viewport height fix
   function setVH() {
     let vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
@@ -370,8 +429,10 @@
   window.addEventListener('resize', setVH);
   window.addEventListener('orientationchange', () => {
     setTimeout(setVH, 100);
-    // Refresh chat on orientation change to fix sizing
-    setTimeout(retryChat, 300);
+    setTimeout(() => {
+      retryChat();
+      forceHubSpotFullHeight();
+    }, 300);
   });
   setVH();
 
@@ -394,7 +455,7 @@
     document.getElementById("sheetBack").addEventListener("click", closeSheet);
     document.getElementById("sheetClose").addEventListener("click", closeSheet);
 
-    // Close sheet on escape key (accessibility)
+    // Close sheet on escape key
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && document.getElementById("sheet").classList.contains('open')) {
         closeSheet();
@@ -409,7 +470,7 @@
       setTheme(document.body.classList.contains("dark") ? "light" : "dark");
     });
 
-    // Prevent double-tap zoom on mobile buttons
+    // Prevent double-tap zoom
     const buttons = document.querySelectorAll('button, .chip');
     buttons.forEach(btn => {
       btn.addEventListener('touchend', (e) => {
@@ -484,7 +545,6 @@
             <p class="fbTitle">Chat couldn't load</p>
             <p class="fbText" id="fbText">HubSpot is being blocked on this phone/network.</p>
             <div class="fbBtns">
-              <!-- EDIT THESE -->
               <a class="fbBtn primary" href="mailto:support@thebfagroup.com">Email Support</a>
               <a class="fbBtn" href="https://wa.me/1XXXXXXXXXX" target="_blank" rel="noopener">WhatsApp</a>
             </div>
