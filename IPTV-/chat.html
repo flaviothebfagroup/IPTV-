@@ -1,32 +1,48 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>BFA Support — Live Chat</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>BFA Support</title>
+
+<link rel="preconnect" href="https://js-na3.hs-scripts.com" crossorigin>
+<link rel="preconnect" href="https://js.hs-scripts.com" crossorigin>
+<link rel="preconnect" href="https://js.hs-analytics.net" crossorigin>
+<link rel="preconnect" href="https://api.usemessages.com" crossorigin>
 
 <style>
-  /* =========================================================
-     Tokens (visual only)
-  ========================================================= */
   :root{
     --accent:#ff9500;
-
     --bg-start:#fff4e4;
     --bg-mid:#ffd293;
     --bg-end:#ff9500;
-
     --fg:#111;
     --muted:#6e6e73;
-
     --panel:rgba(255,255,255,.58);
+    --tile:rgba(255,255,255,.46);
+    --tileHover:rgba(255,149,0,.08);
     --border:rgba(15,23,42,.10);
     --borderStrong:rgba(15,23,42,.18);
     --shadow:0 14px 34px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.05);
-
     --glass-blur:16px;
     --glass-sat:140%;
-    --radius:18px;
+  }
+  body.dark{
+    --bg-start:#0b0c10;
+    --bg-mid:#0d1016;
+    --bg-end:#10141b;
+    --fg:#f7f7f8;
+    --muted:#a1a1a8;
+    --panel:rgba(21,21,23,.56);
+    --tile:rgba(26,26,29,.50);
+    --tileHover:rgba(255,149,0,.10);
+    --border:rgba(255,255,255,.10);
+    --borderStrong:rgba(255,255,255,.20);
+    --shadow:0 18px 46px rgba(0,0,0,.36), 0 2px 8px rgba(0,0,0,.22);
+    --glass-blur:14px;
   }
 
   *{box-sizing:border-box}
@@ -35,6 +51,7 @@
     margin:0;color:var(--fg);
     font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
     background:transparent;
+    -webkit-text-size-adjust:100%;
   }
   body::before{
     content:"";
@@ -42,15 +59,9 @@
     background:linear-gradient(180deg,var(--bg-start) 0%, var(--bg-mid) 52%, var(--bg-end) 100%);
   }
 
-  a{color:inherit;text-decoration:none}
-  .muted{color:var(--muted)}
-
-  /* =========================================================
-     Topbar
-  ========================================================= */
+  /* Topbar */
   .topbar{
-    position:sticky; top:0; z-index:100;
-    background:var(--panel);
+    position:sticky;top:0;z-index:100;background:var(--panel);
     border-bottom:1px solid var(--border);
     padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px;
     backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
@@ -58,117 +69,106 @@
   }
   .toprow{
     max-width:1100px;margin:0 auto;
-    display:flex;align-items:center;gap:10px;
+    display:flex;align-items:center;gap:12px;
   }
-  .brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .brand{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
   .logo{
-    width:34px;height:34px;border-radius:9px;
-    border:1px solid var(--border);
-    background:#fff center/cover no-repeat;
-    flex:0 0 auto;
+    width:32px;height:32px;border-radius:9px;border:1px solid var(--border);
+    background:#fff center/cover no-repeat;flex:0 0 auto;
   }
   .logotxt{
-    font-weight:900;letter-spacing:.2px;
+    font-weight:950;letter-spacing:.2px;font-size:18px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    max-width:52vw;
   }
 
-  .spacer{flex:1}
-
-  /* Simple hamburger on right */
-  #hamburger{
-    border:0;background:transparent;
-    color:var(--accent);
-    width:42px;height:42px;border-radius:999px;
-    display:inline-flex;align-items:center;justify-content:center;
-    margin-left:auto;
-  }
-  #hamburger svg{width:22px;height:22px;stroke:var(--accent);stroke-width:2.6;fill:none}
-
-  /* Desktop actions */
   .actions{display:flex;gap:8px;align-items:center}
   .chip{
-    height:34px;min-width:34px;padding:0 12px;border-radius:9999px;
-    border:1.5px solid var(--borderStrong);
-    background:rgba(255,255,255,.46);
-    color:var(--fg);font-weight:900;cursor:pointer;
-    display:inline-flex;align-items:center;gap:8px;
+    height:38px;min-width:38px;padding:0 14px;border-radius:9999px;border:1.5px solid var(--borderStrong);
+    background:var(--tile);color:var(--fg);font-weight:950;cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+    transition:transform .12s ease, filter .18s ease, border-color .18s ease;
     backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
     -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
   }
-  .chip svg{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none}
+  .chip:hover{border-color:var(--accent);transform:translateY(-1px);filter:brightness(1.03)}
+  .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
+  .ic{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none}
 
-  @media (max-width:920px){
-    .actions{display:none}
+  /* Simple hamburger — RIGHT side */
+  #hamburger{
+    display:none;
+    margin-left:auto;
+    width:44px;height:44px;
+    border:0;background:transparent;
+    color:var(--accent);
+    align-items:center;justify-content:center;
+    cursor:pointer;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #hamburger svg{width:24px;height:24px;stroke:var(--accent);stroke-width:2.6;fill:none}
+
+  @media (max-width:760px){
+    .actions{display:none;}
+    #hamburger{display:inline-flex;}
   }
 
-  /* =========================================================
-     Layout
-  ========================================================= */
-  .wrap{max-width:1100px;margin:0 auto;padding:16px; height:calc(100dvh - 68px);}
-  @supports (height: 100svh){
-    .wrap{ height:calc(100svh - 68px); }
-  }
+  /* Page content */
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  @media (max-width:760px){.wrap{padding:14px}}
 
   .card{
-    height:100%;
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    box-shadow:var(--shadow);
+    background:var(--panel);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);
     backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
     -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
     overflow:hidden;
-
-    display:flex;
-    flex-direction:column;
+    display:flex;flex-direction:column;
+    min-height:calc(100svh - 120px);
   }
 
   .card-head{
-    padding:16px 16px 12px;
-    border-bottom:1px solid rgba(15,23,42,.08);
-    display:flex;align-items:flex-start;gap:12px;
+    padding:16px;
+    border-bottom:1px solid var(--border);
+    display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+    background:linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0));
   }
-  .card-title{
-    font-size:34px;font-weight:950;line-height:1.05;margin:0;
-    letter-spacing:-.02em;
+  body.dark .card-head{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0))}
+
+  .hgroup{min-width:0}
+  .h1{
+    margin:0;font-size:26px;font-weight:1000;letter-spacing:.2px;
+    display:flex;align-items:center;gap:10px
   }
-  .card-sub{margin-top:8px;color:var(--muted);font-weight:600}
-  .online{
-    margin-left:auto;
-    padding:10px 14px;
-    border-radius:999px;
-    border:1px solid rgba(15,23,42,.14);
-    background:rgba(255,255,255,.58);
-    display:flex;align-items:center;gap:10px;
-    font-weight:900;
+  @media (max-width:760px){.h1{font-size:22px}}
+
+  .desc{margin-top:8px;color:var(--muted);font-size:13px;line-height:1.35}
+
+  .badge{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:10px 14px;border-radius:999px;
+    border:1px solid var(--borderStrong);
+    background:var(--tile);
+    font-weight:950;
     white-space:nowrap;
   }
-  .dot{width:10px;height:10px;border-radius:999px;background:#22c55e;box-shadow:0 0 10px rgba(34,197,94,.45)}
+  .badgeDot{width:10px;height:10px;border-radius:99px;background:#22c55e;display:inline-block}
 
-  /* Chat area */
-  .chatArea{
-    flex:1; min-height:0;
-    position:relative;
-    display:flex;
-    flex-direction:column;
-  }
+  .card-body{position:relative;flex:1;min-height:520px;background:transparent}
 
-  /* This is the ONLY “frame” we keep. No extra box-on-box. */
-  #chatMount{
-    flex:1; min-height:0;
+  /* HubSpot inline mount fills card body */
+  #hsMount{
     width:100%;
+    height:100%;
+    min-height:520px;
+    position:relative;
+    overflow:hidden;
   }
-
-  /* CRITICAL: force HubSpot inline iframe to fill */
   #hubspot-conversations-inline-parent{
     width:100% !important;
     height:100% !important;
-    max-width:none !important;
-    margin:0 !important;
-    border-radius:0 !important;
-    overflow:hidden !important;
-    background:transparent !important;
+    position:absolute !important;
+    inset:0 !important;
   }
   #hubspot-conversations-inline-iframe{
     width:100% !important;
@@ -176,340 +176,356 @@
     border:0 !important;
     display:block !important;
     background:transparent !important;
+    position:absolute !important;
+    inset:0 !important;
   }
 
-  /* Mobile helper panel (shown if we choose non-inline mode or if user needs to tap open) */
-  .helper{
-    padding:16px;
+  /* Clean fallback (only shows if blocked) */
+  #fallback{
     display:none;
+    padding:18px;
+    position:absolute;
+    inset:0;
+    background:var(--panel);
+    z-index:10;
   }
-  .helper.show{display:block}
-  .helperBox{
-    border:1px solid rgba(15,23,42,.12);
-    background:rgba(255,255,255,.55);
-    border-radius:16px;
-    padding:14px;
-    box-shadow:0 10px 24px rgba(15,23,42,.06);
+  #fallback.show{display:block}
+  .fallbackBox{
+    max-width:560px;margin:0 auto;
+    background:var(--tile);
+    border:1px solid var(--borderStrong);
+    border-radius:18px;
+    padding:16px;
+    box-shadow:0 10px 28px rgba(15,23,42,.08);
   }
-  .btnRow{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
-  .btn{
-    border:1.5px solid rgba(15,23,42,.18);
-    background:rgba(255,255,255,.55);
-    border-radius:999px;
-    padding:10px 14px;
-    font-weight:900;
-    display:inline-flex;align-items:center;gap:8px;
-    cursor:pointer;
+  .fbTitle{margin:0 0 6px;font-weight:1000}
+  .fbText{margin:0;color:var(--muted);font-size:13px;line-height:1.35}
+  .fbBtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .fbBtn{
+    height:42px;padding:0 14px;border-radius:999px;border:1.5px solid var(--borderStrong);
+    background:#fff;color:#111;font-weight:1000;cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+    text-decoration:none;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
   }
-  .btn.primary{
-    border-color:var(--accent);
-    background:rgba(255,149,0,.12);
-    color:#111;
-  }
-  .btn svg{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none}
+  body.dark .fbBtn{background:#111;color:#fff}
+  .fbBtn.primary{border-color:var(--accent);color:var(--accent);background:transparent}
 
-  /* Toast */
-  .toast{
-    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
-    background:#ff453a;color:#fff;padding:10px 14px;border-radius:999px;
-    font-weight:900; opacity:0; pointer-events:none; transition:opacity .22s ease;
-    box-shadow:0 12px 26px rgba(0,0,0,.18);
-    z-index:9999;
-  }
-  .toast.show{opacity:1}
-
-  /* =========================================================
-     Mobile sheet menu
-  ========================================================= */
-  #sheet{position:fixed; inset:0; z-index:9999; display:none;}
+  /* Mobile sheet */
+  #sheet{position:fixed;inset:0;z-index:9999;display:none}
   #sheet.open{display:block}
-  #sheet .back{position:absolute; inset:0; background:rgba(0,0,0,.42); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);}
+  #sheet .back{position:absolute;inset:0;background:rgba(0,0,0,.42);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
   #sheet .panel{
-    position:absolute; right:0; top:0; height:100%; width:min(86vw,360px);
+    position:absolute;right:0;top:0;height:100%;width:min(86vw,360px);
     background:rgba(255,255,255,.92);
     border-left:1px solid rgba(15,23,42,.18);
     box-shadow:var(--shadow);
-    padding:16px; display:flex; flex-direction:column; gap:12px;
+    padding:16px;display:flex;flex-direction:column;gap:14px;
     backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
     -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
-    transform:translateX(100%); transition:transform .22s ease-out;
+    transform:translateX(100%);transition:transform .22s ease-out;will-change:transform;
+    padding-bottom:calc(16px + env(safe-area-inset-bottom, 0px));
   }
+  body.dark #sheet .panel{background:rgba(21,21,23,.92);border-left:1px solid rgba(255,255,255,.20)}
   #sheet.open .panel{transform:translateX(0)}
-  .sheetTitle{font-weight:950;font-size:16px}
+  .sheetTitle{font-weight:1000;font-size:16px;margin:2px 0 0}
+  .sheetSub{color:var(--muted);font-size:12px;margin:0}
+  .sheetBtns{display:grid;gap:10px;margin-top:8px}
+  .sheetBtns .chip{width:100%;justify-content:center;height:44px}
+  .sheetCloseRow{display:flex;justify-content:space-between;align-items:center}
+  .xbtn{
+    height:38px;min-width:38px;border-radius:999px;border:1.5px solid var(--borderStrong);
+    background:var(--tile);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .xbtn svg{width:18px;height:18px;stroke-width:2.6}
+
+  /* Mobile-specific util classes added via JS */
+  body.sheet-open{overflow:hidden;position:fixed;width:100%;height:100%;}
 </style>
+
+<script>
+  const HS_PORTAL_ID = "342895404";
+  const HS_HUBLET = "na3";
+
+  // IMPORTANT: inline embed for ALL devices (mobile too)
+  window.hsConversationsSettings = {
+    inlineEmbedSelector: "#hsMount",
+    loadImmediately: true
+  };
+
+  function hsReady(){
+    return !!(window.HubSpotConversations && window.HubSpotConversations.widget);
+  }
+
+  function setTheme(next){
+    document.body.classList.toggle("dark", next==="dark");
+    localStorage.setItem("bfa_support_theme", next);
+  }
+  function initTheme(){
+    const saved = localStorage.getItem("bfa_support_theme");
+    if (saved) setTheme(saved);
+    else if (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches) setTheme("dark");
+  }
+
+  function loadScriptWithFallback(urls){
+    return new Promise((resolve,reject)=>{
+      let i = 0;
+      const tryNext = () => {
+        if (i >= urls.length) return reject(new Error("HubSpot script blocked"));
+        const src = urls[i++].trim(); // FIX: trim whitespace
+        const s = document.createElement("script");
+        s.async = true; s.defer = true; s.src = src;
+        s.onload = () => resolve(src);
+        s.onerror = () => tryNext();
+        document.head.appendChild(s);
+      };
+      tryNext();
+    });
+  }
+
+  async function bootHubSpot(){
+    // FIX: Removed space in URL that was breaking mobile loading
+    const urls = [
+      `https://js-${HS_HUBLET}.hs-scripts.com/${HS_PORTAL_ID}.js`,
+      `https://js.hs-scripts.com/${HS_PORTAL_ID}.js` // FIX: removed space
+    ];
+
+    try{
+      await loadScriptWithFallback(urls);
+
+      // Wait a bit for widget init
+      const start = Date.now();
+      while (!hsReady() && Date.now() - start < 12000){
+        await new Promise(r=>setTimeout(r, 200));
+      }
+
+      if (!hsReady()){
+        // Script loaded but widget didn't initialize
+        document.getElementById("fallback").classList.add("show");
+        document.getElementById("fbText").textContent =
+          "HubSpot loaded, but the chat didn't initialize. In HubSpot, confirm this chatflow is ON and allowed for this domain.";
+        return;
+      }
+
+      // MOBILE FIX: Refresh widget when container resizes (keyboard open/close, orientation change)
+      let resizeTimer;
+      const resizeObserver = new ResizeObserver((entries) => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          if (hsReady()) {
+            try { 
+              window.HubSpotConversations.widget.refresh({ openToNewThread:false }); 
+            } catch(e) {}
+          }
+        }, 250);
+      });
+      
+      const mount = document.getElementById('hsMount');
+      if (mount) resizeObserver.observe(mount);
+
+      // Try to keep it fresh when user returns to tab
+      document.addEventListener("visibilitychange", ()=>{
+        if (!document.hidden){
+          try{ window.HubSpotConversations.widget.refresh({ openToNewThread:false }); }catch(e){}
+        }
+      });
+
+    }catch(e){
+      // Script blocked
+      document.getElementById("fallback").classList.add("show");
+      document.getElementById("fbText").textContent =
+        "HubSpot is being blocked on this phone/network (very common with iOS privacy/DNS/adblock). Disable blockers or use Email/WhatsApp below.";
+    }
+  }
+
+  function retryChat(){
+    if (!hsReady()) return;
+    try{ window.HubSpotConversations.widget.refresh({ openToNewThread:false }); }catch(e){}
+  }
+  function newChat(){
+    if (!hsReady()) return;
+    try{ window.HubSpotConversations.clear({ resetWidget:true }); }catch(e){}
+    setTimeout(()=>retryChat(), 300);
+  }
+
+  // Mobile sheet functions with scroll lock
+  function openSheet(){ 
+    document.getElementById("sheet").classList.add("open"); 
+    document.body.classList.add("sheet-open");
+    document.getElementById("sheet").setAttribute("aria-hidden", "false");
+  }
+  function closeSheet(){ 
+    document.getElementById("sheet").classList.remove("open"); 
+    document.body.classList.remove("sheet-open");
+    document.getElementById("sheet").setAttribute("aria-hidden", "true");
+  }
+
+  // Mobile viewport height fix (handles iOS Safari dynamic toolbars)
+  function setVH() {
+    let vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+  }
+  window.addEventListener('resize', setVH);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(setVH, 100);
+    // Refresh chat on orientation change to fix sizing
+    setTimeout(retryChat, 300);
+  });
+  setVH();
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    initTheme();
+    bootHubSpot();
+
+    // Desktop actions
+    document.getElementById("btnNew").addEventListener("click", newChat);
+    document.getElementById("btnRetry").addEventListener("click", retryChat);
+    document.getElementById("btnTheme").addEventListener("click", ()=>{
+      setTheme(document.body.classList.contains("dark") ? "light" : "dark");
+    });
+
+    // Hamburger
+    document.getElementById("hamburger").addEventListener("click", (e) => {
+      e.preventDefault();
+      openSheet();
+    });
+    document.getElementById("sheetBack").addEventListener("click", closeSheet);
+    document.getElementById("sheetClose").addEventListener("click", closeSheet);
+
+    // Close sheet on escape key (accessibility)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.getElementById("sheet").classList.contains('open')) {
+        closeSheet();
+      }
+    });
+
+    // Sheet buttons
+    document.getElementById("sheetNew").addEventListener("click", ()=>{ closeSheet(); newChat(); });
+    document.getElementById("sheetRetry").addEventListener("click", ()=>{ closeSheet(); retryChat(); });
+    document.getElementById("sheetTheme").addEventListener("click", ()=>{
+      closeSheet();
+      setTheme(document.body.classList.contains("dark") ? "light" : "dark");
+    });
+
+    // Prevent double-tap zoom on mobile buttons
+    const buttons = document.querySelectorAll('button, .chip');
+    buttons.forEach(btn => {
+      btn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        btn.click();
+      }, {passive: false});
+    });
+  });
+</script>
 </head>
 
 <body>
-  <header class="topbar">
+  <div class="topbar">
     <div class="toprow">
       <div class="brand">
         <div class="logo" style="background-image:url('/IPTV-/icons/icon-192.png')"></div>
         <div class="logotxt">BFA Support</div>
       </div>
 
-      <div class="spacer"></div>
-
+      <!-- Desktop actions -->
       <div class="actions">
-        <button class="chip" id="newBtn" type="button" title="New chat">
-          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        <button class="chip" id="btnNew" type="button">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
           New
         </button>
-        <button class="chip" id="retryBtn" type="button" title="Retry loading chat">
-          <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+        <button class="chip" id="btnRetry" type="button">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
           Retry
+        </button>
+        <button class="chip accent" id="btnTheme" type="button">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+          Theme
         </button>
       </div>
 
+      <!-- Simple hamburger RIGHT -->
       <button id="hamburger" type="button" aria-label="Menu">
-        <svg viewBox="0 0 24 24">
-          <path d="M5 7h14M5 12h14M5 17h14"/>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16"/>
         </svg>
       </button>
     </div>
-  </header>
+  </div>
 
-  <main class="wrap">
-    <section class="card">
+  <div class="wrap">
+    <div class="card">
       <div class="card-head">
-        <div>
-          <h1 class="card-title">Live Chat Support</h1>
-          <div class="card-sub">We usually reply quickly during business hours. On mobile, tap <b>Open chat</b> if it doesn’t open automatically.</div>
+        <div class="hgroup">
+          <div class="h1">
+            Live Chat Support
+            <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="stroke:var(--accent)">
+              <path d="M4 12a8 8 0 0 1 16 0v5a2 2 0 0 1-2 2h-2"/>
+              <path d="M4 12v5a2 2 0 0 0 2 2h2"/>
+              <path d="M8 19a4 4 0 0 0 4 2h2"/>
+            </svg>
+          </div>
+          <div class="desc">
+            We usually reply quickly during business hours. If chat doesn't load on mobile, it's usually iOS privacy/adblock/DNS blocking HubSpot.
+          </div>
         </div>
-        <div class="online"><span class="dot"></span>Support Online</div>
+        <div class="badge">
+          <span class="badgeDot"></span>
+          Support Online
+        </div>
       </div>
 
-      <div class="chatArea">
-        <!-- Mobile helper (used when inline embed isn't used or user needs a tap) -->
-        <div class="helper" id="helper">
-          <div class="helperBox">
-            <div style="font-weight:950;font-size:18px">Open BFA Support Chat</div>
-            <div class="muted" style="margin-top:6px" id="helperText">
-              On iPhone/iPad, chat sometimes requires a tap to open.
-            </div>
-            <div class="btnRow">
-              <button class="btn primary" id="openChatBtn" type="button">
-                <svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
-                Open chat
-              </button>
-              <button class="btn" id="retryChatBtn" type="button">
-                <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
-                Retry
-              </button>
+      <div class="card-body">
+        <div id="hsMount"></div>
+
+        <div id="fallback">
+          <div class="fallbackBox">
+            <p class="fbTitle">Chat couldn't load</p>
+            <p class="fbText" id="fbText">HubSpot is being blocked on this phone/network.</p>
+            <div class="fbBtns">
+              <!-- EDIT THESE -->
+              <a class="fbBtn primary" href="mailto:support@thebfagroup.com">Email Support</a>
+              <a class="fbBtn" href="https://wa.me/1XXXXXXXXXX" target="_blank" rel="noopener">WhatsApp</a>
             </div>
           </div>
         </div>
 
-        <!-- Inline mount (desktop/tablet) -->
-        <div id="chatMount"></div>
-      </div>
-    </section>
-  </main>
-
-  <div class="toast" id="toast">HubSpot chat script failed to load.</div>
-
-  <!-- Mobile sheet -->
-  <div id="sheet" aria-hidden="true">
-    <div class="back" id="sheetBack"></div>
-    <div class="panel">
-      <div class="sheetTitle">Menu</div>
-      <button class="btn" id="sheetNew" type="button">
-        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-        New chat
-      </button>
-      <button class="btn" id="sheetRetry" type="button">
-        <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
-        Retry
-      </button>
-      <div class="muted" style="font-size:12px;line-height:1.3">
-        If chat doesn’t load on some phones, it’s usually adblock/DNS blocking HubSpot domains.
       </div>
     </div>
   </div>
 
-<script>
-  // =========================================================
-  // HubSpot loader + responsive behavior
-  // =========================================================
-  const PORTAL_ID = "342895404";
-  const HUBLET = "na3";
-  const SCRIPT_SRC = "https://js-" + HUBLET + ".hs-scripts.com/" + PORTAL_ID + ".js";
+  <!-- Mobile Sheet -->
+  <div id="sheet" aria-hidden="true">
+    <div class="back" id="sheetBack"></div>
+    <div class="panel" role="dialog" aria-label="Menu">
+      <div class="sheetCloseRow">
+        <div>
+          <div class="sheetTitle">BFA Support</div>
+          <p class="sheetSub">Quick actions</p>
+        </div>
+        <button class="xbtn" id="sheetClose" type="button" aria-label="Close menu">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" fill="none"/>
+          </svg>
+        </button>
+      </div>
 
-  const toast = document.getElementById('toast');
-  const helper = document.getElementById('helper');
-  const helperText = document.getElementById('helperText');
-  const chatMount = document.getElementById('chatMount');
-
-  const isSmallScreen = () => window.matchMedia("(max-width: 920px)").matches;
-
-  // Desktop/tablet = inline embed; Mobile = normal widget (open on tap)
-  function applyHsSettings(){
-    const small = isSmallScreen();
-    window.hsConversationsSettings = {
-      loadImmediately: false,
-      // Inline only on larger screens
-      inlineEmbedSelector: small ? "" : "#chatMount",
-      disableInitialInputFocus: true
-    };
-  }
-
-  function showToast(msg){
-    toast.textContent = msg;
-    toast.classList.add('show');
-    setTimeout(()=>toast.classList.remove('show'), 3600);
-  }
-
-  function ensureScriptLoaded(){
-    return new Promise((resolve, reject)=>{
-      // already loaded?
-      if (window.HubSpotConversations) return resolve(true);
-
-      // avoid duplicating tag
-      const existing = document.getElementById('hs-script-loader');
-      if (existing) {
-        // wait a bit for it to appear
-        const t0 = Date.now();
-        const timer = setInterval(()=>{
-          if (window.HubSpotConversations){
-            clearInterval(timer);
-            resolve(true);
-          } else if (Date.now() - t0 > 12000){
-            clearInterval(timer);
-            reject(new Error("HubSpotConversations not available after wait"));
-          }
-        }, 250);
-        return;
-      }
-
-      const s = document.createElement('script');
-      s.id = "hs-script-loader";
-      s.async = true;
-      s.defer = true;
-      s.src = SCRIPT_SRC;
-
-      s.onload = () => resolve(true);
-      s.onerror = () => reject(new Error("HubSpot script failed to load"));
-
-      document.head.appendChild(s);
-    });
-  }
-
-  function loadWidget(){
-    if (!window.HubSpotConversations || !window.HubSpotConversations.widget) return false;
-    try{
-      window.HubSpotConversations.widget.load();
-      return true;
-    }catch(e){
-      return false;
-    }
-  }
-
-  function openWidget(){
-    if (!window.HubSpotConversations || !window.HubSpotConversations.widget) return false;
-    try{
-      window.HubSpotConversations.widget.open();
-      return true;
-    }catch(e){
-      return false;
-    }
-  }
-
-  async function boot(){
-    applyHsSettings();
-
-    // On mobile, we keep the helper visible (tap-to-open is the most reliable path)
-    helper.classList.toggle('show', isSmallScreen());
-
-    try{
-      await ensureScriptLoaded();
-
-      // When ready, load the widget
-      window.hsConversationsOnReady = window.hsConversationsOnReady || [];
-      window.hsConversationsOnReady.push(function(){
-        loadWidget();
-      });
-
-      // Also attempt a direct load (safe on most browsers)
-      loadWidget();
-
-      // Desktop/tablet inline: hide helper
-      if (!isSmallScreen()){
-        helper.classList.remove('show');
-      } else {
-        helperText.textContent = "On iPhone/iPad, tap Open chat to launch the full-screen chat.";
-      }
-
-      // If inline iframe exists, it will fill because of the CSS above.
-      // If on mobile, user taps Open chat.
-    }catch(err){
-      helper.classList.add('show');
-      helperText.textContent =
-        "HubSpot chat couldn’t load. This is usually DNS/adblock/content blockers. " +
-        "Allowlist: js-" + HUBLET + ".hs-scripts.com, js.hs-scripts.com, js.hs-analytics.net, api.usemessages.com";
-      showToast("HubSpot chat failed to load (blocked by network/adblock?).");
-    }
-  }
-
-  // Buttons
-  document.getElementById('openChatBtn').addEventListener('click', async ()=>{
-    try{
-      await ensureScriptLoaded();
-      loadWidget();
-      const ok = openWidget();
-      if (!ok) showToast("Tap again — iOS sometimes needs a second gesture.");
-    }catch(e){
-      showToast("HubSpot script blocked on this device/network.");
-    }
-  });
-
-  function retryAll(){
-    // Re-run boot (don’t spam scripts; ensureScriptLoaded handles existing)
-    boot();
-  }
-
-  document.getElementById('retryChatBtn').addEventListener('click', retryAll);
-  document.getElementById('retryBtn')?.addEventListener('click', retryAll);
-
-  document.getElementById('newBtn')?.addEventListener('click', ()=>{
-    // For “new chat” we can refresh, then open
-    try{
-      if (window.HubSpotConversations?.widget){
-        window.HubSpotConversations.widget.refresh();
-        window.HubSpotConversations.widget.open();
-      }
-    }catch(e){}
-  });
-
-  // Hamburger / sheet
-  const sheet = document.getElementById('sheet');
-  const sheetBack = document.getElementById('sheetBack');
-  const hamburger = document.getElementById('hamburger');
-
-  function openSheet(){ sheet.classList.add('open'); sheet.setAttribute('aria-hidden','false'); }
-  function closeSheet(){ sheet.classList.remove('open'); sheet.setAttribute('aria-hidden','true'); }
-
-  hamburger.addEventListener('click', openSheet);
-  sheetBack.addEventListener('click', closeSheet);
-
-  document.getElementById('sheetRetry').addEventListener('click', ()=>{ closeSheet(); retryAll(); });
-  document.getElementById('sheetNew').addEventListener('click', ()=>{
-    closeSheet();
-    try{
-      if (window.HubSpotConversations?.widget){
-        window.HubSpotConversations.widget.refresh();
-        window.HubSpotConversations.widget.open();
-      }
-    }catch(e){}
-  });
-
-  // Re-apply settings on resize (switch inline vs mobile mode)
-  let resizeTimer = null;
-  window.addEventListener('resize', ()=>{
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(()=>{ retryAll(); }, 250);
-  });
-
-  // boot
-  boot();
-</script>
+      <div class="sheetBtns">
+        <button class="chip" id="sheetNew" type="button">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          New chat
+        </button>
+        <button class="chip" id="sheetRetry" type="button">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+          Retry
+        </button>
+        <button class="chip accent" id="sheetTheme" type="button">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+          Theme
+        </button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
