@@ -1,335 +1,439 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>BFA — Support Chat</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>BFA Support</title>
 
-  <style>
-    :root{
-      --accent:#ff9500;
+<style>
+  /* =========================================================
+     Tokens (visual only — logic untouched)
+  ========================================================= */
+  :root{
+    --accent:#ff9500;
 
-      --bg-start:#fff4e4;
-      --bg-mid:#ffd293;
-      --bg-end:#ff9500;
+    /* Gradient stops (your values) */
+    --bg-start:#fff4e4;
+    --bg-mid:#ffd293;
+    --bg-end:#ff9500;
 
-      --fg:#111;
-      --muted:#6e6e73;
+    --fg:#111;
+    --muted:#6e6e73;
 
-      --panel:rgba(255,255,255,.58);
-      --tile:rgba(255,255,255,.46);
-      --tileHover:rgba(255,149,0,.08);
+    /* Glass surfaces */
+    --panel:rgba(255,255,255,.58);
+    --tile:rgba(255,255,255,.46);
+    --tileHover:rgba(255,149,0,.08);
 
-      --border:rgba(15,23,42,.10);
-      --borderStrong:rgba(15,23,42,.18);
-      --shadow:0 14px 34px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.05);
+    /* Subtle borders + shadows */
+    --border:rgba(15,23,42,.10);
+    --borderStrong:rgba(15,23,42,.18);
+    --shadow:0 14px 34px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.05);
 
-      --glass-blur:16px;
-      --glass-sat:140%;
-    }
-    body.dark{
-      --bg-start:#0b0c10;
-      --bg-mid:#0d1016;
-      --bg-end:#10141b;
+    /* Glass tuning */
+    --glass-blur:16px;
+    --glass-sat:140%;
+  }
+  body.dark{
+    --bg-start:#0b0c10;
+    --bg-mid:#0d1016;
+    --bg-end:#10141b;
 
-      --fg:#f7f7f8;
-      --muted:#a1a1a8;
+    --fg:#f7f7f8;
+    --muted:#a1a1a8;
 
-      --panel:rgba(21,21,23,.56);
-      --tile:rgba(26,26,29,.50);
-      --tileHover:rgba(255,149,0,.10);
+    --panel:rgba(21,21,23,.56);
+    --tile:rgba(26,26,29,.50);
+    --tileHover:rgba(255,149,0,.10);
 
-      --border:rgba(255,255,255,.10);
-      --borderStrong:rgba(255,255,255,.20);
-      --shadow:0 18px 46px rgba(0,0,0,.36), 0 2px 8px rgba(0,0,0,.22);
+    --border:rgba(255,255,255,.10);
+    --borderStrong:rgba(255,255,255,.20);
+    --shadow:0 18px 46px rgba(0,0,0,.36), 0 2px 8px rgba(0,0,0,.22);
 
-      --glass-blur:14px;
-    }
+    --glass-blur:14px;
+  }
 
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;color:var(--fg);
-      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
-      background:transparent;
-    }
-    body::before{
-      content:"";
-      position:fixed; inset:0; z-index:-1; pointer-events:none;
-      background:linear-gradient(180deg,var(--bg-start) 0%, var(--bg-mid) 52%, var(--bg-end) 100%);
-    }
+  *{box-sizing:border-box}
+  html,body{min-height:100%}
+  body{
+    margin:0;color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
+    background:transparent; /* gradient is painted by ::before */
+  }
+  body::before{
+    content:"";
+    position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:linear-gradient(180deg,var(--bg-start) 0%, var(--bg-mid) 52%, var(--bg-end) 100%);
+  }
 
-    .topbar{
-      position:sticky;top:0;z-index:100;background:var(--panel);
-      border-bottom:1px solid var(--border);
-      padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px;
-      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
-      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
-    }
-    .toprow{max-width:980px;margin:0 auto;display:flex;align-items:center;gap:10px}
-    .brand{display:flex;align-items:center;gap:10px;min-width:0}
-    .logoImg{
-      width:30px;height:30px;border-radius:8px;border:1px solid var(--border);
-      background:#fff;display:block
-    }
-    .logotxt{font-weight:950;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  a{color:inherit;text-decoration:none}
+  .muted{color:var(--muted)}
 
-    .actions{margin-left:auto;display:flex;gap:8px;align-items:center}
-    .chip{
-      height:36px;padding:0 12px;border-radius:9999px;border:1.5px solid var(--borderStrong);
-      background:var(--tile);color:var(--fg);font-weight:950;cursor:pointer;
-      display:inline-flex;align-items:center;gap:8px;
-      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
-      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
-      -webkit-tap-highlight-color:transparent;
-    }
-    .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
-    .ic{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none}
+  /* =========================================================
+     Topbar
+  ========================================================= */
+  .topbar{
+    position:sticky;top:0;z-index:100;background:var(--panel);
+    border-bottom:1px solid var(--border);
+    padding:calc(10px + env(safe-area-inset-top,0)) 14px 10px;
+    backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+  }
+  .toprow{
+    max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;position:relative
+  }
+  .brand{display:flex;align-items:center;gap:10px}
+  .logo{
+    width:32px;height:32px;border-radius:9px;border:1px solid var(--border);
+    background:#fff center/cover no-repeat;
+  }
+  .logotxt{font-weight:900;letter-spacing:.2px;font-size:18px}
+  .actions{margin-left:auto;display:flex;gap:8px;align-items:center}
 
-    .wrap{max-width:980px;margin:0 auto;padding:14px;padding-bottom:calc(14px + env(safe-area-inset-bottom,0))}
-    .chatCard{
-      max-width:860px;margin:0 auto;background:var(--panel);
-      border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow);overflow:hidden;
-      backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
-      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
-    }
-    .chatHead{
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
-      padding:12px 14px;border-bottom:1px solid var(--border);
-      background:linear-gradient(180deg, rgba(255,255,255,.24), rgba(255,255,255,0));
-    }
-    body.dark .chatHead{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0))}
-    .chatTitle{display:flex;flex-direction:column;gap:2px;min-width:0}
-    .chatTitle b{font-size:14px;font-weight:950;display:flex;align-items:center;gap:8px}
-    .chatTitle span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chip{
+    height:38px;min-width:38px;padding:0 14px;border-radius:9999px;border:1.5px solid var(--borderStrong);
+    background:var(--tile);color:var(--fg);font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+    transition:transform .12s ease, filter .18s ease, border-color .18s ease;
+    backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+  }
+  .chip:hover{border-color:var(--accent);transform:translateY(-1px);filter:brightness(1.03)}
+  .chip.accent{background:transparent;border-color:var(--accent);color:var(--accent)}
+  .ic{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none}
 
-    .chatBody{
-      position:relative;
-      height:min(760px, calc(100svh - 168px));
-      height:min(760px, calc(100vh - 168px));
-      background:rgba(255,255,255,.20);
-    }
-    body.dark .chatBody{background:rgba(0,0,0,.12)}
+  /* =========================================================
+     Centered chat card
+  ========================================================= */
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  .card{
+    background:var(--panel);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);
+    backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    overflow:hidden;
+  }
+  .card-head{
+    padding:16px;
+    border-bottom:1px solid var(--border);
+    display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  }
+  .hgroup{min-width:0}
+  .h1{margin:0;font-size:22px;font-weight:1000;letter-spacing:.2px;display:flex;align-items:center;gap:10px}
+  .desc{margin-top:6px;color:var(--muted);font-size:13px;line-height:1.35}
 
-    /* HubSpot inline embed elements */
-    #hubspot-conversations-inline-parent,
-    #hubspot-conversations-inline-iframe{
-      width:100% !important;
-      height:100% !important;
-      border:0 !important;
-      display:block !important;
-    }
+  .supportBadge{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 12px;border-radius:999px;
+    border:1px solid var(--borderStrong);
+    background:var(--tile);
+    font-weight:900;
+    white-space:nowrap;
+  }
 
-    .loading{
-      position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-      padding:18px;text-align:center;color:var(--muted);font-size:13px;
-    }
-    .loading .box{
-      max-width:560px;background:var(--tile);border:1px solid var(--border);
-      border-radius:16px;padding:14px;box-shadow:0 10px 26px rgba(0,0,0,.10);
-      backdrop-filter:blur(calc(var(--glass-blur) - 4px)) saturate(var(--glass-sat));
-      -webkit-backdrop-filter:blur(calc(var(--glass-blur) - 4px)) saturate(var(--glass-sat));
-    }
-    .loading b{color:var(--fg)}
-    .btnRow{margin-top:10px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-    .miniBtn{
-      height:34px;padding:0 12px;border-radius:9999px;border:1.5px solid var(--borderStrong);
-      background:transparent;color:var(--fg);font-weight:950;cursor:pointer;
-    }
-    .miniBtn.primary{border-color:var(--accent);color:var(--accent)}
-    .errorLine{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.35;display:none}
+  .card-body{
+    padding:14px;
+  }
 
-    @media (max-width:520px){
-      .wrap{padding:12px}
-      .chatCard{border-radius:18px}
-      .chatBody{height:calc(100svh - 148px);height:calc(100vh - 148px)}
-    }
-  </style>
+  /* The embed frame (desktop/tablet) */
+  .embed{
+    width:100%;
+    max-width:720px;
+    margin:0 auto;
+    border-radius:16px;
+    border:1px solid var(--borderStrong);
+    background:rgba(255,255,255,.35);
+    overflow:hidden;
+  }
 
-  <script>
-    // ----- HubSpot IDs -----
-    const HS_PORTAL_ID = "342895404";
-    const HS_HUBLET = "na3";
-    const HS_SRC = `https://js-${HS_HUBLET}.hs-scripts.com/${HS_PORTAL_ID}.js`;
+  /* HubSpot inline embed elements (from SDK docs) */
+  #hubspot-conversations-inline-iframe{
+    width:100%;
+    height:min(72vh, 720px);
+    border:0;
+    display:block;
+    background:transparent;
+  }
 
-    // ----- Helpers -----
-    const qs = () => new URLSearchParams(location.search);
-    const isMobile = () => window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
+  /* Mobile hint block */
+  .mobileHint{
+    max-width:720px;margin:0 auto;
+    padding:14px;border-radius:16px;
+    border:1px solid var(--borderStrong);
+    background:rgba(255,255,255,.35);
+    text-align:center;
+  }
+  .mobileHint strong{font-size:16px}
+  .mobileHint p{margin:6px 0 0;color:var(--muted);font-weight:700}
 
-    function setStatus(t){ const el=document.getElementById("statusText"); if(el) el.textContent=t; }
-    function showErr(t){ const el=document.getElementById("errorText"); const box=document.getElementById("errorBox");
-      if(el) el.textContent=t; if(box) box.style.display="block"; }
-    function hideErr(){ const box=document.getElementById("errorBox"); if(box) box.style.display="none"; }
-    function hideLoader(){ const el=document.getElementById("loading"); if(el) el.style.display="none"; }
-    function showLoader(){ const el=document.getElementById("loading"); if(el) el.style.display="flex"; }
+  .rowBtns{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap}
 
-    function initTheme(){
-      const p = qs();
-      const forceDark = p.get("dark")==="1";
-      const forceLight = p.get("light")==="1";
-      const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-      if(forceDark) document.body.classList.add("dark");
-      else if(forceLight) document.body.classList.remove("dark");
-      else if(prefersDark) document.body.classList.add("dark");
-    }
+  .toast{
+    position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+    background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:1000;
+    opacity:0;transition:opacity .25s;pointer-events:none;z-index:999;
+    box-shadow:0 10px 26px rgba(0,0,0,.18);
+  }
+  .toast.show{opacity:1}
+  .toast.err{background:#ff453a;color:#fff}
 
-    // IMPORTANT:
-    // On mobile Safari, inline embedding can be flaky depending on chatflow settings + blockers.
-    // So: default = normal widget on mobile (full-screen overlay), inline embed on desktop.
-    const forceEmbed = () => qs().get("embed")==="1";
+  @media (max-width:560px){
+    .wrap{padding:14px}
+    .h1{font-size:20px}
+    .card-body{padding:12px}
+  }
 
-    window.hsConversationsSettings = {
-      loadImmediately: false,
-      // only embed inline if desktop OR forced
-      ...( (!isMobile() || forceEmbed()) ? { inlineEmbedSelector: "#chat" } : {} ),
-      hideNewThreadLink: true,
-      disableInitialInputFocus: true
-    };
+  a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
 
-    function loadHubSpot(){
-      return new Promise((resolve,reject)=>{
-        if(document.getElementById("hs-script-loader")) return resolve();
-        const s=document.createElement("script");
-        s.id="hs-script-loader";
-        s.async=true; s.defer=true;
-        s.src=HS_SRC;
-        s.onload=()=>resolve();
-        s.onerror=()=>reject(new Error("HubSpot script failed to load."));
-        document.head.appendChild(s);
-      });
-    }
+<script>
+  // Theme
+  (function(){
+    const saved = localStorage.getItem("bfa_support_theme");
+    if (saved === "dark") document.documentElement.classList.add("dark"), document.body?.classList.add("dark");
+  })();
+</script>
 
-    function ensureWidgetOpen(){
-      const api = window.HubSpotConversations;
-      if(!api || !api.widget) return false;
+<!-- HubSpot Conversations SDK settings MUST be defined before loading the script -->
+<script>
+  // We will choose inline embed only on larger screens.
+  // On mobile, we let HubSpot open full-screen widget (more reliable).
+  const isMobile = () => window.matchMedia("(max-width: 760px)").matches;
 
-      const st = api.widget.status ? api.widget.status() : { loaded:false };
-      if(!st.loaded) api.widget.load({ widgetOpen:true });
-      else api.widget.open && api.widget.open();
-      return true;
-    }
+  window.hsConversationsSettings = {
+    loadImmediately: false,
+    // IMPORTANT: we set inlineEmbedSelector dynamically at runtime for desktop/tablet
+    // enableWidgetCookieBanner can be controlled here if you want:
+    // enableWidgetCookieBanner: "ON_WIDGET_LOAD"
+  };
 
-    function ensureInlineMounted(){
-      // inline embed is confirmed when this iframe exists
-      return !!document.getElementById("hubspot-conversations-inline-iframe");
-    }
+  window.hsConversationsOnReady = [function(){
+    try{
+      const mobile = isMobile();
 
-    function boot(){
-      showLoader(); hideErr(); setStatus("Loading chat…");
-
-      const start = Date.now();
-      const soft = 9000;
-      const hard = 22000;
-
-      const tick = () => {
-        const elapsed = Date.now() - start;
-        const ok = ensureWidgetOpen();
-
-        // Desktop embed mode: wait for iframe
-        if((!isMobile() || forceEmbed()) && ensureInlineMounted()){
-          hideLoader(); setStatus("Chat ready"); return;
-        }
-
-        // Mobile mode: we don't need inline iframe; as long as widget is loaded we’re good.
-        if((isMobile() && !forceEmbed()) && ok){
-          hideLoader(); setStatus("Chat ready"); return;
-        }
-
-        if(elapsed > soft){
-          showErr("If chat works on desktop but not mobile: check Chatflow → Display behavior → enable showing on small screens, and ensure this chatflow is top priority.");
-          setStatus("Still loading…");
-        }
-        if(elapsed > hard){
-          showErr("Still not loading. Most common: small-screen display disabled, chatflow priority conflict, or iOS content blocker. Tap Retry.");
-          setStatus("Not loaded");
-          return;
-        }
-        setTimeout(tick, 350);
-      };
-
-      tick();
-    }
-
-    // Official onReady hook
-    window.hsConversationsOnReady = [ () => boot() ];
-
-    document.addEventListener("DOMContentLoaded", async ()=>{
-      initTheme();
-
-      document.getElementById("themeBtn").addEventListener("click", ()=>document.body.classList.toggle("dark"));
-      document.getElementById("retryBtn").addEventListener("click", ()=>boot());
-
-      try{
-        await loadHubSpot();
-        boot();
-      }catch(e){
-        showLoader();
-        setStatus("Blocked");
-        showErr("HubSpot script didn’t load. On iPhone: disable content blockers for this site, then Retry.");
+      if (!mobile){
+        // Inline embed on desktop/tablet
+        window.hsConversationsSettings.inlineEmbedSelector = "#hs-chat-embed";
       }
-    });
 
-    document.addEventListener("visibilitychange", ()=>{
-      if(!document.hidden) boot();
-    });
-  </script>
+      // Load and open
+      window.HubSpotConversations.widget.load({ widgetOpen: true });
+
+      // If desktop/tablet inline embed: the widget is embedded and stays open until removed. :contentReference[oaicite:6]{index=6}
+    }catch(e){}
+  }];
+</script>
+
+<!-- HubSpot loader (your portal) -->
+<script id="hs-script-loader" async defer src="https://js-na3.hs-scripts.com/342895404.js"></script>
 </head>
 
 <body>
-  <header class="topbar">
-    <div class="toprow">
-      <div class="brand">
-        <img class="logoImg" src="/IPTV-/icons/icon-192.png" alt="BFA"
-          onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2230%22 height=%2230%22 viewBox=%220 0 40 40%22%3E%3Crect width=%2240%22 height=%2240%22 rx=%229%22 fill=%22%23ff9500%22/%3E%3Ctext x=%2250%25%22 y=%2257%25%22 text-anchor=%22middle%22 font-size=%2214%22 font-family=%22system-ui%22 font-weight=%22900%22 fill=%22%23000%22%3EBFA%3C/text%3E%3C/svg%3E';" />
-        <div class="logotxt">BFA Support</div>
+<div class="topbar">
+  <div class="toprow">
+    <div class="brand">
+      <div class="logo" style="background-image:url('/IPTV-/icons/icon-192.png')" aria-hidden="true"></div>
+      <div class="logotxt">BFA Support</div>
+    </div>
+
+    <div class="actions">
+      <button class="chip" id="btnNew" type="button" title="Start new chat">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        New
+      </button>
+      <button class="chip accent" id="btnTheme" type="button" title="Toggle theme">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+        Theme
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <div class="card-head">
+      <div class="hgroup">
+        <div class="h1">
+          Live Chat Support
+          <!-- support icon -->
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="stroke:var(--accent)">
+            <path d="M4 12a8 8 0 0 1 16 0v5a2 2 0 0 1-2 2h-2"/>
+            <path d="M4 12v5a2 2 0 0 0 2 2h2"/>
+            <path d="M8 19a4 4 0 0 0 4 2h2"/>
+          </svg>
+        </div>
+        <div class="desc">
+          We usually reply quickly during business hours. If the chat doesn’t appear in ~10 seconds, tap <b>Retry</b>.
+        </div>
       </div>
 
-      <div class="actions">
-        <button class="chip accent" id="themeBtn" type="button">
-          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.6A8.5 8.5 0 0 1 11.4 3a6.8 6.8 0 1 0 9.6 9.6Z"/></svg>
-          Theme
-        </button>
+      <div class="supportBadge">
+        <span style="width:9px;height:9px;border-radius:99px;background:#22c55e;display:inline-block"></span>
+        Support Online
       </div>
     </div>
-  </header>
 
-  <main class="wrap">
-    <section class="chatCard">
-      <div class="chatHead">
-        <div class="chatTitle">
-          <b>
-            Live Chat Support
-            <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;opacity:.9">
-              <path d="M4 12a8 8 0 0 1 16 0"></path>
-              <path d="M4 12v6a2 2 0 0 0 2 2h2v-6H6a2 2 0 0 1-2-2Z"></path>
-              <path d="M20 12v6a2 2 0 0 1-2 2h-2v-6h2a2 2 0 0 0 2-2Z"></path>
-            </svg>
-          </b>
-          <span id="statusText">Starting…</span>
-        </div>
-      </div>
+    <div class="card-body">
+      <!-- Desktop/tablet: HubSpot inline embed mounts inside this div -->
+      <div class="embed" id="hs-chat-embed">
+        <!-- Mobile: we show a friendly hint; widget opens full-screen -->
+        <div class="mobileHint" id="mobileHint" style="display:none">
+          <strong>Opening chat…</strong>
+          <p>If it doesn’t open, tap Retry.</p>
 
-      <div class="chatBody">
-        <!-- Inline embed container (used on desktop or when ?embed=1) -->
-        <div id="chat" style="width:100%;height:100%;"></div>
-
-        <div id="loading" class="loading">
-          <div class="box">
-            <b>Loading chat…</b><br/>
-            <span>If it doesn’t appear, tap Retry.</span>
-
-            <div class="btnRow">
-              <button class="miniBtn primary" id="retryBtn" type="button">Retry</button>
-              <button class="miniBtn" type="button" onclick="location.href=location.pathname + '?embed=1'">Force embed</button>
-            </div>
-
-            <div id="errorBox" class="errorLine">
-              <div id="errorText"></div>
-            </div>
+          <div class="rowBtns">
+            <button class="chip" id="btnRetry" type="button">
+              <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+              Retry
+            </button>
+            <button class="chip" id="btnOpen" type="button">
+              <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+              Open chat
+            </button>
           </div>
         </div>
+
+        <!-- Desktop placeholder (hidden when iframe appears) -->
+        <div class="mobileHint" id="deskHint">
+          <strong>Loading chat…</strong>
+          <p>If it doesn’t appear, tap Retry.</p>
+          <div class="rowBtns">
+            <button class="chip" id="btnRetryDesk" type="button">
+              <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+              Retry
+            </button>
+          </div>
+        </div>
+
       </div>
-    </section>
-  </main>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const toast = document.getElementById("toast");
+  const mobileHint = document.getElementById("mobileHint");
+  const deskHint = document.getElementById("deskHint");
+
+  const isMobile = () => window.matchMedia("(max-width: 760px)").matches;
+
+  function showToast(msg, isErr=false){
+    toast.textContent = msg;
+    toast.classList.toggle("err", !!isErr);
+    toast.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(()=>toast.classList.remove("show"), 2200);
+  }
+
+  function setTheme(next){
+    document.body.classList.toggle("dark", next === "dark");
+    document.documentElement.classList.toggle("dark", next === "dark");
+    localStorage.setItem("bfa_support_theme", next);
+  }
+
+  document.getElementById("btnTheme").addEventListener("click", ()=>{
+    const dark = document.body.classList.contains("dark");
+    setTheme(dark ? "light" : "dark");
+  });
+
+  function hsReady(){
+    return !!(window.HubSpotConversations && window.HubSpotConversations.widget);
+  }
+
+  function hsLoadOpen(){
+    if (!hsReady()) return false;
+    try{
+      const status = window.HubSpotConversations.widget.status();
+      if (status && status.loaded){
+        window.HubSpotConversations.widget.open();
+      }else{
+        window.HubSpotConversations.widget.load({ widgetOpen:true });
+      }
+      return true;
+    }catch(e){ return false; }
+  }
+
+  function hsRetry(){
+    if (!hsReady()) return false;
+    try{
+      const status = window.HubSpotConversations.widget.status();
+      if (status && status.loaded){
+        window.HubSpotConversations.widget.refresh({ openToNewThread:false });
+        window.HubSpotConversations.widget.open();
+      }else{
+        window.HubSpotConversations.widget.load({ widgetOpen:true });
+      }
+      return true;
+    }catch(e){ return false; }
+  }
+
+  function hsNewChat(){
+    if (!hsReady()) return false;
+    try{
+      // Clear chat cookies + optionally reset widget instance. :contentReference[oaicite:7]{index=7}
+      window.HubSpotConversations.clear({ resetWidget:true });
+      // Re-load/open
+      setTimeout(()=>hsLoadOpen(), 250);
+      return true;
+    }catch(e){ return false; }
+  }
+
+  function syncHints(){
+    if (isMobile()){
+      mobileHint.style.display = "block";
+      deskHint.style.display = "none";
+    }else{
+      mobileHint.style.display = "none";
+      deskHint.style.display = "block";
+    }
+  }
+  syncHints();
+  window.addEventListener("resize", syncHints);
+
+  // Buttons
+  document.getElementById("btnRetry")?.addEventListener("click", ()=>{
+    if (!hsRetry()) showToast("Chat not ready yet…", true);
+    else showToast("Retrying…");
+  });
+  document.getElementById("btnOpen")?.addEventListener("click", ()=>{
+    if (!hsLoadOpen()) showToast("Chat not ready yet…", true);
+  });
+  document.getElementById("btnRetryDesk")?.addEventListener("click", ()=>{
+    if (!hsRetry()) showToast("Chat not ready yet…", true);
+    else showToast("Retrying…");
+  });
+  document.getElementById("btnNew")?.addEventListener("click", ()=>{
+    if (!hsNewChat()) showToast("Chat not ready yet…", true);
+    else showToast("New chat started");
+  });
+
+  // Auto-open on mobile (more reliable than inline embed on phones)
+  // Also, if HubSpot is blocked by a content blocker/VPN, it won’t load.
+  // (Common cause on Safari/iOS.) :contentReference[oaicite:8]{index=8}
+  const tryAuto = setInterval(()=>{
+    if (!hsReady()) return;
+    clearInterval(tryAuto);
+    // Open chat
+    hsLoadOpen();
+
+    // If desktop, hide placeholder once iframe exists
+    setInterval(()=>{
+      const iframe = document.getElementById("hubspot-conversations-inline-iframe");
+      if (iframe && deskHint) deskHint.style.display = "none";
+    }, 400);
+  }, 250);
+
+  // If after 10s it’s still not loaded, show a clear hint
+  setTimeout(()=>{
+    if (!hsReady()){
+      showToast("HubSpot script didn’t load (blocked?)", true);
+    }else{
+      try{
+        const st = window.HubSpotConversations.widget.status();
+        if (!st.loaded) showToast("Widget didn’t finish loading — check chatflow mobile setting", true);
+      }catch(e){}
+    }
+  }, 10000);
+</script>
 </body>
 </html>
