@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BFA — Live Chat</title>
+
+  <style>
+    html, body { height: 100%; margin: 0; background: #0b1220; }
+    .wrap { height: 100%; display: flex; flex-direction: column; }
+    .topbar {
+      padding: 14px 16px;
+      color: #e5e7eb;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(135deg, rgba(255,106,0,.25), rgba(255,255,255,.06));
+      border-bottom: 1px solid rgba(255,255,255,.10);
+    }
+    .topbar b { letter-spacing: .02em; }
+    .chat {
+      flex: 1;
+      min-height: 0;
+      background: #0b1220;
+    }
+
+    /* HubSpot inline embed containers */
+    #hubspot-conversations-inline-parent,
+    #hubspot-conversations-inline-iframe{
+      width: 100% !important;
+      height: 100% !important;
+      border: 0 !important;
+    }
+
+    .hint {
+      font-size: 12px;
+      opacity: .8;
+    }
+  </style>
+
+  <script>
+    // Fullscreen inline chat
+    window.hsConversationsSettings = {
+      loadImmediately: false,
+      inlineEmbedSelector: "#chat"
+    };
+
+    window.hsConversationsOnReady = [
+      () => {
+        // Load and open immediately :contentReference[oaicite:2]{index=2}
+        window.HubSpotConversations.widget.load({ widgetOpen: true });
+
+        // Optional: force open just in case
+        window.HubSpotConversations.widget.open();
+
+        // Optional: if URL has ?new=1, force a new thread
+        const qs = new URLSearchParams(location.search);
+        if (qs.get("new") === "1") {
+          window.HubSpotConversations.widget.refresh({ openToNewThread: true });
+        }
+      }
+    ];
+  </script>
+
+  <!-- Your portal script (same one you already use) -->
+  <script async defer id="hs-script-loader" src="//js-na3.hs-scripts.com/342895404.js"></script>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div><b>BFA Live Chat</b> <span class="hint">Support & questions</span></div>
+      <div class="hint">Powered by HubSpot</div>
+    </div>
+    <div id="chat" class="chat"></div>
+  </div>
+</body>
+</html>
