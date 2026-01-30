@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>BFA Support</title>
 
+<!-- Optional: helps some networks resolve faster -->
+<link rel="preconnect" href="https://js-na3.hs-scripts.com" crossorigin>
+<link rel="preconnect" href="https://js.hs-scripts.com" crossorigin>
+<link rel="preconnect" href="https://js.hs-analytics.net" crossorigin>
+<link rel="preconnect" href="https://api.usemessages.com" crossorigin>
+
 <style>
   :root{
     --accent:#ff9500;
@@ -121,20 +127,27 @@
   }
   .badgeDot{width:10px;height:10px;border-radius:99px;background:#22c55e;display:inline-block}
 
-  /* Body becomes the ONLY container for chat (no wrapper box) */
   .card-body{
     position:relative;
-    padding:0;             /* key: remove padding so no “box-in-box” */
-    background:transparent; /* let HubSpot own the UI */
+    padding:0;
+    background:transparent;
   }
 
-  /* This is where HubSpot inline embed mounts on desktop */
+  /* Desktop inline embed mount */
   #hsMount{
     width:100%;
-    height:min(78vh, 860px);
+    height:calc(100vh - 260px);
+    min-height:560px;
+    max-height:860px;
   }
 
-  /* HubSpot generated iframe */
+  /* Force HubSpot inline containers to fill */
+  #hubspot-conversations-inline-parent{
+    width:100% !important;
+    height:100% !important;
+    min-height:inherit !important;
+    max-height:inherit !important;
+  }
   #hubspot-conversations-inline-iframe{
     width:100% !important;
     height:100% !important;
@@ -143,86 +156,72 @@
     background:transparent !important;
   }
 
-  /* Minimal loader overlay (NOT a second box) */
-  .loader{
-    position:absolute; inset:0;
-    display:flex; align-items:flex-start; justify-content:center;
-    padding:16px;
-    pointer-events:none;
+  /* Mobile CTA (instead of blank embed area) */
+  .mobileCta{
+    display:none;
+    padding:22px 16px 18px;
   }
-  .loaderLine{
-    pointer-events:auto;
-    display:inline-flex;align-items:center;gap:10px;
-    padding:10px 14px;border-radius:999px;
+  .ctaBox{
+    max-width:520px;margin:0 auto;
     background:var(--tile);
     border:1px solid var(--borderStrong);
-    color:var(--muted);
-    font-weight:900;
+    border-radius:18px;
+    padding:16px;
+    box-shadow:0 10px 28px rgba(15,23,42,.08);
     backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
     -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
   }
-  .spin{
-    width:14px;height:14px;border-radius:99px;
-    border:2px solid rgba(0,0,0,.18);
-    border-top-color:rgba(0,0,0,.55);
-    animation:rot .8s linear infinite;
+  .ctaTitle{font-weight:1000;font-size:16px;margin:0 0 6px}
+  .ctaText{margin:0;color:var(--muted);font-size:13px;line-height:1.35}
+  .ctaBtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .ctaBtn{
+    height:42px;padding:0 14px;border-radius:999px;border:1.5px solid var(--borderStrong);
+    background:#fff;color:#111;font-weight:1000;cursor:pointer;display:inline-flex;align-items:center;gap:8px;
   }
-  body.dark .spin{
-    border-color:rgba(255,255,255,.18);
-    border-top-color:rgba(255,255,255,.70);
-  }
-  @keyframes rot{to{transform:rotate(360deg)}}
+  body.dark .ctaBtn{background:#111;color:#fff}
+  .ctaBtn.primary{border-color:var(--accent);color:var(--accent);background:transparent}
 
   .toast{
     position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
     background:var(--accent);color:#000;padding:10px 16px;border-radius:999px;font-weight:1000;
     opacity:0;transition:opacity .25s;pointer-events:none;z-index:999;
     box-shadow:0 10px 26px rgba(0,0,0,.18);
+    max-width:min(92vw,520px);
+    text-align:center;
   }
   .toast.show{opacity:1}
   .toast.err{background:#ff453a;color:#fff}
 
-  @media (max-width:560px){
+  @media (max-width:760px){
     .wrap{padding:14px}
     .h1{font-size:22px}
-    #hsMount{
-      height:calc(100svh - 210px); /* mobile fills screen under header */
-      height:calc(100vh - 210px);
-    }
+
+    /* On mobile: hide inline embed area, show CTA */
+    #hsMount{display:none}
+    .mobileCta{display:block}
   }
 
   a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
 
 <script>
-  // ------------ HubSpot setup ------------
+  // =====================
+  // HubSpot config (must be set BEFORE loading the script)
+  // =====================
   const HS_PORTAL_ID = "342895404";
   const HS_HUBLET = "na3";
-  const HS_SRC = `https://js-${HS_HUBLET}.hs-scripts.com/${HS_PORTAL_ID}.js`;
 
-  const isMobile = () => window.matchMedia("(max-width: 760px)").matches;
+  const isMobile = () =>
+    (window.matchMedia && matchMedia("(max-width:760px)").matches) ||
+    /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-  // IMPORTANT: define before loading HubSpot script
   window.hsConversationsSettings = {
     loadImmediately: false
-    // inlineEmbedSelector is set at runtime (desktop only)
   };
 
-  function loadHubSpot(){
-    return new Promise((resolve,reject)=>{
-      if (document.getElementById("hs-script-loader")) return resolve();
-      const s=document.createElement("script");
-      s.id="hs-script-loader";
-      s.async=true; s.defer=true;
-      s.src=HS_SRC;
-      s.onload=()=>resolve();
-      s.onerror=()=>reject(new Error("HubSpot script failed to load."));
-      document.head.appendChild(s);
-    });
-  }
-
-  function hsReady(){
-    return !!(window.HubSpotConversations && window.HubSpotConversations.widget);
+  if (!isMobile()) {
+    // IMPORTANT: set this before loading the script so inline embed works reliably
+    window.hsConversationsSettings.inlineEmbedSelector = "#hsMount";
   }
 
   function toast(msg, err=false){
@@ -231,7 +230,7 @@
     t.classList.toggle("err", !!err);
     t.classList.add("show");
     clearTimeout(toast._t);
-    toast._t=setTimeout(()=>t.classList.remove("show"), 2200);
+    toast._t=setTimeout(()=>t.classList.remove("show"), 2800);
   }
 
   function setTheme(next){
@@ -241,11 +240,11 @@
   function initTheme(){
     const saved = localStorage.getItem("bfa_support_theme");
     if (saved) setTheme(saved);
-    else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) setTheme("dark");
+    else if (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches) setTheme("dark");
   }
 
-  function showLoader(show){
-    document.getElementById("loader").style.display = show ? "flex" : "none";
+  function hsReady(){
+    return !!(window.HubSpotConversations && window.HubSpotConversations.widget);
   }
 
   function openChat(){
@@ -260,13 +259,8 @@
   function retryChat(){
     if (!hsReady()) return false;
     try{
-      const st = window.HubSpotConversations.widget.status?.();
-      if (st && st.loaded){
-        window.HubSpotConversations.widget.refresh({ openToNewThread:false });
-        window.HubSpotConversations.widget.open();
-      }else{
-        window.HubSpotConversations.widget.load({ widgetOpen:true });
-      }
+      window.HubSpotConversations.widget.refresh({ openToNewThread:false });
+      window.HubSpotConversations.widget.open();
       return true;
     }catch(e){ return false; }
   }
@@ -280,51 +274,60 @@
     }catch(e){ return false; }
   }
 
-  // Called by HubSpot when ready
-  window.hsConversationsOnReady = [function(){
-    // Desktop/tablet: mount inline into #hsMount
-    if (!isMobile()){
-      window.hsConversationsSettings.inlineEmbedSelector = "#hsMount";
-    }
+  // Load script with fallback (some blockers hit one domain but not the other)
+  function loadScriptWithFallback(urls){
+    return new Promise((resolve,reject)=>{
+      let i = 0;
+      const tryNext = () => {
+        if (i >= urls.length) return reject(new Error("HubSpot script blocked"));
+        const src = urls[i++];
+        const s = document.createElement("script");
+        s.async = true; s.defer = true;
+        s.src = src;
+        s.onload = () => resolve(src);
+        s.onerror = () => tryNext();
+        document.head.appendChild(s);
+      };
+      tryNext();
+    });
+  }
 
-    // Always load; on mobile we rely on overlay/full-screen open
-    openChat();
+  async function bootHubSpot(){
+    // Note: HubSpot loader and chat can involve multiple domains (tracking + chat).
+    const urls = [
+      `https://js-${HS_HUBLET}.hs-scripts.com/${HS_PORTAL_ID}.js`,
+      `https://js.hs-scripts.com/${HS_PORTAL_ID}.js`
+    ];
 
-    // Hide loader once either:
-    // - desktop: inline iframe exists
-    // - mobile: widget status is loaded
-    const start = Date.now();
-    const tick = () => {
-      const elapsed = Date.now() - start;
+    try{
+      await loadScriptWithFallback(urls);
 
-      if (!isMobile()){
-        if (document.getElementById("hubspot-conversations-inline-iframe")){
-          showLoader(false); return;
-        }
-      }else{
-        try{
-          const st = window.HubSpotConversations.widget.status?.();
-          if (st && st.loaded){
-            showLoader(false); return;
-          }
-        }catch(e){}
+      // Wait for widget to exist
+      const start = Date.now();
+      while (!hsReady() && Date.now() - start < 12000){
+        await new Promise(r=>setTimeout(r, 200));
       }
-
-      if (elapsed > 9000){
-        // keep it minimal — no big box
-        // user can still open/retry from top buttons
-      }
-      if (elapsed > 22000){
-        showLoader(false);
-        toast("Chat didn’t load. Try disabling iPhone content blockers.", true);
+      if (!hsReady()){
+        toast("HubSpot loaded, but chat widget didn’t initialize.", true);
         return;
       }
-      setTimeout(tick, 350);
-    };
-    tick();
-  }];
 
-  document.addEventListener("DOMContentLoaded", async ()=>{
+      // Open immediately (mobile will go full-screen overlay)
+      openChat();
+
+    }catch(e){
+      toast("HubSpot is blocked on this phone (Content Blocker / AdBlock DNS).", true);
+
+      // Helpful note inside the page (mobile)
+      const note = document.getElementById("blockerNote");
+      if (note){
+        note.textContent =
+          "Looks like HubSpot is blocked on this device/network. Disable Safari content blockers or allowlist: js-na3.hs-scripts.com, js.hs-scripts.com, js.hs-analytics.net, api.usemessages.com";
+      }
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", ()=>{
     initTheme();
 
     document.getElementById("btnTheme").addEventListener("click", ()=>{
@@ -340,14 +343,21 @@
       else toast("New chat started");
     });
 
-    try{
-      showLoader(true);
-      await loadHubSpot();
-      // hsConversationsOnReady will run automatically after load
-    }catch(e){
-      showLoader(false);
-      toast("HubSpot script blocked (content blocker?)", true);
+    // Mobile CTA buttons
+    const openBtn = document.getElementById("btnOpenMobile");
+    if (openBtn){
+      openBtn.addEventListener("click", ()=>{
+        if (!openChat()) toast("Chat not ready yet…", true);
+      });
     }
+    const retryBtn = document.getElementById("btnRetryMobile");
+    if (retryBtn){
+      retryBtn.addEventListener("click", ()=>{
+        if (!retryChat()) toast("Chat not ready yet…", true);
+      });
+    }
+
+    bootHubSpot();
 
     document.addEventListener("visibilitychange", ()=>{
       if (!document.hidden) openChat();
@@ -360,8 +370,7 @@
   <div class="topbar">
     <div class="toprow">
       <div class="brand">
-        <div class="logo" style="background-image:url('/IPTV-/icons/icon-192.png')"
-             onerror="this.style.backgroundImage='none';this.style.backgroundColor='#fff'"></div>
+        <div class="logo" style="background-image:url('/IPTV-/icons/icon-192.png')"></div>
         <div class="logotxt">BFA Support</div>
       </div>
 
@@ -395,10 +404,9 @@
             </svg>
           </div>
           <div class="desc">
-            We usually reply quickly during business hours. If chat doesn’t open on mobile, tap <b>Retry</b>.
+            We usually reply quickly during business hours. On mobile, tap <b>Open chat</b> if it doesn’t open automatically.
           </div>
         </div>
-
         <div class="badge">
           <span class="badgeDot"></span>
           Support Online
@@ -406,16 +414,29 @@
       </div>
 
       <div class="card-body">
-        <!-- Desktop inline embed mounts HERE. Mobile will open full-screen widget. -->
+        <!-- Desktop inline embed -->
         <div id="hsMount"></div>
 
-        <!-- Minimal loader line (no extra box) -->
-        <div class="loader" id="loader">
-          <div class="loaderLine">
-            <span class="spin"></span>
-            <span>Opening chat…</span>
+        <!-- Mobile CTA (clean, centered, no “box-in-box”) -->
+        <div class="mobileCta">
+          <div class="ctaBox">
+            <p class="ctaTitle">Open BFA Support Chat</p>
+            <p class="ctaText" id="blockerNote">
+              If the chat doesn’t appear, tap Open chat. If it still fails, your phone/network is blocking HubSpot scripts.
+            </p>
+            <div class="ctaBtns">
+              <button class="ctaBtn primary" id="btnOpenMobile" type="button">
+                <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 16 0v5a2 2 0 0 1-2 2h-2"/><path d="M8 19a4 4 0 0 0 4 2h2"/></svg>
+                Open chat
+              </button>
+              <button class="ctaBtn" id="btnRetryMobile" type="button">
+                <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+                Retry
+              </button>
+            </div>
           </div>
         </div>
+
       </div>
     </div>
   </div>
