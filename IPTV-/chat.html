@@ -29,6 +29,9 @@
     --shadow:0 14px 34px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.05);
     --glass-blur:16px;
     --glass-sat:140%;
+
+    /* ✅ NEW: how tall the HubSpot promo cover should be */
+    --hs-mask-h: 50px;
   }
   body.dark{
     --bg-start:#0b0c10;
@@ -155,17 +158,17 @@
   }
   .badgeDot{width:10px;height:10px;border-radius:99px;background:#22c55e;display:inline-block}
 
-  /* ===== FIXED: Card body fills remaining space ===== */
+  /* ===== Card body fills remaining space ===== */
   .card-body{
     position:relative;
     flex:1;
     display:flex;
     flex-direction:column;
-    min-height:0; /* Important for flex child to shrink properly */
+    min-height:0;
     background:transparent;
   }
 
-  /* ===== FIXED: HubSpot container fills all available height ===== */
+  /* ===== HubSpot container fills all available height ===== */
   #hsMount{
     width:100%;
     flex:1;
@@ -184,7 +187,7 @@
     flex-direction:column !important;
   }
 
-  /* HubSpot iframe - force full height and remove promotional banner */
+  /* HubSpot iframe - force full height */
   #hubspot-conversations-inline-iframe{
     width:100% !important;
     flex:1 !important;
@@ -194,12 +197,35 @@
     background:transparent !important;
   }
 
-  /* Hide HubSpot promotional banner */
+  /* Hide HubSpot promotional banner (best-effort) */
   #hubspot-conversations-inline-parent [class*="promo"],
   #hubspot-conversations-inline-parent [class*="banner"],
   #hubspot-conversations-inline-parent [class*="upgrade"],
   #hubspot-conversations-inline-parent a[href*="hubspot.com"]{
     display:none !important;
+  }
+
+  /* ✅ NEW: bottom mask that covers “Add live chat...” */
+  #hsBrandMask{
+    position:absolute;
+    left:0; right:0; bottom:0;
+    height:calc(var(--hs-mask-h) + env(safe-area-inset-bottom, 0px));
+    z-index:50;
+    pointer-events:none; /* doesn't block typing */
+    background:linear-gradient(
+      180deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,.72) 0%,
+      rgba(255,255,255,.92) 0%
+    );
+  }
+  body.dark #hsBrandMask{
+    background:linear-gradient(
+      180deg,
+      rgba(0,0,0,0) 0%,
+      rgba(21,21,23,.55) 0%,
+      rgba(21,21,23,.88) 0%
+    );
   }
 
   /* Clean fallback (only shows if blocked) */
@@ -307,9 +333,8 @@
     });
   }
 
-  // ===== FIXED: Force HubSpot to fill container =====
+  // Force HubSpot to fill container
   function forceHubSpotFullHeight() {
-    // Remove the promotional banner that HubSpot injects
     const promoBanners = document.querySelectorAll(
       '#hubspot-conversations-inline-parent [class*="promo"], ' +
       '#hubspot-conversations-inline-parent [class*="banner"], ' +
@@ -317,14 +342,12 @@
     );
     promoBanners.forEach(el => el.remove());
 
-    // Force iframe height
     const iframe = document.querySelector('#hubspot-conversations-inline-iframe');
     if (iframe) {
       iframe.style.height = '100%';
       iframe.style.minHeight = '100%';
     }
 
-    // Force parent container
     const parent = document.querySelector('#hubspot-conversations-inline-parent');
     if (parent) {
       parent.style.height = '100%';
@@ -342,7 +365,6 @@
     try{
       await loadScriptWithFallback(urls);
 
-      // Wait a bit for widget init
       const start = Date.now();
       while (!hsReady() && Date.now() - start < 12000){
         await new Promise(r=>setTimeout(r, 200));
@@ -355,28 +377,24 @@
         return;
       }
 
-      // ===== FIXED: Apply height fixes after HubSpot loads =====
       setTimeout(forceHubSpotFullHeight, 500);
-      setTimeout(forceHubSpotFullHeight, 1500); // Retry after full render
+      setTimeout(forceHubSpotFullHeight, 1500);
 
-      // Watch for HubSpot DOM changes and reapply fixes
       const observer = new MutationObserver(() => {
         forceHubSpotFullHeight();
       });
-      
+
       const mount = document.getElementById('hsMount');
       if (mount) {
         observer.observe(mount, { childList: true, subtree: true });
       }
 
-      // Handle resize/keyboard
       let resizeTimer;
       window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(forceHubSpotFullHeight, 250);
       });
 
-      // Refresh on visibility change
       document.addEventListener("visibilitychange", ()=>{
         if (!document.hidden){
           setTimeout(forceHubSpotFullHeight, 300);
@@ -392,16 +410,16 @@
 
   function retryChat(){
     if (!hsReady()) return;
-    try{ 
-      window.HubSpotConversations.widget.refresh({ openToNewThread:false }); 
+    try{
+      window.HubSpotConversations.widget.refresh({ openToNewThread:false });
       setTimeout(forceHubSpotFullHeight, 500);
     }catch(e){}
   }
-  
+
   function newChat(){
     if (!hsReady()) return;
-    try{ 
-      window.HubSpotConversations.clear({ resetWidget:true }); 
+    try{
+      window.HubSpotConversations.clear({ resetWidget:true });
     }catch(e){}
     setTimeout(()=>{
       retryChat();
@@ -409,19 +427,17 @@
     }, 300);
   }
 
-  // Mobile sheet functions
-  function openSheet(){ 
-    document.getElementById("sheet").classList.add("open"); 
+  function openSheet(){
+    document.getElementById("sheet").classList.add("open");
     document.body.classList.add("sheet-open");
     document.getElementById("sheet").setAttribute("aria-hidden", "false");
   }
-  function closeSheet(){ 
-    document.getElementById("sheet").classList.remove("open"); 
+  function closeSheet(){
+    document.getElementById("sheet").classList.remove("open");
     document.body.classList.remove("sheet-open");
     document.getElementById("sheet").setAttribute("aria-hidden", "true");
   }
 
-  // Mobile viewport height fix
   function setVH() {
     let vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
@@ -440,14 +456,12 @@
     initTheme();
     bootHubSpot();
 
-    // Desktop actions
     document.getElementById("btnNew").addEventListener("click", newChat);
     document.getElementById("btnRetry").addEventListener("click", retryChat);
     document.getElementById("btnTheme").addEventListener("click", ()=>{
       setTheme(document.body.classList.contains("dark") ? "light" : "dark");
     });
 
-    // Hamburger
     document.getElementById("hamburger").addEventListener("click", (e) => {
       e.preventDefault();
       openSheet();
@@ -455,14 +469,12 @@
     document.getElementById("sheetBack").addEventListener("click", closeSheet);
     document.getElementById("sheetClose").addEventListener("click", closeSheet);
 
-    // Close sheet on escape key
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && document.getElementById("sheet").classList.contains('open')) {
         closeSheet();
       }
     });
 
-    // Sheet buttons
     document.getElementById("sheetNew").addEventListener("click", ()=>{ closeSheet(); newChat(); });
     document.getElementById("sheetRetry").addEventListener("click", ()=>{ closeSheet(); retryChat(); });
     document.getElementById("sheetTheme").addEventListener("click", ()=>{
@@ -470,7 +482,6 @@
       setTheme(document.body.classList.contains("dark") ? "light" : "dark");
     });
 
-    // Prevent double-tap zoom
     const buttons = document.querySelectorAll('button, .chip');
     buttons.forEach(btn => {
       btn.addEventListener('touchend', (e) => {
@@ -490,7 +501,6 @@
         <div class="logotxt">BFA Support</div>
       </div>
 
-      <!-- Desktop actions -->
       <div class="actions">
         <button class="chip" id="btnNew" type="button">
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
@@ -506,7 +516,6 @@
         </button>
       </div>
 
-      <!-- Simple hamburger RIGHT -->
       <button id="hamburger" type="button" aria-label="Menu">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 7h16M4 12h16M4 17h16"/>
@@ -540,6 +549,9 @@
       <div class="card-body">
         <div id="hsMount"></div>
 
+        <!-- ✅ NEW: covers the “Add live chat...” promo line without blocking the input -->
+        <div id="hsBrandMask" aria-hidden="true"></div>
+
         <div id="fallback">
           <div class="fallbackBox">
             <p class="fbTitle">Chat couldn't load</p>
@@ -555,7 +567,6 @@
     </div>
   </div>
 
-  <!-- Mobile Sheet -->
   <div id="sheet" aria-hidden="true">
     <div class="back" id="sheetBack"></div>
     <div class="panel" role="dialog" aria-label="Menu">
