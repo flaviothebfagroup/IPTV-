@@ -1,6 +1,6 @@
-
-
-
+<!doctype html>
+<html lang="en">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Digital Signage — Player</title>
@@ -50,8 +50,9 @@
     @keyframes fadeHud{0%{opacity:0; transform:translate(-50%,-50%) scale(.96)} 15%{opacity:1; transform:translate(-50%,-50%) scale(1)} 85%{opacity:1} 100%{opacity:0}}
     @media (prefers-reduced-motion:reduce){ .transition-overlay,.channel-info,.loading-overlay{transition:none} }
   </style>
+</head>
 
-
+<body>
   <!-- Volume HUD -->
   <div class="volume-control" id="volumeHud" aria-live="polite">
     <button class="vol-btn" id="muteBtn" title="Mute/Unmute" aria-label="Mute/Unmute">
@@ -72,7 +73,8 @@
 
   <!-- IMPORTANT: no `muted` attribute (prevents sticky-mute on kiosk engines) -->
   <div class="video-container">
-    <video id="videoPlayer" autoplay="" playsinline=""></video>
+    <!-- CHANGED: added crossorigin so native HLS + any fetches behave consistently -->
+    <video id="videoPlayer" autoplay="" playsinline="" crossorigin="anonymous"></video>
   </div>
 
   <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
@@ -219,15 +221,37 @@
       return (location.protocol === 'https:' && /^http:\/\//i.test(u)) ? u.replace(/^http:/i,'https:') : u;
     }
 
+    // CHANGED: prefer native HLS first (avoids CORS/XHR issues on some devices)
+    function supportsNativeHls(v){
+      return !!(v.canPlayType('application/vnd.apple.mpegurl') || v.canPlayType('application/x-mpegURL'));
+    }
+
     function loadChannel(n){
       const ch=CONFIG.channels.find(c=>c.id===n); if(!ch) return;
       const v=$('videoPlayer'); showLoading(true);
 
-      if(Hls.isSupported()){
-        if(hls){ try{hls.destroy();}catch(e){} hls=null; }
+      // cleanup previous hls.js instance (same as before)
+      if(hls){ try{hls.destroy();}catch(e){} hls=null; }
+
+      const url = httpsify(ch.url);
+
+      // ✅ Try native HLS first (this is the only behavioral change)
+      if(supportsNativeHls(v)){
+        v.src = url;
+        v.play().then(()=>{
+          v.volume = (window.currentVolume||0)/100;
+          v.muted  = !!window.isMuted;
+          setTimeout(()=>{ if(!window.isMuted) forceUnmute(v); }, 200);
+          showLoading(false);
+        }).catch(()=>{});
+      }
+      // fallback to hls.js (same as before)
+      else if(Hls.isSupported()){
         hls=new Hls({enableWorker:true,lowLatencyMode:true});
         hls.attachMedia(v);
-        hls.loadSource(httpsify(ch.url));
+        hls.on(Hls.Events.MEDIA_ATTACHED, ()=> {
+          hls.loadSource(url);
+        });
 
         hls.on(Hls.Events.MANIFEST_PARSED, ()=>{
           v.play().then(()=>{
@@ -239,16 +263,8 @@
           }).catch(()=>{});
         });
         hls.on(Hls.Events.ERROR,onHlsError);
-
-      } else if(v.canPlayType('application/vnd.apple.mpegurl')){
-        v.src=httpsify(ch.url);
-        v.play().then(()=>{
-          v.volume = (window.currentVolume||0)/100;
-          v.muted  = !!window.isMuted;
-          setTimeout(()=>{ if(!window.isMuted) forceUnmute(v); }, 200);
-          showLoading(false);
-        }).catch(()=>{});
-      } else {
+      }
+      else {
         showError('HLS not supported');
       }
 
@@ -339,5 +355,5 @@
       }catch(e){}
     });
   </script>
-
-
+</body>
+</html>
