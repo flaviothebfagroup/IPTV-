@@ -1,6 +1,6 @@
-<!doctype html>
-<html lang="en">
-<head>
+
+
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Digital Signage — Player</title>
@@ -50,9 +50,8 @@
     @keyframes fadeHud{0%{opacity:0; transform:translate(-50%,-50%) scale(.96)} 15%{opacity:1; transform:translate(-50%,-50%) scale(1)} 85%{opacity:1} 100%{opacity:0}}
     @media (prefers-reduced-motion:reduce){ .transition-overlay,.channel-info,.loading-overlay{transition:none} }
   </style>
-</head>
 
-<body>
+
   <!-- Volume HUD -->
   <div class="volume-control" id="volumeHud" aria-live="polite">
     <button class="vol-btn" id="muteBtn" title="Mute/Unmute" aria-label="Mute/Unmute">
@@ -108,22 +107,12 @@
       dealershipName: 'BFA_PRINT',
       channels: [
         { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
-        { id:2, name:'TSN 5',   url:'https://fl31.moveonjoy.com/TSN_5/index.m3u8', type:'hls' },
+        { id:2, name:'Channel',   url:'https://dai.google.com/linear/hls/pa/event/sfQoQ_zET42kay3DTlOY6Q/stream/7f09666c-3b35-4a7a-a175-dc6a73e6ac4e:CHS/variant/f3814d1565b9b6d1500e7dd4fe87beef/bandwidth/3102000.m3u8', type:'hls' },
         { id:3, name:'Cooking',   url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
         { id:4, name:'Nature',   url:'https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8', type:'hls' },
         { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
       ]
     };
-
-    /* ================== FIX: CORS proxy for XD236/hls.js ==================
-       Put your Worker URL here (example):
-       const CORS_PROXY_BASE = 'https://YOUR-WORKER.workers.dev/?url=';
-       If blank, it behaves like before. */
-    const CORS_PROXY_BASE = ''; // <-- SET THIS
-
-    function maybeProxy(u){
-      return CORS_PROXY_BASE ? (CORS_PROXY_BASE + encodeURIComponent(u)) : u;
-    }
 
     /* ================== Player logic ================== */
     let hls = null;
@@ -142,8 +131,8 @@
 
     function initVideo(){
       const v=$('videoPlayer');
-      v.volume = 0;
-      v.muted  = true;
+      v.volume = 0;    // start silent to satisfy autoplay
+      v.muted  = true; // (but not via HTML attribute!)
       v.addEventListener('loadstart', ()=> showLoading(true));
       v.addEventListener('canplay',   ()=> showLoading(false));
       v.addEventListener('stalled',   ()=> showLoading(true));
@@ -177,6 +166,7 @@
 
     function toggleMute(){ window.isMuted ? mute() : unmute(); }
 
+    /* Hard unmute helper: clears any sticky-mute states on kiosk engines */
     function forceUnmute(v){
       v.muted = false;
       v.defaultMuted = false;
@@ -221,18 +211,10 @@
     function setStatus(connected,msg){ const dot=$('statusDot'),txt=$('statusText'); dot.classList.toggle('disconnected',!connected); txt.textContent=connected?'Connected':('Disconnected'+(msg?` — ${msg}`:'')); }
     function tickClock(){ $('clock').textContent=new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'}); }
     function updateChannelInfo(ch){ $('chName').textContent=ch.name||('Channel '+ch.id); $('chNum').textContent=ch.id; const box=$('channelInfo'); box.classList.add('show'); clearTimeout(box._t); box._t=setTimeout(()=>box.classList.remove('show'),4000); }
-
-    function onHlsError(evt,data){
-      if(!data||!data.fatal) return;
-      // If proxy not set, this is the usual XD236 issue (CORS blocked stream)
-      if(!CORS_PROXY_BASE){
-        showError('This stream blocks hls.js (CORS). Set CORS_PROXY_BASE.');
-      } else {
-        showError('Stream error');
-      }
-    }
+    function onHlsError(evt,data){ if(!data||!data.fatal) return; showError('Stream error'); }
     function onVideoError(){ showError('Playback error'); }
 
+    /* If page is HTTPS and a channel is HTTP, try https:// version to avoid mixed-content block */
     function httpsify(u){
       return (location.protocol === 'https:' && /^http:\/\//i.test(u)) ? u.replace(/^http:/i,'https:') : u;
     }
@@ -245,15 +227,13 @@
         if(hls){ try{hls.destroy();}catch(e){} hls=null; }
         hls=new Hls({enableWorker:true,lowLatencyMode:true});
         hls.attachMedia(v);
-
-        // ✅ ONLY CHANGE THAT MATTERS: proxy the URL for hls.js
-        const src = maybeProxy(httpsify(ch.url));
-        hls.loadSource(src);
+        hls.loadSource(httpsify(ch.url));
 
         hls.on(Hls.Events.MANIFEST_PARSED, ()=>{
           v.play().then(()=>{
             v.volume = (window.currentVolume||0)/100;
             v.muted  = !!window.isMuted;
+            /* Nudge once more so audio always comes alive after channel switch */
             setTimeout(()=>{ if(!window.isMuted) forceUnmute(v); }, 200);
             showLoading(false);
           }).catch(()=>{});
@@ -276,6 +256,7 @@
       window.currentChannel=n;
     }
 
+    /* Expose for Firebase listener */
     window.setStatus = setStatus;
     window.loadChannel = loadChannel;
     window.applyVolumeSettings = function(volume,muted){
@@ -298,6 +279,7 @@
     if(EMBED){ await setPersistence(auth, inMemoryPersistence); }
     const db    = getDatabase(app);
 
+    /* Anonymous auth + realtime wiring */
     signInAnonymously(auth).catch(e=>{ console.error('[auth]',e); window.setStatus(false,'anon auth failed'); });
 
     onAuthStateChanged(auth, async (user)=>{
@@ -306,6 +288,7 @@
       const dealershipName = CONFIG.dealershipName;
 
       if(EMBED){
+        /* In-iframe preview: only listen; do not write user record */
         const dref=ref(db,`displays/${displayId}`);
         onValue(dref,(snap)=>{
           const d=snap.val(); if(!d) return;
@@ -316,6 +299,7 @@
         return;
       }
 
+      /* Register device (role=device) + seed display if missing */
       try{
         await update(ref(db,`user/${user.uid}`),{
           role:'device',
@@ -325,6 +309,7 @@
           createdAt:Date.now()
         });
         await update(ref(db, `${dealer}/displays/${displayId}`), true);
+
       }catch(e){}
 
       try{
@@ -332,9 +317,12 @@
         if(!snap.exists()){
           await update(dRef,{ channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() });
         }
+
         try { await update(ref(db, `${dealershipName}/displays/${displayId}`), true); } catch(e) {}
+
       }catch(e){}
 
+      /* Live controls listener */
       const dref=ref(db,`displays/${displayId}`);
       onValue(dref,(snap)=>{
         const d=snap.val(); if(!d) return;
@@ -343,6 +331,7 @@
         window.setStatus(true,'');
       },(err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
 
+      /* Heartbeat */
       try{
         const hbRef=ref(db,`displays/${displayId}`);
         const beat=async()=>{ try{ await update(hbRef,{ lastSeenAt:Date.now(), updatedAt:Date.now() }); }catch(e){} };
@@ -350,5 +339,5 @@
       }catch(e){}
     });
   </script>
-</body>
-</html>
+
+
