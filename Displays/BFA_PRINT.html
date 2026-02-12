@@ -53,7 +53,6 @@
 </head>
 
 <body>
-  <!-- Volume HUD -->
   <div class="volume-control" id="volumeHud" aria-live="polite">
     <button class="vol-btn" id="muteBtn" title="Mute/Unmute" aria-label="Mute/Unmute">
       <svg id="volSvg" class="vol-icon icon-muted" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -101,7 +100,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
 
   <script>
-    /* ================== CONFIG (Admin will inject) ================== */
     const CONFIG = {
       displayId: 'BFA_PRINT',
       dealershipName: 'BFA_PRINT',
@@ -114,9 +112,6 @@
       ]
     };
 
-    const CORS_PROXY_BASE = '';
-
-    /* ================== Player logic ================== */
     let hls = null;
     window.currentChannel = 1;
     window.currentVolume  = 0;
@@ -125,13 +120,6 @@
 
     const $ = (id)=>document.getElementById(id);
     let _hudTimer=null;
-
-    let _attempt = {
-      useProxy: false,
-      enableWorker: true,
-      triedNative: false,
-      tries: 0
-    };
 
     document.addEventListener('DOMContentLoaded', ()=>{
       $('displayId').textContent = CONFIG.displayId;
@@ -155,7 +143,7 @@
     function initVolumeUI(){
       const sv=localStorage.getItem('displayVolume');
       const sm=localStorage.getItem('displayMuted');
-      if(sv!==null){ window.currentVolume=parseInt(sv,10); lastVolume=window.currentVolume||50; }
+      if(sv!==null){ window.currentVolume=parseInt(sv,10)||0; lastVolume=window.currentVolume||50; }
       if(sm!==null){ window.isMuted=(sm==='true'); }
       const v=$('videoPlayer'); v.volume=(window.currentVolume||0)/100; v.muted=!!window.isMuted; renderVolumeUI();
     }
@@ -221,90 +209,21 @@
     function tickClock(){ $('clock').textContent=new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'}); }
     function updateChannelInfo(ch){ $('chName').textContent=ch.name||('Channel '+ch.id); $('chNum').textContent=ch.id; const box=$('channelInfo'); box.classList.add('show'); clearTimeout(box._t); box._t=setTimeout(()=>box.classList.remove('show'),4000); }
 
-    function httpsifyAny(u){
+    function httpsify(u){
       return (location.protocol === 'https:' && /^http:\/\//i.test(u)) ? u.replace(/^http:/i,'https:') : u;
     }
 
-    function maybeProxy(u){
-      return (CORS_PROXY_BASE && _attempt.useProxy) ? (CORS_PROXY_BASE + encodeURIComponent(u)) : u;
-    }
+    function onVideoError(){ showError('Playback error'); }
 
-    function cleanedUrl(u){
-      return maybeProxy(httpsifyAny(u));
-    }
-
-    function destroyHls(){
-      if(!hls) return;
-      try{ hls.destroy(); }catch(e){}
-      hls = null;
-    }
-
-    function onVideoError(){
-      showError('Playback error — retrying…');
-      retrySoon();
-    }
-
-    function retrySoon(){
-      const maxTries = 6;
-      if(_attempt.tries >= maxTries){
-        showError('Stream failed. If this is only 1 stream, it is likely blocked/codec. Use a proxy or another source.');
-        showLoading(false);
-        return;
-      }
-      setTimeout(()=> loadChannel(window.currentChannel, true), 1200);
-    }
-
-    function buildHls(){
-      const DefaultLoader = Hls.DefaultConfig.loader;
-
-      class HttpsAllLoader extends DefaultLoader {
-        load(context, config, callbacks){
-          if(context && context.url){
-            context.url = cleanedUrl(context.url);
-          }
-          super.load(context, config, callbacks);
-        }
-      }
-
-      return new Hls({
-        enableWorker: _attempt.enableWorker,
-        lowLatencyMode: false,
-        backBufferLength: 30,
-        manifestLoadingTimeOut: 20000,
-        manifestLoadingMaxRetry: 2,
-        levelLoadingTimeOut: 20000,
-        levelLoadingMaxRetry: 2,
-        fragLoadingTimeOut: 20000,
-        fragLoadingMaxRetry: 2,
-        loader: HttpsAllLoader
-      });
-    }
-
-    function loadChannel(n, isRetry=false){
+    function loadChannel(n){
       const ch=CONFIG.channels.find(c=>c.id===n); if(!ch) return;
-      const v=$('videoPlayer');
-
-      if(!isRetry){
-        _attempt = { useProxy:false, enableWorker:true, triedNative:false, tries:0 };
-      } else {
-        _attempt.tries++;
-      }
-
-      showLoading(true);
-      destroyHls();
-
-      try{ v.pause(); }catch(e){}
-      try{ v.removeAttribute('src'); v.load(); }catch(e){}
-
-      const sourceUrl = cleanedUrl(ch.url);
+      const v=$('videoPlayer'); showLoading(true);
 
       if(Hls.isSupported()){
-        hls = buildHls();
+        if(hls){ try{hls.destroy();}catch(e){} hls=null; }
+        hls=new Hls({ enableWorker:true, lowLatencyMode:false });
         hls.attachMedia(v);
-
-        hls.on(Hls.Events.MEDIA_ATTACHED, ()=>{
-          try{ hls.loadSource(sourceUrl); }catch(e){ showError('Load failed — retrying…'); retrySoon(); }
-        });
+        hls.loadSource(httpsify(ch.url));
 
         hls.on(Hls.Events.MANIFEST_PARSED, ()=>{
           v.play().then(()=>{
@@ -316,45 +235,22 @@
         });
 
         hls.on(Hls.Events.ERROR, (evt,data)=>{
-          if(!data || !data.fatal) return;
-
-          if(_attempt.enableWorker){
-            _attempt.enableWorker = false;
-            showError('Retrying…');
-            return retrySoon();
+          if(data && data.fatal){
+            showError('Stream error');
+            showLoading(false);
           }
-
-          if(CORS_PROXY_BASE && !_attempt.useProxy){
-            _attempt.useProxy = true;
-            showError('Retrying via secure proxy…');
-            return retrySoon();
-          }
-
-          if(!_attempt.triedNative && v.canPlayType('application/vnd.apple.mpegurl')){
-            _attempt.triedNative = true;
-            showError('Retrying native…');
-            destroyHls();
-            v.src = httpsifyAny(ch.url);
-            v.play().then(()=> showLoading(false)).catch(()=>{});
-            return;
-          }
-
-          showError('Stream error. This specific source is likely blocked/unsupported on XD236.');
-          showLoading(false);
         });
 
       } else if(v.canPlayType('application/vnd.apple.mpegurl')){
-        v.src = httpsifyAny(ch.url);
+        v.src=httpsify(ch.url);
         v.play().then(()=>{
           v.volume = (window.currentVolume||0)/100;
           v.muted  = !!window.isMuted;
           setTimeout(()=>{ if(!window.isMuted) forceUnmute(v); }, 200);
           showLoading(false);
-        }).catch(()=>{ showError('Playback blocked — retrying…'); retrySoon(); });
-
+        }).catch(()=>{});
       } else {
         showError('HLS not supported');
-        showLoading(false);
       }
 
       updateChannelInfo(ch);
@@ -369,14 +265,14 @@
     };
   </script>
 
-  <!-- ✅ FIREBASE (COMPAT, NON-MODULE) — fixes XD236 where type="module" fails -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <!-- Firebase (NON-MODULE for better BrightSign/Signagelive compatibility) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script>
     (function(){
-      const firebaseConfig={
+      var firebaseConfig={
         apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
         authDomain:"iptv-bfa.firebaseapp.com",
         databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",
@@ -386,91 +282,96 @@
         appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"
       };
 
-      // IMPORTANT: channel change comes from displays/<DISPLAY_ID>/channel
-      const displayId      = CONFIG.displayId;
-      const dealershipName = CONFIG.dealershipName;
+      var EMBED = /\bembed=1\b/i.test(location.search) || (window.top !== window.self);
 
-      // Embed detection (keep same behavior)
-      const EMBED = /\bembed=1\b/i.test(location.search) || (window.top !== window.self);
+      try { firebase.initializeApp(firebaseConfig); } catch(e) {}
 
-      // Helpers: accept number OR string
-      function asInt(v){
-        if(typeof v === 'number') return Number.isFinite(v) ? v : null;
-        if(typeof v === 'string'){
-          const n = parseInt(v, 10);
-          return Number.isFinite(n) ? n : null;
-        }
-        return null;
-      }
-      function asBool(v){
-        if(typeof v === 'boolean') return v;
-        if(typeof v === 'string') return v.toLowerCase() === 'true';
-        if(typeof v === 'number') return v !== 0;
-        return null;
+      // IMPORTANT for signage sandboxes: if websockets are blocked, RTDB can freeze.
+      try { firebase.database.INTERNAL.forceLongPolling(); } catch(e) {}
+
+      var auth = firebase.auth();
+      var db   = firebase.database();
+
+      function safeInt(x){
+        var n = parseInt(x,10);
+        return (isFinite(n) ? n : null);
       }
 
-      try{
-        firebase.initializeApp(firebaseConfig);
-      }catch(e){
-        // if already initialized
-      }
-
-      const auth = firebase.auth();
-      const db   = firebase.database();
-
-      // Persistence: safer on signage devices
-      auth.setPersistence(EMBED ? firebase.auth.Auth.Persistence.NONE
-                                : firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
-
-      auth.signInAnonymously().catch(e=>{
-        console.log('[auth] anon failed', e);
+      auth.signInAnonymously().catch(function(e){
+        console.log('[auth]', e);
         window.setStatus(false,'anon auth failed');
       });
 
-      auth.onAuthStateChanged(async (user)=>{
+      auth.onAuthStateChanged(function(user){
         if(!user) return;
 
-        // Always attach the listener — this is what makes channel change work
-        const dref = db.ref(`displays/${displayId}`);
-        dref.on('value', (snap)=>{
-          const d = snap.val();
-          if(!d) return;
+        var displayId      = CONFIG.displayId;
+        var dealershipName = CONFIG.dealershipName;
 
-          const ch = asInt(d.channel);
-          if(ch && ch !== window.currentChannel) {
-            window.loadChannel(ch);
+        // In embed/iframe mode: listen only (no writes)
+        if(EMBED){
+          var dref = db.ref('displays/' + displayId);
+          dref.on('value', function(snap){
+            var d = snap.val(); if(!d) return;
+
+            var ch = safeInt(d.channel);
+            if(ch !== null && ch !== window.currentChannel) window.loadChannel(ch);
+
+            var vol = safeInt(d.volume);
+            if(vol !== null || typeof d.muted === 'boolean'){
+              window.applyVolumeSettings(vol !== null ? vol : window.currentVolume, (typeof d.muted==='boolean') ? d.muted : window.isMuted);
+            }
+
+            window.setStatus(true,'');
+          }, function(err){
+            console.log('[listener]', err);
+            window.setStatus(false,'listener error');
+          });
+          return;
+        }
+
+        // Non-embed: register device + seed display if missing
+        db.ref('user/' + user.uid).update({
+          role:'device',
+          name:displayId,
+          dealershipId:dealershipName,
+          updatedAt:Date.now(),
+          createdAt:Date.now()
+        }).catch(function(){});
+
+        var dRef = db.ref('displays/' + displayId);
+        dRef.get().then(function(snap){
+          if(!snap.exists()){
+            return dRef.update({ channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() });
           }
+        }).catch(function(){});
 
-          const vol = asInt(d.volume);
-          const mut = asBool(d.muted);
+        // Live controls
+        dRef.on('value', function(snap){
+          var d = snap.val(); if(!d) return;
 
-          if(vol !== null || mut !== null){
-            if(vol !== null) window.applyVolumeSettings(vol, window.isMuted);
-            if(mut !== null) window.applyVolumeSettings(window.currentVolume, mut);
+          var ch = safeInt(d.channel);
+          if(ch !== null && ch !== window.currentChannel) window.loadChannel(ch);
+
+          var vol = safeInt(d.volume);
+          if(vol !== null || typeof d.muted === 'boolean'){
+            window.applyVolumeSettings(vol !== null ? vol : window.currentVolume, (typeof d.muted==='boolean') ? d.muted : window.isMuted);
           }
 
           window.setStatus(true,'');
-        }, (err)=>{
-          console.log('[listener] error', err);
+        }, function(err){
+          console.log('[listener]', err);
           window.setStatus(false,'listener error');
         });
 
-        if(EMBED) return;
-
-        // Seed display if missing
-        try{
-          const snap = await dref.get();
-          if(!snap.exists()){
-            await dref.update({ channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() });
-          }
-        }catch(e){}
-
         // Heartbeat
-        try{
-          const beat = async()=>{ try{ await dref.update({ lastSeenAt:Date.now(), updatedAt:Date.now() }); }catch(e){} };
-          beat(); setInterval(beat, 15000);
-        }catch(e){}
+        function beat(){
+          dRef.update({ lastSeenAt:Date.now(), updatedAt:Date.now() }).catch(function(){});
+        }
+        beat();
+        setInterval(beat, 15000);
       });
+
     })();
   </script>
 </body>
