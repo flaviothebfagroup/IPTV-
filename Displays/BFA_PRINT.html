@@ -71,8 +71,9 @@
     <div class="vol-percent" id="volPct">0%</div>
   </div>
 
+  <!-- IMPORTANT: no `muted` attribute (prevents sticky-mute on kiosk engines) -->
   <div class="video-container">
-    <video id="videoPlayer" autoplay playsinline></video>
+    <video id="videoPlayer" autoplay="" playsinline=""></video>
   </div>
 
   <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
@@ -114,7 +115,14 @@
       ]
     };
 
+    /* OPTIONAL (only if the stream is blocked/restricted and cannot be fixed client-side):
+       Put your HTTPS proxy base here. It must proxy any URL in a query param, e.g.
+       CORS_PROXY_BASE = 'https://YOUR-WORKER.workers.dev/?url='
+    */
     const CORS_PROXY_BASE = '';
+
+    // BrightSign detection (used only to pick safest playback path)
+    const IS_BRIGHTSIGN = /BrightSign/i.test(navigator.userAgent);
 
     /* ================== Player logic ================== */
     let hls = null;
@@ -223,6 +231,7 @@
     function tickClock(){ $('clock').textContent=new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'}); }
     function updateChannelInfo(ch){ $('chName').textContent=ch.name||('Channel '+ch.id); $('chNum').textContent=ch.id; const box=$('channelInfo'); box.classList.add('show'); clearTimeout(box._t); box._t=setTimeout(()=>box.classList.remove('show'),4000); }
 
+    /* If page is HTTPS and a URL is HTTP, upgrade to https:// to avoid mixed-content blocks */
     function httpsifyAny(u){
       return (location.protocol === 'https:' && /^http:\/\//i.test(u)) ? u.replace(/^http:/i,'https:') : u;
     }
@@ -242,6 +251,7 @@
     }
 
     function onVideoError(){
+      // Keep message simple on-screen; retry logic below
       showError('Playback error — retrying…');
       retrySoon();
     }
@@ -294,13 +304,53 @@
 
       showLoading(true);
 
+      // Stop previous
       destroyHls();
       try{ v.pause(); }catch(e){}
       try{ v.removeAttribute('src'); v.load(); }catch(e){}
 
-      const sourceUrl = cleanedUrl(ch.url);
+      // Helper: if video isn't actually advancing, fallback to alternate method
+      const startWatchdog = (label, onFail)=>{
+        const t0 = Date.now();
+        const c0 = v.currentTime || 0;
+        setTimeout(()=>{
+          // If already moved forward, we're good
+          const moved = (v.currentTime || 0) - c0;
+          const ok = (v.readyState >= 2) && moved > 0.15;
+          if(ok) return;
+          // Avoid spamming retries forever
+          if(Date.now() - t0 < 20000){
+            showError(label + ' failed — trying fallback…');
+            try{ onFail(); }catch(e){}
+          }
+        }, 6000);
+      };
 
-      if(Hls.isSupported()){
+      const playNative = ()=>{
+        _attempt.triedNative = true;
+        destroyHls();
+        const url = httpsifyAny(ch.url); // native fetch does not need CORS headers
+        try{ v.pause(); }catch(e){}
+        try{ v.src = url; v.load(); }catch(e){}
+        v.play().then(()=>{
+          v.volume = (window.currentVolume||0)/100;
+          v.muted  = !!window.isMuted;
+          setTimeout(()=>{ if(!window.isMuted) forceUnmute(v); }, 200);
+          showLoading(false);
+        }).catch(()=>{ /* keep muted autoplay */ });
+        startWatchdog('Native HLS', ()=> playMSE());
+      };
+
+      const playMSE = ()=>{
+        // Use hls.js (MSE). This requires CORS headers on playlists/segments.
+        if(typeof Hls === 'undefined' || !Hls.isSupported()){
+          showError('HLS engine not available');
+          showLoading(false);
+          return;
+        }
+
+        const sourceUrl = cleanedUrl(ch.url);
+
         hls = buildHls();
         hls.attachMedia(v);
 
@@ -320,49 +370,45 @@
         hls.on(Hls.Events.ERROR, (evt,data)=>{
           if(!data || !data.fatal) return;
 
+          // Show the real reason (helps you/Signagelive support)
+          const reason = (data.details || data.type || 'stream error');
+          showError('HLS error: ' + reason);
+
+          // Try the safest fallback once on BrightSign
+          if(IS_BRIGHTSIGN && !_attempt.triedNative){
+            return playNative();
+          }
+
+          // Step 1: if worker causes issues, retry without worker
           if(_attempt.enableWorker){
             _attempt.enableWorker = false;
-            showError('Retrying…');
             return retrySoon();
           }
 
+          // Step 2: if proxy available, retry via proxy
           if(CORS_PROXY_BASE && !_attempt.useProxy){
             _attempt.useProxy = true;
-            showError('Retrying via secure proxy…');
             return retrySoon();
           }
 
-          if(!_attempt.triedNative && v.canPlayType('application/vnd.apple.mpegurl')){
-            _attempt.triedNative = true;
-            showError('Retrying native…');
-            destroyHls();
-            v.src = httpsifyAny(ch.url);
-            v.play().then(()=> showLoading(false)).catch(()=>{});
-            return;
-          }
-
-          showError('Stream error. This specific source is likely blocked/unsupported on XD236.');
           showLoading(false);
         });
 
-      } else if(v.canPlayType('application/vnd.apple.mpegurl')){
-        v.src = httpsifyAny(ch.url);
-        v.play().then(()=>{
-          v.volume = (window.currentVolume||0)/100;
-          v.muted  = !!window.isMuted;
-          setTimeout(()=>{ if(!window.isMuted) forceUnmute(v); }, 200);
-          showLoading(false);
-        }).catch(()=>{ showError('Playback blocked — retrying…'); retrySoon(); });
+        startWatchdog('HLS (MSE)', ()=>{ if(!_attempt.triedNative) playNative(); });
+      };
 
+      // BrightSign safest path: try native first, then hls.js fallback
+      if(IS_BRIGHTSIGN){
+        playNative();
       } else {
-        showError('HLS not supported');
-        showLoading(false);
+        playMSE();
       }
 
       updateChannelInfo(ch);
       window.currentChannel=n;
     }
 
+    /* Expose for Firebase listener */
     window.setStatus = setStatus;
     window.loadChannel = loadChannel;
     window.applyVolumeSettings = function(volume,muted){
@@ -381,16 +427,17 @@
 
     const EMBED = /\bembed=1\b/i.test(location.search) || (window.top !== window.self);
 
-    /* FIX #1: avoid passing undefined name */
+    // FIX: avoid passing undefined as the app name (older chromium is picky)
     const app   = EMBED ? initializeApp(firebaseConfig, 'embed') : initializeApp(firebaseConfig);
 
     const auth  = getAuth(app);
 
-    /* FIX #2: remove top-level await (older Chromium breaks on it) */
+    // FIX: remove top-level await (older chromium fails to parse the module if it sees it)
     if(EMBED){ setPersistence(auth, inMemoryPersistence).catch(()=>{}); }
 
     const db    = getDatabase(app);
 
+    /* Anonymous auth + realtime wiring */
     signInAnonymously(auth).catch(e=>{ console.error('[auth]',e); window.setStatus(false,'anon auth failed'); });
 
     onAuthStateChanged(auth, async (user)=>{
@@ -399,16 +446,24 @@
       const dealershipName = CONFIG.dealershipName;
 
       if(EMBED){
+        /* In-iframe preview: only listen; do not write user record */
         const dref=ref(db,`displays/${displayId}`);
         onValue(dref,(snap)=>{
           const d=snap.val(); if(!d) return;
-          if(typeof d.channel==='number' && d.channel!==window.currentChannel) window.loadChannel(d.channel);
-          if(d.volume!==undefined || d.muted!==undefined) window.applyVolumeSettings(d.volume, d.muted);
+
+          // robust: accept number OR string
+          const ch = Number(d.channel);
+          if(!Number.isNaN(ch) && ch !== window.currentChannel) window.loadChannel(ch);
+
+          const vol = (d.volume === undefined || d.volume === null) ? undefined : Number(d.volume);
+          window.applyVolumeSettings(Number.isNaN(vol) ? undefined : vol, d.muted);
+
           window.setStatus(true,'');
         },(err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
         return;
       }
 
+      /* Register device (role=device) + seed display if missing */
       try{
         await update(ref(db,`user/${user.uid}`),{
           role:'device',
@@ -418,7 +473,6 @@
           createdAt:Date.now()
         });
         await update(ref(db, `${dealer}/displays/${displayId}`), true);
-
       }catch(e){}
 
       try{
@@ -428,17 +482,23 @@
         }
 
         try { await update(ref(db, `${dealershipName}/displays/${displayId}`), true); } catch(e) {}
-
       }catch(e){}
 
+      /* Live controls listener */
       const dref=ref(db,`displays/${displayId}`);
       onValue(dref,(snap)=>{
         const d=snap.val(); if(!d) return;
-        if(typeof d.channel==='number' && d.channel!==window.currentChannel) window.loadChannel(d.channel);
-        if(d.volume!==undefined || d.muted!==undefined) window.applyVolumeSettings(d.volume, d.muted);
+
+        const ch = Number(d.channel);
+        if(!Number.isNaN(ch) && ch !== window.currentChannel) window.loadChannel(ch);
+
+        const vol = (d.volume === undefined || d.volume === null) ? undefined : Number(d.volume);
+        window.applyVolumeSettings(Number.isNaN(vol) ? undefined : vol, d.muted);
+
         window.setStatus(true,'');
       },(err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
 
+      /* Heartbeat */
       try{
         const hbRef=ref(db,`displays/${displayId}`);
         const beat=async()=>{ try{ await update(hbRef,{ lastSeenAt:Date.now(), updatedAt:Date.now() }); }catch(e){} };
