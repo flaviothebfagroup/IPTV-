@@ -73,8 +73,7 @@
 
   <!-- IMPORTANT: no `muted` attribute (prevents sticky-mute on kiosk engines) -->
   <div class="video-container">
-    <!-- CHANGED: added crossorigin so native HLS + any fetches behave consistently -->
-    <video id="videoPlayer" autoplay="" playsinline="" crossorigin="anonymous"></video>
+    <video id="videoPlayer" autoplay="" playsinline=""></video>
   </div>
 
   <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
@@ -116,6 +115,16 @@
       ]
     };
 
+    /* ================== FIX: CORS proxy for XD236/hls.js ==================
+       Put your Worker URL here (example):
+       const CORS_PROXY_BASE = 'https://YOUR-WORKER.workers.dev/?url=';
+       If blank, it behaves like before. */
+    const CORS_PROXY_BASE = ''; // <-- SET THIS
+
+    function maybeProxy(u){
+      return CORS_PROXY_BASE ? (CORS_PROXY_BASE + encodeURIComponent(u)) : u;
+    }
+
     /* ================== Player logic ================== */
     let hls = null;
     window.currentChannel = 1;
@@ -133,8 +142,8 @@
 
     function initVideo(){
       const v=$('videoPlayer');
-      v.volume = 0;    // start silent to satisfy autoplay
-      v.muted  = true; // (but not via HTML attribute!)
+      v.volume = 0;
+      v.muted  = true;
       v.addEventListener('loadstart', ()=> showLoading(true));
       v.addEventListener('canplay',   ()=> showLoading(false));
       v.addEventListener('stalled',   ()=> showLoading(true));
@@ -168,7 +177,6 @@
 
     function toggleMute(){ window.isMuted ? mute() : unmute(); }
 
-    /* Hard unmute helper: clears any sticky-mute states on kiosk engines */
     function forceUnmute(v){
       v.muted = false;
       v.defaultMuted = false;
@@ -213,58 +221,54 @@
     function setStatus(connected,msg){ const dot=$('statusDot'),txt=$('statusText'); dot.classList.toggle('disconnected',!connected); txt.textContent=connected?'Connected':('Disconnected'+(msg?` — ${msg}`:'')); }
     function tickClock(){ $('clock').textContent=new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'}); }
     function updateChannelInfo(ch){ $('chName').textContent=ch.name||('Channel '+ch.id); $('chNum').textContent=ch.id; const box=$('channelInfo'); box.classList.add('show'); clearTimeout(box._t); box._t=setTimeout(()=>box.classList.remove('show'),4000); }
-    function onHlsError(evt,data){ if(!data||!data.fatal) return; showError('Stream error'); }
+
+    function onHlsError(evt,data){
+      if(!data||!data.fatal) return;
+      // If proxy not set, this is the usual XD236 issue (CORS blocked stream)
+      if(!CORS_PROXY_BASE){
+        showError('This stream blocks hls.js (CORS). Set CORS_PROXY_BASE.');
+      } else {
+        showError('Stream error');
+      }
+    }
     function onVideoError(){ showError('Playback error'); }
 
-    /* If page is HTTPS and a channel is HTTP, try https:// version to avoid mixed-content block */
     function httpsify(u){
       return (location.protocol === 'https:' && /^http:\/\//i.test(u)) ? u.replace(/^http:/i,'https:') : u;
-    }
-
-    // CHANGED: prefer native HLS first (avoids CORS/XHR issues on some devices)
-    function supportsNativeHls(v){
-      return !!(v.canPlayType('application/vnd.apple.mpegurl') || v.canPlayType('application/x-mpegURL'));
     }
 
     function loadChannel(n){
       const ch=CONFIG.channels.find(c=>c.id===n); if(!ch) return;
       const v=$('videoPlayer'); showLoading(true);
 
-      // cleanup previous hls.js instance (same as before)
-      if(hls){ try{hls.destroy();}catch(e){} hls=null; }
+      if(Hls.isSupported()){
+        if(hls){ try{hls.destroy();}catch(e){} hls=null; }
+        hls=new Hls({enableWorker:true,lowLatencyMode:true});
+        hls.attachMedia(v);
 
-      const url = httpsify(ch.url);
+        // ✅ ONLY CHANGE THAT MATTERS: proxy the URL for hls.js
+        const src = maybeProxy(httpsify(ch.url));
+        hls.loadSource(src);
 
-      // ✅ Try native HLS first (this is the only behavioral change)
-      if(supportsNativeHls(v)){
-        v.src = url;
+        hls.on(Hls.Events.MANIFEST_PARSED, ()=>{
+          v.play().then(()=>{
+            v.volume = (window.currentVolume||0)/100;
+            v.muted  = !!window.isMuted;
+            setTimeout(()=>{ if(!window.isMuted) forceUnmute(v); }, 200);
+            showLoading(false);
+          }).catch(()=>{});
+        });
+        hls.on(Hls.Events.ERROR,onHlsError);
+
+      } else if(v.canPlayType('application/vnd.apple.mpegurl')){
+        v.src=httpsify(ch.url);
         v.play().then(()=>{
           v.volume = (window.currentVolume||0)/100;
           v.muted  = !!window.isMuted;
           setTimeout(()=>{ if(!window.isMuted) forceUnmute(v); }, 200);
           showLoading(false);
         }).catch(()=>{});
-      }
-      // fallback to hls.js (same as before)
-      else if(Hls.isSupported()){
-        hls=new Hls({enableWorker:true,lowLatencyMode:true});
-        hls.attachMedia(v);
-        hls.on(Hls.Events.MEDIA_ATTACHED, ()=> {
-          hls.loadSource(url);
-        });
-
-        hls.on(Hls.Events.MANIFEST_PARSED, ()=>{
-          v.play().then(()=>{
-            v.volume = (window.currentVolume||0)/100;
-            v.muted  = !!window.isMuted;
-            /* Nudge once more so audio always comes alive after channel switch */
-            setTimeout(()=>{ if(!window.isMuted) forceUnmute(v); }, 200);
-            showLoading(false);
-          }).catch(()=>{});
-        });
-        hls.on(Hls.Events.ERROR,onHlsError);
-      }
-      else {
+      } else {
         showError('HLS not supported');
       }
 
@@ -272,7 +276,6 @@
       window.currentChannel=n;
     }
 
-    /* Expose for Firebase listener */
     window.setStatus = setStatus;
     window.loadChannel = loadChannel;
     window.applyVolumeSettings = function(volume,muted){
@@ -295,7 +298,6 @@
     if(EMBED){ await setPersistence(auth, inMemoryPersistence); }
     const db    = getDatabase(app);
 
-    /* Anonymous auth + realtime wiring */
     signInAnonymously(auth).catch(e=>{ console.error('[auth]',e); window.setStatus(false,'anon auth failed'); });
 
     onAuthStateChanged(auth, async (user)=>{
@@ -304,7 +306,6 @@
       const dealershipName = CONFIG.dealershipName;
 
       if(EMBED){
-        /* In-iframe preview: only listen; do not write user record */
         const dref=ref(db,`displays/${displayId}`);
         onValue(dref,(snap)=>{
           const d=snap.val(); if(!d) return;
@@ -315,7 +316,6 @@
         return;
       }
 
-      /* Register device (role=device) + seed display if missing */
       try{
         await update(ref(db,`user/${user.uid}`),{
           role:'device',
@@ -325,7 +325,6 @@
           createdAt:Date.now()
         });
         await update(ref(db, `${dealer}/displays/${displayId}`), true);
-
       }catch(e){}
 
       try{
@@ -333,12 +332,9 @@
         if(!snap.exists()){
           await update(dRef,{ channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() });
         }
-
         try { await update(ref(db, `${dealershipName}/displays/${displayId}`), true); } catch(e) {}
-
       }catch(e){}
 
-      /* Live controls listener */
       const dref=ref(db,`displays/${displayId}`);
       onValue(dref,(snap)=>{
         const d=snap.val(); if(!d) return;
@@ -347,7 +343,6 @@
         window.setStatus(true,'');
       },(err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
 
-      /* Heartbeat */
       try{
         const hbRef=ref(db,`displays/${displayId}`);
         const beat=async()=>{ try{ await update(hbRef,{ lastSeenAt:Date.now(), updatedAt:Date.now() }); }catch(e){} };
