@@ -1,6 +1,6 @@
-
-
-
+<!doctype html>
+<html lang="en">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Digital Signage — Player</title>
@@ -50,8 +50,9 @@
     @keyframes fadeHud{0%{opacity:0; transform:translate(-50%,-50%) scale(.96)} 15%{opacity:1; transform:translate(-50%,-50%) scale(1)} 85%{opacity:1} 100%{opacity:0}}
     @media (prefers-reduced-motion:reduce){ .transition-overlay,.channel-info,.loading-overlay{transition:none} }
   </style>
+</head>
 
-
+<body>
   <!-- Volume HUD -->
   <div class="volume-control" id="volumeHud" aria-live="polite">
     <button class="vol-btn" id="muteBtn" title="Mute/Unmute" aria-label="Mute/Unmute">
@@ -107,12 +108,18 @@
       dealershipName: 'BFA_PRINT',
       channels: [
         { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
-        { id:2, name:'Channel',   url:'https://dai.google.com/linear/hls/pa/event/sfQoQ_zET42kay3DTlOY6Q/stream/7f09666c-3b35-4a7a-a175-dc6a73e6ac4e:CHS/variant/f3814d1565b9b6d1500e7dd4fe87beef/bandwidth/3102000.m3u8', type:'hls' },
-        { id:3, name:'Cooking',   url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
-        { id:4, name:'Nature',   url:'https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8', type:'hls' },
+        { id:2, name:'Olympics',  url:'https://dai.google.com/linear/hls/pa/event/sfQoQ_zET42kay3DTlOY6Q/stream/7f09666c-3b35-4a7a-a175-dc6a73e6ac4e:CHS/variant/f3814d1565b9b6d1500e7dd4fe87beef/bandwidth/3102000.m3u8', type:'hls' },
+        { id:3, name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
+        { id:4, name:'Nature', url:'https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8', type:'hls' },
         { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
       ]
     };
+
+    /* OPTIONAL (only if the stream is blocked/restricted and cannot be fixed client-side):
+       Put your HTTPS proxy base here. It must proxy any URL in a query param, e.g.
+       CORS_PROXY_BASE = 'https://YOUR-WORKER.workers.dev/?url='
+    */
+    const CORS_PROXY_BASE = '';
 
     /* ================== Player logic ================== */
     let hls = null;
@@ -120,8 +127,17 @@
     window.currentVolume  = 0;
     window.isMuted        = true;
     let   lastVolume      = 50;
+
     const $ = (id)=>document.getElementById(id);
     let _hudTimer=null;
+
+    // Playback attempts state (per channel)
+    let _attempt = {
+      useProxy: false,
+      enableWorker: true,
+      triedNative: false,
+      tries: 0
+    };
 
     document.addEventListener('DOMContentLoaded', ()=>{
       $('displayId').textContent = CONFIG.displayId;
@@ -211,45 +227,150 @@
     function setStatus(connected,msg){ const dot=$('statusDot'),txt=$('statusText'); dot.classList.toggle('disconnected',!connected); txt.textContent=connected?'Connected':('Disconnected'+(msg?` — ${msg}`:'')); }
     function tickClock(){ $('clock').textContent=new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'}); }
     function updateChannelInfo(ch){ $('chName').textContent=ch.name||('Channel '+ch.id); $('chNum').textContent=ch.id; const box=$('channelInfo'); box.classList.add('show'); clearTimeout(box._t); box._t=setTimeout(()=>box.classList.remove('show'),4000); }
-    function onHlsError(evt,data){ if(!data||!data.fatal) return; showError('Stream error'); }
-    function onVideoError(){ showError('Playback error'); }
 
-    /* If page is HTTPS and a channel is HTTP, try https:// version to avoid mixed-content block */
-    function httpsify(u){
+    /* If page is HTTPS and a URL is HTTP, upgrade to https:// to avoid mixed-content blocks */
+    function httpsifyAny(u){
       return (location.protocol === 'https:' && /^http:\/\//i.test(u)) ? u.replace(/^http:/i,'https:') : u;
     }
 
-    function loadChannel(n){
-      const ch=CONFIG.channels.find(c=>c.id===n); if(!ch) return;
-      const v=$('videoPlayer'); showLoading(true);
+    function maybeProxy(u){
+      return (CORS_PROXY_BASE && _attempt.useProxy) ? (CORS_PROXY_BASE + encodeURIComponent(u)) : u;
+    }
 
+    function cleanedUrl(u){
+      return maybeProxy(httpsifyAny(u));
+    }
+
+    function destroyHls(){
+      if(!hls) return;
+      try{ hls.destroy(); }catch(e){}
+      hls = null;
+    }
+
+    function onVideoError(){
+      // Keep message simple on-screen; retry logic below
+      showError('Playback error — retrying…');
+      retrySoon();
+    }
+
+    function retrySoon(){
+      const maxTries = 6;
+      if(_attempt.tries >= maxTries){
+        showError('Stream failed. If this is only 1 stream, it is likely blocked/codec. Use a proxy or another source.');
+        showLoading(false);
+        return;
+      }
+      setTimeout(()=> loadChannel(window.currentChannel, true), 1200);
+    }
+
+    function buildHls(){
+      const DefaultLoader = Hls.DefaultConfig.loader;
+
+      class HttpsAllLoader extends DefaultLoader {
+        load(context, config, callbacks){
+          if(context && context.url){
+            context.url = cleanedUrl(context.url);
+          }
+          super.load(context, config, callbacks);
+        }
+      }
+
+      return new Hls({
+        enableWorker: _attempt.enableWorker,
+        lowLatencyMode: false,             // compatibility-first
+        backBufferLength: 30,
+        manifestLoadingTimeOut: 20000,
+        manifestLoadingMaxRetry: 2,
+        levelLoadingTimeOut: 20000,
+        levelLoadingMaxRetry: 2,
+        fragLoadingTimeOut: 20000,
+        fragLoadingMaxRetry: 2,
+        loader: HttpsAllLoader
+      });
+    }
+
+    function loadChannel(n, isRetry=false){
+      const ch=CONFIG.channels.find(c=>c.id===n); if(!ch) return;
+      const v=$('videoPlayer');
+
+      if(!isRetry){
+        _attempt = { useProxy:false, enableWorker:true, triedNative:false, tries:0 };
+      } else {
+        _attempt.tries++;
+      }
+
+      showLoading(true);
+
+      // Always stop previous
+      destroyHls();
+      try{ v.pause(); }catch(e){}
+      try{ v.removeAttribute('src'); v.load(); }catch(e){}
+
+      const sourceUrl = cleanedUrl(ch.url);
+
+      // 1) Try hls.js first if supported (best for BrightSign Chromium)
       if(Hls.isSupported()){
-        if(hls){ try{hls.destroy();}catch(e){} hls=null; }
-        hls=new Hls({enableWorker:true,lowLatencyMode:true});
+        hls = buildHls();
         hls.attachMedia(v);
-        hls.loadSource(httpsify(ch.url));
+
+        hls.on(Hls.Events.MEDIA_ATTACHED, ()=>{
+          try{ hls.loadSource(sourceUrl); }catch(e){ showError('Load failed — retrying…'); retrySoon(); }
+        });
 
         hls.on(Hls.Events.MANIFEST_PARSED, ()=>{
           v.play().then(()=>{
             v.volume = (window.currentVolume||0)/100;
             v.muted  = !!window.isMuted;
-            /* Nudge once more so audio always comes alive after channel switch */
             setTimeout(()=>{ if(!window.isMuted) forceUnmute(v); }, 200);
             showLoading(false);
-          }).catch(()=>{});
+          }).catch(()=>{ /* autoplay restrictions handled by mute */ });
         });
-        hls.on(Hls.Events.ERROR,onHlsError);
+
+        hls.on(Hls.Events.ERROR, (evt,data)=>{
+          if(!data || !data.fatal) return;
+
+          // Step 1: if worker causes issues, retry without worker
+          if(_attempt.enableWorker){
+            _attempt.enableWorker = false;
+            showError('Retrying…');
+            return retrySoon();
+          }
+
+          // Step 2: if proxy available, retry via proxy
+          if(CORS_PROXY_BASE && !_attempt.useProxy){
+            _attempt.useProxy = true;
+            showError('Retrying via secure proxy…');
+            return retrySoon();
+          }
+
+          // Step 3: try native once (some firmware builds support it better)
+          if(!_attempt.triedNative && v.canPlayType('application/vnd.apple.mpegurl')){
+            _attempt.triedNative = true;
+            showError('Retrying native…');
+            destroyHls();
+            v.src = httpsifyAny(ch.url); // native tries direct
+            v.play().then(()=> showLoading(false)).catch(()=>{});
+            return;
+          }
+
+          // Final: give up
+          showError('Stream error. This specific source is likely blocked/unsupported on XD236.');
+          showLoading(false);
+        });
 
       } else if(v.canPlayType('application/vnd.apple.mpegurl')){
-        v.src=httpsify(ch.url);
+        // 2) Native HLS fallback
+        v.src = httpsifyAny(ch.url);
         v.play().then(()=>{
           v.volume = (window.currentVolume||0)/100;
           v.muted  = !!window.isMuted;
           setTimeout(()=>{ if(!window.isMuted) forceUnmute(v); }, 200);
           showLoading(false);
-        }).catch(()=>{});
+        }).catch(()=>{ showError('Playback blocked — retrying…'); retrySoon(); });
+
       } else {
         showError('HLS not supported');
+        showLoading(false);
       }
 
       updateChannelInfo(ch);
@@ -309,7 +430,6 @@
           createdAt:Date.now()
         });
         await update(ref(db, `${dealer}/displays/${displayId}`), true);
-
       }catch(e){}
 
       try{
@@ -319,7 +439,6 @@
         }
 
         try { await update(ref(db, `${dealershipName}/displays/${displayId}`), true); } catch(e) {}
-
       }catch(e){}
 
       /* Live controls listener */
@@ -339,5 +458,5 @@
       }catch(e){}
     });
   </script>
-
-
+</body>
+</html>
