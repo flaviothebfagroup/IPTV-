@@ -71,9 +71,8 @@
     <div class="vol-percent" id="volPct">0%</div>
   </div>
 
-  <!-- IMPORTANT: no `muted` attribute (prevents sticky-mute on kiosk engines) -->
   <div class="video-container">
-    <video id="videoPlayer" autoplay="" playsinline=""></video>
+    <video id="videoPlayer" autoplay playsinline></video>
   </div>
 
   <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
@@ -104,25 +103,18 @@
   <script>
     /* ================== CONFIG (Admin will inject) ================== */
     const CONFIG = {
-      displayId: 'BFA_PRINT',
-      dealershipName: 'BFA_PRINT',
+      displayId: 'BFA_PRINT',       // IMPORTANT: must match the key your Admin dashboard uses
+      dealershipName: 'BFA_PRINT',  // IMPORTANT: must match your dealership/group key (if used)
       channels: [
-        { id:1, name:'News',   url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
-        { id:2, name:'Olympics',  url:'https://dai.google.com/linear/hls/pa/event/sfQoQ_zET42kay3DTlOY6Q/stream/7f09666c-3b35-4a7a-a175-dc6a73e6ac4e:CHS/variant/f3814d1565b9b6d1500e7dd4fe87beef/bandwidth/3102000.m3u8', type:'hls' },
-        { id:3, name:'Cooking',url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
-        { id:4, name:'Nature', url:'https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8', type:'hls' },
-        { id:5, name:'Kids',   url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
+        { id:1, name:'News',     url:'https://citynewsregional.akamaized.net/hls/live/1024052/Regional_Live_7/Video-2Mbps.m3u8', type:'hls' },
+        { id:2, name:'Olympics', url:'https://dai.google.com/linear/hls/pa/event/sfQoQ_zET42kay3DTlOY6Q/stream/7f09666c-3b35-4a7a-a175-dc6a73e6ac4e:CHS/variant/f3814d1565b9b6d1500e7dd4fe87beef/bandwidth/3102000.m3u8', type:'hls' },
+        { id:3, name:'Cooking',  url:'https://gusto-xumo.amagi.tv/playlist.m3u8', type:'hls' },
+        { id:4, name:'Nature',   url:'https://aegis-cloudfront-1.tubi.video/6d6d0f24-8445-4b4c-bdf6-44f9e38beaa4/playlist.m3u8', type:'hls' },
+        { id:5, name:'Kids',     url:'https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8', type:'hls' }
       ]
     };
 
-    /* OPTIONAL (only if the stream is blocked/restricted and cannot be fixed client-side):
-       Put your HTTPS proxy base here. It must proxy any URL in a query param, e.g.
-       CORS_PROXY_BASE = 'https://YOUR-WORKER.workers.dev/?url='
-    */
     const CORS_PROXY_BASE = '';
-
-    // BrightSign detection (used only to pick safest playback path)
-    const IS_BRIGHTSIGN = /BrightSign/i.test(navigator.userAgent);
 
     /* ================== Player logic ================== */
     let hls = null;
@@ -134,13 +126,7 @@
     const $ = (id)=>document.getElementById(id);
     let _hudTimer=null;
 
-    // Playback attempts state (per channel)
-    let _attempt = {
-      useProxy: false,
-      enableWorker: true,
-      triedNative: false,
-      tries: 0
-    };
+    let _attempt = { useProxy:false, enableWorker:true, triedNative:false, tries:0 };
 
     document.addEventListener('DOMContentLoaded', ()=>{
       $('displayId').textContent = CONFIG.displayId;
@@ -150,12 +136,18 @@
 
     function initVideo(){
       const v=$('videoPlayer');
-      v.volume = 0;    // start silent to satisfy autoplay
-      v.muted  = true; // (but not via HTML attribute!)
+      v.volume = 0;
+      v.muted  = true;
       v.addEventListener('loadstart', ()=> showLoading(true));
       v.addEventListener('canplay',   ()=> showLoading(false));
       v.addEventListener('stalled',   ()=> showLoading(true));
       v.addEventListener('error',     onVideoError);
+
+      // Some embedded engines only unmute correctly AFTER video is actually playing
+      v.addEventListener('playing', ()=>{
+        if(!window.isMuted) forceUnmute(v);
+      });
+
       $('volUp').onclick   = ()=> volumeUp();
       $('volDown').onclick = ()=> volumeDown();
       $('muteBtn').onclick = ()=> toggleMute();
@@ -185,7 +177,6 @@
 
     function toggleMute(){ window.isMuted ? mute() : unmute(); }
 
-    /* Hard unmute helper: clears any sticky-mute states on kiosk engines */
     function forceUnmute(v){
       v.muted = false;
       v.defaultMuted = false;
@@ -231,7 +222,6 @@
     function tickClock(){ $('clock').textContent=new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'}); }
     function updateChannelInfo(ch){ $('chName').textContent=ch.name||('Channel '+ch.id); $('chNum').textContent=ch.id; const box=$('channelInfo'); box.classList.add('show'); clearTimeout(box._t); box._t=setTimeout(()=>box.classList.remove('show'),4000); }
 
-    /* If page is HTTPS and a URL is HTTP, upgrade to https:// to avoid mixed-content blocks */
     function httpsifyAny(u){
       return (location.protocol === 'https:' && /^http:\/\//i.test(u)) ? u.replace(/^http:/i,'https:') : u;
     }
@@ -251,7 +241,6 @@
     }
 
     function onVideoError(){
-      // Keep message simple on-screen; retry logic below
       showError('Playback error — retrying…');
       retrySoon();
     }
@@ -259,7 +248,7 @@
     function retrySoon(){
       const maxTries = 6;
       if(_attempt.tries >= maxTries){
-        showError('Stream failed. If this is only 1 stream, it is likely blocked/codec. Use a proxy or another source.');
+        showError('Stream failed. (Often codec/CORS on this model)');
         showLoading(false);
         return;
       }
@@ -280,7 +269,7 @@
 
       return new Hls({
         enableWorker: _attempt.enableWorker,
-        lowLatencyMode: false,             // compatibility-first
+        lowLatencyMode: false,
         backBufferLength: 30,
         manifestLoadingTimeOut: 20000,
         manifestLoadingMaxRetry: 2,
@@ -303,54 +292,14 @@
       }
 
       showLoading(true);
-
-      // Stop previous
       destroyHls();
+
       try{ v.pause(); }catch(e){}
       try{ v.removeAttribute('src'); v.load(); }catch(e){}
 
-      // Helper: if video isn't actually advancing, fallback to alternate method
-      const startWatchdog = (label, onFail)=>{
-        const t0 = Date.now();
-        const c0 = v.currentTime || 0;
-        setTimeout(()=>{
-          // If already moved forward, we're good
-          const moved = (v.currentTime || 0) - c0;
-          const ok = (v.readyState >= 2) && moved > 0.15;
-          if(ok) return;
-          // Avoid spamming retries forever
-          if(Date.now() - t0 < 20000){
-            showError(label + ' failed — trying fallback…');
-            try{ onFail(); }catch(e){}
-          }
-        }, 6000);
-      };
+      const sourceUrl = cleanedUrl(ch.url);
 
-      const playNative = ()=>{
-        _attempt.triedNative = true;
-        destroyHls();
-        const url = httpsifyAny(ch.url); // native fetch does not need CORS headers
-        try{ v.pause(); }catch(e){}
-        try{ v.src = url; v.load(); }catch(e){}
-        v.play().then(()=>{
-          v.volume = (window.currentVolume||0)/100;
-          v.muted  = !!window.isMuted;
-          setTimeout(()=>{ if(!window.isMuted) forceUnmute(v); }, 200);
-          showLoading(false);
-        }).catch(()=>{ /* keep muted autoplay */ });
-        startWatchdog('Native HLS', ()=> playMSE());
-      };
-
-      const playMSE = ()=>{
-        // Use hls.js (MSE). This requires CORS headers on playlists/segments.
-        if(typeof Hls === 'undefined' || !Hls.isSupported()){
-          showError('HLS engine not available');
-          showLoading(false);
-          return;
-        }
-
-        const sourceUrl = cleanedUrl(ch.url);
-
+      if(Hls.isSupported()){
         hls = buildHls();
         hls.attachMedia(v);
 
@@ -370,45 +319,49 @@
         hls.on(Hls.Events.ERROR, (evt,data)=>{
           if(!data || !data.fatal) return;
 
-          // Show the real reason (helps you/Signagelive support)
-          const reason = (data.details || data.type || 'stream error');
-          showError('HLS error: ' + reason);
-
-          // Try the safest fallback once on BrightSign
-          if(IS_BRIGHTSIGN && !_attempt.triedNative){
-            return playNative();
-          }
-
-          // Step 1: if worker causes issues, retry without worker
           if(_attempt.enableWorker){
             _attempt.enableWorker = false;
+            showError('Retrying…');
             return retrySoon();
           }
 
-          // Step 2: if proxy available, retry via proxy
           if(CORS_PROXY_BASE && !_attempt.useProxy){
             _attempt.useProxy = true;
+            showError('Retrying via secure proxy…');
             return retrySoon();
           }
 
+          if(!_attempt.triedNative && v.canPlayType('application/vnd.apple.mpegurl')){
+            _attempt.triedNative = true;
+            showError('Retrying native…');
+            destroyHls();
+            v.src = httpsifyAny(ch.url);
+            v.play().then(()=> showLoading(false)).catch(()=>{});
+            return;
+          }
+
+          showError('Stream error (model limitation for this URL)');
           showLoading(false);
         });
 
-        startWatchdog('HLS (MSE)', ()=>{ if(!_attempt.triedNative) playNative(); });
-      };
+      } else if(v.canPlayType('application/vnd.apple.mpegurl')){
+        v.src = httpsifyAny(ch.url);
+        v.play().then(()=>{
+          v.volume = (window.currentVolume||0)/100;
+          v.muted  = !!window.isMuted;
+          setTimeout(()=>{ if(!window.isMuted) forceUnmute(v); }, 200);
+          showLoading(false);
+        }).catch(()=>{ showError('Playback blocked — retrying…'); retrySoon(); });
 
-      // BrightSign safest path: try native first, then hls.js fallback
-      if(IS_BRIGHTSIGN){
-        playNative();
       } else {
-        playMSE();
+        showError('HLS not supported');
+        showLoading(false);
       }
 
       updateChannelInfo(ch);
       window.currentChannel=n;
     }
 
-    /* Expose for Firebase listener */
     window.setStatus = setStatus;
     window.loadChannel = loadChannel;
     window.applyVolumeSettings = function(volume,muted){
@@ -417,94 +370,132 @@
     };
   </script>
 
-  <!-- Firebase (module) for the player) -->
-  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+  <!-- ✅ FIREBASE (COMPAT, NON-MODULE) — works on stricter XD236 engines -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
-    const firebaseConfig={apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",authDomain:"iptv-bfa.firebaseapp.com",databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",projectId:"iptv-bfa",storageBucket:"iptv-bfa.firebasestorage.app",messagingSenderId:"838790935867",appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"};
+  <script>
+    (function(){
+      const firebaseConfig={
+        apiKey:"AIzaSyBLSRS9PELXoI0wRafYKG5tx_UoRSawQaY",
+        authDomain:"iptv-bfa.firebaseapp.com",
+        databaseURL:"https://iptv-bfa-default-rtdb.firebaseio.com",
+        projectId:"iptv-bfa",
+        storageBucket:"iptv-bfa.firebasestorage.app",
+        messagingSenderId:"838790935867",
+        appId:"1:838790935867:web:1860eac7dbeb7159e1b31e"
+      };
 
-    const EMBED = /\bembed=1\b/i.test(location.search) || (window.top !== window.self);
-
-    // FIX: avoid passing undefined as the app name (older chromium is picky)
-    const app   = EMBED ? initializeApp(firebaseConfig, 'embed') : initializeApp(firebaseConfig);
-
-    const auth  = getAuth(app);
-
-    // FIX: remove top-level await (older chromium fails to parse the module if it sees it)
-    if(EMBED){ setPersistence(auth, inMemoryPersistence).catch(()=>{}); }
-
-    const db    = getDatabase(app);
-
-    /* Anonymous auth + realtime wiring */
-    signInAnonymously(auth).catch(e=>{ console.error('[auth]',e); window.setStatus(false,'anon auth failed'); });
-
-    onAuthStateChanged(auth, async (user)=>{
-      if(!user) return;
       const displayId      = CONFIG.displayId;
       const dealershipName = CONFIG.dealershipName;
+      const EMBED = /\\bembed=1\\b/i.test(location.search) || (window.top !== window.self);
 
-      if(EMBED){
-        /* In-iframe preview: only listen; do not write user record */
-        const dref=ref(db,`displays/${displayId}`);
-        onValue(dref,(snap)=>{
-          const d=snap.val(); if(!d) return;
-
-          // robust: accept number OR string
-          const ch = Number(d.channel);
-          if(!Number.isNaN(ch) && ch !== window.currentChannel) window.loadChannel(ch);
-
-          const vol = (d.volume === undefined || d.volume === null) ? undefined : Number(d.volume);
-          window.applyVolumeSettings(Number.isNaN(vol) ? undefined : vol, d.muted);
-
-          window.setStatus(true,'');
-        },(err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
-        return;
+      function asInt(v){
+        if(typeof v === 'number') return Number.isFinite(v) ? v : null;
+        if(typeof v === 'string'){
+          const n = parseInt(v, 10);
+          return Number.isFinite(n) ? n : null;
+        }
+        return null;
+      }
+      function asBool(v){
+        if(typeof v === 'boolean') return v;
+        if(typeof v === 'string') return v.toLowerCase() === 'true';
+        if(typeof v === 'number') return v !== 0;
+        return null;
       }
 
-      /* Register device (role=device) + seed display if missing */
-      try{
-        await update(ref(db,`user/${user.uid}`),{
-          role:'device',
-          name:displayId,
-          dealershipId:dealershipName,
-          updatedAt:Date.now(),
-          createdAt:Date.now()
+      try{ firebase.initializeApp(firebaseConfig); }catch(e){}
+
+      const auth = firebase.auth();
+      const db   = firebase.database();
+
+      auth.setPersistence(EMBED ? firebase.auth.Auth.Persistence.NONE
+                                : firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
+
+      auth.signInAnonymously().catch(e=>{
+        console.log('[auth] anon failed', e);
+        window.setStatus(false,'anon auth failed');
+      });
+
+      auth.onAuthStateChanged(function(user){
+        if(!user) return;
+
+        // 1) IMPORTANT: register the device user (many RTDB rules require this before writes are allowed)
+        // NOTE: This does NOT change your DB structure, it only writes to your existing /user node.
+        try{
+          db.ref('user/' + user.uid).update({
+            role: 'device',
+            name: displayId,
+            dealershipId: dealershipName,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP,
+            createdAt: firebase.database.ServerValue.TIMESTAMP
+          });
+        }catch(e){}
+
+        // 2) Link display to dealership (some dashboards rely on this mapping)
+        // We write in a few common locations; ones that don’t exist will just fail silently.
+        const mapPaths = [
+          dealershipName + '/displays/' + displayId,
+          'dealership/' + dealershipName + '/displays/' + displayId,
+          'dealerships/' + dealershipName + '/displays/' + displayId
+        ];
+        mapPaths.forEach(function(p){
+          try{ db.ref(p).set(true); }catch(e){}
         });
-        await update(ref(db, `${dealer}/displays/${displayId}`), true);
-      }catch(e){}
 
-      try{
-        const dRef=ref(db,`displays/${displayId}`); const snap=await get(dRef);
-        if(!snap.exists()){
-          await update(dRef,{ channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() });
+        // 3) Listen for commands (channel/volume/mute)
+        const dref = db.ref('displays/' + displayId);
+        dref.on('value', function(snap){
+          const d = snap.val();
+          if(!d) return;
+
+          const ch = asInt(d.channel);
+          if(ch && ch !== window.currentChannel) window.loadChannel(ch);
+
+          const vol = asInt(d.volume);
+          const mut = asBool(d.muted);
+          if(vol !== null || mut !== null){
+            if(vol !== null) window.applyVolumeSettings(vol, window.isMuted);
+            if(mut !== null) window.applyVolumeSettings(window.currentVolume, mut);
+          }
+
+          window.setStatus(true,'');
+        }, function(err){
+          console.log('[listener] error', err);
+          window.setStatus(false,'listener error');
+        });
+
+        if(EMBED) return;
+
+        // 4) Seed display if missing (only once)
+        try{
+          dref.once('value').then(function(s){
+            if(!s.exists()){
+              return dref.update({
+                channel: 1,
+                volume: 50,
+                muted: true,
+                dealership: dealershipName,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+              });
+            }
+          }).catch(()=>{});
+        }catch(e){}
+
+        // 5) ✅ HEARTBEAT (this is what your Analytics panel reads)
+        // It updates lastSeenAt every 15 seconds so the dashboard can show "online" and heartbeat dots.
+        function beat(){
+          dref.update({
+            lastSeenAt: firebase.database.ServerValue.TIMESTAMP,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP
+          }).catch(()=>{});
         }
-
-        try { await update(ref(db, `${dealershipName}/displays/${displayId}`), true); } catch(e) {}
-      }catch(e){}
-
-      /* Live controls listener */
-      const dref=ref(db,`displays/${displayId}`);
-      onValue(dref,(snap)=>{
-        const d=snap.val(); if(!d) return;
-
-        const ch = Number(d.channel);
-        if(!Number.isNaN(ch) && ch !== window.currentChannel) window.loadChannel(ch);
-
-        const vol = (d.volume === undefined || d.volume === null) ? undefined : Number(d.volume);
-        window.applyVolumeSettings(Number.isNaN(vol) ? undefined : vol, d.muted);
-
-        window.setStatus(true,'');
-      },(err)=>{ console.error('[listener]',err); window.setStatus(false,'listener error'); });
-
-      /* Heartbeat */
-      try{
-        const hbRef=ref(db,`displays/${displayId}`);
-        const beat=async()=>{ try{ await update(hbRef,{ lastSeenAt:Date.now(), updatedAt:Date.now() }); }catch(e){} };
-        beat(); setInterval(beat, 15000);
-      }catch(e){}
-    });
+        beat();
+        setInterval(beat, 15000);
+      });
+    })();
   </script>
 </body>
 </html>
