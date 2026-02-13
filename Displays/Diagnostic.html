@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>XD236 Test</title>
+    <style>
+        body { 
+            background: #000; 
+            color: #0f0; 
+            font-family: monospace; 
+            padding: 20px;
+            font-size: 24px;
+        }
+        .test { margin: 20px 0; padding: 10px; background: #111; }
+        .pass { border-left: 5px solid #0f0; }
+        .fail { border-left: 5px solid #f00; }
+    </style>
+</head>
+<body>
+    <h1>XD236 Diagnostic Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        var results = [];
+        
+        function log(test, passed, details) {
+            results.push({test: test, passed: passed, details: details});
+            render();
+        }
+        
+        function render() {
+            var html = '';
+            for (var i = 0; i < results.length; i++) {
+                var r = results[i];
+                var cls = r.passed ? 'pass' : 'fail';
+                var status = r.passed ? '✓ PASS' : '✗ FAIL';
+                html += '<div class="test ' + cls + '">';
+                html += '<strong>' + status + '</strong> ' + r.test;
+                if (r.details) html += '<br><small>' + r.details + '</small>';
+                html += '</div>';
+            }
+            document.getElementById('results').innerHTML = html;
+        }
+        
+        // Test 1: Basic DOM
+        log('Basic DOM Access', !!document.getElementById, 'getElementById available');
+        
+        // Test 2: ES5 Functions
+        try {
+            var testFunc = function() { return true; };
+            log('Function Declarations', testFunc(), 'Traditional functions work');
+        } catch(e) {
+            log('Function Declarations', false, e.message);
+        }
+        
+        // Test 3: Arrow Functions
+        try {
+            eval('var arrowTest = () => true;');
+            log('Arrow Functions', true, 'Arrow functions supported');
+        } catch(e) {
+            log('Arrow Functions', false, 'Not supported: ' + e.message);
+        }
+        
+        // Test 4: const/let
+        try {
+            eval('const testConst = 1;');
+            log('const keyword', true, 'const supported');
+        } catch(e) {
+            log('const keyword', false, 'Not supported: ' + e.message);
+        }
+        
+        // Test 5: localStorage
+        try {
+            localStorage.setItem('test', '1');
+            localStorage.removeItem('test');
+            log('localStorage', true, 'localStorage available');
+        } catch(e) {
+            log('localStorage', false, e.message);
+        }
+        
+        // Test 6: Fetch API
+        log('Fetch API', typeof fetch !== 'undefined', 'Fetch: ' + typeof fetch);
+        
+        // Test 7: Promise
+        log('Promises', typeof Promise !== 'undefined', 'Promise: ' + typeof Promise);
+        
+        // Test 8: XMLHttpRequest
+        log('XMLHttpRequest', typeof XMLHttpRequest !== 'undefined', 'XHR available');
+        
+        // Test 9: Video Element
+        try {
+            var v = document.createElement('video');
+            var canPlayHLS = v.canPlayType('application/vnd.apple.mpegurl');
+            log('Video Element', true, 'HLS support: ' + canPlayHLS);
+        } catch(e) {
+            log('Video Element', false, e.message);
+        }
+        
+        // Test 10: External Script Loading
+        log('Browser', navigator.userAgent, '');
+        
+        log('Screen Resolution', true, window.innerWidth + 'x' + window.innerHeight);
+    </script>
+</body>
+</html>
