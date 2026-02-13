@@ -450,10 +450,21 @@
 
         if(EMBED) return;
 
+        // Optional: register this device under /user/<uid> (safe; won't break if blocked by rules)
+        try{
+          db.ref(`user/${user.uid}`).update({
+            role:'device',
+            name:displayId,
+            dealershipId:dealershipName,
+            updatedAt:Date.now(),
+            createdAt:Date.now()
+          }).catch(()=>{});
+        }catch(e){}
+
         try{
           const snap = await dref.get();
           if(!snap.exists()){
-            await dref.update({ channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() });
+            await dref.update({ channel:1, volume:50, muted:true, dealership:dealershipName, timestamp:Date.now() }).catch(()=>{});
           }
         }catch(e){}
 
