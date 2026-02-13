@@ -336,6 +336,31 @@
     const $=s=>document.querySelector(s);
     function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.style.opacity='1'; t.style.background = err? '#ff453a' : 'var(--accent)'; t.style.color = err? '#fff' : '#000'; setTimeout(()=> t.style.opacity='0', 2000); }
 
+    /* ---- helpers (FIX: accept string/number for heartbeat + volume/muted) ---- */
+    function asInt(v){
+      if(typeof v === 'number') return Number.isFinite(v) ? v : null;
+      if(typeof v === 'string'){ const n = parseInt(v, 10); return Number.isFinite(n) ? n : null; }
+      return null;
+    }
+    function asBool(v){
+      if(typeof v === 'boolean') return v;
+      if(typeof v === 'string') return v.toLowerCase() === 'true';
+      if(typeof v === 'number') return v !== 0;
+      return null;
+    }
+    function getSeen(r){
+      // FIX: track both old + new players (any of these fields)
+      const a = asInt(r.lastSeenAt);
+      if(a!==null) return a;
+      const b = asInt(r.updatedAt);
+      if(b!==null) return b;
+      const c = asInt(r.timestamp);
+      if(c!==null) return c;
+      const d = asInt(r.flashAt);
+      if(d!==null) return d;
+      return 0;
+    }
+
     /* logos + theme */
     $('#brandLogo').style.backgroundImage=`url("${LOGO_URL}")`;
     const brandLogoM=$('#brandLogoM'); if(brandLogoM) brandLogoM.style.backgroundImage=`url("${LOGO_URL}")`;
@@ -410,12 +435,26 @@
       const BIN_N=12, binMs=Math.max(60000, Math.round(win/BIN_N)); const bins=new Array(BIN_N).fill(0);
 
       items.forEach(r=>{
-        const seen=r.lastSeenAt||r.timestamp||0; const isOnline=(now-seen)<=win;
-        const ch=Math.max(1, Math.min(999, parseInt(r.channel||1,10)||1)); chCounts[ch]=(chCounts[ch]||0)+(isOnline?1:0);
-        if(isOnline){ onlineList.push(r); const dk=r.dealership||'—'; dealerCounts[dk]=(dealerCounts[dk]||0)+1; if(typeof r.volume==='number'){ volSum+=r.volume; volN++; } }
+        const seen = getSeen(r);                 // FIX
+        const isOnline = seen ? ((now-seen)<=win) : false;
+
+        const ch = Math.max(1, Math.min(999, asInt(r.channel) ?? 1));
+        chCounts[ch]=(chCounts[ch]||0)+(isOnline?1:0);
+
+        const m = asBool(r.muted);
+        if(m===true) muted++;
+
+        if(isOnline){
+          onlineList.push(r);
+          const dk=r.dealership||'—'; dealerCounts[dk]=(dealerCounts[dk]||0)+1;
+          const vv = asInt(r.volume);
+          if(vv!==null){ volSum += vv; volN++; }
+        }
         else{ offlineList.push(r); }
-        if(r.muted===true) muted++;
-        if(seen){ const age=now-seen; const idx=Math.min(BIN_N-1, Math.max(0, BIN_N-1 - Math.floor(age/binMs))); bins[idx]+=1; }
+
+        if(seen){
+          const age=now-seen; const idx=Math.min(BIN_N-1, Math.max(0, BIN_N-1 - Math.floor(age/binMs))); bins[idx]+=1;
+        }
       });
 
       const active=onlineList.length; const offline=offlineList.length; const total=active+offline;
@@ -448,15 +487,15 @@
       const rows=CACHE.online.filter(r=>{ if(!q) return true; const d=(DEALERS[r.dealership]||r.dealership||'').toLowerCase(); const id=(r.id||'').toLowerCase(); return d.includes(q)||id.includes(q); })
         .sort((a,b)=>(a.dealership||'').localeCompare(b.dealership||'')||(a.id||'').localeCompare(b.id||''));
       $('#noneOnline').style.display=rows.length?'none':'block';
-      rows.forEach(r=>{ const seen=r.lastSeenAt||r.timestamp||0; const row=document.createElement('div'); row.className='item';
-        row.innerHTML=`<div class="col"><div><span class="badge">${(DEALERS[r.dealership]||r.dealership||'—')}</span><b style="margin-left:6px">${r.id}</b></div><div class="muted">Seen: ${new Date(seen).toLocaleTimeString()}</div></div><div class="chips"><span class="badge">CH ${r.channel ?? 1}</span><span class="badge">VOL ${r.volume ?? 0}</span><span class="badge">${r.muted ? 'Muted' : 'Unmuted'}</span></div>`;
+      rows.forEach(r=>{ const seen=getSeen(r); const row=document.createElement('div'); row.className='item';
+        row.innerHTML=`<div class="col"><div><span class="badge">${(DEALERS[r.dealership]||r.dealership||'—')}</span><b style="margin-left:6px">${r.id}</b></div><div class="muted">Seen: ${seen? new Date(seen).toLocaleTimeString() : '—'}</div></div><div class="chips"><span class="badge">CH ${asInt(r.channel) ?? 1}</span><span class="badge">VOL ${asInt(r.volume) ?? 0}</span><span class="badge">${asBool(r.muted) ? 'Muted' : 'Unmuted'}</span></div>`;
         list.appendChild(row); });
     }
     function renderOffline(){
       const list=$('#offlineList'); list.innerHTML='';
       const rows=CACHE.offline.sort((a,b)=>(a.dealership||'').localeCompare(b.dealership||'')||(a.id||'').localeCompare(b.id||''));
-      rows.forEach(r=>{ const seen=r.lastSeenAt||r.timestamp||0; const row=document.createElement('div'); row.className='item';
-        row.innerHTML=`<div class="col"><div><span class="badge">${(DEALERS[r.dealership]||r.dealership||'—')}</span><b style="margin-left:6px">${r.id}</b></div><div class="muted">Last seen: ${seen? new Date(seen).toLocaleString() : '—'}</div></div><div class="chips"><span class="badge">CH ${r.channel ?? 1}</span><span class="badge">VOL ${r.volume ?? 0}</span><span class="badge">${r.muted ? 'Muted' : 'Unmuted'}</span></div>`;
+      rows.forEach(r=>{ const seen=getSeen(r); const row=document.createElement('div'); row.className='item';
+        row.innerHTML=`<div class="col"><div><span class="badge">${(DEALERS[r.dealership]||r.dealership||'—')}</span><b style="margin-left:6px">${r.id}</b></div><div class="muted">Last seen: ${seen? new Date(seen).toLocaleString() : '—'}</div></div><div class="chips"><span class="badge">CH ${asInt(r.channel) ?? 1}</span><span class="badge">VOL ${asInt(r.volume) ?? 0}</span><span class="badge">${asBool(r.muted) ? 'Muted' : 'Unmuted'}</span></div>`;
         list.appendChild(row); });
       if(!rows.length){ const e=document.createElement('div'); e.className='muted'; e.textContent='No offline TVs.'; list.appendChild(e); }
     }
@@ -504,8 +543,8 @@
       try{ await navigator.clipboard.writeText(lines.join('\n')); toast('Summary copied'); }catch{ toast('Copy failed', true); }
     });
     $('#btnExportCSV').addEventListener('click', ()=>{
-      const header=['state','id','dealershipId','dealershipName','channel','volume','muted','lastSeenAtISO']; const rows=[];
-      const pushRow=(state,r)=>{ rows.push([state, r.id||'', r.dealership||'', DEALERS[r.dealership]||r.dealership||'', r.channel??'', r.volume??'', r.muted===true?'true':'false', (r.lastSeenAt||r.timestamp)?new Date(r.lastSeenAt||r.timestamp).toISOString():'' ]); };
+      const header=['state','id','dealershipId','dealershipName','channel','volume','muted','seenAtISO']; const rows=[];
+      const pushRow=(state,r)=>{ const seen=getSeen(r); rows.push([state, r.id||'', r.dealership||'', DEALERS[r.dealership]||r.dealership||'', asInt(r.channel) ?? '', asInt(r.volume) ?? '', asBool(r.muted)===true?'true':'false', seen?new Date(seen).toISOString():'' ]); };
       CACHE.online.forEach(r=>pushRow('online',r)); CACHE.offline.forEach(r=>pushRow('offline',r));
       const csv=[header,...rows].map(cols=>cols.map(c=>{ const s=String(c??''); return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s; }).join(',')).join('\n');
       const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='bfa-analytics.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1200);
