@@ -329,11 +329,24 @@
 
         try{ await db.ref(`${dealershipName}/displays/${displayId}`).set(true); }catch(e){}
 
-        try{
-          const beat = async()=>{ try{ await dref.update({ lastSeenAt:Date.now(), updatedAt:Date.now() }); }catch(e){} };
-          beat(); setInterval(beat, 15000);
-        }catch(e){}
-      });
+        // ✅ HEARTBEAT (so Analytics sees XD236 as online)
+        function startHeartbeat(dref, dealershipName){
+          const beat = () => {
+            const now = Date.now();
+            dref.update({
+              lastSeenAt: now,          // Analytics online check uses this
+              updatedAt: now,           // nice to have
+              timestamp: now,           // backward compatibility
+              dealership: dealershipName // ensure dealer filter works
+            }).catch(()=>{});
+          };
+          beat();                 // send immediately
+          setInterval(beat, 15000); // every 15s
+        }
+
+        // call it
+        startHeartbeat(dref, dealershipName);
+});
     })();
   </script>
 </body>
