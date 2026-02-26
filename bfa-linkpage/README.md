@@ -25,3 +25,7 @@
 - **Best practice:** upload your logo into `assets/logo.png` and set `profile.avatar` to `./assets/logo.png`
 - **Also supported:** put any **full URL** in `profile.avatar`
 - **Editor upload:** on `/editor.html`, you can upload a logo and it will be embedded into `links.json` as a data-URL.
+
+
+## Friendly Editor
+Open `/editor.html` on GitHub Pages. This version uses `editor.css` for a clean, senior-friendly editor UI.

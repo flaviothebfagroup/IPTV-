@@ -5,32 +5,22 @@ const ICONS = {
   linkedin: "💼",
   tiktok: "🎵",
   facebook: "📘",
-  email: "✉️",
-  phone: "📞",
   other: "🔗"
 };
 
 const SOCIAL_TYPES = ["instagram", "website", "linkedin", "youtube", "tiktok", "facebook"];
 
 const $ = (id) => document.getElementById(id);
+const LS_KEY = "bfa_links_draft_friendly_v1";
 
-const LS_KEY = "bfa_links_draft_v2";
 let state = null;
 let saveTimer = null;
 
 function setStatus(msg){
   const s = $("status");
   if (s) s.textContent = msg || "";
-  const sticky = $("stickyMsg");
-  if (sticky) sticky.textContent = msg || "Ready";
-}
-
-function setDot(kind){
-  const dot = $("dot");
-  if (!dot) return;
-  dot.classList.remove("dotOk","dotWarn");
-  if (kind === "warn") dot.classList.add("dotWarn");
-  else dot.classList.add("dotOk");
+  const ms = $("mobileStatus");
+  if (ms) ms.textContent = msg || "Ready";
 }
 
 function defaultState(){
@@ -45,20 +35,12 @@ function defaultState(){
 function normalizeAssetPath(p){
   if (!p) return "";
   const s = String(p).trim();
-
-  // If user typed "/assets/..." convert to "./assets/..."
   if (s.startsWith("/assets/")) return "." + s;
-
   return s;
 }
 
 function guessTypeFromUrl(url){
   if (!url) return "other";
-  const u = String(url).toLowerCase().trim();
-
-  if (u.startsWith("mailto:")) return "email";
-  if (u.startsWith("tel:")) return "phone";
-
   try{
     const host = new URL(url).hostname.replace(/^www\./, "");
     if (host.includes("instagram.com")) return "instagram";
@@ -72,16 +54,14 @@ function guessTypeFromUrl(url){
   }
 }
 
-function debounceSaveLocal(){
+function debounceSave(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     try{
       localStorage.setItem(LS_KEY, JSON.stringify(state));
-      setDot("ok");
-      setStatus("Draft saved (on this browser). Download when ready.");
+      setStatus("Draft saved. Download links.json when ready.");
     }catch{
-      setDot("warn");
-      setStatus("Could not save draft in browser (storage blocked).");
+      setStatus("Could not auto-save draft (browser blocked storage).");
     }
   }, 350);
 }
@@ -95,188 +75,7 @@ function readFileAsDataURL(file){
   });
 }
 
-function el(tag, cls, text){
-  const e = document.createElement(tag);
-  if (cls) e.className = cls;
-  if (text !== undefined) e.textContent = text;
-  return e;
-}
-
-function miniButton(text, onClick, cls="btnMini"){
-  const b = el("button", cls, text);
-  b.type = "button";
-  b.addEventListener("click", onClick);
-  return b;
-}
-
-/* ---------- RENDER SOCIALS ---------- */
-function renderSocials(){
-  const wrap = $("socialList");
-  wrap.innerHTML = "";
-
-  state.socials = state.socials || [];
-
-  state.socials.forEach((s, idx) => {
-    const card = el("div", "itemCard");
-
-    const head = el("div", "itemHead");
-    const left = el("div", "itemLeft");
-    left.appendChild(el("div", "itemEmoji", ICONS[s.type] || ICONS.other));
-    left.appendChild(el("div", "itemTitle", `Social #${idx+1}`));
-    head.appendChild(left);
-
-    const btns = el("div", "miniBtns");
-    btns.appendChild(miniButton("Remove", () => {
-      state.socials.splice(idx, 1);
-      renderAll();
-    }, "btnMini btnMiniDanger"));
-    head.appendChild(btns);
-
-    const row = el("div", "grid2");
-
-    // type select
-    const typeField = el("div", "field");
-    typeField.appendChild(el("label", "", "Type"));
-    const sel = document.createElement("select");
-    SOCIAL_TYPES.forEach(t => {
-      const o = document.createElement("option");
-      o.value = t;
-      o.textContent = `${ICONS[t] || "🔗"} ${t}`;
-      if (t === (s.type || "website")) o.selected = true;
-      sel.appendChild(o);
-    });
-    sel.addEventListener("change", () => {
-      state.socials[idx].type = sel.value;
-      renderAll(false);
-      debounceSaveLocal();
-    });
-    typeField.appendChild(sel);
-
-    // url
-    const urlField = el("div", "field");
-    urlField.appendChild(el("label", "", "URL"));
-    const input = document.createElement("input");
-    input.placeholder = "https://...";
-    input.value = s.url || "";
-    input.addEventListener("input", () => {
-      state.socials[idx].url = input.value;
-      renderPreview();
-      debounceSaveLocal();
-    });
-    urlField.appendChild(input);
-
-    row.appendChild(typeField);
-    row.appendChild(urlField);
-
-    card.appendChild(head);
-    card.appendChild(row);
-
-    wrap.appendChild(card);
-  });
-}
-
-/* ---------- RENDER LINKS ---------- */
-function renderLinks(){
-  const wrap = $("linksList");
-  wrap.innerHTML = "";
-
-  state.links = state.links || [];
-
-  state.links.forEach((l, idx) => {
-    const details = document.createElement("details");
-    details.className = "linkDetails";
-    details.open = idx === 0; // keep first open
-
-    const summary = document.createElement("summary");
-    summary.className = "linkSummary";
-
-    const iconType = guessTypeFromUrl(l.url) || "other";
-    const icon = el("span", "linkSummaryIcon", ICONS[iconType] || ICONS.other);
-    const title = el("span", "linkSummaryTitle", l.title || `Link #${idx+1}`);
-
-    const status = el("span", "pill");
-    const missing = !String(l.url || "").trim();
-    status.textContent = missing ? "Missing URL" : "OK";
-    status.className = missing ? "pill pillWarn" : "pill pillOk";
-
-    const rightBtns = el("span", "linkSummaryBtns");
-    rightBtns.appendChild(miniButton("↑", () => moveLink(idx, -1)));
-    rightBtns.appendChild(miniButton("↓", () => moveLink(idx, +1)));
-    rightBtns.appendChild(miniButton("Remove", () => removeLink(idx), "btnMini btnMiniDanger"));
-
-    summary.appendChild(icon);
-    summary.appendChild(title);
-    summary.appendChild(status);
-    summary.appendChild(rightBtns);
-
-    const body = el("div", "linkBody");
-
-    // BIG SIMPLE FIELDS
-    body.appendChild(makeInput(idx, "Title", "title", "Instagram"));
-    body.appendChild(makeInput(idx, "URL", "url", "https://..."));
-
-    body.appendChild(makeInput(idx, "Subtitle (optional)", "subtitle", "@handle or short text"));
-
-    // ADVANCED (collapsed)
-    const adv = document.createElement("details");
-    adv.className = "advanced";
-    const advSum = document.createElement("summary");
-    advSum.textContent = "Advanced (optional)";
-    adv.appendChild(advSum);
-
-    const advGrid = el("div", "grid2");
-    advGrid.appendChild(makeInput(idx, "Badge (optional)", "badge", "YouTube"));
-    advGrid.appendChild(makeInput(idx, "Thumbnail path (optional)", "thumb", "./assets/thumbs/retail.png", true));
-    adv.appendChild(advGrid);
-
-    body.appendChild(adv);
-
-    details.appendChild(summary);
-    details.appendChild(body);
-    wrap.appendChild(details);
-  });
-}
-
-function makeInput(idx, labelText, key, placeholder, normalizeAsset=false){
-  const field = el("div", "field");
-  const lab = el("label", "", labelText);
-
-  const input = document.createElement(key === "bio" ? "textarea" : "input");
-  input.placeholder = placeholder || "";
-  input.value = state.links[idx][key] || "";
-
-  input.addEventListener("input", () => {
-    let v = input.value;
-    if (normalizeAsset) v = normalizeAssetPath(v);
-    state.links[idx][key] = v;
-    renderPreview();
-    debounceSaveLocal();
-    // update summary pills quickly
-    renderLinks();
-  });
-
-  field.appendChild(lab);
-  field.appendChild(input);
-  return field;
-}
-
-function moveLink(idx, dir){
-  const n = idx + dir;
-  if (n < 0 || n >= state.links.length) return;
-  const tmp = state.links[n];
-  state.links[n] = state.links[idx];
-  state.links[idx] = tmp;
-  renderAll();
-  debounceSaveLocal();
-}
-
-function removeLink(idx){
-  state.links.splice(idx, 1);
-  renderAll();
-  debounceSaveLocal();
-}
-
-/* ---------- PREVIEW ---------- */
+/* ---------- Preview rendering ---------- */
 function createSocialEl({type,url}){
   const a = document.createElement("a");
   a.className = "social";
@@ -284,7 +83,7 @@ function createSocialEl({type,url}){
   a.target = "_blank";
   a.rel = "noopener";
   a.setAttribute("aria-label", type || "social");
-  a.innerHTML = `<span class="emoji">${ICONS[type] || ICONS.other}</span>`;
+  a.innerHTML = `<span style="font-size:16px">${ICONS[type] || ICONS.other}</span>`;
   if(!url) a.style.opacity = "0.55";
   return a;
 }
@@ -305,7 +104,11 @@ function createLinkEl(item){
     thumb.loading = "lazy";
   } else {
     const t = guessTypeFromUrl(item.url);
-    thumb.innerHTML = `<div class="thumbIcon">${ICONS[t] || ICONS.other}</div>`;
+    thumb.style.display = "grid";
+    thumb.style.placeItems = "center";
+    thumb.style.fontSize = "18px";
+    thumb.style.color = "rgba(10,10,12,0.70)";
+    thumb.textContent = ICONS[t] || ICONS.other;
   }
 
   const main = document.createElement("div");
@@ -317,7 +120,6 @@ function createLinkEl(item){
   const title = document.createElement("div");
   title.className = "title";
   title.textContent = item.title || "Untitled";
-
   titleRow.appendChild(title);
 
   if (item.badge) {
@@ -364,23 +166,249 @@ function renderPreview(){
   (state.links || []).forEach(l => lWrap.appendChild(createLinkEl(l)));
 }
 
+/* ---------- UI ---------- */
+function renderProfile(){
+  $("p_name").value = state.profile?.name || "";
+  $("p_avatar").value = state.profile?.avatar || "";
+  $("p_bio").value = state.profile?.bio || "";
+}
+
+function renderSocials(){
+  const wrap = $("socialList");
+  wrap.innerHTML = "";
+
+  (state.socials || []).forEach((s, idx) => {
+    const card = document.createElement("div");
+    card.className = "linkCard";
+
+    const head = document.createElement("div");
+    head.className = "linkCardHead";
+
+    const left = document.createElement("div");
+    left.className = "linkLeft";
+
+    const emoji = document.createElement("div");
+    emoji.className = "linkEmoji";
+    emoji.textContent = ICONS[s.type] || ICONS.other;
+
+    const name = document.createElement("div");
+    name.className = "linkName";
+    name.textContent = `Icon #${idx+1}`;
+
+    left.appendChild(emoji);
+    left.appendChild(name);
+
+    const btns = document.createElement("div");
+    btns.className = "miniBtns";
+
+    const remove = document.createElement("button");
+    remove.className = "btnMini btnMiniDanger";
+    remove.type = "button";
+    remove.textContent = "Remove";
+    remove.onclick = () => {
+      state.socials.splice(idx, 1);
+      renderAll();
+      debounceSave();
+    };
+
+    btns.appendChild(remove);
+
+    head.appendChild(left);
+    head.appendChild(btns);
+
+    const grid = document.createElement("div");
+    grid.className = "grid2";
+
+    // type
+    const fType = document.createElement("div");
+    fType.className = "field";
+    const l1 = document.createElement("label");
+    l1.textContent = "Type";
+    const sel = document.createElement("select");
+    SOCIAL_TYPES.forEach(t => {
+      const o = document.createElement("option");
+      o.value = t;
+      o.textContent = `${ICONS[t] || "🔗"} ${t}`;
+      if (t === (s.type || "website")) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.onchange = () => {
+      state.socials[idx].type = sel.value;
+      renderAll(false);
+      debounceSave();
+    };
+    fType.appendChild(l1);
+    fType.appendChild(sel);
+
+    // url
+    const fUrl = document.createElement("div");
+    fUrl.className = "field";
+    const l2 = document.createElement("label");
+    l2.textContent = "URL";
+    const input = document.createElement("input");
+    input.placeholder = "https://...";
+    input.value = s.url || "";
+    input.oninput = () => {
+      state.socials[idx].url = input.value;
+      renderPreview();
+      debounceSave();
+    };
+    fUrl.appendChild(l2);
+    fUrl.appendChild(input);
+
+    grid.appendChild(fType);
+    grid.appendChild(fUrl);
+
+    card.appendChild(head);
+    card.appendChild(grid);
+    wrap.appendChild(card);
+  });
+}
+
+function renderLinks(){
+  const wrap = $("linksList");
+  wrap.innerHTML = "";
+
+  (state.links || []).forEach((l, idx) => {
+    const card = document.createElement("div");
+    card.className = "linkCard";
+
+    const head = document.createElement("div");
+    head.className = "linkCardHead";
+
+    const left = document.createElement("div");
+    left.className = "linkLeft";
+
+    const emoji = document.createElement("div");
+    emoji.className = "linkEmoji";
+    emoji.textContent = ICONS[guessTypeFromUrl(l.url)] || ICONS.other;
+
+    const name = document.createElement("div");
+    name.className = "linkName";
+    name.textContent = l.title || `Button #${idx+1}`;
+
+    left.appendChild(emoji);
+    left.appendChild(name);
+
+    const pill = document.createElement("span");
+    const missing = !String(l.url || "").trim();
+    pill.className = "pill " + (missing ? "pillWarn" : "pillOk");
+    pill.textContent = missing ? "Missing URL" : "OK";
+
+    const btns = document.createElement("div");
+    btns.className = "miniBtns";
+
+    const up = document.createElement("button");
+    up.className = "btnMini";
+    up.type = "button";
+    up.textContent = "↑";
+    up.disabled = idx === 0;
+    up.onclick = () => moveLink(idx, -1);
+
+    const down = document.createElement("button");
+    down.className = "btnMini";
+    down.type = "button";
+    down.textContent = "↓";
+    down.disabled = idx === state.links.length - 1;
+    down.onclick = () => moveLink(idx, +1);
+
+    const remove = document.createElement("button");
+    remove.className = "btnMini btnMiniDanger";
+    remove.type = "button";
+    remove.textContent = "Remove";
+    remove.onclick = () => {
+      state.links.splice(idx, 1);
+      renderAll();
+      debounceSave();
+    };
+
+    btns.appendChild(up);
+    btns.appendChild(down);
+    btns.appendChild(remove);
+
+    head.appendChild(left);
+    head.appendChild(pill);
+    head.appendChild(btns);
+
+    const grid = document.createElement("div");
+    grid.className = "grid2";
+
+    grid.appendChild(makeField("Title", l.title || "", "e.g. Instagram", (v)=>{
+      state.links[idx].title = v;
+      renderLinks();
+      renderPreview();
+      debounceSave();
+    }));
+
+    grid.appendChild(makeField("URL", l.url || "", "https://...", (v)=>{
+      state.links[idx].url = v;
+      renderLinks();
+      renderPreview();
+      debounceSave();
+    }));
+
+    grid.appendChild(makeField("Subtitle (optional)", l.subtitle || "", "@handle or short text", (v)=>{
+      state.links[idx].subtitle = v;
+      renderPreview();
+      debounceSave();
+    }));
+
+    grid.appendChild(makeField("Badge (optional)", l.badge || "", "YouTube", (v)=>{
+      state.links[idx].badge = v;
+      renderPreview();
+      debounceSave();
+    }));
+
+    grid.appendChild(makeField("Thumbnail (optional)", l.thumb || "", "./assets/thumbs/retail.png", (v)=>{
+      state.links[idx].thumb = normalizeAssetPath(v);
+      renderPreview();
+      debounceSave();
+    }));
+
+    card.appendChild(head);
+    card.appendChild(grid);
+
+    wrap.appendChild(card);
+  });
+}
+
+function makeField(labelText, value, placeholder, onInput){
+  const f = document.createElement("div");
+  f.className = "field";
+  const lab = document.createElement("label");
+  lab.textContent = labelText;
+
+  const input = document.createElement("input");
+  input.value = value;
+  input.placeholder = placeholder;
+  input.oninput = () => onInput(input.value);
+
+  f.appendChild(lab);
+  f.appendChild(input);
+  return f;
+}
+
+function moveLink(idx, dir){
+  const n = idx + dir;
+  if (n < 0 || n >= state.links.length) return;
+  [state.links[idx], state.links[n]] = [state.links[n], state.links[idx]];
+  renderAll();
+  debounceSave();
+}
+
 function renderAll(full=true){
   if (full){
-    // Profile fields
-    $("p_name").value = state.profile?.name || "";
-    $("p_avatar").value = state.profile?.avatar || "";
-    $("p_bio").value = state.profile?.bio || "";
-    renderSocials();
+    renderProfile();
     renderLinks();
+    renderSocials();
   }
   renderPreview();
 }
 
-/* ---------- DOWNLOAD / IMPORT / RESET ---------- */
+/* ---------- Download / Import / Reset ---------- */
 function downloadJson(){
-  // normalize asset paths
-  if (state.profile) state.profile.avatar = normalizeAssetPath(state.profile.avatar);
-  (state.links || []).forEach(l => { l.thumb = normalizeAssetPath(l.thumb); });
+  state.profile.avatar = normalizeAssetPath(state.profile.avatar);
+  (state.links || []).forEach(l => l.thumb = normalizeAssetPath(l.thumb));
 
   const dataStr = JSON.stringify(state, null, 2);
   const blob = new Blob([dataStr], { type: "application/json" });
@@ -392,43 +420,26 @@ function downloadJson(){
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
-  setDot("ok");
   setStatus("Downloaded links.json — upload/replace it in your GitHub repo.");
 }
 
-async function copyJson(){
-  try{
-    await navigator.clipboard.writeText(JSON.stringify(state, null, 2));
-    setDot("ok");
-    setStatus("Copied JSON to clipboard.");
-  }catch{
-    setDot("warn");
-    setStatus("Could not copy (browser blocked clipboard).");
-  }
-}
-
 async function loadInitial(){
-  // 1) try local draft
   try{
     const saved = localStorage.getItem(LS_KEY);
     if (saved){
       state = JSON.parse(saved);
-      setDot("ok");
-      setStatus("Loaded saved draft from this browser.");
+      setStatus("Loaded your saved draft from this browser.");
       renderAll(true);
       return;
     }
   }catch{}
 
-  // 2) else fetch links.json
   try{
     const res = await fetch("./links.json", { cache: "no-store" });
     state = await res.json();
-    setDot("ok");
-    setStatus("Loaded current links.json from the site.");
+    setStatus("Loaded current links.json from your site.");
   }catch{
     state = defaultState();
-    setDot("warn");
     setStatus("Could not load links.json. Using a new draft.");
   }
 
@@ -436,89 +447,74 @@ async function loadInitial(){
 }
 
 function wire(){
-  // Large text toggle
-  $("toggleSize").addEventListener("click", ()=>{
-    const on = document.body.classList.toggle("editorLarge");
-    $("toggleSize").setAttribute("aria-pressed", on ? "true" : "false");
+  $("toggleBig").addEventListener("click", ()=>{
+    const on = document.body.classList.toggle("edBig");
+    $("toggleBig").setAttribute("aria-pressed", on ? "true" : "false");
   });
 
-  // Profile bindings
   $("p_name").addEventListener("input", (e)=>{
     state.profile.name = e.target.value;
     renderPreview();
-    debounceSaveLocal();
+    debounceSave();
   });
 
   $("p_avatar").addEventListener("input", (e)=>{
     state.profile.avatar = normalizeAssetPath(e.target.value);
     renderPreview();
-    debounceSaveLocal();
+    debounceSave();
   });
 
   $("p_bio").addEventListener("input", (e)=>{
     state.profile.bio = e.target.value;
     renderPreview();
-    debounceSaveLocal();
+    debounceSave();
   });
 
-  // Upload logo
-  const avatarFile = $("p_avatar_file");
-  if (avatarFile){
-    avatarFile.addEventListener("change", async (e)=>{
-      const file = e.target.files?.[0];
-      if(!file) return;
-      try{
-        const dataUrl = await readFileAsDataURL(file);
-        state.profile.avatar = dataUrl;
-        $("p_avatar").value = dataUrl;
-        renderPreview();
-        debounceSaveLocal();
-        setStatus("Logo embedded into links.json. Download when ready.");
-      }catch{
-        setDot("warn");
-        setStatus("Could not read image file.");
-      }finally{
-        e.target.value = "";
-      }
-    });
-  }
-
-  // Social add
-  $("addSocial").addEventListener("click", ()=>{
-    state.socials.push({ type: "website", url: "" });
-    renderAll(true);
-    debounceSaveLocal();
+  $("p_avatar_file").addEventListener("change", async (e)=>{
+    const file = e.target.files?.[0];
+    if(!file) return;
+    try{
+      const dataUrl = await readFileAsDataURL(file);
+      state.profile.avatar = dataUrl;
+      $("p_avatar").value = dataUrl;
+      renderPreview();
+      debounceSave();
+      setStatus("Logo embedded. Download links.json when ready.");
+    }catch{
+      setStatus("Could not read that image file.");
+    }finally{
+      e.target.value = "";
+    }
   });
 
-  // Link add
   $("addLink").addEventListener("click", ()=>{
     state.links.push({ title: "New link", subtitle: "", url: "", thumb: "", badge: "" });
     renderAll(true);
-    debounceSaveLocal();
+    debounceSave();
   });
 
-  // Quick add buttons
   $("qa_website").addEventListener("click", ()=>{
     state.links.push({ title: "Website", subtitle: "", url: "https://", thumb: "", badge: "" });
-    renderAll(true); debounceSaveLocal();
+    renderAll(true); debounceSave();
   });
   $("qa_instagram").addEventListener("click", ()=>{
     state.links.push({ title: "Instagram", subtitle: "@", url: "https://www.instagram.com/", thumb: "", badge: "" });
-    renderAll(true); debounceSaveLocal();
+    renderAll(true); debounceSave();
   });
   $("qa_youtube").addEventListener("click", ()=>{
     state.links.push({ title: "YouTube", subtitle: "", url: "https://www.youtube.com/", thumb: "", badge: "YouTube" });
-    renderAll(true); debounceSaveLocal();
+    renderAll(true); debounceSave();
   });
   $("qa_linkedin").addEventListener("click", ()=>{
     state.links.push({ title: "LinkedIn", subtitle: "", url: "https://www.linkedin.com/company/", thumb: "", badge: "" });
-    renderAll(true); debounceSaveLocal();
+    renderAll(true); debounceSave();
   });
 
-  // Export/import
-  $("download").addEventListener("click", downloadJson);
-  $("download2").addEventListener("click", downloadJson);
-  $("copy").addEventListener("click", copyJson);
+  $("addSocial").addEventListener("click", ()=>{
+    state.socials.push({ type: "website", url: "" });
+    renderAll(true);
+    debounceSave();
+  });
 
   $("import").addEventListener("change", async (e)=>{
     const file = e.target.files?.[0];
@@ -527,23 +523,23 @@ function wire(){
       const text = await file.text();
       state = JSON.parse(text);
       localStorage.setItem(LS_KEY, JSON.stringify(state));
-      setDot("ok");
       setStatus("Imported links.json successfully.");
       renderAll(true);
     }catch{
-      setDot("warn");
-      setStatus("Import failed: not valid JSON.");
+      setStatus("Import failed (not valid JSON).");
     }finally{
       e.target.value = "";
     }
   });
 
-  $("resetLocal").addEventListener("click", ()=>{
+  $("download").addEventListener("click", downloadJson);
+  $("download2").addEventListener("click", downloadJson);
+
+  $("resetDraft").addEventListener("click", ()=>{
     try{ localStorage.removeItem(LS_KEY); }catch{}
     state = defaultState();
     renderAll(true);
-    setDot("ok");
-    setStatus("Draft reset. Now download and upload when ready.");
+    setStatus("Draft reset. Download links.json when ready.");
   });
 }
 

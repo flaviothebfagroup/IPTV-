@@ -10,49 +10,55 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
+  <!-- Your public-page styles (used by preview card) -->
   <link rel="stylesheet" href="./styles.css" />
+  <!-- Editor-only styling (clean + senior-friendly) -->
+  <link rel="stylesheet" href="./editor.css" />
 </head>
 
-<body class="editorPage">
-  <header class="editorTop">
-    <div class="editorBrand">
-      <div class="editorMark" aria-hidden="true">✦</div>
-      <div>
-        <div class="editorTitle">Edit your links</div>
-        <div class="editorSubtitle">No code. Make changes → download <b>links.json</b> → upload to GitHub.</div>
+<body class="ed">
+  <header class="edHeader">
+    <div class="edBrand">
+      <div class="edBrandMark" aria-hidden="true">BFA</div>
+      <div class="edBrandText">
+        <div class="edTitle">Edit your links</div>
+        <div class="edSub">No code. Update → Download <b>links.json</b> → upload to GitHub.</div>
       </div>
     </div>
 
-    <div class="editorTopActions">
-      <button class="btnGhost" id="toggleSize" type="button" aria-pressed="false">Aa Large text</button>
-      <a class="btnGhost" href="./index.html" target="_blank" rel="noopener">↗ Open live page</a>
+    <div class="edActions">
+      <button class="btn btnGhost" id="toggleBig" type="button" aria-pressed="false">Aa Big text</button>
+      <a class="btn btnGhost" href="./index.html" target="_blank" rel="noopener">Open page</a>
+
+      <label class="btn btnGhost fileBtn">
+        Import JSON
+        <input type="file" id="import" accept="application/json" />
+      </label>
+
+      <button class="btn btnPrimary" id="download" type="button">Download links.json</button>
     </div>
   </header>
 
-  <main class="page">
-    <div class="editorLayout">
-      <!-- LEFT: FORM -->
-      <section class="panel editorPanel">
-        <div class="callout">
-          <div class="calloutIcon" aria-hidden="true">✅</div>
-          <div>
-            <div class="calloutTitle">Simple workflow</div>
-            <div class="calloutText">
-              1) Edit here • 2) Click <b>Download links.json</b> • 3) Replace the file in GitHub • 4) Done
-            </div>
-          </div>
+  <main class="edMain">
+    <div class="edGrid">
+
+      <!-- FORM -->
+      <section class="edPanel">
+        <div class="edNotice" id="status" role="status" aria-live="polite">
+          Tip: Make changes here, then click <b>Download links.json</b>.
         </div>
 
-        <details class="step" open>
-          <summary>
-            <span class="stepIcon" aria-hidden="true">👤</span>
-            <span class="stepText">
-              <span class="stepTitle">Profile</span>
-              <span class="stepHint">Name, logo, bio</span>
-            </span>
-          </summary>
+        <!-- PROFILE -->
+        <section class="sec">
+          <div class="secHead">
+            <div class="secIcon" aria-hidden="true">👤</div>
+            <div>
+              <div class="secTitle">Profile</div>
+              <div class="secHint">Name, logo, short description</div>
+            </div>
+          </div>
 
-          <div class="stepBody">
+          <div class="secBody">
             <div class="grid2">
               <div class="field">
                 <label for="p_name">Name</label>
@@ -60,118 +66,87 @@
               </div>
 
               <div class="field">
-                <label for="p_avatar">Logo (URL or local path)</label>
+                <label for="p_avatar">Logo path (recommended)</label>
                 <input id="p_avatar" placeholder="./assets/logo.png" />
-                <div class="help">Recommended: upload logo to <b>assets/logo.png</b> and use <b>./assets/logo.png</b>.</div>
+                <div class="help">Best: upload your logo into <b>assets/logo.png</b> and keep <b>./assets/logo.png</b>.</div>
               </div>
             </div>
 
-            <div class="field">
-              <label for="p_avatar_file">Upload logo from your computer (optional)</label>
-              <input type="file" id="p_avatar_file" accept="image/*" />
-              <div class="help">
-                Uploading here will embed the logo into <b>links.json</b> (works great, but makes the JSON bigger).
+            <div class="grid2">
+              <div class="field">
+                <label for="p_avatar_file">Upload logo (optional)</label>
+                <input type="file" id="p_avatar_file" accept="image/*" />
+                <div class="help">This will embed the logo into <b>links.json</b> (no extra file needed).</div>
+              </div>
+
+              <div class="field">
+                <label for="p_bio">Bio</label>
+                <textarea id="p_bio" placeholder="Retail Automotive Marketing • Digital Signage • IPTV"></textarea>
               </div>
             </div>
+          </div>
+        </section>
 
-            <div class="field">
-              <label for="p_bio">Bio</label>
-              <textarea id="p_bio" placeholder="Retail Automotive Marketing • Digital Signage • IPTV"></textarea>
+        <!-- BUTTONS -->
+        <section class="sec">
+          <div class="secHead">
+            <div class="secIcon" aria-hidden="true">🔗</div>
+            <div>
+              <div class="secTitle">Buttons (main links)</div>
+              <div class="secHint">Add / reorder / remove</div>
             </div>
           </div>
-        </details>
 
-        <details class="step">
-          <summary>
-            <span class="stepIcon" aria-hidden="true">🔗</span>
-            <span class="stepText">
-              <span class="stepTitle">Top social icons</span>
-              <span class="stepHint">Instagram, Website, LinkedIn…</span>
-            </span>
-          </summary>
-
-          <div class="stepBody">
-            <div id="socialList"></div>
-
-            <div class="rowActions">
-              <button class="btnPrimary" id="addSocial" type="button">＋ Add social</button>
-            </div>
-
-            <div class="help">These are the little icons under your name (not the big buttons).</div>
-          </div>
-        </details>
-
-        <details class="step" open>
-          <summary>
-            <span class="stepIcon" aria-hidden="true">🧾</span>
-            <span class="stepText">
-              <span class="stepTitle">Buttons (your main links)</span>
-              <span class="stepHint">Add, reorder, remove</span>
-            </span>
-          </summary>
-
-          <div class="stepBody">
-            <div class="quickAdd">
-              <div class="quickAddTitle">Quick add</div>
-              <div class="quickAddBtns">
-                <button class="btnGhost" id="qa_website" type="button">🌐 Website</button>
-                <button class="btnGhost" id="qa_instagram" type="button">📸 Instagram</button>
-                <button class="btnGhost" id="qa_youtube" type="button">▶ YouTube</button>
-                <button class="btnGhost" id="qa_linkedin" type="button">💼 LinkedIn</button>
+          <div class="secBody">
+            <div class="quick">
+              <div class="quickLabel">Quick add</div>
+              <div class="quickBtns">
+                <button class="btn btnGhost" id="qa_website" type="button">🌐 Website</button>
+                <button class="btn btnGhost" id="qa_instagram" type="button">📸 Instagram</button>
+                <button class="btn btnGhost" id="qa_youtube" type="button">▶ YouTube</button>
+                <button class="btn btnGhost" id="qa_linkedin" type="button">💼 LinkedIn</button>
               </div>
             </div>
 
             <div id="linksList"></div>
 
             <div class="rowActions">
-              <button class="btnPrimary" id="addLink" type="button">＋ Add new button</button>
+              <button class="btn btnPrimary" id="addLink" type="button">+ Add new button</button>
             </div>
 
-            <div class="help">
-              Tip: If you don’t want thumbnails, leave “Thumbnail” empty.
+            <div class="help">Tip: Thumbnails are optional. Leave empty if you don’t want images.</div>
+          </div>
+        </section>
+
+        <!-- SOCIAL ICONS -->
+        <section class="sec">
+          <div class="secHead">
+            <div class="secIcon" aria-hidden="true">✨</div>
+            <div>
+              <div class="secTitle">Top icons</div>
+              <div class="secHint">Small icons under the name</div>
             </div>
           </div>
-        </details>
 
-        <details class="step">
-          <summary>
-            <span class="stepIcon" aria-hidden="true">⬇️</span>
-            <span class="stepText">
-              <span class="stepTitle">Export / Import</span>
-              <span class="stepHint">Download, import, reset</span>
-            </span>
-          </summary>
-
-          <div class="stepBody">
-            <div class="exportGrid">
-              <button class="btnPrimary" id="download" type="button">⬇ Download links.json</button>
-              <button class="btnGhost" id="copy" type="button">📋 Copy JSON</button>
-
-              <label class="fileBtn">
-                <input type="file" id="import" accept="application/json" />
-                ⬆ Import links.json
-              </label>
-
-              <button class="btnDanger" id="resetLocal" type="button">🧹 Reset draft</button>
+          <div class="secBody">
+            <div id="socialList"></div>
+            <div class="rowActions">
+              <button class="btn btnGhost" id="addSocial" type="button">+ Add icon</button>
+              <button class="btn btnDanger" id="resetDraft" type="button">Reset draft</button>
             </div>
-
-            <div class="help">
-              “Reset draft” clears the auto-saved version stored in your browser (it won’t touch your GitHub files).
-            </div>
-
-            <div class="status" id="status" role="status" aria-live="polite"></div>
           </div>
-        </details>
+        </section>
+
       </section>
 
-      <!-- RIGHT: PREVIEW -->
-      <section class="panel previewPanel">
-        <div class="previewHeader">
+      <!-- PREVIEW -->
+      <aside class="edPanel edPreview">
+        <div class="previewHead">
           <div>
-            <div class="previewTitle">Live preview</div>
-            <div class="previewHint">This is what your page will look like.</div>
+            <div class="previewTitle">Preview</div>
+            <div class="previewHint">This is what the link page will look like.</div>
           </div>
-          <a class="btnGhost" href="./index.html" target="_blank" rel="noopener">↗ Open</a>
+          <a class="btn btnGhost" href="./index.html" target="_blank" rel="noopener">Open</a>
         </div>
 
         <section class="card previewCard" id="previewApp">
@@ -184,19 +159,15 @@
           <div class="links" id="v_links"></div>
           <footer class="footer"><span id="v_footer"></span></footer>
         </section>
-      </section>
+      </aside>
+
     </div>
   </main>
 
-  <!-- Sticky action bar (always visible) -->
-  <div class="stickyBar">
-    <div class="stickyLeft">
-      <span class="dot" id="dot"></span>
-      <span id="stickyMsg">Ready</span>
-    </div>
-    <div class="stickyRight">
-      <button class="btnPrimary" id="download2" type="button">⬇ Download links.json</button>
-    </div>
+  <!-- Sticky bottom bar on mobile -->
+  <div class="mobileBar">
+    <div class="mobileStatus" id="mobileStatus">Ready</div>
+    <button class="btn btnPrimary" id="download2" type="button">Download links.json</button>
   </div>
 
   <script src="./editor.js"></script>
