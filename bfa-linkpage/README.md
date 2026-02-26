@@ -19,3 +19,9 @@
 2. Edit your links
 3. Click **Download links.json**
 4. Replace `links.json` in GitHub (upload or edit file)
+
+
+## Logo options
+- **Best practice:** upload your logo into `assets/logo.png` and set `profile.avatar` to `./assets/logo.png`
+- **Also supported:** put any **full URL** in `profile.avatar`
+- **Editor upload:** on `/editor.html`, you can upload a logo and it will be embedded into `links.json` as a data-URL.

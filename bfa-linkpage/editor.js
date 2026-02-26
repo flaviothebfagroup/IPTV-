@@ -6,11 +6,16 @@ const ICONS = {
 };
 
 const SOCIAL_TYPES = ["instagram", "website", "linkedin", "youtube"];
+
 const $ = (id) => document.getElementById(id);
 
 let state = null;
 
-function setStatus(msg){ $("status").textContent = msg || ""; }
+function setStatus(msg){
+  $("status").textContent = msg || "";
+}
+
+function safeClone(obj){ return JSON.parse(JSON.stringify(obj)); }
 
 function defaultState(){
   return {
@@ -33,15 +38,12 @@ function readFileAsDataURL(file){
 function createTextField(label, value, onInput, placeholder=""){
   const wrap = document.createElement("div");
   wrap.className = "field";
-
   const l = document.createElement("label");
   l.textContent = label;
-
   const i = document.createElement("input");
   i.value = value || "";
   i.placeholder = placeholder;
   i.addEventListener("input", () => onInput(i.value));
-
   wrap.appendChild(l);
   wrap.appendChild(i);
   return wrap;
@@ -50,10 +52,8 @@ function createTextField(label, value, onInput, placeholder=""){
 function createSelectField(label, value, options, onChange){
   const wrap = document.createElement("div");
   wrap.className = "field";
-
   const l = document.createElement("label");
   l.textContent = label;
-
   const s = document.createElement("select");
   options.forEach(opt => {
     const o = document.createElement("option");
@@ -63,18 +63,9 @@ function createSelectField(label, value, options, onChange){
     s.appendChild(o);
   });
   s.addEventListener("change", () => onChange(s.value));
-
   wrap.appendChild(l);
   wrap.appendChild(s);
   return wrap;
-}
-
-function miniButton(text, onClick){
-  const b = document.createElement("button");
-  b.type = "button";
-  b.textContent = text;
-  b.addEventListener("click", onClick);
-  return b;
 }
 
 function itemHeader(title, buttons=[]){
@@ -94,6 +85,14 @@ function itemHeader(title, buttons=[]){
   return head;
 }
 
+function miniButton(text, onClick){
+  const b = document.createElement("button");
+  b.type = "button";
+  b.textContent = text;
+  b.addEventListener("click", onClick);
+  return b;
+}
+
 function renderForm(){
   // profile
   $("p_name").value = state.profile?.name || "";
@@ -109,13 +108,14 @@ function renderForm(){
     card.className = "itemCard";
 
     const btnDel = miniButton("Remove", () => { state.socials.splice(idx,1); renderAll(); });
-    card.appendChild(itemHeader(`Social #${idx+1}`, [btnDel]));
+    const head = itemHeader(`Social #${idx+1}`, [btnDel]);
 
     const row = document.createElement("div");
     row.className = "row";
     row.appendChild(createSelectField("Type", s.type || "website", SOCIAL_TYPES, (v)=>{ state.socials[idx].type=v; renderAll(false); }));
     row.appendChild(createTextField("URL", s.url || "", (v)=>{ state.socials[idx].url=v; renderAll(false); }, "https://..."));
 
+    card.appendChild(head);
     card.appendChild(row);
     sWrap.appendChild(card);
   });
@@ -130,17 +130,21 @@ function renderForm(){
 
     const up = miniButton("↑", () => {
       if(idx===0) return;
-      [state.links[idx-1], state.links[idx]] = [state.links[idx], state.links[idx-1]];
+      const tmp = state.links[idx-1];
+      state.links[idx-1] = state.links[idx];
+      state.links[idx] = tmp;
       renderAll();
     });
     const down = miniButton("↓", () => {
       if(idx===state.links.length-1) return;
-      [state.links[idx+1], state.links[idx]] = [state.links[idx], state.links[idx+1]];
+      const tmp = state.links[idx+1];
+      state.links[idx+1] = state.links[idx];
+      state.links[idx] = tmp;
       renderAll();
     });
     const del = miniButton("Remove", () => { state.links.splice(idx,1); renderAll(); });
 
-    card.appendChild(itemHeader(`Link #${idx+1}`, [up, down, del]));
+    const head = itemHeader(`Link #${idx+1}`, [up, down, del]);
 
     const row1 = document.createElement("div");
     row1.className = "row";
@@ -157,6 +161,7 @@ function renderForm(){
     row3.appendChild(createTextField("Thumbnail path (optional)", l.thumb || "", (v)=>{ state.links[idx].thumb=v; renderAll(false); }, "./assets/thumbs/retail.jpg"));
     row3.appendChild(document.createElement("div"));
 
+    card.appendChild(head);
     card.appendChild(row1);
     card.appendChild(row2);
     card.appendChild(row3);
@@ -173,7 +178,7 @@ function createSocialEl({type,url}){
   a.rel = "noopener";
   a.setAttribute("aria-label", type || "social");
   a.innerHTML = ICONS[type] || ICONS.website;
-  if(!url) a.style.opacity = "0.55";
+  if(!url) a.style.opacity = "0.45";
   return a;
 }
 
@@ -183,7 +188,7 @@ function createLinkEl(item){
   a.href = item.url || "#";
   a.target = "_blank";
   a.rel = "noopener";
-  if(!item.url) a.style.opacity = "0.8";
+  if(!item.url) a.style.opacity = "0.75";
 
   const thumb = document.createElement(item.thumb ? "img" : "div");
   thumb.className = "thumb";
@@ -202,6 +207,7 @@ function createLinkEl(item){
   const title = document.createElement("div");
   title.className = "title";
   title.textContent = item.title || "Untitled";
+
   titleRow.appendChild(title);
 
   if (item.badge) {
@@ -292,9 +298,6 @@ async function loadInitial(){
 function wire(){
   $("p_name").addEventListener("input", (e)=>{ state.profile.name = e.target.value; renderAll(false); });
   $("p_avatar").addEventListener("input", (e)=>{ state.profile.avatar = e.target.value; renderAll(false); });
-  $("p_bio").addEventListener("input", (e)=>{ state.profile.bio = e.target.value; renderAll(false); });
-
-  // ✅ Upload logo from your computer -> embedded data URL
   const avatarFile = document.getElementById("p_avatar_file");
   if (avatarFile){
     avatarFile.addEventListener("change", async (e)=>{
@@ -313,6 +316,8 @@ function wire(){
       }
     });
   }
+
+  $("p_bio").addEventListener("input", (e)=>{ state.profile.bio = e.target.value; renderAll(false); });
 
   $("addSocial").addEventListener("click", ()=>{
     state.socials.push({ type: "website", url: "" });
