@@ -86,12 +86,12 @@ async function init() {
   // Socials
   const socialsWrap = $("socials");
   socialsWrap.innerHTML = "";
-  (data.socials || []).forEach(s => socialsWrap.appendChild(createSocial(s)));
+  (data.socials || []).filter(s => s && s.enabled !== false).forEach(s => socialsWrap.appendChild(createSocial(s)));
 
   // Links
   const linksWrap = $("links");
   linksWrap.innerHTML = "";
-  (data.links || []).forEach(l => linksWrap.appendChild(createLink(l)));
+  (data.links || []).filter(l => l && l.enabled !== false).forEach(l => linksWrap.appendChild(createLink(l)));
 
   // Footer (optional)
   $("footerText").textContent = data.footerText || "";
