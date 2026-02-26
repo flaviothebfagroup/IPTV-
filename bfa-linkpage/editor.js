@@ -25,7 +25,7 @@ const sortableAttached = new WeakSet();
 
 function defaultState(){
   return {
-    profile: { name: "The BFA Group", avatar: "./assets/logo.png", bio: "" },
+    profile: { name: "The BFA Group", avatar: "./assets/logo.png", bio: "", avatarSize: 54, avatarPadding: 8, avatarFit: "contain", avatarRadius: 16 },
     theme: { type: "default", color: "#f6f7fb", image: "" },
     socials: [{ type: "instagram", url: "", enabled: true, iconImage: "" }, { type: "website", url: "", enabled: true, iconImage: "" }],
     links: [{ title: "Website", subtitle: "", url: "", thumb: "", badge: "", enabled: true, icon: "", iconImage: "" }],
@@ -86,6 +86,22 @@ function readFileAsDataURL(file){
   });
 }
 
+
+function applyAvatarStyle(imgEl, profile){
+  if (!imgEl) return;
+  const p = profile || {};
+  const size = Number(p.avatarSize ?? 54);
+  const pad  = Number(p.avatarPadding ?? 8);
+  const fit  = p.avatarFit || "contain";
+  const rad  = Number(p.avatarRadius ?? 16);
+
+  imgEl.style.width = `${size}px`;
+  imgEl.style.height = `${size}px`;
+  imgEl.style.padding = `${pad}px`;
+  imgEl.style.objectFit = fit;
+  imgEl.style.borderRadius = `${rad}px`;
+  imgEl.style.boxSizing = "border-box";
+}
 /* Tabs */
 function setTab(tab){
   document.querySelectorAll(".navItem").forEach(b=>{
@@ -252,6 +268,7 @@ function renderPreview(){
   const av = $("v_avatar");
   av.src = normalizeAssetPath(state.profile?.avatar || "");
   av.alt = (state.profile?.name || "Profile") + " logo";
+  applyAvatarStyle(av, state.profile);
 
   const sWrap = $("v_socials");
   sWrap.innerHTML = "";
@@ -835,7 +852,24 @@ function renderProfile(){
   $("p_bio").value = state.profile?.bio || "";
   $("brandName").textContent = state.profile?.name || "The BFA Group";
 
-  const t = state.theme || {};
+  const t = state.theme || {
+  // Logo controls
+  if ($("logo_size")){
+    $("logo_size").value = Number(state.profile?.avatarSize ?? 54);
+    $("logo_size_label").textContent = $("logo_size").value;
+  }
+  if ($("logo_padding")){
+    $("logo_padding").value = Number(state.profile?.avatarPadding ?? 8);
+    $("logo_padding_label").textContent = $("logo_padding").value;
+  }
+  if ($("logo_fit")){
+    $("logo_fit").value = state.profile?.avatarFit || "contain";
+  }
+  if ($("logo_radius")){
+    $("logo_radius").value = Number(state.profile?.avatarRadius ?? 16);
+    $("logo_radius_label").textContent = $("logo_radius").value;
+  }
+};
   if ($("bg_type")) $("bg_type").value = t.type || "default";
   if ($("bg_color")) $("bg_color").value = t.color || "#f6f7fb";
   if ($("bg_image")) $("bg_image").value = t.image || "";
@@ -927,7 +961,37 @@ function wire(){
 
   $("p_bio").addEventListener("input", (e)=>{
     state.profile.bio = e.target.value;
-    renderPreview(); debounceSave();
+    renderPreview();
+
+  // Logo controls (live preview)
+  if ($("logo_size")){
+    $("logo_size").addEventListener("input", (e)=>{
+      state.profile.avatarSize = Number(e.target.value);
+      $("logo_size_label").textContent = e.target.value;
+      renderPreview(); debounceSave();
+    });
+  }
+  if ($("logo_padding")){
+    $("logo_padding").addEventListener("input", (e)=>{
+      state.profile.avatarPadding = Number(e.target.value);
+      $("logo_padding_label").textContent = e.target.value;
+      renderPreview(); debounceSave();
+    });
+  }
+  if ($("logo_fit")){
+    $("logo_fit").addEventListener("change", (e)=>{
+      state.profile.avatarFit = e.target.value;
+      renderPreview(); debounceSave();
+    });
+  }
+  if ($("logo_radius")){
+    $("logo_radius").addEventListener("input", (e)=>{
+      state.profile.avatarRadius = Number(e.target.value);
+      $("logo_radius_label").textContent = e.target.value;
+      renderPreview(); debounceSave();
+    });
+  }
+ debounceSave();
   });
 
   $("p_avatar_file").addEventListener("change", async (e)=>{

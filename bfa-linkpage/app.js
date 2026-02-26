@@ -150,6 +150,22 @@ function createLink(item) {
   return a;
 }
 
+
+function applyAvatar(imgEl, profile){
+  if (!imgEl) return;
+  const p = profile || {};
+  const size = Number(p.avatarSize ?? 54);
+  const pad = Number(p.avatarPadding ?? 8);
+  const fit = (p.avatarFit || "contain");
+  const rad = Number(p.avatarRadius ?? 16);
+
+  imgEl.style.width = `${size}px`;
+  imgEl.style.height = `${size}px`;
+  imgEl.style.padding = `${pad}px`;
+  imgEl.style.objectFit = fit;
+  imgEl.style.borderRadius = `${rad}px`;
+  imgEl.style.boxSizing = "border-box";
+}
 async function init() {
   const res = await fetch("./links.json", { cache: "no-store" });
   const data = await res.json();
@@ -161,6 +177,7 @@ async function init() {
   const avatar = $("avatar");
   avatar.src = data.profile?.avatar || "";
   avatar.alt = (data.profile?.name || "Profile") + " logo";
+  applyAvatar(avatar, data.profile);
 
   $("bio").textContent = data.profile?.bio || "";
 
