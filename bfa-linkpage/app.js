@@ -27,6 +27,42 @@ function guessIconKey(url){
   }
 }
 
+
+function applyTheme(theme){
+  const t = theme || {};
+  const type = t.type || "default";
+  const color = t.color || "#f6f7fb";
+  const image = t.image || "";
+
+  const body = document.body;
+
+  // reset
+  body.style.background = "";
+  body.style.backgroundImage = "";
+  body.style.backgroundSize = "";
+  body.style.backgroundPosition = "";
+  body.style.backgroundRepeat = "";
+  body.style.backgroundAttachment = "";
+
+  if (type === "color"){
+    body.style.background = color;
+    return;
+  }
+  if (type === "gradient"){
+    body.style.background = `radial-gradient(900px 520px at 25% -120px, rgba(255,149,0,0.20), transparent 60%), radial-gradient(700px 420px at 90% 10%, rgba(0,122,255,0.10), transparent 55%), ${color}`;
+    return;
+  }
+  if (type === "image" && image){
+    body.style.background = color;
+    body.style.backgroundImage = `url("${image}")`;
+    body.style.backgroundSize = "cover";
+    body.style.backgroundPosition = "center";
+    body.style.backgroundRepeat = "no-repeat";
+    body.style.backgroundAttachment = "fixed";
+    return;
+  }
+  // default: keep CSS background from styles.css
+}
 function createSocial(obj) {
   const { type, url, iconImage } = obj || {};
   const a = document.createElement("a");

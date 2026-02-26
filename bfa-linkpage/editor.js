@@ -1,6 +1,6 @@
 const $ = (id) => document.getElementById(id);
 
-const LS_KEY = "bfa_linktree_editor_draft_v2";
+const LS_KEY = "bfa_linktree_editor_draft_v7";
 const SOCIAL_TYPES = ["instagram","website","linkedin","youtube","tiktok","facebook"];
 
 // Simple line icons (stroke SVG)
@@ -11,9 +11,7 @@ const ICON_SVGS = {
   youtube: `<svg viewBox="0 0 24 24"><path d="M21 12s0-4-1-5-4-1-8-1-7 0-8 1-1 5-1 5 0 4 1 5 4 1 8 1 7 0 8-1 1-5 1-5z"/><path d="M10 9.5l5 2.5-5 2.5z"/></svg>`,
   linkedin: `<svg viewBox="0 0 24 24"><path d="M4 9h4v11H4z"/><path d="M6 4.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M10 9h4v1.8c.6-1.1 1.9-2 3.8-2 3 0 4.2 2 4.2 5v6.2h-4v-5.6c0-1.6-.4-2.8-2-2.8-1.2 0-2 .8-2 2.3V20h-4z"/></svg>`,
   edit: `<svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z"/></svg>`,
-  trash: `<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M7 6l1 14h8l1-14"/></svg>`,
-  up: `<svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M6 11l6-6 6 6"/></svg>`,
-  down: `<svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg>`
+  trash: `<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M7 6l1 14h8l1-14"/></svg>`
 };
 
 let state = null;
@@ -22,6 +20,7 @@ let saveTimer = null;
 function defaultState(){
   return {
     profile: { name: "The BFA Group", avatar: "./assets/logo.png", bio: "" },
+    theme: { type: "default", color: "#f6f7fb", image: "" }, // NEW
     socials: [{ type: "instagram", url: "", enabled: true, iconImage: "" }, { type: "website", url: "", enabled: true, iconImage: "" }],
     links: [{ title: "Website", subtitle: "", url: "", thumb: "", badge: "", enabled: true, icon: "", iconImage: "" }],
     footerText: ""
@@ -64,12 +63,12 @@ function debounceSave(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(()=>{
     try{
-      localStorage.setItem("bfa_linktree_editor_draft_v2", JSON.stringify(state));
+      localStorage.setItem(LS_KEY, JSON.stringify(state));
       setStatus("Saved");
     }catch{
-      setStatus("Could not save draft in browser.");
+      setStatus("Can't save draft");
     }
-  }, 350);
+  }, 250);
 }
 
 function readFileAsDataURL(file){
@@ -91,13 +90,67 @@ function setTab(tab){
   });
 
   const titles = {
-    links: ["Links", "Click a row to edit. Toggle off to hide."],
-    profile: ["Profile", "Update name, logo, bio."],
-    icons: ["Icons", "Small icons under the name."],
+    links: ["Links", "Drag the dots to reorder. Click a row to edit. Toggle off to hide."],
+    profile: ["Profile", "Name, logo, bio + background"],
+    icons: ["Icons", "Drag the dots to reorder icons under the name."],
     export: ["Export", "Download your updated links.json."]
   };
   $("pageTitle").textContent = titles[tab]?.[0] || "Links";
   $("pageHint").textContent = titles[tab]?.[1] || "";
+}
+
+/* Theme */
+function themeCss(theme){
+  const t = theme || {};
+  const type = t.type || "default";
+  const color = t.color || "#f6f7fb";
+  const image = t.image || "";
+
+  if (type === "color") {
+    return { background: color, backgroundImage: "none" };
+  }
+  if (type === "gradient") {
+    // gentle gradient based on chosen color
+    return {
+      background: `radial-gradient(900px 520px at 25% -120px, rgba(255,149,0,0.20), transparent 60%), radial-gradient(700px 420px at 90% 10%, rgba(0,122,255,0.10), transparent 55%), ${color}`,
+      backgroundImage: null
+    };
+  }
+  if (type === "image" && image) {
+    return {
+      background: `${color}`,
+      backgroundImage: `url("${image}")`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
+      backgroundAttachment: "fixed"
+    };
+  }
+  return null; // default (CSS)
+}
+
+function applyThemeToPreview(){
+  const screen = document.querySelector(".phoneScreen");
+  if (!screen) return;
+
+  const t = state.theme || {};
+  const css = themeCss(t);
+  if (!css){
+    screen.style.background = "";
+    screen.style.backgroundImage = "";
+    screen.style.backgroundSize = "";
+    screen.style.backgroundPosition = "";
+    screen.style.backgroundRepeat = "";
+    screen.style.backgroundAttachment = "";
+    return;
+  }
+
+  if (css.background !== null && css.background !== undefined) screen.style.background = css.background;
+  if (css.backgroundImage !== null && css.backgroundImage !== undefined) screen.style.backgroundImage = css.backgroundImage;
+  if (css.backgroundSize) screen.style.backgroundSize = css.backgroundSize;
+  if (css.backgroundPosition) screen.style.backgroundPosition = css.backgroundPosition;
+  if (css.backgroundRepeat) screen.style.backgroundRepeat = css.backgroundRepeat;
+  if (css.backgroundAttachment) screen.style.backgroundAttachment = css.backgroundAttachment;
 }
 
 /* Preview */
@@ -214,8 +267,6 @@ function renderPreview(){
   const sWrap = $("v_socials");
   sWrap.innerHTML = "";
   (state.socials || []).forEach(s=>{
-    if (s.enabled === undefined) s.enabled = true;
-    if (s.iconImage === undefined) s.iconImage = "";
     const el = createSocialEl(s);
     if (el) sWrap.appendChild(el);
   });
@@ -223,22 +274,21 @@ function renderPreview(){
   const lWrap = $("v_links");
   lWrap.innerHTML = "";
   (state.links || []).forEach(l=>{
-    if (l.enabled === undefined) l.enabled = true;
-    if (l.icon === undefined) l.icon = "";
-    if (l.iconImage === undefined) l.iconImage = "";
     const el = createLinkEl(l);
     if (el) lWrap.appendChild(el);
   });
+
+  applyThemeToPreview();
 }
 
-/* Components */
+/* UI helpers */
 function makeToggle(checked, onChange){
   const toggle = document.createElement("label");
   toggle.className = "toggle";
   const cb = document.createElement("input");
   cb.type = "checkbox";
   cb.checked = !!checked;
-  cb.addEventListener("change", ()=> onChange(cb.checked));
+  cb.addEventListener("change", (e)=>{ e.stopPropagation(); onChange(cb.checked); });
   const track = document.createElement("span");
   track.className = "track";
   const knob = document.createElement("span");
@@ -252,10 +302,9 @@ function makeToggle(checked, onChange){
 function iconBtn(iconKey, title, onClick, opts={}){
   const b = document.createElement("button");
   b.type = "button";
-  b.className = "iconBtn" + (opts.small ? " small" : "") + (opts.danger ? " danger" : "");
+  b.className = "iconBtn" + (opts.danger ? " danger" : "");
   b.title = title || "";
   b.innerHTML = ICON_SVGS[iconKey] || ICON_SVGS.link;
-  if (opts.disabled) b.disabled = true;
   b.addEventListener("click", (e)=>{ e.stopPropagation(); onClick(); });
   return b;
 }
@@ -280,7 +329,7 @@ function inputText(value, placeholder, onInput){
   const i = document.createElement("input");
   i.value = value || "";
   i.placeholder = placeholder || "";
-  i.addEventListener("input", ()=> onInput(i.value));
+  i.addEventListener("input", (e)=>{ e.stopPropagation(); onInput(i.value); });
   return i;
 }
 
@@ -301,7 +350,7 @@ function selectIcon(value, onChange){
     if ((value || "") === v) o.selected = true;
     sel.appendChild(o);
   });
-  sel.addEventListener("change", ()=> onChange(sel.value));
+  sel.addEventListener("change", (e)=>{ e.stopPropagation(); onChange(sel.value); });
   return sel;
 }
 
@@ -318,16 +367,109 @@ function renderRowIcon(container, item){
   container.innerHTML = ICON_SVGS[key] || ICON_SVGS.link;
 }
 
-/* Links list */
+/* Pointer sortable (works everywhere, no HTML5 drag needed) */
+function makeSortable(container, itemsGetter, moveCallback, rerender){
+  let drag = null;
+
+  const onMove = (e) => {
+    if (!drag) return;
+
+    const y = e.clientY - drag.offsetY;
+    drag.card.style.top = `${y}px`;
+
+    // Decide placeholder position
+    const cards = Array.from(container.querySelectorAll(".rowCard")).filter(el => el !== drag.card);
+    let placed = false;
+    for (const c of cards){
+      const r = c.getBoundingClientRect();
+      const mid = r.top + r.height / 2;
+      if (e.clientY < mid){
+        container.insertBefore(drag.placeholder, c);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) container.appendChild(drag.placeholder);
+  };
+
+  const onUp = (e) => {
+    if (!drag) return;
+
+    document.removeEventListener("pointermove", onMove, true);
+    document.removeEventListener("pointerup", onUp, true);
+
+    const from = drag.fromIndex;
+    const to = Array.from(container.children).indexOf(drag.placeholder);
+
+    drag.card.classList.remove("dragging");
+    drag.card.style.position = "";
+    drag.card.style.left = "";
+    drag.card.style.top = "";
+    drag.card.style.width = "";
+    drag.card.style.zIndex = "";
+    drag.card.style.pointerEvents = "";
+
+    drag.placeholder.replaceWith(drag.card);
+
+    if (from !== to && to >= 0){
+      moveCallback(from, to);
+    }
+
+    drag = null;
+    rerender();
+    debounceSave();
+  };
+
+  container.addEventListener("pointerdown", (e)=>{
+    const handle = e.target.closest(".handle");
+    if (!handle) return;
+
+    const card = handle.closest(".rowCard");
+    if (!card) return;
+
+    const fromIndex = Array.from(container.querySelectorAll(".rowCard")).indexOf(card);
+    if (fromIndex < 0) return;
+
+    e.preventDefault();
+
+    // close open editors while dragging
+    document.querySelectorAll(".rowCard.isOpen").forEach(el => el.classList.remove("isOpen"));
+
+    const rect = card.getBoundingClientRect();
+    const ph = document.createElement("div");
+    ph.className = "placeholder";
+    ph.style.height = `${rect.height}px`;
+
+    // Insert placeholder after card
+    card.parentNode.insertBefore(ph, card.nextSibling);
+
+    // Lift card
+    card.classList.add("dragging");
+    card.style.width = `${rect.width}px`;
+    card.style.position = "fixed";
+    card.style.left = `${rect.left}px`;
+    card.style.top = `${rect.top}px`;
+    card.style.zIndex = "9999";
+    card.style.pointerEvents = "none";
+
+    drag = {
+      card,
+      placeholder: ph,
+      fromIndex,
+      offsetY: e.clientY - rect.top
+    };
+
+    document.addEventListener("pointermove", onMove, true);
+    document.addEventListener("pointerup", onUp, true);
+  });
+}
+
+/* Lists */
 function renderLinks(){
   const wrap = $("linksList");
   wrap.innerHTML = "";
 
   (state.links || []).forEach((l, idx)=>{
-    if (l.enabled === undefined) l.enabled = true;
-    if (l.icon === undefined) l.icon = "";
-    if (l.iconImage === undefined) l.iconImage = "";
-
     const card = document.createElement("div");
     card.className = "rowCard";
 
@@ -339,6 +481,7 @@ function renderLinks(){
     const dots = document.createElement("div");
     dots.className = "handleDots";
     handle.appendChild(dots);
+    handle.addEventListener("click", (e)=> e.stopPropagation());
 
     const iconBox = document.createElement("div");
     iconBox.className = "rowIcon";
@@ -371,8 +514,6 @@ function renderLinks(){
       card.classList.toggle("isOpen");
     });
 
-    const upBtn = iconBtn("up", "Move up", ()=> moveLink(idx, -1), { small:true, disabled: idx===0 });
-    const downBtn = iconBtn("down", "Move down", ()=> moveLink(idx, +1), { small:true, disabled: idx===state.links.length-1 });
     const delBtn = iconBtn("trash", "Delete", ()=>{
       state.links.splice(idx, 1);
       renderLinks();
@@ -382,8 +523,6 @@ function renderLinks(){
 
     actions.appendChild(tog);
     actions.appendChild(editBtn);
-    actions.appendChild(upBtn);
-    actions.appendChild(downBtn);
     actions.appendChild(delBtn);
 
     top.appendChild(handle);
@@ -391,9 +530,7 @@ function renderLinks(){
     top.appendChild(main);
     top.appendChild(actions);
 
-    // clicking the row opens editor (except when clicking controls)
-    top.addEventListener("click", (e)=>{
-      if (e.target.closest(".rowActions") || e.target.closest("button") || e.target.closest("label.toggle")) return;
+    top.addEventListener("click", ()=>{
       document.querySelectorAll(".rowCard.isOpen").forEach(el=>{
         if (el !== card) el.classList.remove("isOpen");
       });
@@ -434,7 +571,6 @@ function renderLinks(){
       renderPreview(); debounceSave();
     }), "Leave empty if you don't want an image thumbnail."));
 
-    // Icon controls
     const iconSel = selectIcon(l.icon || "", (v)=>{
       state.links[idx].icon = v;
       if (!state.links[idx].iconImage) renderRowIcon(iconBox, state.links[idx]);
@@ -463,7 +599,7 @@ function renderLinks(){
         renderPreview(); debounceSave();
         setStatus("Icon embedded");
       }catch{
-        setStatus("Could not read that image file.");
+        setStatus("Could not read image");
       }finally{
         upload.value = "";
       }
@@ -475,12 +611,13 @@ function renderLinks(){
     clearBtn.className = "ghost";
     clearBtn.textContent = "Clear icon image";
     clearBtn.addEventListener("click", (e)=>{
-      e.preventDefault();
+      e.stopPropagation();
       state.links[idx].iconImage = "";
       iconUrl.value = "";
       renderRowIcon(iconBox, state.links[idx]);
       renderPreview(); debounceSave();
     });
+
     edit.appendChild(grid);
     edit.appendChild(clearBtn);
 
@@ -488,26 +625,24 @@ function renderLinks(){
     card.appendChild(edit);
     wrap.appendChild(card);
   });
+
+  // Activate sortable after render
+  makeSortable(
+    wrap,
+    () => state.links,
+    (from, to) => {
+      const item = state.links.splice(from, 1)[0];
+      state.links.splice(to, 0, item);
+    },
+    () => { renderLinks(); renderPreview(); }
+  );
 }
 
-function moveLink(idx, dir){
-  const n = idx + dir;
-  if (n < 0 || n >= state.links.length) return;
-  [state.links[idx], state.links[n]] = [state.links[n], state.links[idx]];
-  renderLinks();
-  renderPreview();
-  debounceSave();
-}
-
-/* Social icons list */
 function renderSocials(){
   const wrap = $("socialList");
   wrap.innerHTML = "";
 
   (state.socials || []).forEach((s, idx)=>{
-    if (s.enabled === undefined) s.enabled = true;
-    if (s.iconImage === undefined) s.iconImage = "";
-
     const card = document.createElement("div");
     card.className = "rowCard";
 
@@ -519,6 +654,7 @@ function renderSocials(){
     const dots = document.createElement("div");
     dots.className = "handleDots";
     handle.appendChild(dots);
+    handle.addEventListener("click", (e)=> e.stopPropagation());
 
     const iconBox = document.createElement("div");
     iconBox.className = "rowIcon";
@@ -566,8 +702,7 @@ function renderSocials(){
     top.appendChild(main);
     top.appendChild(actions);
 
-    top.addEventListener("click", (e)=>{
-      if (e.target.closest(".rowActions") || e.target.closest("button") || e.target.closest("label.toggle")) return;
+    top.addEventListener("click", ()=>{
       document.querySelectorAll(".rowCard.isOpen").forEach(el=>{
         if (el !== card) el.classList.remove("isOpen");
       });
@@ -588,7 +723,8 @@ function renderSocials(){
       if (t === (s.type || "website")) o.selected = true;
       sel.appendChild(o);
     });
-    sel.addEventListener("change", ()=>{
+    sel.addEventListener("change", (e)=>{
+      e.stopPropagation();
       state.socials[idx].type = sel.value;
       title.textContent = sel.value;
       renderRowIcon(iconBox, { url: state.socials[idx].url, icon: state.socials[idx].type, iconImage: state.socials[idx].iconImage });
@@ -623,7 +759,7 @@ function renderSocials(){
         renderPreview(); debounceSave();
         setStatus("Icon embedded");
       }catch{
-        setStatus("Could not read that image file.");
+        setStatus("Could not read image");
       }finally{
         upload.value = "";
       }
@@ -635,7 +771,7 @@ function renderSocials(){
     clearBtn.className = "ghost";
     clearBtn.textContent = "Clear icon image";
     clearBtn.addEventListener("click", (e)=>{
-      e.preventDefault();
+      e.stopPropagation();
       state.socials[idx].iconImage = "";
       iconUrl.value = "";
       renderRowIcon(iconBox, { url: state.socials[idx].url, icon: state.socials[idx].type, iconImage: "" });
@@ -649,6 +785,16 @@ function renderSocials(){
     card.appendChild(edit);
     wrap.appendChild(card);
   });
+
+  makeSortable(
+    wrap,
+    () => state.socials,
+    (from, to) => {
+      const item = state.socials.splice(from, 1)[0];
+      state.socials.splice(to, 0, item);
+    },
+    () => { renderSocials(); renderPreview(); }
+  );
 }
 
 /* Profile */
@@ -657,18 +803,25 @@ function renderProfile(){
   $("p_avatar").value = state.profile?.avatar || "";
   $("p_bio").value = state.profile?.bio || "";
   $("brandName").textContent = state.profile?.name || "The BFA Group";
+
+  // Theme UI
+  const t = state.theme || {};
+  if ($("bg_type")) $("bg_type").value = t.type || "default";
+  if ($("bg_color")) $("bg_color").value = t.color || "#f6f7fb";
+  if ($("bg_image")) $("bg_image").value = t.image || "";
 }
 
 /* Export */
 function downloadJson(){
   state.profile.avatar = normalizeAssetPath(state.profile.avatar);
+  state.theme = state.theme || { type:"default", color:"#f6f7fb", image:"" };
+  state.theme.image = normalizeAssetPath(state.theme.image);
+
   (state.links || []).forEach(l => {
     l.thumb = normalizeAssetPath(l.thumb);
     l.iconImage = l.iconImage || "";
   });
-  (state.socials || []).forEach(s => {
-    s.iconImage = s.iconImage || "";
-  });
+  (state.socials || []).forEach(s => { s.iconImage = s.iconImage || ""; });
 
   const dataStr = JSON.stringify(state, null, 2);
   const blob = new Blob([dataStr], { type: "application/json" });
@@ -700,12 +853,15 @@ async function loadInitial(){
     setStatus("Loaded from site");
   }catch{
     state = defaultState();
-    setStatus("Could not load links.json. Using a new draft.");
+    setStatus("New draft");
   }
 
-  // ensure fields exist
+  // Ensure fields exist
+  state.profile = { name:"", avatar:"", bio:"", ...(state.profile || {}) };
+  state.theme = { type:"default", color:"#f6f7fb", image:"", ...(state.theme || state.background || {}) };
   state.socials = (state.socials || []).map(s => ({ enabled: true, iconImage: "", ...s }));
   state.links = (state.links || []).map(l => ({ enabled: true, icon: "", iconImage: "", ...l }));
+
   renderAll();
 }
 
@@ -753,7 +909,43 @@ function wire(){
       renderPreview(); debounceSave();
       setStatus("Logo embedded");
     }catch{
-      setStatus("Could not read that image file.");
+      setStatus("Could not read image");
+    }finally{
+      e.target.value = "";
+    }
+  });
+
+  // Theme controls
+  if ($("bg_type")) $("bg_type").addEventListener("change", (e)=>{
+    state.theme = state.theme || {};
+    state.theme.type = e.target.value;
+    renderPreview(); debounceSave();
+  });
+
+  if ($("bg_color")) $("bg_color").addEventListener("input", (e)=>{
+    state.theme = state.theme || {};
+    state.theme.color = e.target.value;
+    renderPreview(); debounceSave();
+  });
+
+  if ($("bg_image")) $("bg_image").addEventListener("input", (e)=>{
+    state.theme = state.theme || {};
+    state.theme.image = normalizeAssetPath(e.target.value);
+    renderPreview(); debounceSave();
+  });
+
+  if ($("bg_image_file")) $("bg_image_file").addEventListener("change", async (e)=>{
+    const file = e.target.files?.[0];
+    if(!file) return;
+    try{
+      const dataUrl = await readFileAsDataURL(file);
+      state.theme = state.theme || {};
+      state.theme.image = dataUrl;
+      $("bg_image").value = dataUrl;
+      renderPreview(); debounceSave();
+      setStatus("Background embedded");
+    }catch{
+      setStatus("Could not read image");
     }finally{
       e.target.value = "";
     }
@@ -775,13 +967,15 @@ function wire(){
     try{
       const text = await file.text();
       state = JSON.parse(text);
+      state.profile = { name:"", avatar:"", bio:"", ...(state.profile || {}) };
+      state.theme = { type:"default", color:"#f6f7fb", image:"", ...(state.theme || state.background || {}) };
       state.socials = (state.socials || []).map(s => ({ enabled: true, iconImage: "", ...s }));
       state.links = (state.links || []).map(l => ({ enabled: true, icon: "", iconImage: "", ...l }));
       localStorage.setItem(LS_KEY, JSON.stringify(state));
       setStatus("Imported");
       renderAll();
     }catch{
-      setStatus("Import failed (not valid JSON).");
+      setStatus("Import failed");
     }finally{
       e.target.value = "";
     }
