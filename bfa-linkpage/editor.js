@@ -852,7 +852,6 @@ function renderProfile(){
   $("p_bio").value = state.profile?.bio || "";
   $("brandName").textContent = state.profile?.name || "The BFA Group";
 
-  const t = state.theme || {
   // Logo controls
   if ($("logo_size")){
     $("logo_size").value = Number(state.profile?.avatarSize ?? 54);
@@ -869,7 +868,10 @@ function renderProfile(){
     $("logo_radius").value = Number(state.profile?.avatarRadius ?? 16);
     $("logo_radius_label").textContent = $("logo_radius").value;
   }
-};
+
+  // Theme UI
+  const t = state.theme || {};
+
   if ($("bg_type")) $("bg_type").value = t.type || "default";
   if ($("bg_color")) $("bg_color").value = t.color || "#f6f7fb";
   if ($("bg_image")) $("bg_image").value = t.image || "";
