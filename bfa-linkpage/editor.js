@@ -1,6 +1,6 @@
 const $ = (id) => document.getElementById(id);
 
-const LS_KEY = "bfa_linktree_editor_draft_v7";
+const LS_KEY = "bfa_linktree_editor_draft_v8";
 const SOCIAL_TYPES = ["instagram","website","linkedin","youtube","tiktok","facebook"];
 
 // Simple line icons (stroke SVG)
@@ -11,16 +11,21 @@ const ICON_SVGS = {
   youtube: `<svg viewBox="0 0 24 24"><path d="M21 12s0-4-1-5-4-1-8-1-7 0-8 1-1 5-1 5 0 4 1 5 4 1 8 1 7 0 8-1 1-5 1-5z"/><path d="M10 9.5l5 2.5-5 2.5z"/></svg>`,
   linkedin: `<svg viewBox="0 0 24 24"><path d="M4 9h4v11H4z"/><path d="M6 4.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M10 9h4v1.8c.6-1.1 1.9-2 3.8-2 3 0 4.2 2 4.2 5v6.2h-4v-5.6c0-1.6-.4-2.8-2-2.8-1.2 0-2 .8-2 2.3V20h-4z"/></svg>`,
   edit: `<svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z"/></svg>`,
-  trash: `<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M7 6l1 14h8l1-14"/></svg>`
+  trash: `<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M7 6l1 14h8l1-14"/></svg>`,
+  up: `<svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M6 11l6-6 6 6"/></svg>`,
+  down: `<svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg>`
 };
 
 let state = null;
 let saveTimer = null;
 
+// One-time sortable attachment guard
+const sortableAttached = new WeakSet();
+
 function defaultState(){
   return {
     profile: { name: "The BFA Group", avatar: "./assets/logo.png", bio: "" },
-    theme: { type: "default", color: "#f6f7fb", image: "" }, // NEW
+    theme: { type: "default", color: "#f6f7fb", image: "" },
     socials: [{ type: "instagram", url: "", enabled: true, iconImage: "" }, { type: "website", url: "", enabled: true, iconImage: "" }],
     links: [{ title: "Website", subtitle: "", url: "", thumb: "", badge: "", enabled: true, icon: "", iconImage: "" }],
     footerText: ""
@@ -90,67 +95,50 @@ function setTab(tab){
   });
 
   const titles = {
-    links: ["Links", "Drag the dots to reorder. Click a row to edit. Toggle off to hide."],
+    links: ["Links", "Drag the dots OR use ↑ ↓ to reorder. Click a row to edit. Toggle off to hide."],
     profile: ["Profile", "Name, logo, bio + background"],
-    icons: ["Icons", "Drag the dots to reorder icons under the name."],
+    icons: ["Icons", "Drag the dots OR use ↑ ↓ to reorder icons under the name."],
     export: ["Export", "Download your updated links.json."]
   };
   $("pageTitle").textContent = titles[tab]?.[0] || "Links";
   $("pageHint").textContent = titles[tab]?.[1] || "";
 }
 
-/* Theme */
-function themeCss(theme){
-  const t = theme || {};
-  const type = t.type || "default";
-  const color = t.color || "#f6f7fb";
-  const image = t.image || "";
-
-  if (type === "color") {
-    return { background: color, backgroundImage: "none" };
-  }
-  if (type === "gradient") {
-    // gentle gradient based on chosen color
-    return {
-      background: `radial-gradient(900px 520px at 25% -120px, rgba(255,149,0,0.20), transparent 60%), radial-gradient(700px 420px at 90% 10%, rgba(0,122,255,0.10), transparent 55%), ${color}`,
-      backgroundImage: null
-    };
-  }
-  if (type === "image" && image) {
-    return {
-      background: `${color}`,
-      backgroundImage: `url("${image}")`,
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-      backgroundRepeat: "no-repeat",
-      backgroundAttachment: "fixed"
-    };
-  }
-  return null; // default (CSS)
-}
-
+/* Theme preview */
 function applyThemeToPreview(){
   const screen = document.querySelector(".phoneScreen");
   if (!screen) return;
 
   const t = state.theme || {};
-  const css = themeCss(t);
-  if (!css){
-    screen.style.background = "";
-    screen.style.backgroundImage = "";
-    screen.style.backgroundSize = "";
-    screen.style.backgroundPosition = "";
-    screen.style.backgroundRepeat = "";
-    screen.style.backgroundAttachment = "";
+  const type = t.type || "default";
+  const color = t.color || "#f6f7fb";
+  const image = t.image || "";
+
+  // Reset
+  screen.style.background = "";
+  screen.style.backgroundImage = "";
+  screen.style.backgroundSize = "";
+  screen.style.backgroundPosition = "";
+  screen.style.backgroundRepeat = "";
+  screen.style.backgroundAttachment = "";
+
+  if (type === "color"){
+    screen.style.background = color;
     return;
   }
-
-  if (css.background !== null && css.background !== undefined) screen.style.background = css.background;
-  if (css.backgroundImage !== null && css.backgroundImage !== undefined) screen.style.backgroundImage = css.backgroundImage;
-  if (css.backgroundSize) screen.style.backgroundSize = css.backgroundSize;
-  if (css.backgroundPosition) screen.style.backgroundPosition = css.backgroundPosition;
-  if (css.backgroundRepeat) screen.style.backgroundRepeat = css.backgroundRepeat;
-  if (css.backgroundAttachment) screen.style.backgroundAttachment = css.backgroundAttachment;
+  if (type === "gradient"){
+    screen.style.background = `radial-gradient(900px 520px at 25% -120px, rgba(255,149,0,0.20), transparent 60%), radial-gradient(700px 420px at 90% 10%, rgba(0,122,255,0.10), transparent 55%), ${color}`;
+    return;
+  }
+  if (type === "image" && image){
+    screen.style.background = color;
+    screen.style.backgroundImage = `url("${image}")`;
+    screen.style.backgroundSize = "cover";
+    screen.style.backgroundPosition = "center";
+    screen.style.backgroundRepeat = "no-repeat";
+    return;
+  }
+  // default: keep empty so the phone shows neutral background
 }
 
 /* Preview */
@@ -305,6 +293,7 @@ function iconBtn(iconKey, title, onClick, opts={}){
   b.className = "iconBtn" + (opts.danger ? " danger" : "");
   b.title = title || "";
   b.innerHTML = ICON_SVGS[iconKey] || ICON_SVGS.link;
+  if (opts.disabled) b.disabled = true;
   b.addEventListener("click", (e)=>{ e.stopPropagation(); onClick(); });
   return b;
 }
@@ -367,8 +356,19 @@ function renderRowIcon(container, item){
   container.innerHTML = ICON_SVGS[key] || ICON_SVGS.link;
 }
 
-/* Pointer sortable (works everywhere, no HTML5 drag needed) */
-function makeSortable(container, itemsGetter, moveCallback, rerender){
+/* Move helpers */
+function moveInArray(arr, from, to){
+  if (!arr) return;
+  if (from < 0 || to < 0 || from >= arr.length || to >= arr.length) return;
+  const item = arr.splice(from, 1)[0];
+  arr.splice(to, 0, item);
+}
+
+/* Pointer sortable (attached once per container) */
+function attachSortable(container, getArray, onAfter){
+  if (sortableAttached.has(container)) return;
+  sortableAttached.add(container);
+
   let drag = null;
 
   const onMove = (e) => {
@@ -377,7 +377,7 @@ function makeSortable(container, itemsGetter, moveCallback, rerender){
     const y = e.clientY - drag.offsetY;
     drag.card.style.top = `${y}px`;
 
-    // Decide placeholder position
+    // Place placeholder
     const cards = Array.from(container.querySelectorAll(".rowCard")).filter(el => el !== drag.card);
     let placed = false;
     for (const c of cards){
@@ -392,7 +392,7 @@ function makeSortable(container, itemsGetter, moveCallback, rerender){
     if (!placed) container.appendChild(drag.placeholder);
   };
 
-  const onUp = (e) => {
+  const onUp = () => {
     if (!drag) return;
 
     document.removeEventListener("pointermove", onMove, true);
@@ -412,12 +412,12 @@ function makeSortable(container, itemsGetter, moveCallback, rerender){
     drag.placeholder.replaceWith(drag.card);
 
     if (from !== to && to >= 0){
-      moveCallback(from, to);
+      const arr = getArray();
+      moveInArray(arr, from, to);
     }
 
     drag = null;
-    rerender();
-    debounceSave();
+    onAfter();
   };
 
   container.addEventListener("pointerdown", (e)=>{
@@ -427,12 +427,16 @@ function makeSortable(container, itemsGetter, moveCallback, rerender){
     const card = handle.closest(".rowCard");
     if (!card) return;
 
-    const fromIndex = Array.from(container.querySelectorAll(".rowCard")).indexOf(card);
+    // Ensure it's inside this container
+    if (!container.contains(card)) return;
+
+    const cards = Array.from(container.querySelectorAll(".rowCard"));
+    const fromIndex = cards.indexOf(card);
     if (fromIndex < 0) return;
 
     e.preventDefault();
 
-    // close open editors while dragging
+    // Close editors while dragging
     document.querySelectorAll(".rowCard.isOpen").forEach(el => el.classList.remove("isOpen"));
 
     const rect = card.getBoundingClientRect();
@@ -440,10 +444,8 @@ function makeSortable(container, itemsGetter, moveCallback, rerender){
     ph.className = "placeholder";
     ph.style.height = `${rect.height}px`;
 
-    // Insert placeholder after card
     card.parentNode.insertBefore(ph, card.nextSibling);
 
-    // Lift card
     card.classList.add("dragging");
     card.style.width = `${rect.width}px`;
     card.style.position = "fixed";
@@ -461,7 +463,7 @@ function makeSortable(container, itemsGetter, moveCallback, rerender){
 
     document.addEventListener("pointermove", onMove, true);
     document.addEventListener("pointerup", onUp, true);
-  });
+  }, { passive: false });
 }
 
 /* Lists */
@@ -481,7 +483,6 @@ function renderLinks(){
     const dots = document.createElement("div");
     dots.className = "handleDots";
     handle.appendChild(dots);
-    handle.addEventListener("click", (e)=> e.stopPropagation());
 
     const iconBox = document.createElement("div");
     iconBox.className = "rowIcon";
@@ -503,8 +504,7 @@ function renderLinks(){
 
     const tog = makeToggle(l.enabled !== false, (checked)=>{
       state.links[idx].enabled = checked;
-      renderPreview();
-      debounceSave();
+      renderPreview(); debounceSave();
     });
 
     const editBtn = iconBtn("edit", "Edit", ()=>{
@@ -514,15 +514,27 @@ function renderLinks(){
       card.classList.toggle("isOpen");
     });
 
+    const upBtn = iconBtn("up", "Move up", ()=>{
+      if (idx === 0) return;
+      moveInArray(state.links, idx, idx-1);
+      renderLinks(); renderPreview(); debounceSave();
+    }, { disabled: idx===0 });
+
+    const downBtn = iconBtn("down", "Move down", ()=>{
+      if (idx === state.links.length - 1) return;
+      moveInArray(state.links, idx, idx+1);
+      renderLinks(); renderPreview(); debounceSave();
+    }, { disabled: idx===state.links.length-1 });
+
     const delBtn = iconBtn("trash", "Delete", ()=>{
       state.links.splice(idx, 1);
-      renderLinks();
-      renderPreview();
-      debounceSave();
+      renderLinks(); renderPreview(); debounceSave();
     }, { danger:true });
 
     actions.appendChild(tog);
     actions.appendChild(editBtn);
+    actions.appendChild(upBtn);
+    actions.appendChild(downBtn);
     actions.appendChild(delBtn);
 
     top.appendChild(handle);
@@ -626,16 +638,7 @@ function renderLinks(){
     wrap.appendChild(card);
   });
 
-  // Activate sortable after render
-  makeSortable(
-    wrap,
-    () => state.links,
-    (from, to) => {
-      const item = state.links.splice(from, 1)[0];
-      state.links.splice(to, 0, item);
-    },
-    () => { renderLinks(); renderPreview(); }
-  );
+  attachSortable(wrap, () => state.links, () => { renderLinks(); renderPreview(); debounceSave(); });
 }
 
 function renderSocials(){
@@ -654,7 +657,6 @@ function renderSocials(){
     const dots = document.createElement("div");
     dots.className = "handleDots";
     handle.appendChild(dots);
-    handle.addEventListener("click", (e)=> e.stopPropagation());
 
     const iconBox = document.createElement("div");
     iconBox.className = "rowIcon";
@@ -686,15 +688,27 @@ function renderSocials(){
       card.classList.toggle("isOpen");
     });
 
+    const upBtn = iconBtn("up", "Move up", ()=>{
+      if (idx === 0) return;
+      moveInArray(state.socials, idx, idx-1);
+      renderSocials(); renderPreview(); debounceSave();
+    }, { disabled: idx===0 });
+
+    const downBtn = iconBtn("down", "Move down", ()=>{
+      if (idx === state.socials.length - 1) return;
+      moveInArray(state.socials, idx, idx+1);
+      renderSocials(); renderPreview(); debounceSave();
+    }, { disabled: idx===state.socials.length-1 });
+
     const delBtn = iconBtn("trash", "Delete", ()=>{
       state.socials.splice(idx, 1);
-      renderSocials();
-      renderPreview();
-      debounceSave();
+      renderSocials(); renderPreview(); debounceSave();
     }, { danger:true });
 
     actions.appendChild(tog);
     actions.appendChild(editBtn);
+    actions.appendChild(upBtn);
+    actions.appendChild(downBtn);
     actions.appendChild(delBtn);
 
     top.appendChild(handle);
@@ -786,15 +800,7 @@ function renderSocials(){
     wrap.appendChild(card);
   });
 
-  makeSortable(
-    wrap,
-    () => state.socials,
-    (from, to) => {
-      const item = state.socials.splice(from, 1)[0];
-      state.socials.splice(to, 0, item);
-    },
-    () => { renderSocials(); renderPreview(); }
-  );
+  attachSortable(wrap, () => state.socials, () => { renderSocials(); renderPreview(); debounceSave(); });
 }
 
 /* Profile */
@@ -804,7 +810,6 @@ function renderProfile(){
   $("p_bio").value = state.profile?.bio || "";
   $("brandName").textContent = state.profile?.name || "The BFA Group";
 
-  // Theme UI
   const t = state.theme || {};
   if ($("bg_type")) $("bg_type").value = t.type || "default";
   if ($("bg_color")) $("bg_color").value = t.color || "#f6f7fb";
@@ -856,7 +861,6 @@ async function loadInitial(){
     setStatus("New draft");
   }
 
-  // Ensure fields exist
   state.profile = { name:"", avatar:"", bio:"", ...(state.profile || {}) };
   state.theme = { type:"default", color:"#f6f7fb", image:"", ...(state.theme || state.background || {}) };
   state.socials = (state.socials || []).map(s => ({ enabled: true, iconImage: "", ...s }));
@@ -915,25 +919,22 @@ function wire(){
     }
   });
 
-  // Theme controls
+  // Theme controls (preview updates immediately)
   if ($("bg_type")) $("bg_type").addEventListener("change", (e)=>{
     state.theme = state.theme || {};
     state.theme.type = e.target.value;
     renderPreview(); debounceSave();
   });
-
   if ($("bg_color")) $("bg_color").addEventListener("input", (e)=>{
     state.theme = state.theme || {};
     state.theme.color = e.target.value;
     renderPreview(); debounceSave();
   });
-
   if ($("bg_image")) $("bg_image").addEventListener("input", (e)=>{
     state.theme = state.theme || {};
     state.theme.image = normalizeAssetPath(e.target.value);
     renderPreview(); debounceSave();
   });
-
   if ($("bg_image_file")) $("bg_image_file").addEventListener("change", async (e)=>{
     const file = e.target.files?.[0];
     if(!file) return;
@@ -942,6 +943,8 @@ function wire(){
       state.theme = state.theme || {};
       state.theme.image = dataUrl;
       $("bg_image").value = dataUrl;
+      state.theme.type = "image";
+      if ($("bg_type")) $("bg_type").value = "image";
       renderPreview(); debounceSave();
       setStatus("Background embedded");
     }catch{
