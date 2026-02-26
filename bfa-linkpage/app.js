@@ -151,20 +151,43 @@ function createLink(item) {
 }
 
 
+
+function ensureAvatarShell(imgEl){
+  if (!imgEl) return { shell: null, img: null };
+  // Already wrapped?
+  if (imgEl.parentElement && imgEl.parentElement.classList.contains("avatarShell")){
+    imgEl.classList.add("avatarImg");
+    return { shell: imgEl.parentElement, img: imgEl };
+  }
+  const shell = document.createElement("div");
+  shell.className = "avatarShell";
+  imgEl.parentNode.insertBefore(shell, imgEl);
+  shell.appendChild(imgEl);
+  imgEl.classList.add("avatarImg");
+  return { shell, img: imgEl };
+}
 function applyAvatar(imgEl, profile){
-  if (!imgEl) return;
   const p = profile || {};
   const size = Number(p.avatarSize ?? 54);
-  const pad = Number(p.avatarPadding ?? 8);
-  const fit = (p.avatarFit || "contain");
-  const rad = Number(p.avatarRadius ?? 16);
+  const pad  = Number(p.avatarPadding ?? 8);
+  const fit  = (p.avatarFit || "contain");
+  const rad  = Number(p.avatarRadius ?? 16);
+  const scale = Number(p.avatarScale ?? 1);
 
-  imgEl.style.width = `${size}px`;
-  imgEl.style.height = `${size}px`;
-  imgEl.style.padding = `${pad}px`;
-  imgEl.style.objectFit = fit;
-  imgEl.style.borderRadius = `${rad}px`;
-  imgEl.style.boxSizing = "border-box";
+  const { shell, img } = ensureAvatarShell(imgEl);
+  if (!shell || !img) return;
+
+  shell.style.width = `${size}px`;
+  shell.style.height = `${size}px`;
+  shell.style.padding = `${pad}px`;
+  shell.style.borderRadius = `${rad}px`;
+  shell.style.boxSizing = "border-box";
+
+  img.style.width = "100%";
+  img.style.height = "100%";
+  img.style.objectFit = fit;
+  img.style.transform = `scale(${scale})`;
+  img.style.transformOrigin = "center";
 }
 async function init() {
   const res = await fetch("./links.json", { cache: "no-store" });

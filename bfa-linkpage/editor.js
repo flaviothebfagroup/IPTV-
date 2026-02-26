@@ -25,7 +25,7 @@ const sortableAttached = new WeakSet();
 
 function defaultState(){
   return {
-    profile: { name: "The BFA Group", avatar: "./assets/logo.png", bio: "", avatarSize: 54, avatarPadding: 8, avatarFit: "contain", avatarRadius: 16 },
+    profile: { name: "The BFA Group", avatar: "./assets/logo.png", bio: "", avatarSize: 54, avatarPadding: 8, avatarFit: "contain", avatarRadius: 16, avatarScale: 1 },
     theme: { type: "default", color: "#f6f7fb", image: "" },
     socials: [{ type: "instagram", url: "", enabled: true, iconImage: "" }, { type: "website", url: "", enabled: true, iconImage: "" }],
     links: [{ title: "Website", subtitle: "", url: "", thumb: "", badge: "", enabled: true, icon: "", iconImage: "" }],
@@ -87,20 +87,42 @@ function readFileAsDataURL(file){
 }
 
 
+
+function ensureAvatarShellEditor(imgEl){
+  if (!imgEl) return { shell:null, img:null };
+  if (imgEl.parentElement && imgEl.parentElement.classList.contains("avatarShell")){
+    imgEl.classList.add("avatarImg");
+    return { shell: imgEl.parentElement, img: imgEl };
+  }
+  const shell = document.createElement("div");
+  shell.className = "avatarShell";
+  imgEl.parentNode.insertBefore(shell, imgEl);
+  shell.appendChild(imgEl);
+  imgEl.classList.add("avatarImg");
+  return { shell, img: imgEl };
+}
 function applyAvatarStyle(imgEl, profile){
-  if (!imgEl) return;
   const p = profile || {};
   const size = Number(p.avatarSize ?? 54);
   const pad  = Number(p.avatarPadding ?? 8);
   const fit  = p.avatarFit || "contain";
   const rad  = Number(p.avatarRadius ?? 16);
+  const scale = Number(p.avatarScale ?? 1);
 
-  imgEl.style.width = `${size}px`;
-  imgEl.style.height = `${size}px`;
-  imgEl.style.padding = `${pad}px`;
-  imgEl.style.objectFit = fit;
-  imgEl.style.borderRadius = `${rad}px`;
-  imgEl.style.boxSizing = "border-box";
+  const { shell, img } = ensureAvatarShellEditor(imgEl);
+  if (!shell || !img) return;
+
+  shell.style.width = `${size}px`;
+  shell.style.height = `${size}px`;
+  shell.style.padding = `${pad}px`;
+  shell.style.borderRadius = `${rad}px`;
+  shell.style.boxSizing = "border-box";
+
+  img.style.width = "100%";
+  img.style.height = "100%";
+  img.style.objectFit = fit;
+  img.style.transform = `scale(${scale})`;
+  img.style.transformOrigin = "center";
 }
 /* Tabs */
 function setTab(tab){
@@ -144,7 +166,7 @@ function applyThemeToPreview(){
     return;
   }
   if (type === "gradient"){
-    screen.style.background = `radial-gradient(900px 520px at 25% -120px, rgba(255,149,0,0.20), transparent 60%), radial-gradient(700px 420px at 90% 10%, rgba(0,122,255,0.10), transparent 55%), ${color}`;
+    screen.style.background = `radial-gradient(900px 520px at 25% -120px, rgba(255,149,0,0.20), transparent 60%), radial-gradient(900px 520px at 85% 18%, rgba(10,10,12,0.06), transparent 60%), ${color}`;
     return;
   }
   if (type === "image" && image){
@@ -864,6 +886,11 @@ function renderProfile(){
   if ($("logo_fit")){
     $("logo_fit").value = state.profile?.avatarFit || "contain";
   }
+  if ($("logo_scale")){
+    $("logo_scale").value = Number(state.profile?.avatarScale ?? 1);
+    $("logo_scale_label").textContent = Number($("logo_scale").value).toFixed(2);
+  }
+  
   if ($("logo_radius")){
     $("logo_radius").value = Number(state.profile?.avatarRadius ?? 16);
     $("logo_radius_label").textContent = $("logo_radius").value;
@@ -980,12 +1007,25 @@ function wire(){
       renderPreview(); debounceSave();
     });
   }
+
+  if ($("logo_scale")){
+    $("logo_scale").addEventListener("input", (e)=>{
+      state.profile.avatarScale = Number(e.target.value);
+      $("logo_scale_label").textContent = Number(e.target.value).toFixed(2);
+      renderPreview(); debounceSave();
+    });
+  }
   if ($("logo_fit")){
     $("logo_fit").addEventListener("change", (e)=>{
       state.profile.avatarFit = e.target.value;
       renderPreview(); debounceSave();
     });
   }
+  if ($("logo_scale")){
+    $("logo_scale").value = Number(state.profile?.avatarScale ?? 1);
+    $("logo_scale_label").textContent = Number($("logo_scale").value).toFixed(2);
+  }
+  
   if ($("logo_radius")){
     $("logo_radius").addEventListener("input", (e)=>{
       state.profile.avatarRadius = Number(e.target.value);
