@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
-  <title>Links Editor</title>
+  <meta name="theme-color" content="#f6f7fb" />
+  <title>Edit Links</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,76 +12,169 @@
 
   <link rel="stylesheet" href="./styles.css" />
 </head>
-<body>
+
+<body class="editorPage">
+  <header class="editorTop">
+    <div class="editorBrand">
+      <div class="editorMark" aria-hidden="true">✦</div>
+      <div>
+        <div class="editorTitle">Edit your links</div>
+        <div class="editorSubtitle">No code. Make changes → download <b>links.json</b> → upload to GitHub.</div>
+      </div>
+    </div>
+
+    <div class="editorTopActions">
+      <button class="btnGhost" id="toggleSize" type="button" aria-pressed="false">Aa Large text</button>
+      <a class="btnGhost" href="./index.html" target="_blank" rel="noopener">↗ Open live page</a>
+    </div>
+  </header>
+
   <main class="page">
-    <div class="editorShell">
-      <section class="panel">
-        <div class="h1">Editor (no code)</div>
-        <div class="small">
-          This editor runs only in your browser. When you’re done, click <b>Download links.json</b> and replace the file in your GitHub repo.
-        </div>
-
-        <hr class="sep" />
-
-        <div class="h1">Profile</div>
-        <div class="row">
-          <div class="field">
-            <label>Name</label>
-            <input id="p_name" placeholder="The BFA Group" />
-          </div>
-          <div class="field">
-            <label>Avatar path (URL or ./assets/logo.png)</label>
-            <input id="p_avatar" placeholder="./assets/logo.png" />
+    <div class="editorLayout">
+      <!-- LEFT: FORM -->
+      <section class="panel editorPanel">
+        <div class="callout">
+          <div class="calloutIcon" aria-hidden="true">✅</div>
+          <div>
+            <div class="calloutTitle">Simple workflow</div>
+            <div class="calloutText">
+              1) Edit here • 2) Click <b>Download links.json</b> • 3) Replace the file in GitHub • 4) Done
+            </div>
           </div>
         </div>
 
-        <div class="field">
-          <label>Upload logo (optional)</label>
-          <input type="file" id="p_avatar_file" accept="image/*" />
-          <div class="small">If you upload here, the image will be embedded into <code>links.json</code> as a data-URL (works great, but makes the JSON bigger). Otherwise, upload your logo to <code>/assets/logo.png</code> and keep the path.</div>
-        </div>
-        <div class="field">
-          <label>Bio</label>
-          <textarea id="p_bio" placeholder="Short line about the company"></textarea>
-        </div>
+        <details class="step" open>
+          <summary>
+            <span class="stepIcon" aria-hidden="true">👤</span>
+            <span class="stepText">
+              <span class="stepTitle">Profile</span>
+              <span class="stepHint">Name, logo, bio</span>
+            </span>
+          </summary>
 
-        <hr class="sep" />
+          <div class="stepBody">
+            <div class="grid2">
+              <div class="field">
+                <label for="p_name">Name</label>
+                <input id="p_name" placeholder="The BFA Group" />
+              </div>
 
-        <div class="h1">Social icons</div>
-        <div id="socialList"></div>
-        <div class="stack">
-          <button id="addSocial">+ Add social</button>
-        </div>
+              <div class="field">
+                <label for="p_avatar">Logo (URL or local path)</label>
+                <input id="p_avatar" placeholder="./assets/logo.png" />
+                <div class="help">Recommended: upload logo to <b>assets/logo.png</b> and use <b>./assets/logo.png</b>.</div>
+              </div>
+            </div>
 
-        <hr class="sep" />
+            <div class="field">
+              <label for="p_avatar_file">Upload logo from your computer (optional)</label>
+              <input type="file" id="p_avatar_file" accept="image/*" />
+              <div class="help">
+                Uploading here will embed the logo into <b>links.json</b> (works great, but makes the JSON bigger).
+              </div>
+            </div>
 
-        <div class="h1">Links</div>
-        <div id="linksList"></div>
-        <div class="stack">
-          <button id="addLink">+ Add link</button>
-        </div>
+            <div class="field">
+              <label for="p_bio">Bio</label>
+              <textarea id="p_bio" placeholder="Retail Automotive Marketing • Digital Signage • IPTV"></textarea>
+            </div>
+          </div>
+        </details>
 
-        <hr class="sep" />
+        <details class="step">
+          <summary>
+            <span class="stepIcon" aria-hidden="true">🔗</span>
+            <span class="stepText">
+              <span class="stepTitle">Top social icons</span>
+              <span class="stepHint">Instagram, Website, LinkedIn…</span>
+            </span>
+          </summary>
 
-        <div class="stack">
-          <button class="btnAccent" id="download">Download links.json</button>
-          <button id="copy">Copy JSON</button>
-          <label class="small" style="display:flex;align-items:center;gap:8px;">
-            <input type="file" id="import" accept="application/json" />
-            Import links.json
-          </label>
-        </div>
+          <div class="stepBody">
+            <div id="socialList"></div>
 
-        <div class="small" id="status" style="margin-top:10px;"></div>
+            <div class="rowActions">
+              <button class="btnPrimary" id="addSocial" type="button">＋ Add social</button>
+            </div>
+
+            <div class="help">These are the little icons under your name (not the big buttons).</div>
+          </div>
+        </details>
+
+        <details class="step" open>
+          <summary>
+            <span class="stepIcon" aria-hidden="true">🧾</span>
+            <span class="stepText">
+              <span class="stepTitle">Buttons (your main links)</span>
+              <span class="stepHint">Add, reorder, remove</span>
+            </span>
+          </summary>
+
+          <div class="stepBody">
+            <div class="quickAdd">
+              <div class="quickAddTitle">Quick add</div>
+              <div class="quickAddBtns">
+                <button class="btnGhost" id="qa_website" type="button">🌐 Website</button>
+                <button class="btnGhost" id="qa_instagram" type="button">📸 Instagram</button>
+                <button class="btnGhost" id="qa_youtube" type="button">▶ YouTube</button>
+                <button class="btnGhost" id="qa_linkedin" type="button">💼 LinkedIn</button>
+              </div>
+            </div>
+
+            <div id="linksList"></div>
+
+            <div class="rowActions">
+              <button class="btnPrimary" id="addLink" type="button">＋ Add new button</button>
+            </div>
+
+            <div class="help">
+              Tip: If you don’t want thumbnails, leave “Thumbnail” empty.
+            </div>
+          </div>
+        </details>
+
+        <details class="step">
+          <summary>
+            <span class="stepIcon" aria-hidden="true">⬇️</span>
+            <span class="stepText">
+              <span class="stepTitle">Export / Import</span>
+              <span class="stepHint">Download, import, reset</span>
+            </span>
+          </summary>
+
+          <div class="stepBody">
+            <div class="exportGrid">
+              <button class="btnPrimary" id="download" type="button">⬇ Download links.json</button>
+              <button class="btnGhost" id="copy" type="button">📋 Copy JSON</button>
+
+              <label class="fileBtn">
+                <input type="file" id="import" accept="application/json" />
+                ⬆ Import links.json
+              </label>
+
+              <button class="btnDanger" id="resetLocal" type="button">🧹 Reset draft</button>
+            </div>
+
+            <div class="help">
+              “Reset draft” clears the auto-saved version stored in your browser (it won’t touch your GitHub files).
+            </div>
+
+            <div class="status" id="status" role="status" aria-live="polite"></div>
+          </div>
+        </details>
       </section>
 
-      <section class="panel">
-        <div class="h1">Live preview</div>
-        <div class="small">This is how <code>index.html</code> will look.</div>
-        <div style="height:12px"></div>
+      <!-- RIGHT: PREVIEW -->
+      <section class="panel previewPanel">
+        <div class="previewHeader">
+          <div>
+            <div class="previewTitle">Live preview</div>
+            <div class="previewHint">This is what your page will look like.</div>
+          </div>
+          <a class="btnGhost" href="./index.html" target="_blank" rel="noopener">↗ Open</a>
+        </div>
 
-        <!-- Preview card uses same markup as index -->
-        <section class="card" style="padding:22px" id="previewApp">
+        <section class="card previewCard" id="previewApp">
           <div class="top">
             <img class="avatar" id="v_avatar" alt="" />
             <div class="name" id="v_name">Preview</div>
@@ -91,13 +184,20 @@
           <div class="links" id="v_links"></div>
           <footer class="footer"><span id="v_footer"></span></footer>
         </section>
-
-        <div class="small" style="margin-top:12px;">
-          Tip: You can open <b>/index.html</b> and <b>/editor.html</b on your GitHub Pages site.
-        </div>
       </section>
     </div>
   </main>
+
+  <!-- Sticky action bar (always visible) -->
+  <div class="stickyBar">
+    <div class="stickyLeft">
+      <span class="dot" id="dot"></span>
+      <span id="stickyMsg">Ready</span>
+    </div>
+    <div class="stickyRight">
+      <button class="btnPrimary" id="download2" type="button">⬇ Download links.json</button>
+    </div>
+  </div>
 
   <script src="./editor.js"></script>
 </body>
