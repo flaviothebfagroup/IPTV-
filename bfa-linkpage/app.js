@@ -42,7 +42,6 @@ function createLink(item) {
   const title = document.createElement("div");
   title.className = "title";
   title.textContent = item.title || "Untitled";
-
   titleRow.appendChild(title);
 
   if (item.badge) {
