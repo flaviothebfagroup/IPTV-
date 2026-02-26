@@ -1,21 +1,37 @@
 const ICONS = {
-  instagram: `<svg viewBox="0 0 24 24"><path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2zm9 2h-9A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4z"/><path d="M12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M17.6 6.3a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2z"/></svg>`,
-  youtube: `<svg viewBox="0 0 24 24"><path d="M21.6 7.2a3 3 0 0 0-2.1-2.1C17.8 4.6 12 4.6 12 4.6s-5.8 0-7.5.5A3 3 0 0 0 2.4 7.2 31 31 0 0 0 2 12a31 31 0 0 0 .4 4.8 3 3 0 0 0 2.1 2.1c1.7.5 7.5.5 7.5.5s5.8 0 7.5-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 22 12a31 31 0 0 0-.4-4.8zM10 15.3V8.7L16 12l-6 3.3z"/></svg>`,
-  website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm7.9 9h-3.1a15.6 15.6 0 0 0-1.3-6A8 8 0 0 1 19.9 11zM12 4c.9 1.2 1.9 3.3 2.4 7H9.6c.5-3.7 1.5-5.8 2.4-7zM4.1 13h3.1c.2 2.2.8 4.2 1.3 6A8 8 0 0 1 4.1 13zm3.1-2H4.1a8 8 0 0 1 4.4-6c-.6 1.8-1.1 3.8-1.3 6zm2.4 2h4.8c-.5 3.7-1.5 5.8-2.4 7-.9-1.2-1.9-3.3-2.4-7zm7.2 0h3.1a8 8 0 0 1-4.4 6c.6-1.8 1.1-3.8 1.3-6zm-1.4 0H8.6c-.2-1.4-.3-2.8-.3-4s.1-2.6.3-4h6.8c.2 1.4.3 2.8.3 4s-.1 2.6-.3 4z"/></svg>`,
-  linkedin: `<svg viewBox="0 0 24 24"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM0.5 8.5h4V23h-4V8.5zM8.5 8.5h3.8v2h.1c.5-1 1.9-2.1 3.9-2.1 4.2 0 5 2.8 5 6.4V23h-4v-6.6c0-1.6 0-3.6-2.2-3.6-2.2 0-2.6 1.7-2.6 3.5V23h-4V8.5z"/></svg>`
+  instagram: "📸",
+  youtube: "▶",
+  website: "🌐",
+  linkedin: "💼",
+  tiktok: "🎵",
+  facebook: "📘",
+  email: "✉️",
+  phone: "📞",
+  other: "🔗"
 };
 
-const SOCIAL_TYPES = ["instagram", "website", "linkedin", "youtube"];
+const SOCIAL_TYPES = ["instagram", "website", "linkedin", "youtube", "tiktok", "facebook"];
 
 const $ = (id) => document.getElementById(id);
 
+const LS_KEY = "bfa_links_draft_v2";
 let state = null;
+let saveTimer = null;
 
 function setStatus(msg){
-  $("status").textContent = msg || "";
+  const s = $("status");
+  if (s) s.textContent = msg || "";
+  const sticky = $("stickyMsg");
+  if (sticky) sticky.textContent = msg || "Ready";
 }
 
-function safeClone(obj){ return JSON.parse(JSON.stringify(obj)); }
+function setDot(kind){
+  const dot = $("dot");
+  if (!dot) return;
+  dot.classList.remove("dotOk","dotWarn");
+  if (kind === "warn") dot.classList.add("dotWarn");
+  else dot.classList.add("dotOk");
+}
 
 function defaultState(){
   return {
@@ -24,6 +40,50 @@ function defaultState(){
     links: [{ title: "Website", subtitle: "", url: "", thumb: "", badge: "" }],
     footerText: ""
   };
+}
+
+function normalizeAssetPath(p){
+  if (!p) return "";
+  const s = String(p).trim();
+
+  // If user typed "/assets/..." convert to "./assets/..."
+  if (s.startsWith("/assets/")) return "." + s;
+
+  return s;
+}
+
+function guessTypeFromUrl(url){
+  if (!url) return "other";
+  const u = String(url).toLowerCase().trim();
+
+  if (u.startsWith("mailto:")) return "email";
+  if (u.startsWith("tel:")) return "phone";
+
+  try{
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    if (host.includes("instagram.com")) return "instagram";
+    if (host.includes("youtube.com") || host.includes("youtu.be")) return "youtube";
+    if (host.includes("linkedin.com")) return "linkedin";
+    if (host.includes("tiktok.com")) return "tiktok";
+    if (host.includes("facebook.com")) return "facebook";
+    return "website";
+  }catch{
+    return "other";
+  }
+}
+
+function debounceSaveLocal(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try{
+      localStorage.setItem(LS_KEY, JSON.stringify(state));
+      setDot("ok");
+      setStatus("Draft saved (on this browser). Download when ready.");
+    }catch{
+      setDot("warn");
+      setStatus("Could not save draft in browser (storage blocked).");
+    }
+  }, 350);
 }
 
 function readFileAsDataURL(file){
@@ -35,141 +95,188 @@ function readFileAsDataURL(file){
   });
 }
 
-function createTextField(label, value, onInput, placeholder=""){
-  const wrap = document.createElement("div");
-  wrap.className = "field";
-  const l = document.createElement("label");
-  l.textContent = label;
-  const i = document.createElement("input");
-  i.value = value || "";
-  i.placeholder = placeholder;
-  i.addEventListener("input", () => onInput(i.value));
-  wrap.appendChild(l);
-  wrap.appendChild(i);
-  return wrap;
+function el(tag, cls, text){
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
 }
 
-function createSelectField(label, value, options, onChange){
-  const wrap = document.createElement("div");
-  wrap.className = "field";
-  const l = document.createElement("label");
-  l.textContent = label;
-  const s = document.createElement("select");
-  options.forEach(opt => {
-    const o = document.createElement("option");
-    o.value = opt;
-    o.textContent = opt;
-    if(opt === value) o.selected = true;
-    s.appendChild(o);
-  });
-  s.addEventListener("change", () => onChange(s.value));
-  wrap.appendChild(l);
-  wrap.appendChild(s);
-  return wrap;
-}
-
-function itemHeader(title, buttons=[]){
-  const head = document.createElement("div");
-  head.className = "itemHead";
-
-  const t = document.createElement("div");
-  t.className = "itemTitle";
-  t.textContent = title;
-
-  const btnWrap = document.createElement("div");
-  btnWrap.className = "miniBtns";
-  buttons.forEach(b => btnWrap.appendChild(b));
-
-  head.appendChild(t);
-  head.appendChild(btnWrap);
-  return head;
-}
-
-function miniButton(text, onClick){
-  const b = document.createElement("button");
+function miniButton(text, onClick, cls="btnMini"){
+  const b = el("button", cls, text);
   b.type = "button";
-  b.textContent = text;
   b.addEventListener("click", onClick);
   return b;
 }
 
-function renderForm(){
-  // profile
-  $("p_name").value = state.profile?.name || "";
-  $("p_avatar").value = state.profile?.avatar || "";
-  $("p_bio").value = state.profile?.bio || "";
+/* ---------- RENDER SOCIALS ---------- */
+function renderSocials(){
+  const wrap = $("socialList");
+  wrap.innerHTML = "";
 
-  // socials
-  const sWrap = $("socialList");
-  sWrap.innerHTML = "";
   state.socials = state.socials || [];
+
   state.socials.forEach((s, idx) => {
-    const card = document.createElement("div");
-    card.className = "itemCard";
+    const card = el("div", "itemCard");
 
-    const btnDel = miniButton("Remove", () => { state.socials.splice(idx,1); renderAll(); });
-    const head = itemHeader(`Social #${idx+1}`, [btnDel]);
+    const head = el("div", "itemHead");
+    const left = el("div", "itemLeft");
+    left.appendChild(el("div", "itemEmoji", ICONS[s.type] || ICONS.other));
+    left.appendChild(el("div", "itemTitle", `Social #${idx+1}`));
+    head.appendChild(left);
 
-    const row = document.createElement("div");
-    row.className = "row";
-    row.appendChild(createSelectField("Type", s.type || "website", SOCIAL_TYPES, (v)=>{ state.socials[idx].type=v; renderAll(false); }));
-    row.appendChild(createTextField("URL", s.url || "", (v)=>{ state.socials[idx].url=v; renderAll(false); }, "https://..."));
+    const btns = el("div", "miniBtns");
+    btns.appendChild(miniButton("Remove", () => {
+      state.socials.splice(idx, 1);
+      renderAll();
+    }, "btnMini btnMiniDanger"));
+    head.appendChild(btns);
+
+    const row = el("div", "grid2");
+
+    // type select
+    const typeField = el("div", "field");
+    typeField.appendChild(el("label", "", "Type"));
+    const sel = document.createElement("select");
+    SOCIAL_TYPES.forEach(t => {
+      const o = document.createElement("option");
+      o.value = t;
+      o.textContent = `${ICONS[t] || "🔗"} ${t}`;
+      if (t === (s.type || "website")) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener("change", () => {
+      state.socials[idx].type = sel.value;
+      renderAll(false);
+      debounceSaveLocal();
+    });
+    typeField.appendChild(sel);
+
+    // url
+    const urlField = el("div", "field");
+    urlField.appendChild(el("label", "", "URL"));
+    const input = document.createElement("input");
+    input.placeholder = "https://...";
+    input.value = s.url || "";
+    input.addEventListener("input", () => {
+      state.socials[idx].url = input.value;
+      renderPreview();
+      debounceSaveLocal();
+    });
+    urlField.appendChild(input);
+
+    row.appendChild(typeField);
+    row.appendChild(urlField);
 
     card.appendChild(head);
     card.appendChild(row);
-    sWrap.appendChild(card);
-  });
 
-  // links
-  const lWrap = $("linksList");
-  lWrap.innerHTML = "";
-  state.links = state.links || [];
-  state.links.forEach((l, idx) => {
-    const card = document.createElement("div");
-    card.className = "itemCard";
-
-    const up = miniButton("↑", () => {
-      if(idx===0) return;
-      const tmp = state.links[idx-1];
-      state.links[idx-1] = state.links[idx];
-      state.links[idx] = tmp;
-      renderAll();
-    });
-    const down = miniButton("↓", () => {
-      if(idx===state.links.length-1) return;
-      const tmp = state.links[idx+1];
-      state.links[idx+1] = state.links[idx];
-      state.links[idx] = tmp;
-      renderAll();
-    });
-    const del = miniButton("Remove", () => { state.links.splice(idx,1); renderAll(); });
-
-    const head = itemHeader(`Link #${idx+1}`, [up, down, del]);
-
-    const row1 = document.createElement("div");
-    row1.className = "row";
-    row1.appendChild(createTextField("Title", l.title || "", (v)=>{ state.links[idx].title=v; renderAll(false); }, "Instagram"));
-    row1.appendChild(createTextField("Subtitle", l.subtitle || "", (v)=>{ state.links[idx].subtitle=v; renderAll(false); }, "@handle or short text"));
-
-    const row2 = document.createElement("div");
-    row2.className = "row";
-    row2.appendChild(createTextField("URL", l.url || "", (v)=>{ state.links[idx].url=v; renderAll(false); }, "https://..."));
-    row2.appendChild(createTextField("Badge (optional)", l.badge || "", (v)=>{ state.links[idx].badge=v; renderAll(false); }, "YouTube"));
-
-    const row3 = document.createElement("div");
-    row3.className = "row";
-    row3.appendChild(createTextField("Thumbnail path (optional)", l.thumb || "", (v)=>{ state.links[idx].thumb=v; renderAll(false); }, "./assets/thumbs/retail.jpg"));
-    row3.appendChild(document.createElement("div"));
-
-    card.appendChild(head);
-    card.appendChild(row1);
-    card.appendChild(row2);
-    card.appendChild(row3);
-
-    lWrap.appendChild(card);
+    wrap.appendChild(card);
   });
 }
 
+/* ---------- RENDER LINKS ---------- */
+function renderLinks(){
+  const wrap = $("linksList");
+  wrap.innerHTML = "";
+
+  state.links = state.links || [];
+
+  state.links.forEach((l, idx) => {
+    const details = document.createElement("details");
+    details.className = "linkDetails";
+    details.open = idx === 0; // keep first open
+
+    const summary = document.createElement("summary");
+    summary.className = "linkSummary";
+
+    const iconType = guessTypeFromUrl(l.url) || "other";
+    const icon = el("span", "linkSummaryIcon", ICONS[iconType] || ICONS.other);
+    const title = el("span", "linkSummaryTitle", l.title || `Link #${idx+1}`);
+
+    const status = el("span", "pill");
+    const missing = !String(l.url || "").trim();
+    status.textContent = missing ? "Missing URL" : "OK";
+    status.className = missing ? "pill pillWarn" : "pill pillOk";
+
+    const rightBtns = el("span", "linkSummaryBtns");
+    rightBtns.appendChild(miniButton("↑", () => moveLink(idx, -1)));
+    rightBtns.appendChild(miniButton("↓", () => moveLink(idx, +1)));
+    rightBtns.appendChild(miniButton("Remove", () => removeLink(idx), "btnMini btnMiniDanger"));
+
+    summary.appendChild(icon);
+    summary.appendChild(title);
+    summary.appendChild(status);
+    summary.appendChild(rightBtns);
+
+    const body = el("div", "linkBody");
+
+    // BIG SIMPLE FIELDS
+    body.appendChild(makeInput(idx, "Title", "title", "Instagram"));
+    body.appendChild(makeInput(idx, "URL", "url", "https://..."));
+
+    body.appendChild(makeInput(idx, "Subtitle (optional)", "subtitle", "@handle or short text"));
+
+    // ADVANCED (collapsed)
+    const adv = document.createElement("details");
+    adv.className = "advanced";
+    const advSum = document.createElement("summary");
+    advSum.textContent = "Advanced (optional)";
+    adv.appendChild(advSum);
+
+    const advGrid = el("div", "grid2");
+    advGrid.appendChild(makeInput(idx, "Badge (optional)", "badge", "YouTube"));
+    advGrid.appendChild(makeInput(idx, "Thumbnail path (optional)", "thumb", "./assets/thumbs/retail.png", true));
+    adv.appendChild(advGrid);
+
+    body.appendChild(adv);
+
+    details.appendChild(summary);
+    details.appendChild(body);
+    wrap.appendChild(details);
+  });
+}
+
+function makeInput(idx, labelText, key, placeholder, normalizeAsset=false){
+  const field = el("div", "field");
+  const lab = el("label", "", labelText);
+
+  const input = document.createElement(key === "bio" ? "textarea" : "input");
+  input.placeholder = placeholder || "";
+  input.value = state.links[idx][key] || "";
+
+  input.addEventListener("input", () => {
+    let v = input.value;
+    if (normalizeAsset) v = normalizeAssetPath(v);
+    state.links[idx][key] = v;
+    renderPreview();
+    debounceSaveLocal();
+    // update summary pills quickly
+    renderLinks();
+  });
+
+  field.appendChild(lab);
+  field.appendChild(input);
+  return field;
+}
+
+function moveLink(idx, dir){
+  const n = idx + dir;
+  if (n < 0 || n >= state.links.length) return;
+  const tmp = state.links[n];
+  state.links[n] = state.links[idx];
+  state.links[idx] = tmp;
+  renderAll();
+  debounceSaveLocal();
+}
+
+function removeLink(idx){
+  state.links.splice(idx, 1);
+  renderAll();
+  debounceSaveLocal();
+}
+
+/* ---------- PREVIEW ---------- */
 function createSocialEl({type,url}){
   const a = document.createElement("a");
   a.className = "social";
@@ -177,8 +284,8 @@ function createSocialEl({type,url}){
   a.target = "_blank";
   a.rel = "noopener";
   a.setAttribute("aria-label", type || "social");
-  a.innerHTML = ICONS[type] || ICONS.website;
-  if(!url) a.style.opacity = "0.45";
+  a.innerHTML = `<span class="emoji">${ICONS[type] || ICONS.other}</span>`;
+  if(!url) a.style.opacity = "0.55";
   return a;
 }
 
@@ -193,9 +300,12 @@ function createLinkEl(item){
   const thumb = document.createElement(item.thumb ? "img" : "div");
   thumb.className = "thumb";
   if (item.thumb) {
-    thumb.src = item.thumb;
+    thumb.src = normalizeAssetPath(item.thumb);
     thumb.alt = "";
     thumb.loading = "lazy";
+  } else {
+    const t = guessTypeFromUrl(item.url);
+    thumb.innerHTML = `<div class="thumbIcon">${ICONS[t] || ICONS.other}</div>`;
   }
 
   const main = document.createElement("div");
@@ -242,7 +352,7 @@ function renderPreview(){
   $("v_footer").textContent = state.footerText || "";
 
   const av = $("v_avatar");
-  av.src = state.profile?.avatar || "";
+  av.src = normalizeAssetPath(state.profile?.avatar || "");
   av.alt = (state.profile?.name || "Profile") + " logo";
 
   const sWrap = $("v_socials");
@@ -255,12 +365,23 @@ function renderPreview(){
 }
 
 function renderAll(full=true){
-  if(full) renderForm();
+  if (full){
+    // Profile fields
+    $("p_name").value = state.profile?.name || "";
+    $("p_avatar").value = state.profile?.avatar || "";
+    $("p_bio").value = state.profile?.bio || "";
+    renderSocials();
+    renderLinks();
+  }
   renderPreview();
-  setStatus("");
 }
 
+/* ---------- DOWNLOAD / IMPORT / RESET ---------- */
 function downloadJson(){
+  // normalize asset paths
+  if (state.profile) state.profile.avatar = normalizeAssetPath(state.profile.avatar);
+  (state.links || []).forEach(l => { l.thumb = normalizeAssetPath(l.thumb); });
+
   const dataStr = JSON.stringify(state, null, 2);
   const blob = new Blob([dataStr], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -271,34 +392,77 @@ function downloadJson(){
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+  setDot("ok");
   setStatus("Downloaded links.json — upload/replace it in your GitHub repo.");
 }
 
 async function copyJson(){
-  const dataStr = JSON.stringify(state, null, 2);
   try{
-    await navigator.clipboard.writeText(dataStr);
+    await navigator.clipboard.writeText(JSON.stringify(state, null, 2));
+    setDot("ok");
     setStatus("Copied JSON to clipboard.");
-  }catch(e){
-    setStatus("Could not copy. Your browser may block clipboard.");
+  }catch{
+    setDot("warn");
+    setStatus("Could not copy (browser blocked clipboard).");
   }
 }
 
 async function loadInitial(){
+  // 1) try local draft
+  try{
+    const saved = localStorage.getItem(LS_KEY);
+    if (saved){
+      state = JSON.parse(saved);
+      setDot("ok");
+      setStatus("Loaded saved draft from this browser.");
+      renderAll(true);
+      return;
+    }
+  }catch{}
+
+  // 2) else fetch links.json
   try{
     const res = await fetch("./links.json", { cache: "no-store" });
     state = await res.json();
-  }catch(e){
+    setDot("ok");
+    setStatus("Loaded current links.json from the site.");
+  }catch{
     state = defaultState();
+    setDot("warn");
+    setStatus("Could not load links.json. Using a new draft.");
   }
-  state = state || defaultState();
+
   renderAll(true);
 }
 
 function wire(){
-  $("p_name").addEventListener("input", (e)=>{ state.profile.name = e.target.value; renderAll(false); });
-  $("p_avatar").addEventListener("input", (e)=>{ state.profile.avatar = e.target.value; renderAll(false); });
-  const avatarFile = document.getElementById("p_avatar_file");
+  // Large text toggle
+  $("toggleSize").addEventListener("click", ()=>{
+    const on = document.body.classList.toggle("editorLarge");
+    $("toggleSize").setAttribute("aria-pressed", on ? "true" : "false");
+  });
+
+  // Profile bindings
+  $("p_name").addEventListener("input", (e)=>{
+    state.profile.name = e.target.value;
+    renderPreview();
+    debounceSaveLocal();
+  });
+
+  $("p_avatar").addEventListener("input", (e)=>{
+    state.profile.avatar = normalizeAssetPath(e.target.value);
+    renderPreview();
+    debounceSaveLocal();
+  });
+
+  $("p_bio").addEventListener("input", (e)=>{
+    state.profile.bio = e.target.value;
+    renderPreview();
+    debounceSaveLocal();
+  });
+
+  // Upload logo
+  const avatarFile = $("p_avatar_file");
   if (avatarFile){
     avatarFile.addEventListener("change", async (e)=>{
       const file = e.target.files?.[0];
@@ -306,10 +470,12 @@ function wire(){
       try{
         const dataUrl = await readFileAsDataURL(file);
         state.profile.avatar = dataUrl;
-        document.getElementById("p_avatar").value = dataUrl;
-        renderAll(false);
-        setStatus("Logo embedded into links.json. Click Download links.json and upload it to GitHub.");
-      }catch(err){
+        $("p_avatar").value = dataUrl;
+        renderPreview();
+        debounceSaveLocal();
+        setStatus("Logo embedded into links.json. Download when ready.");
+      }catch{
+        setDot("warn");
         setStatus("Could not read image file.");
       }finally{
         e.target.value = "";
@@ -317,19 +483,41 @@ function wire(){
     });
   }
 
-  $("p_bio").addEventListener("input", (e)=>{ state.profile.bio = e.target.value; renderAll(false); });
-
+  // Social add
   $("addSocial").addEventListener("click", ()=>{
     state.socials.push({ type: "website", url: "" });
     renderAll(true);
+    debounceSaveLocal();
   });
 
+  // Link add
   $("addLink").addEventListener("click", ()=>{
     state.links.push({ title: "New link", subtitle: "", url: "", thumb: "", badge: "" });
     renderAll(true);
+    debounceSaveLocal();
   });
 
+  // Quick add buttons
+  $("qa_website").addEventListener("click", ()=>{
+    state.links.push({ title: "Website", subtitle: "", url: "https://", thumb: "", badge: "" });
+    renderAll(true); debounceSaveLocal();
+  });
+  $("qa_instagram").addEventListener("click", ()=>{
+    state.links.push({ title: "Instagram", subtitle: "@", url: "https://www.instagram.com/", thumb: "", badge: "" });
+    renderAll(true); debounceSaveLocal();
+  });
+  $("qa_youtube").addEventListener("click", ()=>{
+    state.links.push({ title: "YouTube", subtitle: "", url: "https://www.youtube.com/", thumb: "", badge: "YouTube" });
+    renderAll(true); debounceSaveLocal();
+  });
+  $("qa_linkedin").addEventListener("click", ()=>{
+    state.links.push({ title: "LinkedIn", subtitle: "", url: "https://www.linkedin.com/company/", thumb: "", badge: "" });
+    renderAll(true); debounceSaveLocal();
+  });
+
+  // Export/import
   $("download").addEventListener("click", downloadJson);
+  $("download2").addEventListener("click", downloadJson);
   $("copy").addEventListener("click", copyJson);
 
   $("import").addEventListener("change", async (e)=>{
@@ -337,15 +525,25 @@ function wire(){
     if(!file) return;
     try{
       const text = await file.text();
-      const obj = JSON.parse(text);
-      state = obj;
-      renderAll(true);
+      state = JSON.parse(text);
+      localStorage.setItem(LS_KEY, JSON.stringify(state));
+      setDot("ok");
       setStatus("Imported links.json successfully.");
-    }catch(err){
+      renderAll(true);
+    }catch{
+      setDot("warn");
       setStatus("Import failed: not valid JSON.");
     }finally{
       e.target.value = "";
     }
+  });
+
+  $("resetLocal").addEventListener("click", ()=>{
+    try{ localStorage.removeItem(LS_KEY); }catch{}
+    state = defaultState();
+    renderAll(true);
+    setDot("ok");
+    setStatus("Draft reset. Now download and upload when ready.");
   });
 }
 
