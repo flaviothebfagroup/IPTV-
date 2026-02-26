@@ -18,6 +18,7 @@ const ICON_SVGS = {
 
 let state = null;
 let saveTimer = null;
+let isSorting = false;
 
 // One-time sortable attachment guard
 const sortableAttached = new WeakSet();
@@ -378,9 +379,9 @@ function attachSortable(container, getArray, onAfter){
     const y = e.clientY - drag.offsetY;
     drag.card.style.top = `${y}px`;
 
-    // Place placeholder by mouse position
-    const cards = Array.from(container.querySelectorAll(".rowCard")).filter(el => el !== drag.placeholder);
+    const cards = Array.from(container.children).filter(el => el !== drag.placeholder);
     let placed = false;
+
     for (const c of cards){
       const r = c.getBoundingClientRect();
       const mid = r.top + r.height / 2;
@@ -393,25 +394,24 @@ function attachSortable(container, getArray, onAfter){
     if (!placed) container.appendChild(drag.placeholder);
   };
 
-  const cleanupDrag = () => {
-    if (!drag) return;
+  const cleanup = () => {
     document.removeEventListener("pointermove", onMove, true);
     document.removeEventListener("pointerup", onUp, true);
-    try { drag.handle.releasePointerCapture(drag.pointerId); } catch {}
+    try { drag?.handle?.releasePointerCapture(drag.pointerId); } catch {}
   };
 
   const onUp = () => {
     if (!drag) return;
 
-    cleanupDrag();
+    cleanup();
+    isSorting = false;
+    suppressClickUntil = Date.now() + 600;
 
     const from = drag.fromIndex;
     const to = Array.from(container.children).indexOf(drag.placeholder);
 
-    // Put the card back into the list where placeholder is
     drag.placeholder.replaceWith(drag.card);
 
-    // Reset card styles
     drag.card.classList.remove("dragging");
     drag.card.style.position = "";
     drag.card.style.left = "";
@@ -420,7 +420,6 @@ function attachSortable(container, getArray, onAfter){
     drag.card.style.zIndex = "";
     drag.card.style.pointerEvents = "";
 
-    // Move in state
     if (from !== to && to >= 0){
       const arr = getArray();
       moveInArray(arr, from, to);
@@ -437,28 +436,24 @@ function attachSortable(container, getArray, onAfter){
     const card = handle.closest(".rowCard");
     if (!card || !container.contains(card)) return;
 
-    // Prevent the row click from firing
     e.preventDefault();
     e.stopPropagation();
 
-    suppressClickUntil = Date.now() + 500;
+    isSorting = true;
+
+    document.querySelectorAll(".rowCard.isOpen").forEach(el => el.classList.remove("isOpen"));
 
     const cards = Array.from(container.querySelectorAll(".rowCard"));
     const fromIndex = cards.indexOf(card);
-    if (fromIndex < 0) return;
-
-    // Close editors while dragging
-    document.querySelectorAll(".rowCard.isOpen").forEach(el => el.classList.remove("isOpen"));
+    if (fromIndex < 0) { isSorting = false; return; }
 
     const rect = card.getBoundingClientRect();
 
-    // Create placeholder exactly where card was (replace)
     const ph = document.createElement("div");
     ph.className = "placeholder";
     ph.style.height = `${rect.height}px`;
     card.replaceWith(ph);
 
-    // Lift card to body
     document.body.appendChild(card);
     card.classList.add("dragging");
     card.style.width = `${rect.width}px`;
@@ -477,13 +472,14 @@ function attachSortable(container, getArray, onAfter){
       handle
     };
 
+    suppressClickUntil = Date.now() + 600;
+
     try { handle.setPointerCapture(e.pointerId); } catch {}
 
     document.addEventListener("pointermove", onMove, true);
     document.addEventListener("pointerup", onUp, true);
   }, { passive: false });
 
-  // helper: allow row click but not immediately after drag
   container.addEventListener("click", (e)=>{
     if (Date.now() < suppressClickUntil) {
       e.preventDefault();
@@ -569,7 +565,8 @@ function renderLinks(){
     top.appendChild(main);
     top.appendChild(actions);
 
-    top.addEventListener("click", ()=>{
+    top.addEventListener("click", () => {
+      if (isSorting) return;
       document.querySelectorAll(".rowCard.isOpen").forEach(el=>{
         if (el !== card) el.classList.remove("isOpen");
       });
@@ -743,7 +740,8 @@ function renderSocials(){
     top.appendChild(main);
     top.appendChild(actions);
 
-    top.addEventListener("click", ()=>{
+    top.addEventListener("click", () => {
+      if (isSorting) return;
       document.querySelectorAll(".rowCard.isOpen").forEach(el=>{
         if (el !== card) el.classList.remove("isOpen");
       });
