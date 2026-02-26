@@ -853,6 +853,8 @@ function downloadJson(){
   });
   (state.socials || []).forEach(s => { s.iconImage = s.iconImage || ""; });
 
+  state.updatedAt = Date.now();
+
   const dataStr = JSON.stringify(state, null, 2);
   const blob = new Blob([dataStr], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -1009,7 +1011,28 @@ function wire(){
     }
   });
 
-  $("download").addEventListener("click", downloadJson);
+  
+  // Reload from site (ignores local draft)
+  const reloadBtn = $("reloadFromSite");
+  if (reloadBtn){
+    reloadBtn.addEventListener("click", async ()=>{
+      try{ localStorage.removeItem(LS_KEY); }catch{}
+      try{
+        const res = await fetch("./links.json", { cache: "no-store" });
+        state = await res.json();
+        state.profile = { name:"", avatar:"", bio:"", ...(state.profile || {}) };
+        state.theme = { type:"default", color:"#f6f7fb", image:"", ...(state.theme || state.background || {}) };
+        state.socials = (state.socials || []).map(s => ({ enabled: true, iconImage: "", ...s }));
+        state.links = (state.links || []).map(l => ({ enabled: true, icon: "", iconImage: "", ...l }));
+        setStatus("Loaded from site");
+        renderAll();
+      }catch{
+        setStatus("Could not load site file");
+      }
+    });
+  }
+
+$("download").addEventListener("click", downloadJson);
   $("download2").addEventListener("click", downloadJson);
 
   $("resetDraft").addEventListener("click", ()=>{
