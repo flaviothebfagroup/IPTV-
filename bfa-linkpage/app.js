@@ -7,30 +7,74 @@ const ICONS = {
   linkedin: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM0.5 8.5h4V23h-4V8.5zM8.5 8.5h3.8v2h.1c.5-1 1.9-2.1 3.9-2.1 4.2 0 5 2.8 5 6.4V23h-4v-6.6c0-1.6 0-3.6-2.2-3.6-2.2 0-2.6 1.7-2.6 3.5V23h-4V8.5z"/></svg>`
 };
 
-function createSocial({ type, url }) {
+const ICON_SVGS = {
+  website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10S9.5 4.7 12 2z"/></svg>`,
+  link: `<svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"/><path d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"/></svg>`,
+  instagram: `<svg viewBox="0 0 24 24"><path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2z"/><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/><path d="M17.5 6.5h.01"/></svg>`,
+  youtube: `<svg viewBox="0 0 24 24"><path d="M21 12s0-4-1-5-4-1-8-1-7 0-8 1-1 5-1 5 0 4 1 5 4 1 8 1 7 0 8-1 1-5 1-5z"/><path d="M10 9.5l5 2.5-5 2.5z"/></svg>`,
+  linkedin: `<svg viewBox="0 0 24 24"><path d="M4 9h4v11H4z"/><path d="M6 4.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M10 9h4v1.8c.6-1.1 1.9-2 3.8-2 3 0 4.2 2 4.2 5v6.2h-4v-5.6c0-1.6-.4-2.8-2-2.8-1.2 0-2 .8-2 2.3V20h-4z"/></svg>`
+};
+
+function guessIconKey(url){
+  try{
+    const host = new URL(url).hostname.replace(/^www\./,"");
+    if (host.includes("instagram.com")) return "instagram";
+    if (host.includes("youtube.com") || host.includes("youtu.be")) return "youtube";
+    if (host.includes("linkedin.com")) return "linkedin";
+    return "website";
+  }catch{
+    return "link";
+  }
+}
+
+function createSocial(obj) {
+  const { type, url, iconImage } = obj || {};
   const a = document.createElement("a");
   a.className = "social";
-  a.href = url;
+  a.href = url || "#";
   a.target = "_blank";
   a.rel = "noopener";
-  a.setAttribute("aria-label", type);
-  a.innerHTML = ICONS[type] || ICONS.website;
+  a.setAttribute("aria-label", type || "social");
+
+  if (iconImage) {
+    const img = document.createElement("img");
+    img.src = iconImage;
+    img.alt = "";
+    img.style.width = "18px";
+    img.style.height = "18px";
+    img.style.objectFit = "contain";
+    a.appendChild(img);
+  } else {
+    a.innerHTML = ICONS[type] || ICONS.website;
+  }
+  if (!url) a.style.opacity = "0.55";
   return a;
 }
 
 function createLink(item) {
   const a = document.createElement("a");
   a.className = "link";
-  a.href = item.url;
+  a.href = item.url || "#";
   a.target = "_blank";
   a.rel = "noopener";
 
-  const thumb = document.createElement(item.thumb ? "img" : "div");
+  const thumb = document.createElement((item.thumb || item.iconImage) ? "img" : "div");
   thumb.className = "thumb";
   if (item.thumb) {
     thumb.src = item.thumb;
     thumb.alt = "";
     thumb.loading = "lazy";
+  } else if (item.iconImage) {
+    thumb.src = item.iconImage;
+    thumb.alt = "";
+    thumb.loading = "lazy";
+    thumb.classList.add("thumbIconImg");
+  } else {
+    const wrap = document.createElement("div");
+    wrap.className = "thumbIconWrap";
+    const iconKey = item.icon || guessIconKey(item.url);
+    wrap.innerHTML = ICON_SVGS[iconKey] || ICON_SVGS.link;
+    thumb.appendChild(wrap);
   }
 
   const main = document.createElement("div");
@@ -42,7 +86,6 @@ function createLink(item) {
   const title = document.createElement("div");
   title.className = "title";
   title.textContent = item.title || "Untitled";
-
   titleRow.appendChild(title);
 
   if (item.badge) {
@@ -75,7 +118,6 @@ async function init() {
   const res = await fetch("./links.json", { cache: "no-store" });
   const data = await res.json();
 
-  // Profile
   $("name").textContent = data.profile?.name || "Links";
   const avatar = $("avatar");
   avatar.src = data.profile?.avatar || "";
@@ -83,17 +125,14 @@ async function init() {
 
   $("bio").textContent = data.profile?.bio || "";
 
-  // Socials
   const socialsWrap = $("socials");
   socialsWrap.innerHTML = "";
   (data.socials || []).filter(s => s && s.enabled !== false).forEach(s => socialsWrap.appendChild(createSocial(s)));
 
-  // Links
   const linksWrap = $("links");
   linksWrap.innerHTML = "";
   (data.links || []).filter(l => l && l.enabled !== false).forEach(l => linksWrap.appendChild(createLink(l)));
 
-  // Footer (optional)
   $("footerText").textContent = data.footerText || "";
 }
 

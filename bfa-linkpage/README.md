@@ -29,3 +29,11 @@
 
 ## Friendly Editor
 Open `/editor.html` on GitHub Pages. This version uses `editor.css` for a clean, senior-friendly editor UI.
+
+
+## Linktree-like editor
+Open `/editor.html` on GitHub Pages. Editor styling is in `editor.css`.
+
+
+## Editor icons
+The editor supports line icons and optional custom icon images (URL/path or upload to embed).
