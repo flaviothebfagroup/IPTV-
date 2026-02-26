@@ -65,7 +65,7 @@ function debounceSave(){
   saveTimer = setTimeout(()=>{
     try{
       localStorage.setItem("bfa_linktree_editor_draft_v2", JSON.stringify(state));
-      setStatus("Saved (draft). Download links.json when ready.");
+      setStatus("Saved");
     }catch{
       setStatus("Could not save draft in browser.");
     }
@@ -461,7 +461,7 @@ function renderLinks(){
         iconUrl.value = dataUrl;
         renderRowIcon(iconBox, state.links[idx]);
         renderPreview(); debounceSave();
-        setStatus("Icon embedded. Download links.json when ready.");
+        setStatus("Icon embedded");
       }catch{
         setStatus("Could not read that image file.");
       }finally{
@@ -621,7 +621,7 @@ function renderSocials(){
         iconUrl.value = dataUrl;
         renderRowIcon(iconBox, { url: state.socials[idx].url, icon: state.socials[idx].type, iconImage: state.socials[idx].iconImage });
         renderPreview(); debounceSave();
-        setStatus("Icon embedded. Download links.json when ready.");
+        setStatus("Icon embedded");
       }catch{
         setStatus("Could not read that image file.");
       }finally{
@@ -680,7 +680,7 @@ function downloadJson(){
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
-  setStatus("Downloaded links.json — upload/replace it in GitHub.");
+  setStatus("Downloaded links.json");
 }
 
 async function loadInitial(){
@@ -688,7 +688,7 @@ async function loadInitial(){
     const saved = localStorage.getItem(LS_KEY);
     if (saved){
       state = JSON.parse(saved);
-      setStatus("Loaded saved draft from this browser.");
+      setStatus("Loaded draft");
       renderAll();
       return;
     }
@@ -697,7 +697,7 @@ async function loadInitial(){
   try{
     const res = await fetch("./links.json", { cache: "no-store" });
     state = await res.json();
-    setStatus("Loaded current links.json from your site.");
+    setStatus("Loaded from site");
   }catch{
     state = defaultState();
     setStatus("Could not load links.json. Using a new draft.");
@@ -751,7 +751,7 @@ function wire(){
       state.profile.avatar = dataUrl;
       $("p_avatar").value = dataUrl;
       renderPreview(); debounceSave();
-      setStatus("Logo embedded. Download links.json when ready.");
+      setStatus("Logo embedded");
     }catch{
       setStatus("Could not read that image file.");
     }finally{
@@ -778,7 +778,7 @@ function wire(){
       state.socials = (state.socials || []).map(s => ({ enabled: true, iconImage: "", ...s }));
       state.links = (state.links || []).map(l => ({ enabled: true, icon: "", iconImage: "", ...l }));
       localStorage.setItem(LS_KEY, JSON.stringify(state));
-      setStatus("Imported links.json successfully.");
+      setStatus("Imported");
       renderAll();
     }catch{
       setStatus("Import failed (not valid JSON).");
@@ -794,7 +794,7 @@ function wire(){
     try{ localStorage.removeItem(LS_KEY); }catch{}
     state = defaultState();
     renderAll();
-    setStatus("Draft reset. Download links.json when ready.");
+    setStatus("Draft reset");
   });
 }
 
