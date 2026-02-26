@@ -154,6 +154,9 @@ async function init() {
   const res = await fetch("./links.json", { cache: "no-store" });
   const data = await res.json();
 
+  // Apply background/theme from links.json
+  applyTheme(data.theme || data.background);
+
   $("name").textContent = data.profile?.name || "Links";
   const avatar = $("avatar");
   avatar.src = data.profile?.avatar || "";
