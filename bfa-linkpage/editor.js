@@ -1,223 +1,306 @@
-const $ = (id) => document.getElementById(id);
+(() => {
+  const $ = (id) => document.getElementById(id);
 
-const LS_KEY = "bfa_linktree_editor_draft_v8";
-const SOCIAL_TYPES = ["instagram","website","linkedin","youtube","tiktok","facebook"];
+  const BUILD = "v29";
+  const LS_KEY = "bfa_linktree_editor_draft_v29";
 
-// Simple line icons (stroke SVG)
-const ICON_SVGS = {
-  website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10S9.5 4.7 12 2z"/></svg>`,
-  link: `<svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"/><path d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"/></svg>`,
-  instagram: `<svg viewBox="0 0 24 24"><path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2z"/><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/><path d="M17.5 6.5h.01"/></svg>`,
-  youtube: `<svg viewBox="0 0 24 24"><path d="M21 12s0-4-1-5-4-1-8-1-7 0-8 1-1 5-1 5 0 4 1 5 4 1 8 1 7 0 8-1 1-5 1-5z"/><path d="M10 9.5l5 2.5-5 2.5z"/></svg>`,
-  linkedin: `<svg viewBox="0 0 24 24"><path d="M4 9h4v11H4z"/><path d="M6 4.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M10 9h4v1.8c.6-1.1 1.9-2 3.8-2 3 0 4.2 2 4.2 5v6.2h-4v-5.6c0-1.6-.4-2.8-2-2.8-1.2 0-2 .8-2 2.3V20h-4z"/></svg>`,
-  edit: `<svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z"/></svg>`,
-  trash: `<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M7 6l1 14h8l1-14"/></svg>`,
-  up: `<svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M6 11l6-6 6 6"/></svg>`,
-  down: `<svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg>`
-};
-
-let state = null;
-let saveTimer = null;
-let isSorting = false;
-
-// One-time sortable attachment guard
-const sortableAttached = new WeakSet();
-
-function defaultState(){
-  return {
-    profile: { name: "The BFA Group", avatar: "./assets/logo.png", bio: "", avatarSize: 54, avatarPadding: 8, avatarFit: "contain", avatarRadius: 16, avatarScale: 1 },
-    theme: { type: "default", color: "#f6f7fb", image: "" },
-    socials: [{ type: "instagram", url: "", enabled: true, iconImage: "" }, { type: "website", url: "", enabled: true, iconImage: "" }],
-    links: [{ title: "Website", subtitle: "", url: "", thumb: "", badge: "", enabled: true, icon: "", iconImage: "" }],
-    footerText: ""
+  const ICON_SVGS = {
+    website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10S9.5 4.7 12 2z"/></svg>`,
+    link: `<svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"/><path d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"/></svg>`,
+    instagram: `<svg viewBox="0 0 24 24"><path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2z"/><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/><path d="M17.5 6.5h.01"/></svg>`,
+    youtube: `<svg viewBox="0 0 24 24"><path d="M21 12s0-4-1-5-4-1-8-1-7 0-8 1-1 5-1 5 0 4 1 5 4 1 8 1 7 0 8-1 1-5 1-5z"/><path d="M10 9.5l5 2.5-5 2.5z"/></svg>`,
+    linkedin: `<svg viewBox="0 0 24 24"><path d="M4 9h4v11H4z"/><path d="M6 4.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M10 9h4v1.8c.6-1.1 1.9-2 3.8-2 3 0 4.2 2 4.2 5v6.2h-4v-5.6c0-1.6-.4-2.8-2-2.8-1.2 0-2 .8-2 2.3V20h-4z"/></svg>`,
+    up: `<svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M6 11l6-6 6 6"/></svg>`,
+    down: `<svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg>`,
+    edit: `<svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z"/></svg>`,
+    trash: `<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M7 6l1 14h8l1-14"/></svg>`
   };
-}
 
-function normalizeAssetPath(p){
-  if (!p) return "";
-  const s = String(p).trim();
-  if (s.startsWith("/assets/")) return "." + s;
-  return s;
-}
+  const SOCIAL_TYPES = ["website","instagram","linkedin","youtube","tiktok","facebook"];
 
-function safeHost(url){
-  try{
-    const u = new URL(url);
-    return u.hostname.replace(/^www\./,"");
-  }catch{
-    return (url || "").trim();
+  let state = null;
+  let saveTimer = null;
+  let isSorting = false;
+
+  const sortableAttached = new WeakSet();
+
+  function setStatus(msg){
+    const el = $("status");
+    if (el) el.textContent = msg || "Ready";
   }
-}
-
-function guessIconFromUrl(url){
-  try{
-    const host = new URL(url).hostname.replace(/^www\./,"");
-    if (host.includes("instagram.com")) return "instagram";
-    if (host.includes("youtube.com") || host.includes("youtu.be")) return "youtube";
-    if (host.includes("linkedin.com")) return "linkedin";
-    return "website";
-  }catch{
-    return "link";
+  function showError(msg){
+    const bar = $("errorBar");
+    if (!bar) return;
+    bar.hidden = !msg;
+    bar.textContent = msg || "";
   }
-}
-
-function setStatus(msg){
-  $("status").textContent = msg || "Ready";
-}
-
-function debounceSave(){
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(()=>{
-    try{
-      localStorage.setItem(LS_KEY, JSON.stringify(state));
-      setStatus("Saved");
-    }catch{
-      setStatus("Can't save draft");
+  function safe(fn){
+    try{ return fn(); }catch(err){
+      console.error(err);
+      showError("JS error: " + (err?.message || String(err)));
+      setStatus("Error");
     }
-  }, 250);
-}
-
-function readFileAsDataURL(file){
-  return new Promise((resolve, reject)=>{
-    const r = new FileReader();
-    r.onload = () => resolve(r.result);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
-
-
-
-function applyAvatarStyle(imgEl, profile){
-  if (!imgEl) return;
-  const p   = profile || {};
-  const w   = Number(p.avatarWidth   ?? p.avatarSize ?? 72);
-  const h   = Number(p.avatarHeight  ?? p.avatarSize ?? 72);
-  const pad = Number(p.avatarPadding ?? 10);
-  const fit = p.avatarFit   || "contain";
-  const rad = Number(p.avatarRadius ?? 18);
-  const scale = Number(p.avatarScale ?? 1);
-
-  const wrap = imgEl.closest(".avatar-wrap") || imgEl.closest(".avatarShell");
-  if (wrap) {
-    wrap.style.width        = `${w}px`;
-    wrap.style.height       = `${h}px`;
-    wrap.style.padding      = `${pad}px`;
-    wrap.style.borderRadius = `${rad}px`;
-    wrap.style.boxSizing    = "border-box";
   }
-  imgEl.style.width           = "100%";
-  imgEl.style.height          = "100%";
-  imgEl.style.objectFit       = fit;
-  imgEl.style.transform       = `scale(${scale})`;
-  imgEl.style.transformOrigin = "center";
-}
-function updateShapeChipUI(w, h){
-  const ratio = w / h;
-  let active = "custom";
-  if (Math.abs(ratio - 1) < 0.05) active = "square";
-  if (Math.abs(ratio - 2) < 0.1)  active = "wide";
-  if (Math.abs(ratio - 3) < 0.1)  active = "banner";
-  document.querySelectorAll(".shapeChip").forEach(c => {
-    c.classList.toggle("active", c.dataset.shape === active);
-  });
-}
 
-/* Tabs */
-function setTab(tab){
-  document.querySelectorAll(".navItem").forEach(b=>{
-    b.classList.toggle("isActive", b.dataset.tab === tab);
-  });
-  document.querySelectorAll(".tab").forEach(t=>{
-    t.classList.toggle("isActive", t.id === "tab-" + tab);
-  });
-
-  const titles = {
-    links: ["Links", "Drag the dots OR use ↑ ↓ to reorder. Click a row to edit. Toggle off to hide."],
-    profile: ["Profile", "Name, logo, bio + background"],
-    icons: ["Icons", "Drag the dots OR use ↑ ↓ to reorder icons under the name."],
-    export: ["Export", "Download your updated links.json."]
-  };
-  $("pageTitle").textContent = titles[tab]?.[0] || "Links";
-  $("pageHint").textContent = titles[tab]?.[1] || "";
-}
-
-/* Theme preview */
-function applyThemeToPreview(){
-  const screen = document.querySelector(".phoneScreen");
-  if (!screen) return;
-
-  const t = state.theme || {};
-  const type = t.type || "default";
-  const color = t.color || "#f6f7fb";
-  const image = t.image || "";
-
-  // Reset
-  screen.style.background = "";
-  screen.style.backgroundImage = "";
-  screen.style.backgroundSize = "";
-  screen.style.backgroundPosition = "";
-  screen.style.backgroundRepeat = "";
-  screen.style.backgroundAttachment = "";
-
-  if (type === "color"){
-    screen.style.background = color;
-    return;
+  function debounceSave(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=>{
+      try{
+        localStorage.setItem(LS_KEY, JSON.stringify(state));
+        setStatus("Saved");
+      }catch{
+        setStatus("Can't save draft");
+      }
+    }, 250);
   }
-  if (type === "gradient"){
-    screen.style.background = `radial-gradient(900px 520px at 25% -120px, rgba(255,149,0,0.20), transparent 60%), radial-gradient(900px 520px at 85% 18%, rgba(10,10,12,0.06), transparent 60%), ${color}`;
-    return;
+
+  function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+
+  function normalizeAssetPath(p){
+    if (!p) return "";
+    const s = String(p).trim();
+    if (s.startsWith("/assets/")) return "." + s;
+    return s;
   }
-  if (type === "image" && image){
-    // Preview: preload so users immediately know if the URL works
-    const url = image;
-    screen.style.background = color;
-    screen.style.backgroundImage = "none";
-    preloadImage(url).then(()=>{
-      screen.style.backgroundImage = `url("${url}")`;
-      screen.style.backgroundSize = "cover";
-      screen.style.backgroundPosition = "center";
-      screen.style.backgroundRepeat = "no-repeat";
-      setStatus("Background loaded");
-    }).catch(()=>{
-      // Keep solid color + show a hint
-      setStatus("Background URL didn't load (use direct .jpg/.png/.gif)");
+
+  function safeHost(url){
+    try{ return new URL(url).hostname.replace(/^www\./,""); }
+    catch{ return (url||"").trim(); }
+  }
+
+  function guessIconFromUrl(url){
+    try{
+      const host = new URL(url).hostname.replace(/^www\./,"");
+      if (host.includes("instagram.com")) return "instagram";
+      if (host.includes("youtube.com") || host.includes("youtu.be")) return "youtube";
+      if (host.includes("linkedin.com")) return "linkedin";
+      return "website";
+    }catch{
+      return "link";
+    }
+  }
+
+  function readFileAsDataURL(file){
+    return new Promise((resolve, reject)=>{
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
     });
-    return;
   }
-  // default: keep empty so the phone shows neutral background
-}
 
+  function defaultState(){
+    return {
+      profile: {
+        name: "The BFA Group",
+        bio: "Retail Automotive Marketing • Digital Signage • IPTV",
+        avatar: "./assets/logo.png",
+        show: true,
+        bg: "#ffffff",
+        bgTransparent: false,
+        border: true,
+        w: 54,
+        h: 54,
+        pad: 8,
+        radius: 16,
+        fit: "contain",
+        scale: 1,
+        x: 0,
+        y: 0
+      },
+      theme: { type: "default", color: "#f5f5f7", image: "" },
+      icons: [
+        { type: "website", url: "https://www.thebfagroup.com/", enabled: true, iconImage: "", iconCfg: { scale: 1, fit: "contain" } },
+        { type: "instagram", url: "https://www.instagram.com/bfa.autovisiontv/", enabled: true, iconImage: "", iconCfg: { scale: 1, fit: "contain" } }
+      ],
+      links: [
+        { title: "Website", subtitle: "thebfagroup.com", url: "https://www.thebfagroup.com/", badge: "", thumb: "", enabled: true, icon: "", iconImage: "", iconCfg: { scale: 1, fit: "contain" } }
+      ],
+      footerText: "",
+      updatedAt: null
+    };
+  }
 
-function preloadImage(url){
-  return new Promise((resolve, reject)=>{
-    if (!url) return reject(new Error("empty"));
-    const img = new Image();
-    img.onload = ()=> resolve(true);
-    img.onerror = ()=> reject(new Error("load_failed"));
-    img.referrerPolicy = "no-referrer"; // helps some CDNs
-    img.src = url;
-  });
-}
-/* Preview */
-function createSocialEl(s){
-  if (s.enabled === false) return null;
-  const a = document.createElement("a");
-  a.className = "social";
-  a.href = s.url || "#";
-  a.target = "_blank";
-  a.rel = "noopener";
+  function normalizeIncoming(raw){
+    const d = defaultState();
+    const s = raw || {};
+    // Backward-compat mapping
+    const profileIn = { ...(s.profile || {}) };
+    // map old keys if present
+    profileIn.avatar = profileIn.avatar ?? (s.profile?.avatar) ?? d.profile.avatar;
+    const themeIn = s.theme || s.background || d.theme;
 
-  if (s.iconImage){
-    const img = document.createElement("img");
-    img.src = s.iconImage;
-    img.alt = "";
-    img.style.width = "18px";
-    img.style.height = "18px";
-    img.style.objectFit = "contain";
-    a.appendChild(img);
-  } else {
-    const key = s.type || "link";
+    const out = {
+      profile: { ...d.profile, ...profileIn },
+      theme: { ...d.theme, ...(themeIn || {}) },
+      icons: (s.icons || s.socials || d.icons).map(it => ({
+        enabled: true,
+        iconImage: "",
+        iconCfg: { scale: 1, fit: "contain" },
+        ...it,
+        iconCfg: { scale: 1, fit: "contain", ...(it.iconCfg || {}) }
+      })),
+      links: (s.links || d.links).map(l => ({
+        enabled: true,
+        icon: "",
+        iconImage: "",
+        iconCfg: { scale: 1, fit: "contain" },
+        ...l,
+        iconCfg: { scale: 1, fit: "contain", ...(l.iconCfg || {}) }
+      })),
+      footerText: s.footerText || "",
+      updatedAt: s.updatedAt ?? null
+    };
+
+    // If old avatarW/avatarH exist, map
+    out.profile.w = out.profile.w ?? out.profile.avatarW ?? d.profile.w;
+    out.profile.h = out.profile.h ?? out.profile.avatarH ?? d.profile.h;
+    out.profile.pad = out.profile.pad ?? out.profile.avatarPadding ?? d.profile.pad;
+    out.profile.radius = out.profile.radius ?? out.profile.avatarRadius ?? d.profile.radius;
+    out.profile.fit = out.profile.fit ?? out.profile.avatarFit ?? d.profile.fit;
+    out.profile.scale = out.profile.scale ?? out.profile.avatarScale ?? d.profile.scale;
+    out.profile.x = out.profile.x ?? out.profile.avatarX ?? d.profile.x;
+    out.profile.y = out.profile.y ?? out.profile.avatarY ?? d.profile.y;
+
+    out.profile.show = (out.profile.show ?? out.profile.avatarShow ?? true);
+    out.profile.bg = out.profile.bg ?? out.profile.avatarBg ?? "#ffffff";
+    out.profile.bgTransparent = !!(out.profile.bgTransparent ?? out.profile.avatarBgTransparent ?? false);
+    out.profile.border = (out.profile.border ?? out.profile.avatarBorder ?? true);
+
+    return out;
+  }
+
+  // Tabs
+  const TAB_TITLES = {
+    links: ["Links", "Click a row to edit. Drag the dots to reorder."],
+    profile: ["Profile", "Logo + name + background"],
+    icons: ["Icons", "Top icons under the name"],
+    export: ["Export", "Download your updated links.json"]
+  };
+
+  function setTab(tab){
+    document.querySelectorAll(".navItem").forEach(b=>{
+      b.classList.toggle("isActive", b.dataset.tab === tab);
+    });
+    document.querySelectorAll(".tab").forEach(s=>{
+      s.classList.toggle("isActive", s.id === ("tab-" + tab));
+    });
+    $("pageTitle").textContent = TAB_TITLES[tab]?.[0] || "Links";
+    $("pageHint").textContent = TAB_TITLES[tab]?.[1] || "";
+  }
+
+  // Preview theme
+  let bgToken = 0;
+  function preloadImage(url){
+    return new Promise((resolve, reject)=>{
+      const img = new Image();
+      img.onload = ()=> resolve(true);
+      img.onerror = ()=> reject(new Error("load_failed"));
+      img.referrerPolicy = "no-referrer";
+      img.src = url;
+    });
+  }
+
+  function applyThemeToPreview(){
+    const screen = $("phoneScreen");
+    if (!screen) return;
+    const t = state.theme || {};
+    const type = t.type || "default";
+    const color = t.color || "#f5f5f7";
+    const image = t.image || "";
+
+    screen.style.background = "";
+    screen.style.backgroundImage = "";
+
+    if (type === "color"){
+      screen.style.background = color;
+      return;
+    }
+    if (type === "gradient"){
+      screen.style.background = `radial-gradient(900px 520px at 25% -120px, rgba(255,149,0,0.18), transparent 60%), radial-gradient(900px 520px at 85% 18%, rgba(10,10,12,0.06), transparent 60%), ${color}`;
+      return;
+    }
+    if (type === "image" && image){
+      const token = ++bgToken;
+      screen.style.background = color;
+      preloadImage(image).then(()=>{
+        if (token !== bgToken) return;
+        screen.style.backgroundImage = `url("${image}")`;
+        screen.style.backgroundSize = "cover";
+        screen.style.backgroundPosition = "center";
+      }).catch(()=>{
+        if (token !== bgToken) return;
+        setStatus("Background URL didn't load");
+      });
+      return;
+    }
+    screen.style.background = `radial-gradient(900px 520px at 25% -120px, rgba(255,149,0,0.14), transparent 60%), radial-gradient(900px 520px at 85% 18%, rgba(10,10,12,0.06), transparent 60%), ${color}`;
+  }
+
+  // Avatar wrapper helper
+  function ensureAvatarShell(imgEl){
+    if (!imgEl) return { shell:null, img:null };
+    if (imgEl.parentElement && imgEl.parentElement.classList.contains("avatarShell")){
+      return { shell: imgEl.parentElement, img: imgEl };
+    }
+    const shell = document.createElement("div");
+    shell.className = "avatarShell";
+    imgEl.parentNode.insertBefore(shell, imgEl);
+    shell.appendChild(imgEl);
+    return { shell, img: imgEl };
+  }
+
+  function applyAvatar(imgEl, p){
+    const { shell, img } = ensureAvatarShell(imgEl);
+    if (!shell || !img) return;
+
+    shell.style.width = `${Number(p.w)||54}px`;
+    shell.style.height = `${Number(p.h)||54}px`;
+    shell.style.padding = `${Number(p.pad)||8}px`;
+    shell.style.borderRadius = `${Number(p.radius)||16}px`;
+    shell.style.boxSizing = "border-box";
+    shell.style.display = (p.show === false) ? "none" : "";
+    shell.style.background = p.bgTransparent ? "transparent" : (p.bg || "rgba(255,255,255,0.65)");
+    shell.style.border = (p.border === false) ? "none" : "1px solid rgba(10,10,12,0.10)";
+
+    img.style.width = "100%";
+    img.style.height = "100%";
+    img.style.objectFit = p.fit || "contain";
+    img.style.transform = `translate(${Number(p.x)||0}px, ${Number(p.y)||0}px) scale(${Number(p.scale)||1})`;
+    img.style.transformOrigin = "center";
+  }
+
+  // Icon cfg
+  function applyIconCfg(imgEl, cfg){
+    if (!imgEl) return;
+    const c = cfg || {};
+    imgEl.style.objectFit = c.fit || "contain";
+    imgEl.style.transform = `scale(${Number(c.scale ?? 1)})`;
+    imgEl.style.transformOrigin = "center";
+  }
+
+  // Preview render
+  function createIconEl(it){
+    if (it.enabled === false) return null;
+    const a = document.createElement("a");
+    a.className = "social";
+    a.href = it.url || "#";
+    a.target = "_blank";
+    a.rel = "noopener";
+
+    if (it.iconImage){
+      const img = document.createElement("img");
+      img.src = it.iconImage;
+      img.alt = "";
+      img.style.width = "18px";
+      img.style.height = "18px";
+      img.style.display = "block";
+      applyIconCfg(img, it.iconCfg);
+      a.appendChild(img);
+      return a;
+    }
+
+    const key = it.type || "link";
     a.innerHTML = ICON_SVGS[key] || ICON_SVGS.link;
     const svg = a.querySelector("svg");
     if (svg){
@@ -229,978 +312,1071 @@ function createSocialEl(s){
       svg.style.strokeLinecap = "round";
       svg.style.strokeLinejoin = "round";
     }
+    return a;
   }
 
-  if (!s.url) a.style.opacity = "0.55";
-  return a;
-}
+  function createLinkPreview(l){
+    if (l.enabled === false) return null;
+    const a = document.createElement("a");
+    a.className = "link";
+    a.href = l.url || "#";
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.style.textDecoration = "none";
+    a.style.color = "inherit";
+    a.style.display = "flex";
+    a.style.alignItems = "center";
+    a.style.gap = "10px";
+    a.style.padding = "12px";
+    a.style.borderRadius = "18px";
+    a.style.border = "1px solid rgba(10,10,12,0.08)";
+    a.style.background = "rgba(255,255,255,0.82)";
 
-function createLinkEl(l){
-  if (l.enabled === false) return null;
+    const icon = document.createElement("div");
+    icon.style.width = "40px";
+    icon.style.height = "40px";
+    icon.style.borderRadius = "16px";
+    icon.style.display = "grid";
+    icon.style.placeItems = "center";
+    icon.style.background = "rgba(245,245,247,0.9)";
+    icon.style.border = "1px solid rgba(10,10,12,0.06)";
+    icon.style.overflow = "hidden";
 
-  const a = document.createElement("a");
-  a.className = "link";
-  a.href = l.url || "#";
-  a.target = "_blank";
-  a.rel = "noopener";
-  if(!l.url) a.style.opacity = "0.75";
-
-  const thumb = document.createElement((l.thumb || l.iconImage) ? "img" : "div");
-  thumb.className = "thumb";
-  if (l.thumb){
-    thumb.src = normalizeAssetPath(l.thumb);
-    thumb.alt = "";
-    thumb.loading = "lazy";
-  } else if (l.iconImage){
-    thumb.src = l.iconImage;
-    thumb.alt = "";
-    thumb.loading = "lazy";
-    thumb.classList.add("thumbIconImg");
-  } else {
-    const wrap = document.createElement("div");
-    wrap.className = "thumbIconWrap";
-    const key = l.icon || guessIconFromUrl(l.url);
-    wrap.innerHTML = ICON_SVGS[key] || ICON_SVGS.link;
-    thumb.appendChild(wrap);
-  }
-
-  const main = document.createElement("div");
-  main.className = "linkMain";
-
-  const titleRow = document.createElement("div");
-  titleRow.className = "titleRow";
-
-  const title = document.createElement("div");
-  title.className = "title";
-  title.textContent = l.title || "Untitled";
-  titleRow.appendChild(title);
-
-  if (l.badge){
-    const badge = document.createElement("span");
-    badge.className = "badge";
-    badge.textContent = l.badge;
-    titleRow.appendChild(badge);
-  }
-
-  main.appendChild(titleRow);
-
-  if (l.subtitle){
-    const sub = document.createElement("div");
-    sub.className = "subtitle";
-    sub.textContent = l.subtitle;
-    main.appendChild(sub);
-  }
-
-  const chev = document.createElement("div");
-  chev.className = "chev";
-  chev.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
-
-  a.appendChild(thumb);
-  a.appendChild(main);
-  a.appendChild(chev);
-  return a;
-}
-
-function renderPreview(){
-  $("v_name").textContent = state.profile?.name || "Links";
-  $("v_bio").textContent = state.profile?.bio || "";
-  $("v_footer").textContent = state.footerText || "";
-
-  const av = $("v_avatar");
-  av.src = normalizeAssetPath(state.profile?.avatar || "");
-  av.alt = (state.profile?.name || "Profile") + " logo";
-  applyAvatarStyle(av, state.profile);
-
-  const sWrap = $("v_socials");
-  sWrap.innerHTML = "";
-  (state.socials || []).forEach(s=>{
-    const el = createSocialEl(s);
-    if (el) sWrap.appendChild(el);
-  });
-
-  const lWrap = $("v_links");
-  lWrap.innerHTML = "";
-  (state.links || []).forEach(l=>{
-    const el = createLinkEl(l);
-    if (el) lWrap.appendChild(el);
-  });
-
-  applyThemeToPreview();
-}
-
-/* UI helpers */
-function makeToggle(checked, onChange){
-  const toggle = document.createElement("label");
-  toggle.className = "toggle";
-  const cb = document.createElement("input");
-  cb.type = "checkbox";
-  cb.checked = !!checked;
-  cb.addEventListener("change", (e)=>{ e.stopPropagation(); onChange(cb.checked); });
-  const track = document.createElement("span");
-  track.className = "track";
-  const knob = document.createElement("span");
-  knob.className = "knob";
-  track.appendChild(knob);
-  toggle.appendChild(cb);
-  toggle.appendChild(track);
-  return toggle;
-}
-
-function iconBtn(iconKey, title, onClick, opts={}){
-  const b = document.createElement("button");
-  b.type = "button";
-  b.className = "iconBtn" + (opts.danger ? " danger" : "");
-  b.title = title || "";
-  b.innerHTML = ICON_SVGS[iconKey] || ICON_SVGS.link;
-  if (opts.disabled) b.disabled = true;
-  b.addEventListener("click", (e)=>{ e.stopPropagation(); onClick(); });
-  return b;
-}
-
-function field(labelText, inputEl, helpText){
-  const f = document.createElement("div");
-  f.className = "field";
-  const lab = document.createElement("label");
-  lab.textContent = labelText;
-  f.appendChild(lab);
-  f.appendChild(inputEl);
-  if (helpText){
-    const help = document.createElement("div");
-    help.className = "help";
-    help.textContent = helpText;
-    f.appendChild(help);
-  }
-  return f;
-}
-
-function inputText(value, placeholder, onInput){
-  const i = document.createElement("input");
-  i.value = value || "";
-  i.placeholder = placeholder || "";
-  i.addEventListener("input", (e)=>{ e.stopPropagation(); onInput(i.value); });
-  return i;
-}
-
-function selectIcon(value, onChange){
-  const sel = document.createElement("select");
-  const options = [
-    ["", "Auto"],
-    ["website","Website"],
-    ["instagram","Instagram"],
-    ["youtube","YouTube"],
-    ["linkedin","LinkedIn"],
-    ["link","Generic link"]
-  ];
-  options.forEach(([v, t])=>{
-    const o = document.createElement("option");
-    o.value = v;
-    o.textContent = t;
-    if ((value || "") === v) o.selected = true;
-    sel.appendChild(o);
-  });
-  sel.addEventListener("change", (e)=>{ e.stopPropagation(); onChange(sel.value); });
-  return sel;
-}
-
-function renderRowIcon(container, item){
-  container.innerHTML = "";
-  if (item.iconImage){
-    const img = document.createElement("img");
-    img.src = item.iconImage;
-    img.alt = "";
-    container.appendChild(img);
-    return;
-  }
-  const key = item.icon || guessIconFromUrl(item.url);
-  container.innerHTML = ICON_SVGS[key] || ICON_SVGS.link;
-}
-
-/* Move helpers */
-function moveInArray(arr, from, to){
-  if (!arr) return;
-  if (from < 0 || to < 0 || from >= arr.length || to >= arr.length) return;
-  const item = arr.splice(from, 1)[0];
-  arr.splice(to, 0, item);
-}
-
-/* Pointer sortable (attached once per container) */
-function attachSortable(container, getArray, onAfter){
-  if (sortableAttached.has(container)) return;
-  sortableAttached.add(container);
-
-  let drag = null;
-  let suppressClickUntil = 0;
-
-  const onMove = (e) => {
-    if (!drag) return;
-
-    const y = e.clientY - drag.offsetY;
-    drag.card.style.top = `${y}px`;
-
-    const cards = Array.from(container.children).filter(el => el !== drag.placeholder);
-    let placed = false;
-
-    for (const c of cards){
-      const r = c.getBoundingClientRect();
-      const mid = r.top + r.height / 2;
-      if (e.clientY < mid){
-        container.insertBefore(drag.placeholder, c);
-        placed = true;
-        break;
+    if (l.thumb){
+      const img = document.createElement("img");
+      img.src = normalizeAssetPath(l.thumb);
+      img.style.width = "100%";
+      img.style.height = "100%";
+      img.style.objectFit = "cover";
+      icon.appendChild(img);
+    } else if (l.iconImage){
+      const img = document.createElement("img");
+      img.src = l.iconImage;
+      img.style.width = "22px";
+      img.style.height = "22px";
+      img.style.objectFit = "contain";
+      applyIconCfg(img, l.iconCfg);
+      icon.appendChild(img);
+    } else {
+      const key = l.icon || guessIconFromUrl(l.url);
+      icon.innerHTML = ICON_SVGS[key] || ICON_SVGS.link;
+      const svg = icon.querySelector("svg");
+      if (svg){
+        svg.style.width = "22px";
+        svg.style.height = "22px";
+        svg.style.stroke = "rgba(10,10,12,0.70)";
+        svg.style.fill = "none";
+        svg.style.strokeWidth = "2";
+        svg.style.strokeLinecap = "round";
+        svg.style.strokeLinejoin = "round";
       }
     }
-    if (!placed) container.appendChild(drag.placeholder);
-  };
 
-  const cleanup = () => {
-    document.removeEventListener("pointermove", onMove, true);
-    document.removeEventListener("pointerup", onUp, true);
-    try { drag?.handle?.releasePointerCapture(drag.pointerId); } catch {}
-  };
+    const main = document.createElement("div");
+    main.style.flex = "1 1 auto";
+    const t = document.createElement("div");
+    t.style.fontWeight = "950";
+    t.textContent = l.title || "Untitled";
+    main.appendChild(t);
 
-  const onUp = () => {
-    if (!drag) return;
-
-    cleanup();
-    isSorting = false;
-    suppressClickUntil = Date.now() + 600;
-
-    const from = drag.fromIndex;
-    const to = Array.from(container.children).indexOf(drag.placeholder);
-
-    drag.placeholder.replaceWith(drag.card);
-
-    drag.card.classList.remove("dragging");
-    drag.card.style.position = "";
-    drag.card.style.left = "";
-    drag.card.style.top = "";
-    drag.card.style.width = "";
-    drag.card.style.zIndex = "";
-    drag.card.style.pointerEvents = "";
-
-    if (from !== to && to >= 0){
-      const arr = getArray();
-      moveInArray(arr, from, to);
+    if (l.subtitle){
+      const s = document.createElement("div");
+      s.style.fontSize = "12px";
+      s.style.color = "rgba(10,10,12,0.58)";
+      s.textContent = l.subtitle;
+      main.appendChild(s);
     }
 
-    drag = null;
-    onAfter();
-  };
+    a.appendChild(icon);
+    a.appendChild(main);
+    return a;
+  }
 
-  container.addEventListener("pointerdown", (e)=>{
-    const handle = e.target.closest(".handle");
-    if (!handle) return;
+  function renderPreview(){
+    $("v_name").textContent = state.profile?.name || "Links";
+    $("v_bio").textContent = state.profile?.bio || "";
+    $("v_footer").textContent = state.footerText || "";
 
-    const card = handle.closest(".rowCard");
-    if (!card || !container.contains(card)) return;
+    $("brandName").textContent = state.profile?.name || "The BFA Group";
 
-    e.preventDefault();
-    e.stopPropagation();
+    const av = $("v_avatar");
+    av.src = normalizeAssetPath(state.profile?.avatar || "");
+    applyAvatar(av, state.profile);
 
-    isSorting = true;
+    const mini = $("logoMiniImg");
+    if (mini){
+      mini.src = normalizeAssetPath(state.profile?.avatar || "");
+      applyAvatar(mini, state.profile);
+    }
 
-    document.querySelectorAll(".rowCard.isOpen").forEach(el => el.classList.remove("isOpen"));
+    const iWrap = $("v_socials");
+    iWrap.innerHTML = "";
+    (state.icons || []).forEach(it=>{
+      const el = createIconEl(it);
+      if (el) iWrap.appendChild(el);
+    });
 
-    const cards = Array.from(container.querySelectorAll(".rowCard"));
-    const fromIndex = cards.indexOf(card);
-    if (fromIndex < 0) { isSorting = false; return; }
+    const lWrap = $("v_links");
+    lWrap.innerHTML = "";
+    (state.links || []).forEach(l=>{
+      const el = createLinkPreview(l);
+      if (el) lWrap.appendChild(el);
+    });
 
-    const rect = card.getBoundingClientRect();
+    applyThemeToPreview();
+  }
 
-    const ph = document.createElement("div");
-    ph.className = "placeholder";
-    ph.style.height = `${rect.height}px`;
-    card.replaceWith(ph);
+  // Inline icon controls UI
+  function iconControls(getCfg, setCfg){
+    const wrap = document.createElement("div");
+    wrap.className = "iconControlsRow";
 
-    document.body.appendChild(card);
-    card.classList.add("dragging");
-    card.style.width = `${rect.width}px`;
-    card.style.position = "fixed";
-    card.style.left = `${rect.left}px`;
-    card.style.top = `${rect.top}px`;
-    card.style.zIndex = "9999";
-    card.style.pointerEvents = "none";
+    const label = document.createElement("div");
+    label.className = "iconControlsLabel";
+    label.textContent = "Icon size";
+    wrap.appendChild(label);
 
-    drag = {
-      card,
-      placeholder: ph,
-      fromIndex,
-      offsetY: e.clientY - rect.top,
-      pointerId: e.pointerId,
-      handle
+    const minus = document.createElement("button");
+    minus.type = "button";
+    minus.className = "ghost";
+    minus.textContent = "−";
+
+    const val = document.createElement("div");
+    val.className = "iconControlsValue";
+
+    const plus = document.createElement("button");
+    plus.type = "button";
+    plus.className = "ghost";
+    plus.textContent = "+";
+
+    const seg = document.createElement("div");
+    seg.className = "seg";
+    const cBtn = document.createElement("button");
+    cBtn.type="button"; cBtn.className="segBtn"; cBtn.textContent="Contain";
+    const vBtn = document.createElement("button");
+    vBtn.type="button"; vBtn.className="segBtn"; vBtn.textContent="Cover";
+    seg.appendChild(cBtn); seg.appendChild(vBtn);
+
+    const reset = document.createElement("button");
+    reset.type="button";
+    reset.className="ghost danger";
+    reset.textContent="Reset";
+
+    const refresh = ()=>{
+      const cfg = getCfg();
+      val.textContent = `${Number(cfg.scale ?? 1).toFixed(2)}x`;
+      cBtn.classList.toggle("isActive", (cfg.fit || "contain") === "contain");
+      vBtn.classList.toggle("isActive", (cfg.fit || "contain") === "cover");
     };
 
-    suppressClickUntil = Date.now() + 600;
+    minus.addEventListener("click", (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      const cfg = getCfg();
+      cfg.scale = Number(clamp((Number(cfg.scale ?? 1) - 0.05), 0.4, 2.0).toFixed(2));
+      setCfg(cfg);
+      refresh();
+    });
+    plus.addEventListener("click", (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      const cfg = getCfg();
+      cfg.scale = Number(clamp((Number(cfg.scale ?? 1) + 0.05), 0.4, 2.0).toFixed(2));
+      setCfg(cfg);
+      refresh();
+    });
+    cBtn.addEventListener("click", (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      const cfg = getCfg();
+      cfg.fit = "contain";
+      setCfg(cfg);
+      refresh();
+    });
+    vBtn.addEventListener("click", (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      const cfg = getCfg();
+      cfg.fit = "cover";
+      setCfg(cfg);
+      refresh();
+    });
+    reset.addEventListener("click", (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      setCfg({ scale: 1, fit: "contain" });
+      refresh();
+    });
 
-    try { handle.setPointerCapture(e.pointerId); } catch {}
+    wrap.appendChild(minus);
+    wrap.appendChild(val);
+    wrap.appendChild(plus);
+    wrap.appendChild(seg);
+    wrap.appendChild(reset);
 
-    document.addEventListener("pointermove", onMove, true);
-    document.addEventListener("pointerup", onUp, true);
-  }, { passive: false });
+    refresh();
+    return wrap;
+  }
 
-  container.addEventListener("click", (e)=>{
-    if (Date.now() < suppressClickUntil) {
-      e.preventDefault();
-      e.stopPropagation();
+  // Lists render
+  function iconBtn(iconKey, title, onClick, opts={}){
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "iconBtn" + (opts.danger ? " danger" : "");
+    b.title = title || "";
+    b.innerHTML = ICON_SVGS[iconKey] || ICON_SVGS.link;
+    const svg = b.querySelector("svg");
+    if (svg){
+      svg.style.width = "18px"; svg.style.height = "18px";
+      svg.style.stroke = "rgba(10,10,12,0.70)";
+      svg.style.fill = "none";
+      svg.style.strokeWidth = "2";
+      svg.style.strokeLinecap = "round";
+      svg.style.strokeLinejoin = "round";
     }
-  }, true);
-}
+    if (opts.disabled) b.disabled = true;
+    b.addEventListener("click", (e)=>{ e.stopPropagation(); safe(()=> onClick()); });
+    return b;
+  }
 
+  function makeToggle(checked, onChange){
+    const lab = document.createElement("label");
+    lab.className = "toggle";
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = !!checked;
+    cb.addEventListener("change", (e)=>{ e.stopPropagation(); safe(()=> onChange(cb.checked)); });
+    const track = document.createElement("span");
+    track.className = "track";
+    const knob = document.createElement("span");
+    knob.className = "knob";
+    track.appendChild(knob);
+    lab.appendChild(cb);
+    lab.appendChild(track);
+    return lab;
+  }
 
-/* Lists */
-function renderLinks(){
-  const wrap = $("linksList");
-  wrap.innerHTML = "";
+  function field(labelText, inputEl, helpText){
+    const f = document.createElement("div");
+    f.className = "field";
+    const lab = document.createElement("label");
+    lab.textContent = labelText;
+    f.appendChild(lab);
+    f.appendChild(inputEl);
+    if (helpText){
+      const h = document.createElement("div");
+      h.className = "help";
+      h.textContent = helpText;
+      f.appendChild(h);
+    }
+    return f;
+  }
 
-  (state.links || []).forEach((l, idx)=>{
-    const card = document.createElement("div");
-    card.className = "rowCard";
+  function inputText(value, placeholder, onInput){
+    const i = document.createElement("input");
+    i.value = value || "";
+    i.placeholder = placeholder || "";
+    i.addEventListener("input", (e)=>{ e.stopPropagation(); safe(()=> onInput(i.value)); });
+    return i;
+  }
 
-    const top = document.createElement("div");
-    top.className = "rowTop";
-
-    const handle = document.createElement("div");
-    handle.className = "handle";
-    const dots = document.createElement("div");
-    dots.className = "handleDots";
-    handle.appendChild(dots);
-
-    const iconBox = document.createElement("div");
-    iconBox.className = "rowIcon";
-    renderRowIcon(iconBox, l);
-
-    const main = document.createElement("div");
-    main.className = "rowMain";
-    const title = document.createElement("div");
-    title.className = "rowTitle";
-    title.textContent = l.title || "Untitled";
-    const url = document.createElement("div");
-    url.className = "rowUrl";
-    url.textContent = l.url ? safeHost(l.url) : "No URL yet";
-    main.appendChild(title);
-    main.appendChild(url);
-
-    const actions = document.createElement("div");
-    actions.className = "rowActions";
-
-    const tog = makeToggle(l.enabled !== false, (checked)=>{
-      state.links[idx].enabled = checked;
-      renderPreview(); debounceSave();
-    });
-
-    const editBtn = iconBtn("edit", "Edit", ()=>{
-      document.querySelectorAll(".rowCard.isOpen").forEach(el=>{
-        if (el !== card) el.classList.remove("isOpen");
-      });
-      card.classList.toggle("isOpen");
-    });
-
-    const upBtn = iconBtn("up", "Move up", ()=>{
-      if (idx === 0) return;
-      moveInArray(state.links, idx, idx-1);
-      renderLinks(); renderPreview(); debounceSave();
-    }, { disabled: idx===0 });
-
-    const downBtn = iconBtn("down", "Move down", ()=>{
-      if (idx === state.links.length - 1) return;
-      moveInArray(state.links, idx, idx+1);
-      renderLinks(); renderPreview(); debounceSave();
-    }, { disabled: idx===state.links.length-1 });
-
-    const delBtn = iconBtn("trash", "Delete", ()=>{
-      state.links.splice(idx, 1);
-      renderLinks(); renderPreview(); debounceSave();
-    }, { danger:true });
-
-    actions.appendChild(tog);
-    actions.appendChild(editBtn);
-    actions.appendChild(upBtn);
-    actions.appendChild(downBtn);
-    actions.appendChild(delBtn);
-
-    top.appendChild(handle);
-    top.appendChild(iconBox);
-    top.appendChild(main);
-    top.appendChild(actions);
-
-    top.addEventListener("click", () => {
-      if (isSorting) return;
-      document.querySelectorAll(".rowCard.isOpen").forEach(el=>{
-        if (el !== card) el.classList.remove("isOpen");
-      });
-      card.classList.toggle("isOpen");
-    });
-
-    const edit = document.createElement("div");
-    edit.className = "rowEdit";
-
-    const grid = document.createElement("div");
-    grid.className = "grid2";
-
-    grid.appendChild(field("Title", inputText(l.title, "Instagram", (v)=>{
-      state.links[idx].title = v;
-      title.textContent = v || "Untitled";
-      renderPreview(); debounceSave();
-    })));
-
-    grid.appendChild(field("URL", inputText(l.url, "https://...", (v)=>{
-      state.links[idx].url = v;
-      url.textContent = v ? safeHost(v) : "No URL yet";
-      if (!state.links[idx].icon && !state.links[idx].iconImage) renderRowIcon(iconBox, state.links[idx]);
-      renderPreview(); debounceSave();
-    })));
-
-    grid.appendChild(field("Subtitle (optional)", inputText(l.subtitle, "@bfa.autovisiontv", (v)=>{
-      state.links[idx].subtitle = v;
-      renderPreview(); debounceSave();
-    })));
-
-    grid.appendChild(field("Badge (optional)", inputText(l.badge, "YouTube", (v)=>{
-      state.links[idx].badge = v;
-      renderPreview(); debounceSave();
-    })));
-
-    grid.appendChild(field("Thumbnail (optional)", inputText(l.thumb, "./assets/thumbs/retail.png", (v)=>{
-      state.links[idx].thumb = normalizeAssetPath(v);
-      renderPreview(); debounceSave();
-    }), "Leave empty if you don't want an image thumbnail."));
-
-    const iconSel = selectIcon(l.icon || "", (v)=>{
-      state.links[idx].icon = v;
-      if (!state.links[idx].iconImage) renderRowIcon(iconBox, state.links[idx]);
-      renderPreview(); debounceSave();
-    });
-    grid.appendChild(field("Icon (line)", iconSel, "Auto picks based on the URL."));
-
-    const iconUrl = inputText(l.iconImage || "", "Icon image URL or ./assets/icon.png", (v)=>{
-      state.links[idx].iconImage = normalizeAssetPath(v);
-      renderRowIcon(iconBox, state.links[idx]);
-      renderPreview(); debounceSave();
-    });
-    grid.appendChild(field("Custom icon image (URL/path)", iconUrl, "Optional. If set, it replaces the line icon."));
-
-    const upload = document.createElement("input");
-    upload.type = "file";
-    upload.accept = "image/*";
-    upload.addEventListener("change", async ()=>{
-      const file = upload.files?.[0];
-      if(!file) return;
-      try{
-        const dataUrl = await readFileAsDataURL(file);
-        state.links[idx].iconImage = dataUrl;
-        iconUrl.value = dataUrl;
-        renderRowIcon(iconBox, state.links[idx]);
-        renderPreview(); debounceSave();
-        setStatus("Icon embedded");
-      }catch{
-        setStatus("Could not read image");
-      }finally{
-        upload.value = "";
-      }
-    });
-    grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json (no extra file)."));
-
-    const clearBtn = document.createElement("button");
-    clearBtn.type = "button";
-    clearBtn.className = "ghost";
-    clearBtn.textContent = "Clear icon image";
-    clearBtn.addEventListener("click", (e)=>{
-      e.stopPropagation();
-      state.links[idx].iconImage = "";
-      iconUrl.value = "";
-      renderRowIcon(iconBox, state.links[idx]);
-      renderPreview(); debounceSave();
-    });
-
-    edit.appendChild(grid);
-    edit.appendChild(clearBtn);
-
-    card.appendChild(top);
-    card.appendChild(edit);
-    wrap.appendChild(card);
-  });
-
-  attachSortable(wrap, () => state.links, () => { renderLinks(); renderPreview(); debounceSave(); });
-}
-
-function renderSocials(){
-  const wrap = $("socialList");
-  wrap.innerHTML = "";
-
-  (state.socials || []).forEach((s, idx)=>{
-    const card = document.createElement("div");
-    card.className = "rowCard";
-
-    const top = document.createElement("div");
-    top.className = "rowTop";
-
-    const handle = document.createElement("div");
-    handle.className = "handle";
-    const dots = document.createElement("div");
-    dots.className = "handleDots";
-    handle.appendChild(dots);
-
-    const iconBox = document.createElement("div");
-    iconBox.className = "rowIcon";
-    renderRowIcon(iconBox, { url: s.url, icon: s.type, iconImage: s.iconImage });
-
-    const main = document.createElement("div");
-    main.className = "rowMain";
-    const title = document.createElement("div");
-    title.className = "rowTitle";
-    title.textContent = s.type || "icon";
-    const url = document.createElement("div");
-    url.className = "rowUrl";
-    url.textContent = s.url ? safeHost(s.url) : "No URL yet";
-    main.appendChild(title);
-    main.appendChild(url);
-
-    const actions = document.createElement("div");
-    actions.className = "rowActions";
-
-    const tog = makeToggle(s.enabled !== false, (checked)=>{
-      state.socials[idx].enabled = checked;
-      renderPreview(); debounceSave();
-    });
-
-    const editBtn = iconBtn("edit", "Edit", ()=>{
-      document.querySelectorAll(".rowCard.isOpen").forEach(el=>{
-        if (el !== card) el.classList.remove("isOpen");
-      });
-      card.classList.toggle("isOpen");
-    });
-
-    const upBtn = iconBtn("up", "Move up", ()=>{
-      if (idx === 0) return;
-      moveInArray(state.socials, idx, idx-1);
-      renderSocials(); renderPreview(); debounceSave();
-    }, { disabled: idx===0 });
-
-    const downBtn = iconBtn("down", "Move down", ()=>{
-      if (idx === state.socials.length - 1) return;
-      moveInArray(state.socials, idx, idx+1);
-      renderSocials(); renderPreview(); debounceSave();
-    }, { disabled: idx===state.socials.length-1 });
-
-    const delBtn = iconBtn("trash", "Delete", ()=>{
-      state.socials.splice(idx, 1);
-      renderSocials(); renderPreview(); debounceSave();
-    }, { danger:true });
-
-    actions.appendChild(tog);
-    actions.appendChild(editBtn);
-    actions.appendChild(upBtn);
-    actions.appendChild(downBtn);
-    actions.appendChild(delBtn);
-
-    top.appendChild(handle);
-    top.appendChild(iconBox);
-    top.appendChild(main);
-    top.appendChild(actions);
-
-    top.addEventListener("click", () => {
-      if (isSorting) return;
-      document.querySelectorAll(".rowCard.isOpen").forEach(el=>{
-        if (el !== card) el.classList.remove("isOpen");
-      });
-      card.classList.toggle("isOpen");
-    });
-
-    const edit = document.createElement("div");
-    edit.className = "rowEdit";
-
-    const grid = document.createElement("div");
-    grid.className = "grid2";
-
+  function selectIcon(value, onChange){
     const sel = document.createElement("select");
-    SOCIAL_TYPES.forEach(t=>{
+    const options = [
+      ["", "Auto"],
+      ["website","Website"],
+      ["instagram","Instagram"],
+      ["youtube","YouTube"],
+      ["linkedin","LinkedIn"],
+      ["link","Generic link"]
+    ];
+    options.forEach(([v,t])=>{
       const o = document.createElement("option");
-      o.value = t;
-      o.textContent = t;
-      if (t === (s.type || "website")) o.selected = true;
+      o.value=v; o.textContent=t;
+      if ((value||"")===v) o.selected = true;
       sel.appendChild(o);
     });
-    sel.addEventListener("change", (e)=>{
-      e.stopPropagation();
-      state.socials[idx].type = sel.value;
-      title.textContent = sel.value;
-      renderRowIcon(iconBox, { url: state.socials[idx].url, icon: state.socials[idx].type, iconImage: state.socials[idx].iconImage });
-      renderPreview(); debounceSave();
-    });
-    grid.appendChild(field("Type", sel));
-
-    grid.appendChild(field("URL", inputText(s.url, "https://...", (v)=>{
-      state.socials[idx].url = v;
-      url.textContent = v ? safeHost(v) : "No URL yet";
-      renderPreview(); debounceSave();
-    })));
-
-    const iconUrl = inputText(s.iconImage || "", "Icon image URL or ./assets/icon.png", (v)=>{
-      state.socials[idx].iconImage = normalizeAssetPath(v);
-      renderRowIcon(iconBox, { url: state.socials[idx].url, icon: state.socials[idx].type, iconImage: state.socials[idx].iconImage });
-      renderPreview(); debounceSave();
-    });
-    grid.appendChild(field("Custom icon image (URL/path)", iconUrl, "Optional. If set, it replaces the line icon."));
-
-    const upload = document.createElement("input");
-    upload.type = "file";
-    upload.accept = "image/*";
-    upload.addEventListener("change", async ()=>{
-      const file = upload.files?.[0];
-      if(!file) return;
-      try{
-        const dataUrl = await readFileAsDataURL(file);
-        state.socials[idx].iconImage = dataUrl;
-        iconUrl.value = dataUrl;
-        renderRowIcon(iconBox, { url: state.socials[idx].url, icon: state.socials[idx].type, iconImage: state.socials[idx].iconImage });
-        renderPreview(); debounceSave();
-        setStatus("Icon embedded");
-      }catch{
-        setStatus("Could not read image");
-      }finally{
-        upload.value = "";
-      }
-    });
-    grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json (no extra file)."));
-
-    const clearBtn = document.createElement("button");
-    clearBtn.type = "button";
-    clearBtn.className = "ghost";
-    clearBtn.textContent = "Clear icon image";
-    clearBtn.addEventListener("click", (e)=>{
-      e.stopPropagation();
-      state.socials[idx].iconImage = "";
-      iconUrl.value = "";
-      renderRowIcon(iconBox, { url: state.socials[idx].url, icon: state.socials[idx].type, iconImage: "" });
-      renderPreview(); debounceSave();
-    });
-
-    edit.appendChild(grid);
-    edit.appendChild(clearBtn);
-
-    card.appendChild(top);
-    card.appendChild(edit);
-    wrap.appendChild(card);
-  });
-
-  attachSortable(wrap, () => state.socials, () => { renderSocials(); renderPreview(); debounceSave(); });
-}
-
-/* Profile */
-function renderProfile(){
-  $("p_name").value = state.profile?.name || "";
-  $("p_avatar").value = state.profile?.avatar || "";
-  $("p_bio").value = state.profile?.bio || "";
-  $("brandName").textContent = state.profile?.name || "The BFA Group";
-
-  // Logo controls — width/height (horizontal logo support)
-  const _lw = Number(state.profile?.avatarWidth  ?? state.profile?.avatarSize ?? 72);
-  const _lh = Number(state.profile?.avatarHeight ?? state.profile?.avatarSize ?? 72);
-  if ($("logo_width"))  { $("logo_width").value  = _lw; $("logo_width_label").textContent  = _lw; }
-  if ($("logo_height")) { $("logo_height").value = _lh; $("logo_height_label").textContent = _lh; }
-  if ($("logo_padding")) {
-    $("logo_padding").value = Number(state.profile?.avatarPadding ?? 10);
-    $("logo_padding_label").textContent = $("logo_padding").value;
+    sel.addEventListener("change", (e)=>{ e.stopPropagation(); safe(()=> onChange(sel.value)); });
+    return sel;
   }
-  if ($("logo_fit"))    { $("logo_fit").value = state.profile?.avatarFit || "contain"; }
-  if ($("logo_scale"))  {
-    $("logo_scale").value = Number(state.profile?.avatarScale ?? 1);
-    $("logo_scale_label").textContent = Number($("logo_scale").value).toFixed(2);
-  }
-  if ($("logo_radius")) {
-    $("logo_radius").value = Number(state.profile?.avatarRadius ?? 18);
-    $("logo_radius_label").textContent = $("logo_radius").value;
-  }
-  updateShapeChipUI(_lw, _lh);
 
-  // Theme UI
-  const t = state.theme || {};
-
-  if ($("bg_type")) $("bg_type").value = t.type || "default";
-  if ($("bg_color")) $("bg_color").value = t.color || "#f6f7fb";
-  if ($("bg_image")) $("bg_image").value = t.image || "";
-}
-
-/* Export */
-function downloadJson(){
-  state.profile.avatar = normalizeAssetPath(state.profile.avatar);
-  state.theme = state.theme || { type:"default", color:"#f6f7fb", image:"" };
-  state.theme.image = normalizeAssetPath(state.theme.image);
-
-  (state.links || []).forEach(l => {
-    l.thumb = normalizeAssetPath(l.thumb);
-    l.iconImage = l.iconImage || "";
-  });
-  (state.socials || []).forEach(s => { s.iconImage = s.iconImage || ""; });
-
-  state.updatedAt = Date.now();
-
-  const dataStr = JSON.stringify(state, null, 2);
-  const blob = new Blob([dataStr], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "links.json";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-  setStatus("Downloaded links.json");
-}
-
-async function loadInitial(){
-  try{
-    const saved = localStorage.getItem(LS_KEY);
-    if (saved){
-      state = JSON.parse(saved);
-      setStatus("Loaded draft");
-      renderAll();
+  function renderRowIcon(container, item){
+    container.innerHTML = "";
+    if (item.iconImage){
+      const img = document.createElement("img");
+      img.src = item.iconImage;
+      img.alt = "";
+      applyIconCfg(img, item.iconCfg);
+      container.appendChild(img);
       return;
     }
-  }catch{}
-
-  try{
-    const res = await fetch("./links.json", { cache: "no-store" });
-    state = await res.json();
-    setStatus("Loaded from site");
-  }catch{
-    state = defaultState();
-    setStatus("New draft");
-  }
-
-  state.profile = { name:"", avatar:"", bio:"", ...(state.profile || {}) };
-  state.theme = { type:"default", color:"#f6f7fb", image:"", ...(state.theme || state.background || {}) };
-  state.socials = (state.socials || []).map(s => ({ enabled: true, iconImage: "", ...s }));
-  state.links = (state.links || []).map(l => ({ enabled: true, icon: "", iconImage: "", ...l }));
-
-  renderAll();
-}
-
-function renderAll(){
-  renderProfile();
-  renderLinks();
-  renderSocials();
-  renderPreview();
-}
-
-/* Wire UI */
-function wire(){
-  document.querySelectorAll(".navItem").forEach(btn=>{
-    btn.addEventListener("click", ()=> setTab(btn.dataset.tab));
-  });
-
-  $("toggleBig").addEventListener("click", ()=>{
-    const on = document.body.classList.toggle("big");
-    $("toggleBig").setAttribute("aria-pressed", on ? "true" : "false");
-  });
-
-  $("p_name").addEventListener("input", (e)=>{
-    state.profile.name = e.target.value;
-    $("brandName").textContent = state.profile.name || "The BFA Group";
-    renderPreview(); debounceSave();
-  });
-
-  $("p_avatar").addEventListener("input", (e)=>{
-    state.profile.avatar = normalizeAssetPath(e.target.value);
-    renderPreview(); debounceSave();
-  });
-
-  $("p_bio").addEventListener("input", (e)=>{
-    state.profile.bio = e.target.value;
-    renderPreview();
-
-  // Logo controls (live preview) — width/height + shape presets
-  function updateShapeChipUI(w, h){
-    const ratio = w / h;
-    let active = "custom";
-    if (Math.abs(ratio - 1)   < 0.05) active = "square";
-    if (Math.abs(ratio - 2)   < 0.1)  active = "wide";
-    if (Math.abs(ratio - 3)   < 0.1)  active = "banner";
-    document.querySelectorAll(".shapeChip").forEach(c => {
-      c.classList.toggle("active", c.dataset.shape === active);
-    });
-  }
-
-  function applyShapePreset(shape){
-    const curW = Number($("logo_width")?.value ?? 72);
-    let w = curW, h;
-    if      (shape === "square") { w = 72;  h = 72; }
-    else if (shape === "wide")   { w = 140; h = 70; }
-    else if (shape === "banner") { w = 200; h = 66; }
-    else return; // custom — keep sliders as-is
-    $("logo_width").value  = w; $("logo_width_label").textContent  = w;
-    $("logo_height").value = h; $("logo_height_label").textContent = h;
-    state.profile.avatarWidth  = w;
-    state.profile.avatarHeight = h;
-    renderPreview(); debounceSave();
-  }
-
-  document.querySelectorAll(".shapeChip").forEach(chip => {
-    chip.addEventListener("click", () => {
-      document.querySelectorAll(".shapeChip").forEach(c => c.classList.remove("active"));
-      chip.classList.add("active");
-      applyShapePreset(chip.dataset.shape);
-    });
-  });
-
-  if ($("logo_width")){
-    $("logo_width").addEventListener("input", (e)=>{
-      state.profile.avatarWidth = Number(e.target.value);
-      $("logo_width_label").textContent = e.target.value;
-      updateShapeChipUI(Number(e.target.value), Number($("logo_height")?.value ?? 72));
-      renderPreview(); debounceSave();
-    });
-  }
-  if ($("logo_height")){
-    $("logo_height").addEventListener("input", (e)=>{
-      state.profile.avatarHeight = Number(e.target.value);
-      $("logo_height_label").textContent = e.target.value;
-      updateShapeChipUI(Number($("logo_width")?.value ?? 72), Number(e.target.value));
-      renderPreview(); debounceSave();
-    });
-  }
-  if ($("logo_padding")){
-    $("logo_padding").addEventListener("input", (e)=>{
-      state.profile.avatarPadding = Number(e.target.value);
-      $("logo_padding_label").textContent = e.target.value;
-      renderPreview(); debounceSave();
-    });
-  }
-  if ($("logo_scale")){
-    $("logo_scale").addEventListener("input", (e)=>{
-      state.profile.avatarScale = Number(e.target.value);
-      $("logo_scale_label").textContent = Number(e.target.value).toFixed(2);
-      renderPreview(); debounceSave();
-    });
-  }
-  if ($("logo_fit")){
-    $("logo_fit").addEventListener("change", (e)=>{
-      state.profile.avatarFit = e.target.value;
-      renderPreview(); debounceSave();
-    });
-  }
-  if ($("logo_radius")){
-    $("logo_radius").addEventListener("input", (e)=>{
-      state.profile.avatarRadius = Number(e.target.value);
-      $("logo_radius_label").textContent = e.target.value;
-      renderPreview(); debounceSave();
-    });
-  }
- debounceSave();
-  });
-
-  $("p_avatar_file").addEventListener("change", async (e)=>{
-    const file = e.target.files?.[0];
-    if(!file) return;
-    try{
-      const dataUrl = await readFileAsDataURL(file);
-      state.profile.avatar = dataUrl;
-      $("p_avatar").value = dataUrl;
-      renderPreview(); debounceSave();
-      setStatus("Logo embedded");
-    }catch{
-      setStatus("Could not read image");
-    }finally{
-      e.target.value = "";
+    const key = item.icon || item.type || guessIconFromUrl(item.url);
+    container.innerHTML = ICON_SVGS[key] || ICON_SVGS.link;
+    const svg = container.querySelector("svg");
+    if (svg){
+      svg.style.width = "18px";
+      svg.style.height = "18px";
+      svg.style.stroke = "rgba(10,10,12,0.70)";
+      svg.style.fill = "none";
+      svg.style.strokeWidth = "2";
+      svg.style.strokeLinecap = "round";
+      svg.style.strokeLinejoin = "round";
     }
-  });
+  }
 
-  // Theme controls (preview updates immediately)
-  if ($("bg_type")) $("bg_type").addEventListener("change", (e)=>{
-    state.theme = state.theme || {};
-    state.theme.type = e.target.value;
-    renderPreview(); debounceSave();
-  });
-  if ($("bg_color")) $("bg_color").addEventListener("input", (e)=>{
-    state.theme = state.theme || {};
-    state.theme.color = e.target.value;
-    renderPreview(); debounceSave();
-  });
-  if ($("bg_image")) $("bg_image").addEventListener("input", (e)=>{
-    state.theme = state.theme || {};
-    state.theme.image = normalizeAssetPath(e.target.value);
-    renderPreview(); debounceSave();
-  });
-  if ($("bg_image_file")) $("bg_image_file").addEventListener("change", async (e)=>{
-    const file = e.target.files?.[0];
-    if(!file) return;
-    try{
-      const dataUrl = await readFileAsDataURL(file);
-      state.theme = state.theme || {};
-      state.theme.image = dataUrl;
-      $("bg_image").value = dataUrl;
-      state.theme.type = "image";
-      if ($("bg_type")) $("bg_type").value = "image";
+  function moveInArray(arr, from, to){
+    if (!arr) return;
+    if (from < 0 || to < 0 || from >= arr.length || to >= arr.length) return;
+    const item = arr.splice(from, 1)[0];
+    arr.splice(to, 0, item);
+  }
+
+  function attachSortable(container, getArray, onAfter){
+    if (sortableAttached.has(container)) return;
+    sortableAttached.add(container);
+
+    let drag = null;
+
+    const onMove = (e)=>{
+      if (!drag) return;
+      const y = e.clientY - drag.offsetY;
+      drag.card.style.top = `${y}px`;
+
+      const cards = Array.from(container.children).filter(el => el !== drag.placeholder);
+      let placed = false;
+      for (const c of cards){
+        const r = c.getBoundingClientRect();
+        const mid = r.top + r.height / 2;
+        if (e.clientY < mid){
+          container.insertBefore(drag.placeholder, c);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) container.appendChild(drag.placeholder);
+    };
+
+    const onUp = ()=>{
+      if (!drag) return;
+      document.removeEventListener("pointermove", onMove, true);
+      document.removeEventListener("pointerup", onUp, true);
+      isSorting = false;
+
+      const from = drag.fromIndex;
+      const to = Array.from(container.children).indexOf(drag.placeholder);
+
+      drag.placeholder.replaceWith(drag.card);
+      drag.card.classList.remove("dragging");
+      drag.card.style.position = "";
+      drag.card.style.left = "";
+      drag.card.style.top = "";
+      drag.card.style.width = "";
+      drag.card.style.zIndex = "";
+      drag.card.style.pointerEvents = "";
+
+      if (from !== to && to >= 0){
+        const arr = getArray();
+        moveInArray(arr, from, to);
+      }
+
+      drag = null;
+      onAfter();
+    };
+
+    container.addEventListener("pointerdown", (e)=>{
+      const handle = e.target.closest(".handle");
+      if (!handle) return;
+
+      const card = handle.closest(".rowCard");
+      if (!card || !container.contains(card)) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      isSorting = true;
+
+      const cards = Array.from(container.querySelectorAll(".rowCard"));
+      const fromIndex = cards.indexOf(card);
+      if (fromIndex < 0){ isSorting = false; return; }
+
+      const rect = card.getBoundingClientRect();
+      const ph = document.createElement("div");
+      ph.className = "rowCard";
+      ph.style.border = "2px dashed rgba(255,149,0,0.35)";
+      ph.style.background = "rgba(255,149,0,0.06)";
+      ph.style.height = `${rect.height}px`;
+      ph.style.borderRadius = "18px";
+
+      card.replaceWith(ph);
+      document.body.appendChild(card);
+
+      card.classList.add("dragging");
+      card.style.width = `${rect.width}px`;
+      card.style.position = "fixed";
+      card.style.left = `${rect.left}px`;
+      card.style.top = `${rect.top}px`;
+      card.style.zIndex = "9999";
+      card.style.pointerEvents = "none";
+
+      drag = { card, placeholder: ph, fromIndex, offsetY: e.clientY - rect.top };
+
+      document.addEventListener("pointermove", onMove, true);
+      document.addEventListener("pointerup", onUp, true);
+    }, { passive:false });
+  }
+
+  function renderLinks(){
+    const wrap = $("linksList");
+    wrap.innerHTML = "";
+
+    (state.links || []).forEach((l, idx)=>{
+      const card = document.createElement("div");
+      card.className = "rowCard";
+
+      const top = document.createElement("div");
+      top.className = "rowTop";
+
+      const handle = document.createElement("div");
+      handle.className = "handle";
+      const dots = document.createElement("div");
+      dots.className = "handleDots";
+      handle.appendChild(dots);
+
+      const iconBox = document.createElement("div");
+      iconBox.className = "rowIcon";
+      renderRowIcon(iconBox, { url: l.url, icon: l.icon, iconImage: l.iconImage, iconCfg: l.iconCfg });
+
+      const main = document.createElement("div");
+      main.className = "rowMain";
+      const title = document.createElement("div");
+      title.className = "rowTitle";
+      title.textContent = l.title || "Untitled";
+      const url = document.createElement("div");
+      url.className = "rowUrl";
+      url.textContent = l.url ? safeHost(l.url) : "No URL yet";
+      main.appendChild(title);
+      main.appendChild(url);
+
+      const actions = document.createElement("div");
+      actions.className = "rowActions";
+
+      const tog = makeToggle(l.enabled !== false, (checked)=>{
+        state.links[idx].enabled = checked;
+        renderPreview(); debounceSave();
+      });
+
+      const up = iconBtn("up", "Move up", ()=>{
+        if (idx === 0) return;
+        moveInArray(state.links, idx, idx-1);
+        renderLinks(); renderPreview(); debounceSave();
+      }, { disabled: idx===0 });
+
+      const down = iconBtn("down", "Move down", ()=>{
+        if (idx === state.links.length - 1) return;
+        moveInArray(state.links, idx, idx+1);
+        renderLinks(); renderPreview(); debounceSave();
+      }, { disabled: idx===state.links.length-1 });
+
+      const del = iconBtn("trash", "Delete", ()=>{
+        state.links.splice(idx, 1);
+        renderLinks(); renderPreview(); debounceSave();
+      }, { danger: true });
+
+      actions.appendChild(tog);
+      actions.appendChild(up);
+      actions.appendChild(down);
+      actions.appendChild(del);
+
+      top.appendChild(handle);
+      top.appendChild(iconBox);
+      top.appendChild(main);
+      top.appendChild(actions);
+
+      top.addEventListener("click", ()=>{
+        if (isSorting) return;
+        document.querySelectorAll("#linksList .rowCard.isOpen").forEach(el=>{
+          if (el !== card) el.classList.remove("isOpen");
+        });
+        card.classList.toggle("isOpen");
+      });
+
+      const edit = document.createElement("div");
+      edit.className = "rowEdit";
+
+      const g = document.createElement("div");
+      g.className = "grid2";
+
+      g.appendChild(field("Title", inputText(l.title, "Website", (v)=>{
+        state.links[idx].title = v;
+        title.textContent = v || "Untitled";
+        renderPreview(); debounceSave();
+      })));
+
+      g.appendChild(field("URL", inputText(l.url, "https://...", (v)=>{
+        state.links[idx].url = v;
+        url.textContent = v ? safeHost(v) : "No URL yet";
+        if (!state.links[idx].icon && !state.links[idx].iconImage) renderRowIcon(iconBox, state.links[idx]);
+        renderPreview(); debounceSave();
+      })));
+
+      g.appendChild(field("Subtitle", inputText(l.subtitle, "@bfa.autovisiontv", (v)=>{
+        state.links[idx].subtitle = v;
+        renderPreview(); debounceSave();
+      })));
+
+      g.appendChild(field("Badge", inputText(l.badge, "New", (v)=>{
+        state.links[idx].badge = v;
+        renderPreview(); debounceSave();
+      })));
+
+      g.appendChild(field("Icon (line)", selectIcon(l.icon || "", (v)=>{
+        state.links[idx].icon = v;
+        if (!state.links[idx].iconImage) renderRowIcon(iconBox, state.links[idx]);
+        renderPreview(); debounceSave();
+      }), "Auto picks based on the URL."));
+
+      const iconUrl = inputText(l.iconImage || "", "Icon image URL or ./assets/icon.png", (v)=>{
+        state.links[idx].iconImage = normalizeAssetPath(v);
+        renderRowIcon(iconBox, { url: state.links[idx].url, icon: state.links[idx].icon, iconImage: state.links[idx].iconImage, iconCfg: state.links[idx].iconCfg });
+        renderPreview(); debounceSave();
+      });
+      g.appendChild(field("Custom icon image", iconUrl, "Optional."));
+
+      const upload = document.createElement("input");
+      upload.type = "file";
+      upload.accept = "image/*";
+      upload.addEventListener("change", async ()=>{
+        const file = upload.files?.[0];
+        if(!file) return;
+        try{
+          const dataUrl = await readFileAsDataURL(file);
+          state.links[idx].iconImage = dataUrl;
+          iconUrl.value = dataUrl;
+          renderRowIcon(iconBox, { url: state.links[idx].url, icon: state.links[idx].icon, iconImage: dataUrl, iconCfg: state.links[idx].iconCfg });
+          renderPreview(); debounceSave();
+          setStatus("Icon embedded");
+        }catch{ setStatus("Could not read image"); }
+        finally{ upload.value = ""; }
+      });
+
+      g.appendChild(field("Upload icon", upload, "Embeds into links.json."));
+
+      edit.appendChild(g);
+
+      edit.appendChild(iconControls(
+        ()=> (state.links[idx].iconCfg || (state.links[idx].iconCfg = { scale: 1, fit: "contain" })),
+        (cfg)=>{ state.links[idx].iconCfg = cfg; renderRowIcon(iconBox, { url: state.links[idx].url, icon: state.links[idx].icon, iconImage: state.links[idx].iconImage, iconCfg: cfg }); renderPreview(); debounceSave(); }
+      ));
+
+      card.appendChild(top);
+      card.appendChild(edit);
+      wrap.appendChild(card);
+    });
+
+    attachSortable(wrap, ()=> state.links, ()=>{ renderLinks(); renderPreview(); debounceSave(); });
+  }
+
+  function renderIcons(){
+    const wrap = $("iconsList");
+    wrap.innerHTML = "";
+
+    (state.icons || []).forEach((it, idx)=>{
+      const card = document.createElement("div");
+      card.className = "rowCard";
+
+      const top = document.createElement("div");
+      top.className = "rowTop";
+
+      const handle = document.createElement("div");
+      handle.className = "handle";
+      const dots = document.createElement("div");
+      dots.className = "handleDots";
+      handle.appendChild(dots);
+
+      const iconBox = document.createElement("div");
+      iconBox.className = "rowIcon";
+      renderRowIcon(iconBox, { type: it.type, url: it.url, iconImage: it.iconImage, iconCfg: it.iconCfg });
+
+      const main = document.createElement("div");
+      main.className = "rowMain";
+      const title = document.createElement("div");
+      title.className = "rowTitle";
+      title.textContent = it.type || "icon";
+      const url = document.createElement("div");
+      url.className = "rowUrl";
+      url.textContent = it.url ? safeHost(it.url) : "No URL yet";
+      main.appendChild(title);
+      main.appendChild(url);
+
+      const actions = document.createElement("div");
+      actions.className = "rowActions";
+
+      const tog = makeToggle(it.enabled !== false, (checked)=>{
+        state.icons[idx].enabled = checked;
+        renderPreview(); debounceSave();
+      });
+
+      const up = iconBtn("up", "Move up", ()=>{
+        if (idx === 0) return;
+        moveInArray(state.icons, idx, idx-1);
+        renderIcons(); renderPreview(); debounceSave();
+      }, { disabled: idx===0 });
+
+      const down = iconBtn("down", "Move down", ()=>{
+        if (idx === state.icons.length - 1) return;
+        moveInArray(state.icons, idx, idx+1);
+        renderIcons(); renderPreview(); debounceSave();
+      }, { disabled: idx===state.icons.length-1 });
+
+      const del = iconBtn("trash", "Delete", ()=>{
+        state.icons.splice(idx, 1);
+        renderIcons(); renderPreview(); debounceSave();
+      }, { danger:true });
+
+      actions.appendChild(tog);
+      actions.appendChild(up);
+      actions.appendChild(down);
+      actions.appendChild(del);
+
+      top.appendChild(handle);
+      top.appendChild(iconBox);
+      top.appendChild(main);
+      top.appendChild(actions);
+
+      top.addEventListener("click", ()=>{
+        if (isSorting) return;
+        document.querySelectorAll("#iconsList .rowCard.isOpen").forEach(el=>{
+          if (el !== card) el.classList.remove("isOpen");
+        });
+        card.classList.toggle("isOpen");
+      });
+
+      const edit = document.createElement("div");
+      edit.className = "rowEdit";
+
+      const g = document.createElement("div");
+      g.className = "grid2";
+
+      const sel = document.createElement("select");
+      SOCIAL_TYPES.forEach(t=>{
+        const o = document.createElement("option");
+        o.value=t; o.textContent=t;
+        if (t === (it.type || "website")) o.selected = true;
+        sel.appendChild(o);
+      });
+      sel.addEventListener("change", (e)=>{
+        e.stopPropagation();
+        state.icons[idx].type = sel.value;
+        title.textContent = sel.value;
+        renderRowIcon(iconBox, { type: state.icons[idx].type, url: state.icons[idx].url, iconImage: state.icons[idx].iconImage, iconCfg: state.icons[idx].iconCfg });
+        renderPreview(); debounceSave();
+      });
+      g.appendChild(field("Type", sel));
+
+      g.appendChild(field("URL", inputText(it.url, "https://...", (v)=>{
+        state.icons[idx].url = v;
+        url.textContent = v ? safeHost(v) : "No URL yet";
+        renderPreview(); debounceSave();
+      })));
+
+      const iconUrl = inputText(it.iconImage || "", "Icon image URL or ./assets/icon.png", (v)=>{
+        state.icons[idx].iconImage = normalizeAssetPath(v);
+        renderRowIcon(iconBox, { type: state.icons[idx].type, url: state.icons[idx].url, iconImage: state.icons[idx].iconImage, iconCfg: state.icons[idx].iconCfg });
+        renderPreview(); debounceSave();
+      });
+      g.appendChild(field("Custom icon image", iconUrl, "Optional."));
+
+      const upload = document.createElement("input");
+      upload.type = "file";
+      upload.accept = "image/*";
+      upload.addEventListener("change", async ()=>{
+        const file = upload.files?.[0];
+        if(!file) return;
+        try{
+          const dataUrl = await readFileAsDataURL(file);
+          state.icons[idx].iconImage = dataUrl;
+          iconUrl.value = dataUrl;
+          renderRowIcon(iconBox, { type: state.icons[idx].type, url: state.icons[idx].url, iconImage: dataUrl, iconCfg: state.icons[idx].iconCfg });
+          renderPreview(); debounceSave();
+          setStatus("Icon embedded");
+        }catch{ setStatus("Could not read image"); }
+        finally{ upload.value = ""; }
+      });
+      g.appendChild(field("Upload icon", upload, "Embeds into links.json."));
+
+      edit.appendChild(g);
+
+      edit.appendChild(iconControls(
+        ()=> (state.icons[idx].iconCfg || (state.icons[idx].iconCfg = { scale: 1, fit: "contain" })),
+        (cfg)=>{ state.icons[idx].iconCfg = cfg; renderRowIcon(iconBox, { type: state.icons[idx].type, url: state.icons[idx].url, iconImage: state.icons[idx].iconImage, iconCfg: cfg }); renderPreview(); debounceSave(); }
+      ));
+
+      card.appendChild(top);
+      card.appendChild(edit);
+      wrap.appendChild(card);
+    });
+
+    attachSortable(wrap, ()=> state.icons, ()=>{ renderIcons(); renderPreview(); debounceSave(); });
+  }
+
+  // Profile UI sync
+  function renderProfileForm(){
+    $("p_name").value = state.profile.name || "";
+    $("p_bio").value = state.profile.bio || "";
+    $("p_avatar").value = state.profile.avatar || "";
+
+    $("logo_show").checked = (state.profile.show !== false);
+    $("logo_bg").value = state.profile.bg || "#ffffff";
+    $("logo_bg_transparent").checked = !!state.profile.bgTransparent;
+    $("logo_border").checked = (state.profile.border !== false);
+
+    $("bg_type").value = state.theme.type || "default";
+    $("bg_color").value = state.theme.color || "#f5f5f7";
+    $("bg_image").value = state.theme.image || "";
+  }
+
+  // Logo modal
+  function syncLogoModal(){
+    const p = state.profile;
+    $("logoStageImg").src = normalizeAssetPath(p.avatar || "");
+    $("logoStageImg").style.objectFit = p.fit || "contain";
+    $("logoStageImg").style.transform = `translate(${p.x}px, ${p.y}px) scale(${p.scale})`;
+
+    const shell = $("logoStageShell");
+    shell.style.width = `${p.w}px`;
+    shell.style.height = `${p.h}px`;
+    shell.style.padding = `${p.pad}px`;
+    shell.style.borderRadius = `${p.radius}px`;
+    shell.style.background = p.bgTransparent ? "transparent" : (p.bg || "rgba(255,255,255,0.72)");
+    shell.style.border = (p.border === false) ? "none" : "1px solid rgba(10,10,12,0.10)";
+
+    $("fitContain").classList.toggle("isActive", (p.fit || "contain") === "contain");
+    $("fitCover").classList.toggle("isActive", (p.fit || "contain") === "cover");
+  }
+
+  function openLogoModal(){
+    $("logoModal").classList.add("isOpen");
+    $("logoModal").setAttribute("aria-hidden","false");
+    syncLogoModal();
+  }
+  function closeLogoModal(){
+    $("logoModal").classList.remove("isOpen");
+    $("logoModal").setAttribute("aria-hidden","true");
+  }
+
+  function wire(){
+    // Tabs
+    document.querySelectorAll(".navItem").forEach(btn=>{
+      btn.addEventListener("click", (e)=>{
+        e.preventDefault();
+        setTab(btn.dataset.tab);
+      });
+    });
+
+    $("downloadTop").addEventListener("click", ()=> downloadJson());
+
+    $("toggleBig").addEventListener("click", ()=>{
+      const on = document.body.classList.toggle("big");
+      $("toggleBig").setAttribute("aria-pressed", on ? "true" : "false");
+      // simple: scale preview container via CSS class
+      document.querySelector(".preview")?.classList.toggle("isBig", on);
+    });
+
+    // Links/icons add
+    $("addLink").addEventListener("click", ()=>{
+      state.links.unshift({ title:"New link", subtitle:"", url:"", badge:"", thumb:"", enabled:true, icon:"", iconImage:"", iconCfg:{ scale:1, fit:"contain" } });
+      renderLinks(); renderPreview(); debounceSave();
+    });
+    $("addIcon").addEventListener("click", ()=>{
+      state.icons.push({ type:"website", url:"", enabled:true, iconImage:"", iconCfg:{ scale:1, fit:"contain" } });
+      renderIcons(); renderPreview(); debounceSave();
+    });
+
+    // Profile inputs
+    $("p_name").addEventListener("input", ()=>{
+      state.profile.name = $("p_name").value;
       renderPreview(); debounceSave();
-      setStatus("Background embedded");
-    }catch{
-      setStatus("Could not read image");
-    }finally{
-      e.target.value = "";
-    }
-  });
+    });
+    $("p_bio").addEventListener("input", ()=>{
+      state.profile.bio = $("p_bio").value;
+      renderPreview(); debounceSave();
+    });
+    $("p_avatar").addEventListener("input", ()=>{
+      state.profile.avatar = normalizeAssetPath($("p_avatar").value);
+      renderPreview(); debounceSave();
+    });
 
-  $("addLink").addEventListener("click", ()=>{
-    state.links.unshift({ title: "New link", subtitle: "", url: "", thumb: "", badge: "", enabled: true, icon: "", iconImage: "" });
-    renderLinks(); renderPreview(); debounceSave();
-  });
-
-  $("addSocial").addEventListener("click", ()=>{
-    state.socials.push({ type: "website", url: "", enabled: true, iconImage: "" });
-    renderSocials(); renderPreview(); debounceSave();
-  });
-
-  $("import").addEventListener("change", async (e)=>{
-    const file = e.target.files?.[0];
-    if(!file) return;
-    try{
-      const text = await file.text();
-      state = JSON.parse(text);
-      state.profile = { name:"", avatar:"", bio:"", ...(state.profile || {}) };
-      state.theme = { type:"default", color:"#f6f7fb", image:"", ...(state.theme || state.background || {}) };
-      state.socials = (state.socials || []).map(s => ({ enabled: true, iconImage: "", ...s }));
-      state.links = (state.links || []).map(l => ({ enabled: true, icon: "", iconImage: "", ...l }));
-      localStorage.setItem(LS_KEY, JSON.stringify(state));
-      setStatus("Imported");
-      renderAll();
-    }catch{
-      setStatus("Import failed");
-    }finally{
-      e.target.value = "";
-    }
-  });
-
-  
-  // Reload from site (ignores local draft)
-  const reloadBtn = $("reloadFromSite");
-  if (reloadBtn){
-    reloadBtn.addEventListener("click", async ()=>{
-      try{ localStorage.removeItem(LS_KEY); }catch{}
+    $("p_avatar_file").addEventListener("change", async ()=>{
+      const file = $("p_avatar_file").files?.[0];
+      if (!file) return;
       try{
-        const res = await fetch("./links.json", { cache: "no-store" });
-        state = await res.json();
-        state.profile = { name:"", avatar:"", bio:"", ...(state.profile || {}) };
-        state.theme = { type:"default", color:"#f6f7fb", image:"", ...(state.theme || state.background || {}) };
-        state.socials = (state.socials || []).map(s => ({ enabled: true, iconImage: "", ...s }));
-        state.links = (state.links || []).map(l => ({ enabled: true, icon: "", iconImage: "", ...l }));
-        setStatus("Loaded from site");
-        renderAll();
+        const dataUrl = await readFileAsDataURL(file);
+        state.profile.avatar = dataUrl;
+        $("p_avatar").value = dataUrl;
+        renderPreview(); debounceSave();
+        setStatus("Logo embedded");
       }catch{
-        setStatus("Could not load site file");
+        setStatus("Could not read logo");
+      }finally{
+        $("p_avatar_file").value = "";
       }
     });
+
+    // Logo appearance
+    $("logo_show").addEventListener("change", ()=>{
+      state.profile.show = $("logo_show").checked;
+      renderPreview(); debounceSave();
+    });
+    $("logo_bg").addEventListener("input", ()=>{
+      state.profile.bg = $("logo_bg").value;
+      state.profile.bgTransparent = false;
+      $("logo_bg_transparent").checked = false;
+      renderPreview(); debounceSave();
+    });
+    $("logo_bg_transparent").addEventListener("change", ()=>{
+      state.profile.bgTransparent = $("logo_bg_transparent").checked;
+      renderPreview(); debounceSave();
+    });
+    $("logo_border").addEventListener("change", ()=>{
+      state.profile.border = $("logo_border").checked;
+      renderPreview(); debounceSave();
+    });
+
+    // Background
+    $("bg_type").addEventListener("change", ()=>{
+      state.theme.type = $("bg_type").value;
+      renderPreview(); debounceSave();
+    });
+    $("bg_color").addEventListener("input", ()=>{
+      state.theme.color = $("bg_color").value;
+      renderPreview(); debounceSave();
+    });
+    $("bg_image").addEventListener("input", ()=>{
+      state.theme.image = normalizeAssetPath($("bg_image").value);
+      renderPreview(); debounceSave();
+    });
+    $("bg_image_file").addEventListener("change", async ()=>{
+      const file = $("bg_image_file").files?.[0];
+      if (!file) return;
+      try{
+        const dataUrl = await readFileAsDataURL(file);
+        state.theme.type = "image";
+        state.theme.image = dataUrl;
+        $("bg_type").value = "image";
+        $("bg_image").value = dataUrl;
+        renderPreview(); debounceSave();
+        setStatus("Background embedded");
+      }catch{
+        setStatus("Could not read background");
+      }finally{
+        $("bg_image_file").value = "";
+      }
+    });
+
+    // Export
+    $("download").addEventListener("click", ()=> downloadJson());
+    $("import").addEventListener("change", async ()=>{
+      const file = $("import").files?.[0];
+      if (!file) return;
+      try{
+        const txt = await file.text();
+        const parsed = JSON.parse(txt);
+        state = normalizeIncoming(parsed);
+        localStorage.setItem(LS_KEY, JSON.stringify(state));
+        setStatus("Imported");
+        renderAll();
+      }catch{
+        setStatus("Import failed");
+      }finally{
+        $("import").value = "";
+      }
+    });
+    $("resetDraft").addEventListener("click", ()=>{
+      try{ localStorage.removeItem(LS_KEY); }catch{}
+      state = defaultState();
+      renderAll();
+      setStatus("Draft reset");
+    });
+    $("reloadFromSite").addEventListener("click", async ()=>{
+      try{ localStorage.removeItem(LS_KEY); }catch{}
+      await loadInitial(true);
+    });
+
+    // Logo modal open/close
+    $("openLogoModal").addEventListener("click", (e)=>{ e.preventDefault(); openLogoModal(); });
+    $("logoModalClose").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
+    $("logoModalBackdrop").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
+    $("logoDoneBtn").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
+
+    // Modal shape presets
+    $("shapeSquare").addEventListener("click", ()=>{
+      state.profile.w = 54; state.profile.h = 54;
+      syncLogoModal(); renderPreview(); debounceSave();
+    });
+    $("shapeWide").addEventListener("click", ()=>{
+      state.profile.w = 140; state.profile.h = 54;
+      syncLogoModal(); renderPreview(); debounceSave();
+    });
+    $("shapeTall").addEventListener("click", ()=>{
+      state.profile.w = 54; state.profile.h = 110;
+      syncLogoModal(); renderPreview(); debounceSave();
+    });
+
+    // Modal fit
+    $("fitContain").addEventListener("click", ()=>{
+      state.profile.fit = "contain";
+      syncLogoModal(); renderPreview(); debounceSave();
+    });
+    $("fitCover").addEventListener("click", ()=>{
+      state.profile.fit = "cover";
+      syncLogoModal(); renderPreview(); debounceSave();
+    });
+
+    $("logoResetBtn").addEventListener("click", ()=>{
+      const d = defaultState().profile;
+      // keep avatar
+      const avatar = state.profile.avatar;
+      state.profile = { ...d, avatar };
+      renderProfileForm();
+      syncLogoModal();
+      renderPreview();
+      debounceSave();
+    });
+
+    // Drag resize handle (free resize)
+    const handle = $("logoResizeHandle");
+    let resizing = false;
+    let startX=0, startY=0, startW=0, startH=0;
+
+    handle.addEventListener("pointerdown", (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      resizing = true;
+      startX = e.clientX; startY = e.clientY;
+      startW = state.profile.w; startH = state.profile.h;
+      handle.setPointerCapture(e.pointerId);
+    });
+    handle.addEventListener("pointermove", (e)=>{
+      if (!resizing) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      state.profile.w = Math.round(clamp(startW + dx, 44, 220) / 2) * 2;
+      state.profile.h = Math.round(clamp(startH + dy, 44, 180) / 2) * 2;
+      syncLogoModal(); renderPreview();
+    });
+    const endResize = (e)=>{
+      if (!resizing) return;
+      resizing = false;
+      debounceSave();
+      try{ handle.releasePointerCapture(e.pointerId); }catch{}
+    };
+    handle.addEventListener("pointerup", endResize);
+    handle.addEventListener("pointercancel", endResize);
+
+    // Drag logo to move
+    const img = $("logoStageImg");
+    let moving = false;
+    let mx=0,my=0,sx=0,sy=0;
+    img.addEventListener("pointerdown", (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      moving = true;
+      mx = e.clientX; my = e.clientY;
+      sx = state.profile.x; sy = state.profile.y;
+      img.setPointerCapture(e.pointerId);
+      img.style.cursor = "grabbing";
+    });
+    img.addEventListener("pointermove", (e)=>{
+      if (!moving) return;
+      const dx = e.clientX - mx;
+      const dy = e.clientY - my;
+      state.profile.x = Math.round(sx + dx);
+      state.profile.y = Math.round(sy + dy);
+      syncLogoModal(); renderPreview();
+    });
+    const endMove = (e)=>{
+      if (!moving) return;
+      moving = false;
+      img.style.cursor = "grab";
+      debounceSave();
+      try{ img.releasePointerCapture(e.pointerId); }catch{}
+    };
+    img.addEventListener("pointerup", endMove);
+    img.addEventListener("pointercancel", endMove);
+
+    // Scroll to zoom
+    $("logoStageShell").addEventListener("wheel", (e)=>{
+      e.preventDefault();
+      const delta = (e.deltaY > 0) ? -0.05 : 0.05;
+      state.profile.scale = Number(clamp((state.profile.scale || 1) + delta, 0.6, 2.0).toFixed(2));
+      syncLogoModal(); renderPreview(); debounceSave();
+    }, { passive:false });
   }
 
-$("download").addEventListener("click", downloadJson);
-  $("download2").addEventListener("click", downloadJson);
+  function downloadJson(){
+    // Map to compatible output keys too (so older app.js can still read if needed)
+    const out = JSON.parse(JSON.stringify(state));
+    out.updatedAt = Date.now();
 
-  $("resetDraft").addEventListener("click", ()=>{
-    try{ localStorage.removeItem(LS_KEY); }catch{}
-    state = defaultState();
+    // Provide legacy keys
+    out.profile.avatarShow = out.profile.show;
+    out.profile.avatarBg = out.profile.bg;
+    out.profile.avatarBgTransparent = out.profile.bgTransparent;
+    out.profile.avatarBorder = out.profile.border;
+    out.profile.avatarW = out.profile.w;
+    out.profile.avatarH = out.profile.h;
+    out.profile.avatarPadding = out.profile.pad;
+    out.profile.avatarRadius = out.profile.radius;
+    out.profile.avatarFit = out.profile.fit;
+    out.profile.avatarScale = out.profile.scale;
+    out.profile.avatarX = out.profile.x;
+    out.profile.avatarY = out.profile.y;
+
+    // Also expose socials alias
+    out.socials = out.icons;
+
+    const dataStr = JSON.stringify(out, null, 2);
+    const blob = new Blob([dataStr], { type:"application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "links.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setStatus("Downloaded links.json");
+  }
+
+  async function loadInitial(forceSite=false){
+    showError("");
+    try{
+      if (!forceSite){
+        const saved = localStorage.getItem(LS_KEY);
+        if (saved){
+          state = normalizeIncoming(JSON.parse(saved));
+          setStatus("Loaded draft");
+          renderAll();
+          return;
+        }
+      }
+    }catch{}
+
+    try{
+      const res = await fetch("./links.json", { cache: "no-store" });
+      const data = await res.json();
+      state = normalizeIncoming(data);
+      setStatus("Loaded from site");
+    }catch{
+      state = defaultState();
+      setStatus("New draft");
+    }
     renderAll();
-    setStatus("Draft reset");
-  });
-}
+  }
 
-wire();
-loadInitial();
+  function renderAll(){
+    renderProfileForm();
+    renderLinks();
+    renderIcons();
+    renderPreview();
+  }
+
+  // init
+  safe(()=>{
+    setTab("links");
+    wire();
+    loadInitial(false);
+  });
+})();
