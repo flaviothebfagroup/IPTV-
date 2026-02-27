@@ -150,7 +150,7 @@ function createLink(item) {
     thumb.alt = "";
     thumb.loading = "lazy";
     thumb.classList.add("thumbIconImg");
-    applyIconCfg(thumb, l.iconCfg);
+    applyIconCfg(thumb, item.iconCfg);
   } else {
     const wrap = document.createElement("div");
     wrap.className = "thumbIconWrap";
