@@ -228,6 +228,13 @@ function applyAvatarStyle(imgEl, profile){
   shell.style.borderRadius = `${rad}px`;
   shell.style.boxSizing = "border-box";
 
+  // Logo shell appearance
+  const show = (p.avatarShow !== false);
+  shell.style.display = show ? "" : "none";
+  const bgIsTransparent = !!p.avatarBgTransparent;
+  shell.style.background = bgIsTransparent ? "transparent" : (p.avatarBg || "rgba(255,255,255,0.65)");
+  shell.style.border = (p.avatarBorder === false) ? "none" : "1px solid rgba(10,10,12,0.10)";
+
   img.style.width = "100%";
   img.style.height = "100%";
   img.style.objectFit = fit;
@@ -448,6 +455,106 @@ function selectIcon(value, onChange){
   });
   sel.addEventListener("change", (e)=>{ e.stopPropagation(); onChange(sel.value); });
   return sel;
+}
+
+
+function iconControls(getCfg, setCfg){
+  // returns a small controls row: Zoom -/+ , Fit (Contain/Cover), Reset
+  const wrap = document.createElement("div");
+  wrap.className = "iconControlsRow";
+
+  const label = document.createElement("div");
+  label.className = "iconControlsLabel";
+  label.textContent = "Icon size";
+  wrap.appendChild(label);
+
+  const btnMinus = document.createElement("button");
+  btnMinus.type = "button";
+  btnMinus.className = "ghost";
+  btnMinus.textContent = "−";
+
+  const val = document.createElement("div");
+  val.className = "iconControlsValue";
+
+  const btnPlus = document.createElement("button");
+  btnPlus.type = "button";
+  btnPlus.className = "ghost";
+  btnPlus.textContent = "+";
+
+  const seg = document.createElement("div");
+  seg.className = "seg";
+  const bContain = document.createElement("button");
+  bContain.type="button";
+  bContain.className="segBtn";
+  bContain.textContent="Contain";
+  const bCover = document.createElement("button");
+  bCover.type="button";
+  bCover.className="segBtn";
+  bCover.textContent="Cover";
+  seg.appendChild(bContain);
+  seg.appendChild(bCover);
+
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.className = "ghost danger";
+  reset.textContent = "Reset";
+
+  const refresh = ()=>{
+    const cfg = getCfg();
+    const sc = Number(cfg.scale ?? 1).toFixed(2);
+    val.textContent = `${sc}x`;
+    bContain.classList.toggle("isActive", (cfg.fit || "contain") === "contain");
+    bCover.classList.toggle("isActive", (cfg.fit || "contain") === "cover");
+  };
+
+  const clamp = (n, min, max)=> Math.max(min, Math.min(max, n));
+
+  btnMinus.addEventListener("click", (e)=>{
+    e.preventDefault(); e.stopPropagation();
+    const cfg = getCfg();
+    cfg.scale = Number(clamp((Number(cfg.scale ?? 1) - 0.05), 0.4, 2.0).toFixed(2));
+    setCfg(cfg);
+    refresh();
+  });
+
+  btnPlus.addEventListener("click", (e)=>{
+    e.preventDefault(); e.stopPropagation();
+    const cfg = getCfg();
+    cfg.scale = Number(clamp((Number(cfg.scale ?? 1) + 0.05), 0.4, 2.0).toFixed(2));
+    setCfg(cfg);
+    refresh();
+  });
+
+  bContain.addEventListener("click", (e)=>{
+    e.preventDefault(); e.stopPropagation();
+    const cfg = getCfg();
+    cfg.fit = "contain";
+    setCfg(cfg);
+    refresh();
+  });
+
+  bCover.addEventListener("click", (e)=>{
+    e.preventDefault(); e.stopPropagation();
+    const cfg = getCfg();
+    cfg.fit = "cover";
+    setCfg(cfg);
+    refresh();
+  });
+
+  reset.addEventListener("click", (e)=>{
+    e.preventDefault(); e.stopPropagation();
+    setCfg({ scale: 1, fit: "contain" });
+    refresh();
+  });
+
+  wrap.appendChild(btnMinus);
+  wrap.appendChild(val);
+  wrap.appendChild(btnPlus);
+  wrap.appendChild(seg);
+  wrap.appendChild(reset);
+
+  refresh();
+  return wrap;
 }
 
 function renderRowIcon(container, item){
@@ -737,7 +844,7 @@ function renderLinks(){
       e.preventDefault();
       e.stopPropagation();
       iconEditContext = { kind: "link", index: idx };
-      openIconModal();
+      
     });
     edit.appendChild(editIconBtnLink);
 
@@ -920,7 +1027,7 @@ function renderSocials(){
       e.preventDefault();
       e.stopPropagation();
       iconEditContext = { kind: "social", index: idx };
-      openIconModal();
+      
     });
     edit.appendChild(editIconBtnSocial);
 
@@ -970,63 +1077,6 @@ function renderSocials(){
   attachSortable(wrap, ()=> state.socials, ()=>{ renderSocials(); renderPreview(); debounceSave(); });
 }
 
-
-/* Icon modal (for custom icon images on Links / Icons) */
-function getIconTarget(){
-  if (!iconEditContext) return null;
-  const { kind, index } = iconEditContext;
-  if (kind === "link") return state.links?.[index] || null;
-  if (kind === "social") return state.socials?.[index] || null;
-  return null;
-}
-
-function syncIconModalUI(){
-  const t = getIconTarget();
-  if (!t) return;
-  const cfg = t.iconCfg || (t.iconCfg = { scale: 1, fit: "contain" });
-
-  const img = $("iconStageImg");
-  const shell = $("iconStageShell");
-  if (img && shell){
-    img.src = t.iconImage || "";
-    img.style.width = "100%";
-    img.style.height = "100%";
-    applyIconCfg(img, cfg);
-  }
-
-  if ($("iconZoomValue")) $("iconZoomValue").textContent = Number(cfg.scale ?? 1).toFixed(2);
-
-  const contain = $("iconFitContain");
-  const cover = $("iconFitCover");
-  if (contain && cover){
-    contain.classList.toggle("isActive", (cfg.fit || "contain") === "contain");
-    cover.classList.toggle("isActive", (cfg.fit || "contain") === "cover");
-  }
-}
-
-function openIconModal(){
-  const t = getIconTarget();
-  if (!t){
-    setStatus("Select a link/icon first");
-    return;
-  }
-  if (!t.iconImage){
-    setStatus("Add an icon image first");
-    return;
-  }
-  const modal = $("iconModal");
-  if (!modal){ setStatus("Icon modal missing"); return; }
-  modal.classList.add("isOpen");
-  modal.setAttribute("aria-hidden","false");
-  syncIconModalUI();
-}
-
-function closeIconModal(){
-  const modal = $("iconModal");
-  if (!modal) return;
-  modal.classList.remove("isOpen");
-  modal.setAttribute("aria-hidden","true");
-}
 
 /* Logo modal */
 function syncLogoUI(){
@@ -1222,7 +1272,41 @@ function wire(){
     }
   });
 
-  // Theme controls
+  
+  // Logo shell controls
+  const logoShow = $("logo_show");
+  const logoBg = $("logo_bg");
+  const logoBgT = $("logo_bg_transparent");
+  const logoBorder = $("logo_border");
+
+  const syncLogoShellInputs = ()=>{
+    if (logoShow) logoShow.checked = (state.profile.avatarShow !== false);
+    if (logoBg) logoBg.value = (state.profile.avatarBg || "#ffffff");
+    if (logoBgT) logoBgT.checked = !!state.profile.avatarBgTransparent;
+    if (logoBorder) logoBorder.checked = (state.profile.avatarBorder !== false);
+  };
+  syncLogoShellInputs();
+
+  if (logoShow) logoShow.addEventListener("change", ()=>{
+    state.profile.avatarShow = logoShow.checked;
+    syncLogoUI(); renderPreview(); debounceSave();
+  });
+  if (logoBg) logoBg.addEventListener("input", ()=>{
+    state.profile.avatarBg = logoBg.value;
+    state.profile.avatarBgTransparent = false;
+    if (logoBgT) logoBgT.checked = false;
+    syncLogoUI(); renderPreview(); debounceSave();
+  });
+  if (logoBgT) logoBgT.addEventListener("change", ()=>{
+    state.profile.avatarBgTransparent = logoBgT.checked;
+    syncLogoUI(); renderPreview(); debounceSave();
+  });
+  if (logoBorder) logoBorder.addEventListener("change", ()=>{
+    state.profile.avatarBorder = logoBorder.checked;
+    syncLogoUI(); renderPreview(); debounceSave();
+  });
+
+// Theme controls
   $("bg_type").addEventListener("change", (e)=>{
     state.theme.type = e.target.value;
     renderPreview(); debounceSave();
@@ -1513,24 +1597,11 @@ $("fitContain").addEventListener("click", ()=>{
 }
 
 
-// Delegated click (robust): Edit icon buttons
-document.addEventListener("click", (e)=>{
-  const btn = e.target.closest && e.target.closest(".editIconBtn");
-  if (!btn) return;
-  e.preventDefault();
-  e.stopPropagation();
-  const kind = btn.dataset.kind;
-  const index = Number(btn.dataset.index);
-  iconEditContext = { kind, index };
-  openIconModal();
-}, true);
-
-wire();
+// wire();
 loadInitial();
 
 // Expose for inline fallback
 window.__openLogoModal = openLogoModal;
 window.__closeLogoModal = closeLogoModal;
 
-window.__openIconModal = ()=> openIconModal();
 window.__closeIconModal = ()=> closeIconModal();
