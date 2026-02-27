@@ -139,18 +139,44 @@ function createLink(item) {
   a.target = "_blank";
   a.rel = "noopener";
 
-  const thumb = document.createElement((item.thumb || item.iconImage) ? "img" : "div");
+  // Thumb container is ALWAYS a DIV (fixed size). This prevents huge/broken images from expanding the card.
+  const thumb = document.createElement("div");
   thumb.className = "thumb";
+
   if (item.thumb) {
-    thumb.src = item.thumb;
-    thumb.alt = "";
-    thumb.loading = "lazy";
+    const img = document.createElement("img");
+    img.src = item.thumb;
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.className = "thumbImg";
+    img.addEventListener("error", () => {
+      // fallback to icon
+      thumb.innerHTML = "";
+      const wrap = document.createElement("div");
+      wrap.className = "thumbIconWrap";
+      const iconKey = item.icon || guessIconKey(item.url);
+      wrap.innerHTML = ICON_SVGS[iconKey] || ICON_SVGS.link;
+      thumb.appendChild(wrap);
+    }, { once: true });
+    thumb.appendChild(img);
   } else if (item.iconImage) {
-    thumb.src = item.iconImage;
-    thumb.alt = "";
-    thumb.loading = "lazy";
-    thumb.classList.add("thumbIconImg");
-    applyIconCfg(thumb, item.iconCfg);
+    const img = document.createElement("img");
+    img.src = item.iconImage;
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.className = "thumbIconImg";
+    applyIconCfg(img, item.iconCfg);
+    img.addEventListener("error", () => {
+      thumb.innerHTML = "";
+      const wrap = document.createElement("div");
+      wrap.className = "thumbIconWrap";
+      const iconKey = item.icon || guessIconKey(item.url);
+      wrap.innerHTML = ICON_SVGS[iconKey] || ICON_SVGS.link;
+      thumb.appendChild(wrap);
+    }, { once: true });
+    thumb.appendChild(img);
   } else {
     const wrap = document.createElement("div");
     wrap.className = "thumbIconWrap";
