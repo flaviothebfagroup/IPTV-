@@ -170,16 +170,36 @@ function applyThemeToPreview(){
     return;
   }
   if (type === "image" && image){
+    // Preview: preload so users immediately know if the URL works
+    const url = image;
     screen.style.background = color;
-    screen.style.backgroundImage = `url("${image}")`;
-    screen.style.backgroundSize = "cover";
-    screen.style.backgroundPosition = "center";
-    screen.style.backgroundRepeat = "no-repeat";
+    screen.style.backgroundImage = "none";
+    preloadImage(url).then(()=>{
+      screen.style.backgroundImage = `url("${url}")`;
+      screen.style.backgroundSize = "cover";
+      screen.style.backgroundPosition = "center";
+      screen.style.backgroundRepeat = "no-repeat";
+      setStatus("Background loaded");
+    }).catch(()=>{
+      // Keep solid color + show a hint
+      setStatus("Background URL didn't load (use direct .jpg/.png/.gif)");
+    });
     return;
   }
   // default: keep empty so the phone shows neutral background
 }
 
+
+function preloadImage(url){
+  return new Promise((resolve, reject)=>{
+    if (!url) return reject(new Error("empty"));
+    const img = new Image();
+    img.onload = ()=> resolve(true);
+    img.onerror = ()=> reject(new Error("load_failed"));
+    img.referrerPolicy = "no-referrer"; // helps some CDNs
+    img.src = url;
+  });
+}
 /* Preview */
 function createSocialEl(s){
   if (s.enabled === false) return null;
