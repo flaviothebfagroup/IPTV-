@@ -1,34 +1,9 @@
-
-// Show JS errors in the status pill (helps debug on GitHub Pages cache issues)
-window.addEventListener("error", (ev)=>{
-  try{
-    const msg = (ev && ev.message) ? ev.message : "Script error";
-    setStatus("JS error: " + msg);
-  }catch{}
-});
-window.addEventListener("unhandledrejection", (ev)=>{
-  try{
-    setStatus("Promise error");
-  }catch{}
-});
-
 const $ = (id) => document.getElementById(id);
 
-function safeOn(id, evt, fn, opts){
-  const el = $(id);
-  if (!el) return;
-  el.addEventListener(evt, (e)=>{
-    try{ fn(e, el); }catch(err){
-      try{ setStatus("JS error: " + (err && err.message ? err.message : err)); }catch{}
-      console.error(err);
-    }
-  }, opts);
-}
-
-const LS_KEY = "bfa_linktree_editor_draft_v28";
+const LS_KEY = "bfa_linktree_editor_draft_v8";
 const SOCIAL_TYPES = ["instagram","website","linkedin","youtube","tiktok","facebook"];
 
-// Line icons (stroke SVG)
+// Simple line icons (stroke SVG)
 const ICON_SVGS = {
   website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10S9.5 4.7 12 2z"/></svg>`,
   link: `<svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"/><path d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"/></svg>`,
@@ -44,35 +19,17 @@ const ICON_SVGS = {
 let state = null;
 let saveTimer = null;
 let isSorting = false;
-let iconEditContext = null; // {kind:'link'|'social', index:number}
+
+// One-time sortable attachment guard
 const sortableAttached = new WeakSet();
 
 function defaultState(){
   return {
-    profile: {
-      name: "The BFA Group",
-      avatar: "./assets/logo.png",
-      bio: "Retail Automotive Marketing • Digital Signage • IPTV",
-      avatarSize: 54,
-      avatarPadding: 8,
-      avatarFit: "contain",
-      avatarRadius: 16,
-      avatarScale: 1,
-      avatarW: 54,
-      avatarH: 54,
-      avatarX: 0,
-      avatarY: 0
-    },
-    theme: { type: "default", color: "#f5f5f7", image: "" },
-    socials: [
-      { type: "website", url: "https://www.thebfagroup.com/", enabled: true, iconImage: "", iconCfg: { scale: 1, fit: "contain" } },
-      { type: "instagram", url: "https://www.instagram.com/bfa.autovisiontv/", enabled: true, iconImage: "", iconCfg: { scale: 1, fit: "contain" } }
-    ],
-    links: [
-      { title: "Website", subtitle: "thebfagroup.com", url: "https://www.thebfagroup.com/", thumb: "", badge: "", enabled: true, icon: "", iconImage: "", iconCfg: { scale: 1, fit: "contain" } }
-    ],
-    footerText: "",
-    updatedAt: null
+    profile: { name: "The BFA Group", avatar: "./assets/logo.png", bio: "", avatarSize: 54, avatarPadding: 8, avatarFit: "contain", avatarRadius: 16, avatarScale: 1 },
+    theme: { type: "default", color: "#f6f7fb", image: "" },
+    socials: [{ type: "instagram", url: "", enabled: true, iconImage: "" }, { type: "website", url: "", enabled: true, iconImage: "" }],
+    links: [{ title: "Website", subtitle: "", url: "", thumb: "", badge: "", enabled: true, icon: "", iconImage: "" }],
+    footerText: ""
   };
 }
 
@@ -105,8 +62,7 @@ function guessIconFromUrl(url){
 }
 
 function setStatus(msg){
-  const el = $("status");
-  if (el) el.textContent = msg || "Ready";
+  $("status").textContent = msg || "Ready";
 }
 
 function debounceSave(){
@@ -130,14 +86,40 @@ function readFileAsDataURL(file){
   });
 }
 
-function preloadImage(url){
-  return new Promise((resolve, reject)=>{
-    if (!url) return reject(new Error("empty"));
-    const img = new Image();
-    img.onload = ()=> resolve(true);
-    img.onerror = ()=> reject(new Error("load_failed"));
-    img.referrerPolicy = "no-referrer";
-    img.src = url;
+
+
+function applyAvatarStyle(imgEl, profile){
+  if (!imgEl) return;
+  const p   = profile || {};
+  const w   = Number(p.avatarWidth   ?? p.avatarSize ?? 72);
+  const h   = Number(p.avatarHeight  ?? p.avatarSize ?? 72);
+  const pad = Number(p.avatarPadding ?? 10);
+  const fit = p.avatarFit   || "contain";
+  const rad = Number(p.avatarRadius ?? 18);
+  const scale = Number(p.avatarScale ?? 1);
+
+  const wrap = imgEl.closest(".avatar-wrap") || imgEl.closest(".avatarShell");
+  if (wrap) {
+    wrap.style.width        = `${w}px`;
+    wrap.style.height       = `${h}px`;
+    wrap.style.padding      = `${pad}px`;
+    wrap.style.borderRadius = `${rad}px`;
+    wrap.style.boxSizing    = "border-box";
+  }
+  imgEl.style.width           = "100%";
+  imgEl.style.height          = "100%";
+  imgEl.style.objectFit       = fit;
+  imgEl.style.transform       = `scale(${scale})`;
+  imgEl.style.transformOrigin = "center";
+}
+function updateShapeChipUI(w, h){
+  const ratio = w / h;
+  let active = "custom";
+  if (Math.abs(ratio - 1) < 0.05) active = "square";
+  if (Math.abs(ratio - 2) < 0.1)  active = "wide";
+  if (Math.abs(ratio - 3) < 0.1)  active = "banner";
+  document.querySelectorAll(".shapeChip").forEach(c => {
+    c.classList.toggle("active", c.dataset.shape === active);
   });
 }
 
@@ -151,7 +133,7 @@ function setTab(tab){
   });
 
   const titles = {
-    links: ["Links", "Drag the dots OR use ↑ ↓. Click a row to edit. Toggle off to hide."],
+    links: ["Links", "Drag the dots OR use ↑ ↓ to reorder. Click a row to edit. Toggle off to hide."],
     profile: ["Profile", "Name, logo, bio + background"],
     icons: ["Icons", "Drag the dots OR use ↑ ↓ to reorder icons under the name."],
     export: ["Export", "Download your updated links.json."]
@@ -161,109 +143,63 @@ function setTab(tab){
 }
 
 /* Theme preview */
-let themePreviewToken = 0;
 function applyThemeToPreview(){
   const screen = document.querySelector(".phoneScreen");
   if (!screen) return;
 
   const t = state.theme || {};
   const type = t.type || "default";
-  const color = t.color || "#f5f5f7";
+  const color = t.color || "#f6f7fb";
   const image = t.image || "";
 
+  // Reset
   screen.style.background = "";
   screen.style.backgroundImage = "";
   screen.style.backgroundSize = "";
   screen.style.backgroundPosition = "";
   screen.style.backgroundRepeat = "";
+  screen.style.backgroundAttachment = "";
 
   if (type === "color"){
     screen.style.background = color;
     return;
   }
   if (type === "gradient"){
-    screen.style.background = `radial-gradient(900px 520px at 25% -120px, rgba(255,149,0,0.18), transparent 60%), radial-gradient(900px 520px at 85% 18%, rgba(10,10,12,0.06), transparent 60%), ${color}`;
+    screen.style.background = `radial-gradient(900px 520px at 25% -120px, rgba(255,149,0,0.20), transparent 60%), radial-gradient(900px 520px at 85% 18%, rgba(10,10,12,0.06), transparent 60%), ${color}`;
     return;
   }
   if (type === "image" && image){
-    const token = ++themePreviewToken;
+    // Preview: preload so users immediately know if the URL works
+    const url = image;
     screen.style.background = color;
     screen.style.backgroundImage = "none";
-    preloadImage(image).then(()=>{
-      if (token !== themePreviewToken) return;
-      screen.style.backgroundImage = `url("${image}")`;
+    preloadImage(url).then(()=>{
+      screen.style.backgroundImage = `url("${url}")`;
       screen.style.backgroundSize = "cover";
       screen.style.backgroundPosition = "center";
       screen.style.backgroundRepeat = "no-repeat";
       setStatus("Background loaded");
     }).catch(()=>{
-      if (token !== themePreviewToken) return;
+      // Keep solid color + show a hint
       setStatus("Background URL didn't load (use direct .jpg/.png/.gif)");
     });
     return;
   }
-}
-
-/* Avatar helpers (preview uses shell+inner image like live page) */
-function ensureAvatarShell(imgEl){
-  if (!imgEl) return { shell:null, img:null };
-  if (imgEl.parentElement && imgEl.parentElement.classList.contains("avatarShell")){
-    imgEl.classList.add("avatarImg");
-    return { shell: imgEl.parentElement, img: imgEl };
-  }
-  const shell = document.createElement("div");
-  shell.className = "avatarShell";
-  imgEl.parentNode.insertBefore(shell, imgEl);
-  shell.appendChild(imgEl);
-  imgEl.classList.add("avatarImg");
-  return { shell, img: imgEl };
-}
-
-function applyAvatarStyle(imgEl, profile){
-  const p = profile || {};
-  const w = Number(p.avatarW ?? p.avatarSize ?? 54);
-  const h = Number(p.avatarH ?? p.avatarSize ?? 54);
-  const pad  = Number(p.avatarPadding ?? 8);
-  const fit  = p.avatarFit || "contain";
-  const rad  = Number(p.avatarRadius ?? 16);
-  const scale = Number(p.avatarScale ?? 1);
-  const x = Number(p.avatarX ?? 0);
-  const y = Number(p.avatarY ?? 0);
-
-  const { shell, img } = ensureAvatarShell(imgEl);
-  if (!shell || !img) return;
-
-  shell.style.width = `${w}px`;
-  shell.style.height = `${h}px`;
-  shell.style.padding = `${pad}px`;
-  shell.style.borderRadius = `${rad}px`;
-  shell.style.boxSizing = "border-box";
-
-  // Logo shell appearance
-  const show = (p.avatarShow !== false);
-  shell.style.display = show ? "" : "none";
-  const bgIsTransparent = !!p.avatarBgTransparent;
-  shell.style.background = bgIsTransparent ? "transparent" : (p.avatarBg || "rgba(255,255,255,0.65)");
-  shell.style.border = (p.avatarBorder === false) ? "none" : "1px solid rgba(10,10,12,0.10)";
-
-  img.style.width = "100%";
-  img.style.height = "100%";
-  img.style.objectFit = fit;
-  img.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
-  img.style.transformOrigin = "center";
+  // default: keep empty so the phone shows neutral background
 }
 
 
-function applyIconCfg(imgEl, cfg){
-  if (!imgEl) return;
-  const c = cfg || {};
-  const scale = Number(c.scale ?? 1);
-  const fit = c.fit || "contain";
-  imgEl.style.objectFit = fit;
-  imgEl.style.transform = `scale(${scale})`;
-  imgEl.style.transformOrigin = "center";
+function preloadImage(url){
+  return new Promise((resolve, reject)=>{
+    if (!url) return reject(new Error("empty"));
+    const img = new Image();
+    img.onload = ()=> resolve(true);
+    img.onerror = ()=> reject(new Error("load_failed"));
+    img.referrerPolicy = "no-referrer"; // helps some CDNs
+    img.src = url;
+  });
 }
-/* Preview rendering */
+/* Preview */
 function createSocialEl(s){
   if (s.enabled === false) return null;
   const a = document.createElement("a");
@@ -278,8 +214,7 @@ function createSocialEl(s){
     img.alt = "";
     img.style.width = "18px";
     img.style.height = "18px";
-    img.style.display = "block";
-    applyIconCfg(img, s.iconCfg);
+    img.style.objectFit = "contain";
     a.appendChild(img);
   } else {
     const key = s.type || "link";
@@ -295,6 +230,7 @@ function createSocialEl(s){
       svg.style.strokeLinejoin = "round";
     }
   }
+
   if (!s.url) a.style.opacity = "0.55";
   return a;
 }
@@ -311,7 +247,6 @@ function createLinkEl(l){
 
   const thumb = document.createElement((l.thumb || l.iconImage) ? "img" : "div");
   thumb.className = "thumb";
-
   if (l.thumb){
     thumb.src = normalizeAssetPath(l.thumb);
     thumb.alt = "";
@@ -321,8 +256,6 @@ function createLinkEl(l){
     thumb.alt = "";
     thumb.loading = "lazy";
     thumb.classList.add("thumbIconImg");
-    applyIconCfg(thumb, l.iconCfg);
-    applyIconCfg(thumb, l.iconCfg);
   } else {
     const wrap = document.createElement("div");
     wrap.className = "thumbIconWrap";
@@ -395,7 +328,7 @@ function renderPreview(){
   applyThemeToPreview();
 }
 
-/* Basic UI components */
+/* UI helpers */
 function makeToggle(checked, onChange){
   const toggle = document.createElement("label");
   toggle.className = "toggle";
@@ -469,113 +402,12 @@ function selectIcon(value, onChange){
   return sel;
 }
 
-
-function iconControls(getCfg, setCfg){
-  // returns a small controls row: Zoom -/+ , Fit (Contain/Cover), Reset
-  const wrap = document.createElement("div");
-  wrap.className = "iconControlsRow";
-
-  const label = document.createElement("div");
-  label.className = "iconControlsLabel";
-  label.textContent = "Icon size";
-  wrap.appendChild(label);
-
-  const btnMinus = document.createElement("button");
-  btnMinus.type = "button";
-  btnMinus.className = "ghost";
-  btnMinus.textContent = "−";
-
-  const val = document.createElement("div");
-  val.className = "iconControlsValue";
-
-  const btnPlus = document.createElement("button");
-  btnPlus.type = "button";
-  btnPlus.className = "ghost";
-  btnPlus.textContent = "+";
-
-  const seg = document.createElement("div");
-  seg.className = "seg";
-  const bContain = document.createElement("button");
-  bContain.type="button";
-  bContain.className="segBtn";
-  bContain.textContent="Contain";
-  const bCover = document.createElement("button");
-  bCover.type="button";
-  bCover.className="segBtn";
-  bCover.textContent="Cover";
-  seg.appendChild(bContain);
-  seg.appendChild(bCover);
-
-  const reset = document.createElement("button");
-  reset.type = "button";
-  reset.className = "ghost danger";
-  reset.textContent = "Reset";
-
-  const refresh = ()=>{
-    const cfg = getCfg();
-    const sc = Number(cfg.scale ?? 1).toFixed(2);
-    val.textContent = `${sc}x`;
-    bContain.classList.toggle("isActive", (cfg.fit || "contain") === "contain");
-    bCover.classList.toggle("isActive", (cfg.fit || "contain") === "cover");
-  };
-
-  const clamp = (n, min, max)=> Math.max(min, Math.min(max, n));
-
-  btnMinus.addEventListener("click", (e)=>{
-    e.preventDefault(); e.stopPropagation();
-    const cfg = getCfg();
-    cfg.scale = Number(clamp((Number(cfg.scale ?? 1) - 0.05), 0.4, 2.0).toFixed(2));
-    setCfg(cfg);
-    refresh();
-  });
-
-  btnPlus.addEventListener("click", (e)=>{
-    e.preventDefault(); e.stopPropagation();
-    const cfg = getCfg();
-    cfg.scale = Number(clamp((Number(cfg.scale ?? 1) + 0.05), 0.4, 2.0).toFixed(2));
-    setCfg(cfg);
-    refresh();
-  });
-
-  bContain.addEventListener("click", (e)=>{
-    e.preventDefault(); e.stopPropagation();
-    const cfg = getCfg();
-    cfg.fit = "contain";
-    setCfg(cfg);
-    refresh();
-  });
-
-  bCover.addEventListener("click", (e)=>{
-    e.preventDefault(); e.stopPropagation();
-    const cfg = getCfg();
-    cfg.fit = "cover";
-    setCfg(cfg);
-    refresh();
-  });
-
-  reset.addEventListener("click", (e)=>{
-    e.preventDefault(); e.stopPropagation();
-    setCfg({ scale: 1, fit: "contain" });
-    refresh();
-  });
-
-  wrap.appendChild(btnMinus);
-  wrap.appendChild(val);
-  wrap.appendChild(btnPlus);
-  wrap.appendChild(seg);
-  wrap.appendChild(reset);
-
-  refresh();
-  return wrap;
-}
-
 function renderRowIcon(container, item){
   container.innerHTML = "";
   if (item.iconImage){
     const img = document.createElement("img");
     img.src = item.iconImage;
     img.alt = "";
-    applyIconCfg(img, item.iconCfg);
     container.appendChild(img);
     return;
   }
@@ -583,6 +415,7 @@ function renderRowIcon(container, item){
   container.innerHTML = ICON_SVGS[key] || ICON_SVGS.link;
 }
 
+/* Move helpers */
 function moveInArray(arr, from, to){
   if (!arr) return;
   if (from < 0 || to < 0 || from >= arr.length || to >= arr.length) return;
@@ -590,7 +423,7 @@ function moveInArray(arr, from, to){
   arr.splice(to, 0, item);
 }
 
-/* Sortable (pointer drag) */
+/* Pointer sortable (attached once per container) */
 function attachSortable(container, getArray, onAfter){
   if (sortableAttached.has(container)) return;
   sortableAttached.add(container);
@@ -606,6 +439,7 @@ function attachSortable(container, getArray, onAfter){
 
     const cards = Array.from(container.children).filter(el => el !== drag.placeholder);
     let placed = false;
+
     for (const c of cards){
       const r = c.getBoundingClientRect();
       const mid = r.top + r.height / 2;
@@ -664,6 +498,7 @@ function attachSortable(container, getArray, onAfter){
     e.stopPropagation();
 
     isSorting = true;
+
     document.querySelectorAll(".rowCard.isOpen").forEach(el => el.classList.remove("isOpen"));
 
     const cards = Array.from(container.querySelectorAll(".rowCard"));
@@ -696,6 +531,7 @@ function attachSortable(container, getArray, onAfter){
     };
 
     suppressClickUntil = Date.now() + 600;
+
     try { handle.setPointerCapture(e.pointerId); } catch {}
 
     document.addEventListener("pointermove", onMove, true);
@@ -710,16 +546,13 @@ function attachSortable(container, getArray, onAfter){
   }, true);
 }
 
+
 /* Lists */
 function renderLinks(){
   const wrap = $("linksList");
   wrap.innerHTML = "";
 
   (state.links || []).forEach((l, idx)=>{
-    if (l.enabled === undefined) l.enabled = true;
-    if (l.icon === undefined) l.icon = "";
-    if (l.iconImage === undefined) l.iconImage = "";
-
     const card = document.createElement("div");
     card.className = "rowCard";
 
@@ -756,7 +589,6 @@ function renderLinks(){
     });
 
     const editBtn = iconBtn("edit", "Edit", ()=>{
-      if (isSorting) return;
       document.querySelectorAll(".rowCard.isOpen").forEach(el=>{
         if (el !== card) el.classList.remove("isOpen");
       });
@@ -791,7 +623,7 @@ function renderLinks(){
     top.appendChild(main);
     top.appendChild(actions);
 
-    top.addEventListener("click", ()=>{
+    top.addEventListener("click", () => {
       if (isSorting) return;
       document.querySelectorAll(".rowCard.isOpen").forEach(el=>{
         if (el !== card) el.classList.remove("isOpen");
@@ -831,13 +663,14 @@ function renderLinks(){
     grid.appendChild(field("Thumbnail (optional)", inputText(l.thumb, "./assets/thumbs/retail.png", (v)=>{
       state.links[idx].thumb = normalizeAssetPath(v);
       renderPreview(); debounceSave();
-    })));
+    }), "Leave empty if you don't want an image thumbnail."));
 
-    grid.appendChild(field("Icon (line)", selectIcon(l.icon || "", (v)=>{
+    const iconSel = selectIcon(l.icon || "", (v)=>{
       state.links[idx].icon = v;
       if (!state.links[idx].iconImage) renderRowIcon(iconBox, state.links[idx]);
       renderPreview(); debounceSave();
-    }), "Auto picks based on the URL."));
+    });
+    grid.appendChild(field("Icon (line)", iconSel, "Auto picks based on the URL."));
 
     const iconUrl = inputText(l.iconImage || "", "Icon image URL or ./assets/icon.png", (v)=>{
       state.links[idx].iconImage = normalizeAssetPath(v);
@@ -845,8 +678,6 @@ function renderLinks(){
       renderPreview(); debounceSave();
     });
     grid.appendChild(field("Custom icon image (URL/path)", iconUrl, "Optional. If set, it replaces the line icon."));
-
-
 
     const upload = document.createElement("input");
     upload.type = "file";
@@ -867,14 +698,7 @@ function renderLinks(){
         upload.value = "";
       }
     });
-    grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json."));
-
-    // Icon controls (only affects custom icon images)
-    edit.appendChild(iconControls(
-      ()=> (state.links[idx].iconCfg || (state.links[idx].iconCfg = { scale: 1, fit: "contain" })),
-      (cfg)=>{ state.links[idx].iconCfg = cfg; renderRowIcon(iconBox, state.links[idx]); renderPreview(); debounceSave(); }
-    ));
-grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json."));
+    grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json (no extra file)."));
 
     const clearBtn = document.createElement("button");
     clearBtn.type = "button";
@@ -896,7 +720,7 @@ grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json
     wrap.appendChild(card);
   });
 
-  attachSortable(wrap, ()=> state.links, ()=>{ renderLinks(); renderPreview(); debounceSave(); });
+  attachSortable(wrap, () => state.links, () => { renderLinks(); renderPreview(); debounceSave(); });
 }
 
 function renderSocials(){
@@ -904,9 +728,6 @@ function renderSocials(){
   wrap.innerHTML = "";
 
   (state.socials || []).forEach((s, idx)=>{
-    if (s.enabled === undefined) s.enabled = true;
-    if (s.iconImage === undefined) s.iconImage = "";
-
     const card = document.createElement("div");
     card.className = "rowCard";
 
@@ -943,7 +764,6 @@ function renderSocials(){
     });
 
     const editBtn = iconBtn("edit", "Edit", ()=>{
-      if (isSorting) return;
       document.querySelectorAll(".rowCard.isOpen").forEach(el=>{
         if (el !== card) el.classList.remove("isOpen");
       });
@@ -978,7 +798,7 @@ function renderSocials(){
     top.appendChild(main);
     top.appendChild(actions);
 
-    top.addEventListener("click", ()=>{
+    top.addEventListener("click", () => {
       if (isSorting) return;
       document.querySelectorAll(".rowCard.isOpen").forEach(el=>{
         if (el !== card) el.classList.remove("isOpen");
@@ -1022,8 +842,6 @@ function renderSocials(){
     });
     grid.appendChild(field("Custom icon image (URL/path)", iconUrl, "Optional. If set, it replaces the line icon."));
 
-
-
     const upload = document.createElement("input");
     upload.type = "file";
     upload.accept = "image/*";
@@ -1043,14 +861,7 @@ function renderSocials(){
         upload.value = "";
       }
     });
-    grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json."));
-
-    // Icon controls (only affects custom icon images)
-    edit.appendChild(iconControls(
-      ()=> (state.socials[idx].iconCfg || (state.socials[idx].iconCfg = { scale: 1, fit: "contain" })),
-      (cfg)=>{ state.socials[idx].iconCfg = cfg; renderRowIcon(iconBox, { url: state.socials[idx].url, icon: state.socials[idx].type, iconImage: state.socials[idx].iconImage, iconCfg: state.socials[idx].iconCfg }); renderPreview(); debounceSave(); }
-    ));
-grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json."));
+    grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json (no extra file)."));
 
     const clearBtn = document.createElement("button");
     clearBtn.type = "button";
@@ -1072,94 +883,48 @@ grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json
     wrap.appendChild(card);
   });
 
-  attachSortable(wrap, ()=> state.socials, ()=>{ renderSocials(); renderPreview(); debounceSave(); });
+  attachSortable(wrap, () => state.socials, () => { renderSocials(); renderPreview(); debounceSave(); });
 }
 
-
-/* Logo modal */
-function syncLogoUI(){
-  const p = state.profile || {};
-  const w = Number(p.avatarW ?? p.avatarSize ?? 54);
-  const h = Number(p.avatarH ?? p.avatarSize ?? 54);
-  const pad  = Number(p.avatarPadding ?? 8);
-  const rad  = Number(p.avatarRadius ?? 16);
-  const scale = Number(p.avatarScale ?? 1);
-  const fit  = p.avatarFit || "contain";
-  const x = Number(p.avatarX ?? 0);
-  const y = Number(p.avatarY ?? 0);
-
-  const mini = $("logoMiniImg");
-  if (mini){
-    mini.src = normalizeAssetPath(p.avatar || "");
-    applyAvatarStyle(mini, p);
-  }
-
-  const stageImg = $("logoStageImg");
-  const stageShell = $("logoStageShell");
-  if (stageImg && stageShell){
-    stageImg.src = normalizeAssetPath(p.avatar || "");
-    stageShell.style.width = `${w}px`;
-    stageShell.style.height = `${h}px`;
-    stageShell.style.padding = `${pad}px`;
-    stageShell.style.borderRadius = `${rad}px`;
-    stageShell.style.boxSizing = "border-box";
-
-    stageImg.style.width = "100%";
-    stageImg.style.height = "100%";
-    stageImg.style.objectFit = fit;
-    stageImg.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
-    stageImg.style.transformOrigin = "center";
-  }
-
-  if ($("logoSizeValue")) $("logoSizeValue").textContent = `${w}×${h}`;
-  if ($("logoPadValue")) $("logoPadValue").textContent = String(pad);
-  if ($("logoRadValue")) $("logoRadValue").textContent = String(rad);
-  if ($("logoZoomValue")) $("logoZoomValue").textContent = Number(scale).toFixed(2);
-
-  const contain = $("fitContain");
-  const cover = $("fitCover");
-  if (contain && cover){
-    contain.classList.toggle("isActive", fit === "contain");
-    cover.classList.toggle("isActive", fit === "cover");
-  }
-}
-
-function openLogoModal(){
-  const modal = $("logoModal");
-  if (!modal) return;
-  modal.classList.add("isOpen");
-  modal.setAttribute("aria-hidden","false");
-  syncLogoUI();
-}
-
-function closeLogoModal(){
-  const modal = $("logoModal");
-  if (!modal) return;
-  modal.classList.remove("isOpen");
-  modal.setAttribute("aria-hidden","true");
-}
-
-function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
-
-/* Profile UI */
+/* Profile */
 function renderProfile(){
   $("p_name").value = state.profile?.name || "";
   $("p_avatar").value = state.profile?.avatar || "";
   $("p_bio").value = state.profile?.bio || "";
   $("brandName").textContent = state.profile?.name || "The BFA Group";
 
-  const t = state.theme || {};
-  $("bg_type").value = t.type || "default";
-  $("bg_color").value = t.color || "#f5f5f7";
-  $("bg_image").value = t.image || "";
+  // Logo controls — width/height (horizontal logo support)
+  const _lw = Number(state.profile?.avatarWidth  ?? state.profile?.avatarSize ?? 72);
+  const _lh = Number(state.profile?.avatarHeight ?? state.profile?.avatarSize ?? 72);
+  if ($("logo_width"))  { $("logo_width").value  = _lw; $("logo_width_label").textContent  = _lw; }
+  if ($("logo_height")) { $("logo_height").value = _lh; $("logo_height_label").textContent = _lh; }
+  if ($("logo_padding")) {
+    $("logo_padding").value = Number(state.profile?.avatarPadding ?? 10);
+    $("logo_padding_label").textContent = $("logo_padding").value;
+  }
+  if ($("logo_fit"))    { $("logo_fit").value = state.profile?.avatarFit || "contain"; }
+  if ($("logo_scale"))  {
+    $("logo_scale").value = Number(state.profile?.avatarScale ?? 1);
+    $("logo_scale_label").textContent = Number($("logo_scale").value).toFixed(2);
+  }
+  if ($("logo_radius")) {
+    $("logo_radius").value = Number(state.profile?.avatarRadius ?? 18);
+    $("logo_radius_label").textContent = $("logo_radius").value;
+  }
+  updateShapeChipUI(_lw, _lh);
 
-  syncLogoUI();
+  // Theme UI
+  const t = state.theme || {};
+
+  if ($("bg_type")) $("bg_type").value = t.type || "default";
+  if ($("bg_color")) $("bg_color").value = t.color || "#f6f7fb";
+  if ($("bg_image")) $("bg_image").value = t.image || "";
 }
 
 /* Export */
 function downloadJson(){
   state.profile.avatar = normalizeAssetPath(state.profile.avatar);
-  state.theme = state.theme || { type:"default", color:"#f5f5f7", image:"" };
+  state.theme = state.theme || { type:"default", color:"#f6f7fb", image:"" };
   state.theme.image = normalizeAssetPath(state.theme.image);
 
   (state.links || []).forEach(l => {
@@ -1184,19 +949,16 @@ function downloadJson(){
 }
 
 async function loadInitial(){
-  // draft first
   try{
     const saved = localStorage.getItem(LS_KEY);
     if (saved){
       state = JSON.parse(saved);
       setStatus("Loaded draft");
-      normalizeState();
       renderAll();
       return;
     }
   }catch{}
 
-  // site next
   try{
     const res = await fetch("./links.json", { cache: "no-store" });
     state = await res.json();
@@ -1205,17 +967,13 @@ async function loadInitial(){
     state = defaultState();
     setStatus("New draft");
   }
-  normalizeState();
-  renderAll();
-}
 
-function normalizeState(){
-  state = state || defaultState();
-  state.profile = { ...defaultState().profile, ...(state.profile || {}) };
-  state.theme = { ...defaultState().theme, ...(state.theme || state.background || {}) };
-  state.socials = (state.socials || []).map(s => ({ enabled: true, iconImage: "", iconCfg: { scale: 1, fit: "contain" }, ...s, iconCfg: { scale: 1, fit: "contain", ...(s.iconCfg || {}) } }));
-  state.links = (state.links || []).map(l => ({ enabled: true, icon: "", iconImage: "", iconCfg: { scale: 1, fit: "contain" }, ...l, iconCfg: { scale: 1, fit: "contain", ...(l.iconCfg || {}) } }));
-  state.footerText = state.footerText || "";
+  state.profile = { name:"", avatar:"", bio:"", ...(state.profile || {}) };
+  state.theme = { type:"default", color:"#f6f7fb", image:"", ...(state.theme || state.background || {}) };
+  state.socials = (state.socials || []).map(s => ({ enabled: true, iconImage: "", ...s }));
+  state.links = (state.links || []).map(l => ({ enabled: true, icon: "", iconImage: "", ...l }));
+
+  renderAll();
 }
 
 function renderAll(){
@@ -1231,36 +989,113 @@ function wire(){
     btn.addEventListener("click", ()=> setTab(btn.dataset.tab));
   });
 
-  safeOn("toggleBig","click", ()=>{
+  $("toggleBig").addEventListener("click", ()=>{
     const on = document.body.classList.toggle("big");
     $("toggleBig").setAttribute("aria-pressed", on ? "true" : "false");
   });
 
-  safeOn("p_name","input", (e)=>{
+  $("p_name").addEventListener("input", (e)=>{
     state.profile.name = e.target.value;
     $("brandName").textContent = state.profile.name || "The BFA Group";
     renderPreview(); debounceSave();
   });
 
-  safeOn("p_avatar","input", (e)=>{
+  $("p_avatar").addEventListener("input", (e)=>{
     state.profile.avatar = normalizeAssetPath(e.target.value);
-    syncLogoUI();
     renderPreview(); debounceSave();
   });
 
-  safeOn("p_bio","input", (e)=>{
+  $("p_bio").addEventListener("input", (e)=>{
     state.profile.bio = e.target.value;
+    renderPreview();
+
+  // Logo controls (live preview) — width/height + shape presets
+  function updateShapeChipUI(w, h){
+    const ratio = w / h;
+    let active = "custom";
+    if (Math.abs(ratio - 1)   < 0.05) active = "square";
+    if (Math.abs(ratio - 2)   < 0.1)  active = "wide";
+    if (Math.abs(ratio - 3)   < 0.1)  active = "banner";
+    document.querySelectorAll(".shapeChip").forEach(c => {
+      c.classList.toggle("active", c.dataset.shape === active);
+    });
+  }
+
+  function applyShapePreset(shape){
+    const curW = Number($("logo_width")?.value ?? 72);
+    let w = curW, h;
+    if      (shape === "square") { w = 72;  h = 72; }
+    else if (shape === "wide")   { w = 140; h = 70; }
+    else if (shape === "banner") { w = 200; h = 66; }
+    else return; // custom — keep sliders as-is
+    $("logo_width").value  = w; $("logo_width_label").textContent  = w;
+    $("logo_height").value = h; $("logo_height_label").textContent = h;
+    state.profile.avatarWidth  = w;
+    state.profile.avatarHeight = h;
     renderPreview(); debounceSave();
+  }
+
+  document.querySelectorAll(".shapeChip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll(".shapeChip").forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      applyShapePreset(chip.dataset.shape);
+    });
   });
 
-  safeOn("p_avatar_file","change", async (e)=>{
+  if ($("logo_width")){
+    $("logo_width").addEventListener("input", (e)=>{
+      state.profile.avatarWidth = Number(e.target.value);
+      $("logo_width_label").textContent = e.target.value;
+      updateShapeChipUI(Number(e.target.value), Number($("logo_height")?.value ?? 72));
+      renderPreview(); debounceSave();
+    });
+  }
+  if ($("logo_height")){
+    $("logo_height").addEventListener("input", (e)=>{
+      state.profile.avatarHeight = Number(e.target.value);
+      $("logo_height_label").textContent = e.target.value;
+      updateShapeChipUI(Number($("logo_width")?.value ?? 72), Number(e.target.value));
+      renderPreview(); debounceSave();
+    });
+  }
+  if ($("logo_padding")){
+    $("logo_padding").addEventListener("input", (e)=>{
+      state.profile.avatarPadding = Number(e.target.value);
+      $("logo_padding_label").textContent = e.target.value;
+      renderPreview(); debounceSave();
+    });
+  }
+  if ($("logo_scale")){
+    $("logo_scale").addEventListener("input", (e)=>{
+      state.profile.avatarScale = Number(e.target.value);
+      $("logo_scale_label").textContent = Number(e.target.value).toFixed(2);
+      renderPreview(); debounceSave();
+    });
+  }
+  if ($("logo_fit")){
+    $("logo_fit").addEventListener("change", (e)=>{
+      state.profile.avatarFit = e.target.value;
+      renderPreview(); debounceSave();
+    });
+  }
+  if ($("logo_radius")){
+    $("logo_radius").addEventListener("input", (e)=>{
+      state.profile.avatarRadius = Number(e.target.value);
+      $("logo_radius_label").textContent = e.target.value;
+      renderPreview(); debounceSave();
+    });
+  }
+ debounceSave();
+  });
+
+  $("p_avatar_file").addEventListener("change", async (e)=>{
     const file = e.target.files?.[0];
     if(!file) return;
     try{
       const dataUrl = await readFileAsDataURL(file);
       state.profile.avatar = dataUrl;
       $("p_avatar").value = dataUrl;
-      syncLogoUI();
       renderPreview(); debounceSave();
       setStatus("Logo embedded");
     }catch{
@@ -1270,65 +1105,32 @@ function wire(){
     }
   });
 
-  
-  // Logo shell controls
-  const logoShow = $("logo_show");
-  const logoBg = $("logo_bg");
-  const logoBgT = $("logo_bg_transparent");
-  const logoBorder = $("logo_border");
-
-  const syncLogoShellInputs = ()=>{
-    if (logoShow) logoShow.checked = (state.profile.avatarShow !== false);
-    if (logoBg) logoBg.value = (state.profile.avatarBg || "#ffffff");
-    if (logoBgT) logoBgT.checked = !!state.profile.avatarBgTransparent;
-    if (logoBorder) logoBorder.checked = (state.profile.avatarBorder !== false);
-  };
-  syncLogoShellInputs();
-
-  if (logoShow) logoShow.addEventListener("change", ()=>{
-    state.profile.avatarShow = logoShow.checked;
-    syncLogoUI(); renderPreview(); debounceSave();
-  });
-  if (logoBg) logoBg.addEventListener("input", ()=>{
-    state.profile.avatarBg = logoBg.value;
-    state.profile.avatarBgTransparent = false;
-    if (logoBgT) logoBgT.checked = false;
-    syncLogoUI(); renderPreview(); debounceSave();
-  });
-  if (logoBgT) logoBgT.addEventListener("change", ()=>{
-    state.profile.avatarBgTransparent = logoBgT.checked;
-    syncLogoUI(); renderPreview(); debounceSave();
-  });
-  if (logoBorder) logoBorder.addEventListener("change", ()=>{
-    state.profile.avatarBorder = logoBorder.checked;
-    syncLogoUI(); renderPreview(); debounceSave();
-  });
-
-// Theme controls
-  safeOn("bg_type","change", (e)=>{
+  // Theme controls (preview updates immediately)
+  if ($("bg_type")) $("bg_type").addEventListener("change", (e)=>{
+    state.theme = state.theme || {};
     state.theme.type = e.target.value;
     renderPreview(); debounceSave();
   });
-
-  safeOn("bg_color","input", (e)=>{
+  if ($("bg_color")) $("bg_color").addEventListener("input", (e)=>{
+    state.theme = state.theme || {};
     state.theme.color = e.target.value;
     renderPreview(); debounceSave();
   });
-
-  safeOn("bg_image","input", (e)=>{
+  if ($("bg_image")) $("bg_image").addEventListener("input", (e)=>{
+    state.theme = state.theme || {};
     state.theme.image = normalizeAssetPath(e.target.value);
     renderPreview(); debounceSave();
   });
-
-  safeOn("bg_image_file","change", async (e)=>{
+  if ($("bg_image_file")) $("bg_image_file").addEventListener("change", async (e)=>{
     const file = e.target.files?.[0];
     if(!file) return;
     try{
       const dataUrl = await readFileAsDataURL(file);
-      state.theme.type = "image";
+      state.theme = state.theme || {};
       state.theme.image = dataUrl;
-      $("bg_type").value = "image";
       $("bg_image").value = dataUrl;
+      state.theme.type = "image";
+      if ($("bg_type")) $("bg_type").value = "image";
       renderPreview(); debounceSave();
       setStatus("Background embedded");
     }catch{
@@ -1338,126 +1140,26 @@ function wire(){
     }
   });
 
-  // Logo modal open/close (plus inline fallback in HTML)
-  safeOn("openLogoModal","click", (e)=>{ e.preventDefault(); openLogoModal(); });
-  safeOn("logoModalClose","click", (e)=>{ e.preventDefault(); closeLogoModal(); });
-  safeOn("logoModalBackdrop","click", (e)=>{ e.preventDefault(); closeLogoModal(); });
-  safeOn("logoDoneBtn","click", (e)=>{ e.preventDefault(); closeLogoModal(); });
-  const resizeHandle = $("logoResizeHandle");
-  const stageShell = $("logoStageShell");
-  if (resizeHandle && stageShell){
-    let dragging = false;
-    let startX = 0;
-    let startW = 54;
-    let startH = 54;
-    let aspect = 1;
-
-    resizeHandle.addEventListener("pointerdown", (e)=>{
-      e.preventDefault();
-      e.stopPropagation();
-      dragging = true;
-      startX = e.clientX;
-      startW = Number(state.profile.avatarW ?? state.profile.avatarSize ?? 54);
-      startH = Number(state.profile.avatarH ?? state.profile.avatarSize ?? 54);
-      aspect = startW / Math.max(1, startH);
-      resizeHandle.setPointerCapture(e.pointerId);
-    });
-
-    resizeHandle.addEventListener("pointermove", (e)=>{
-      if (!dragging) return;
-      const dx = e.clientX - startX;
-
-      let nextW = clamp(startW + dx, 60, 220);
-      let nextH = clamp(nextW / Math.max(0.2, aspect), 44, 180);
-
-      // snap
-      nextW = Math.round(nextW/2)*2;
-      nextH = Math.round(nextH/2)*2;
-
-      state.profile.avatarW = nextW;
-      state.profile.avatarH = nextH;
-
-      syncLogoUI(); renderPreview();
-    });
-
-    const end = (e)=>{
-      if (!dragging) return;
-      dragging = false;
-      debounceSave();
-      try{ resizeHandle.releasePointerCapture(e.pointerId); }catch{}
-    };
-    resizeHandle.addEventListener("pointerup", end);
-    resizeHandle.addEventListener("pointercancel", end);
-  }
-
-  
-  // Drag logo to move (inside the box)
-  const stageImg = $("logoStageImg");
-  if (stageImg){
-    let dragging = false;
-    let sx = 0, sy = 0, startX = 0, startY = 0;
-
-    stageImg.addEventListener("pointerdown", (e)=>{
-      e.preventDefault();
-      e.stopPropagation();
-      dragging = true;
-      stageImg.setPointerCapture(e.pointerId);
-      sx = e.clientX; sy = e.clientY;
-      startX = Number(state.profile.avatarX ?? 0);
-      startY = Number(state.profile.avatarY ?? 0);
-      stageImg.style.cursor = "grabbing";
-    });
-
-    stageImg.addEventListener("pointermove", (e)=>{
-      if (!dragging) return;
-      const dx = e.clientX - sx;
-      const dy = e.clientY - sy;
-      state.profile.avatarX = Math.round((startX + dx) / 1);
-      state.profile.avatarY = Math.round((startY + dy) / 1);
-      syncLogoUI();
-      renderPreview();
-    });
-
-    const endMove = (e)=>{
-      if (!dragging) return;
-      dragging = false;
-      stageImg.style.cursor = "grab";
-      debounceSave();
-      try{ stageImg.releasePointerCapture(e.pointerId); }catch{}
-    };
-    stageImg.addEventListener("pointerup", endMove);
-    stageImg.addEventListener("pointercancel", endMove);
-  }
-
-// Scroll to zoom in modal stage
-  if (stageShell) stageShell.addEventListener("wheel", (e)=>{
-    e.preventDefault();
-    const delta = (e.deltaY > 0) ? -0.05 : 0.05;
-    const cur = Number(state.profile.avatarScale ?? 1);
-    state.profile.avatarScale = Number(clamp(cur + delta, 0.6, 2.0).toFixed(2));
-    syncLogoUI(); renderPreview(); debounceSave();
-  }, { passive: false });
-
-  // Add items
-  safeOn("addLink","click", ()=>{
+  $("addLink").addEventListener("click", ()=>{
     state.links.unshift({ title: "New link", subtitle: "", url: "", thumb: "", badge: "", enabled: true, icon: "", iconImage: "" });
     renderLinks(); renderPreview(); debounceSave();
   });
 
-  safeOn("addSocial","click", ()=>{
+  $("addSocial").addEventListener("click", ()=>{
     state.socials.push({ type: "website", url: "", enabled: true, iconImage: "" });
     renderSocials(); renderPreview(); debounceSave();
   });
 
-  // Import/export
-  const imp = $("import");
-  if (imp) imp.addEventListener("change", async (e)=>{
+  $("import").addEventListener("change", async (e)=>{
     const file = e.target.files?.[0];
     if(!file) return;
     try{
       const text = await file.text();
       state = JSON.parse(text);
-      normalizeState();
+      state.profile = { name:"", avatar:"", bio:"", ...(state.profile || {}) };
+      state.theme = { type:"default", color:"#f6f7fb", image:"", ...(state.theme || state.background || {}) };
+      state.socials = (state.socials || []).map(s => ({ enabled: true, iconImage: "", ...s }));
+      state.links = (state.links || []).map(l => ({ enabled: true, icon: "", iconImage: "", ...l }));
       localStorage.setItem(LS_KEY, JSON.stringify(state));
       setStatus("Imported");
       renderAll();
@@ -1468,37 +1170,37 @@ function wire(){
     }
   });
 
-  const d1 = $("download");
-  if (d1) d1.addEventListener("click", downloadJson);
-  const d2 = $("download2");
-  if (d2) d2.addEventListener("click", downloadJson);
+  
+  // Reload from site (ignores local draft)
+  const reloadBtn = $("reloadFromSite");
+  if (reloadBtn){
+    reloadBtn.addEventListener("click", async ()=>{
+      try{ localStorage.removeItem(LS_KEY); }catch{}
+      try{
+        const res = await fetch("./links.json", { cache: "no-store" });
+        state = await res.json();
+        state.profile = { name:"", avatar:"", bio:"", ...(state.profile || {}) };
+        state.theme = { type:"default", color:"#f6f7fb", image:"", ...(state.theme || state.background || {}) };
+        state.socials = (state.socials || []).map(s => ({ enabled: true, iconImage: "", ...s }));
+        state.links = (state.links || []).map(l => ({ enabled: true, icon: "", iconImage: "", ...l }));
+        setStatus("Loaded from site");
+        renderAll();
+      }catch{
+        setStatus("Could not load site file");
+      }
+    });
+  }
 
-  safeOn("resetDraft","click", ()=>{
+$("download").addEventListener("click", downloadJson);
+  $("download2").addEventListener("click", downloadJson);
+
+  $("resetDraft").addEventListener("click", ()=>{
     try{ localStorage.removeItem(LS_KEY); }catch{}
     state = defaultState();
     renderAll();
     setStatus("Draft reset");
   });
-
-  safeOn("reloadFromSite","click", async ()=>{
-    try{ localStorage.removeItem(LS_KEY); }catch{}
-    try{
-      const res = await fetch("./links.json", { cache: "no-store" });
-      state = await res.json();
-      normalizeState();
-      setStatus("Loaded from site");
-      renderAll();
-    }catch{
-      setStatus("Could not load site file");
-    }
-  });
 }
 
-
-// wire();
+wire();
 loadInitial();
-
-// Expose for inline fallback
-window.__openLogoModal = openLogoModal;
-window.__closeLogoModal = closeLogoModal;
-
