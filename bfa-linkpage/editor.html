@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="./styles.css?v=16" />
-  <link rel="stylesheet" href="./editor.css?v=16" />
+  <link rel="stylesheet" href="./styles.css?v=17" />
+  <link rel="stylesheet" href="./editor.css?v=17" />
 </head>
 
 <body class="lt">
@@ -119,51 +119,21 @@
               <div class="help">Used for Solid/Gradient backgrounds.</div>
             </div>
           </div>
-          <div class="grid2">
-            <div class="field">
-              <label for="logo_size">Logo size</label>
-              <input id="logo_size" type="range" min="44" max="120" step="2" value="54" />
-              <div class="help"><span id="logo_size_label">54</span> px</div>
-            </div>
-
-            <div class="field">
-              <label for="logo_padding">Logo padding</label>
-              <input id="logo_padding" type="range" min="0" max="18" step="1" value="8" />
-              <div class="help"><span id="logo_padding_label">8</span> px (more padding = smaller logo inside)</div>
-            </div>
-          </div>
-
 
           <div class="grid2">
             <div class="field">
-              <label for="logo_scale">Logo zoom</label>
-              <input id="logo_scale" type="range" min="0.6" max="2" step="0.05" value="1" />
-              <div class="help"><span id="logo_scale_label">1.00</span>x</div>
+              <label>Logo sizing</label>
+              <button class="primary" id="openLogoModal" type="button">Edit logo</button>
+              <div class="help">Opens a popup where you can drag the corner to resize and scroll to zoom (no sliders).</div>
             </div>
+
             <div class="field">
-              <label>Tip</label>
-              <div class="help">If your logo feels too small inside the square, increase “Logo zoom”.</div>
+              <label>Logo preview</label>
+              <div class="logoMini" id="logoMiniWrap">
+                <img id="logoMiniImg" alt="Logo preview" />
+              </div>
             </div>
           </div>
-
-
-          <div class="grid2">
-            <div class="field">
-              <label for="logo_fit">Logo fit</label>
-              <select id="logo_fit">
-                <option value="contain">Contain (no crop)</option>
-                <option value="cover">Cover (may crop)</option>
-              </select>
-              <div class="help">If your logo is getting cut, use “Contain”.</div>
-            </div>
-
-            <div class="field">
-              <label for="logo_radius">Logo corner roundness</label>
-              <input id="logo_radius" type="range" min="0" max="30" step="1" value="16" />
-              <div class="help"><span id="logo_radius_label">16</span> px</div>
-            </div>
-          </div>
-
 
           <div class="grid2">
             <div class="field">
@@ -231,6 +201,86 @@
     </aside>
   </main>
 
-  <script src="./editor.js?v=16"></script>
+  
+  <!-- Logo editor modal -->
+  <div class="modal" id="logoModal" aria-hidden="true">
+    <div class="modalBackdrop" id="logoModalBackdrop"></div>
+
+    <div class="modalPanel" role="dialog" aria-modal="true" aria-label="Logo settings">
+      <div class="modalHeader">
+        <div>
+          <div class="modalTitle">Logo settings</div>
+          <div class="modalSub">Drag corner to resize • Scroll to zoom • Use Contain to avoid cropping</div>
+        </div>
+        <button class="iconBtn" id="logoModalClose" type="button" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modalBody">
+        <div class="logoStage">
+          <div class="logoStageShell" id="logoStageShell">
+            <img id="logoStageImg" alt="Logo" />
+            <div class="resizeHandle" id="logoResizeHandle" title="Drag to resize"></div>
+          </div>
+        </div>
+
+        <div class="logoControls">
+          <div class="ctrlRow">
+            <div class="ctrlLabel">Size</div>
+            <div class="ctrlBtns">
+              <button class="ghost" id="logoSizeMinus" type="button">−</button>
+              <div class="ctrlValue"><span id="logoSizeValue">54</span> px</div>
+              <button class="ghost" id="logoSizePlus" type="button">+</button>
+            </div>
+          </div>
+
+          <div class="ctrlRow">
+            <div class="ctrlLabel">Padding</div>
+            <div class="ctrlBtns">
+              <button class="ghost" id="logoPadMinus" type="button">−</button>
+              <div class="ctrlValue"><span id="logoPadValue">8</span> px</div>
+              <button class="ghost" id="logoPadPlus" type="button">+</button>
+            </div>
+          </div>
+
+          <div class="ctrlRow">
+            <div class="ctrlLabel">Zoom</div>
+            <div class="ctrlBtns">
+              <button class="ghost" id="logoZoomMinus" type="button">−</button>
+              <div class="ctrlValue"><span id="logoZoomValue">1.00</span>x</div>
+              <button class="ghost" id="logoZoomPlus" type="button">+</button>
+            </div>
+          </div>
+
+          <div class="ctrlRow">
+            <div class="ctrlLabel">Corners</div>
+            <div class="ctrlBtns">
+              <button class="ghost" id="logoRadMinus" type="button">−</button>
+              <div class="ctrlValue"><span id="logoRadValue">16</span> px</div>
+              <button class="ghost" id="logoRadPlus" type="button">+</button>
+            </div>
+          </div>
+
+          <div class="ctrlRow">
+            <div class="ctrlLabel">Fit</div>
+            <div class="seg">
+              <button class="segBtn" id="fitContain" type="button">Contain</button>
+              <button class="segBtn" id="fitCover" type="button">Cover</button>
+            </div>
+          </div>
+
+          <div class="ctrlRow">
+            <div class="ctrlLabel">Reset</div>
+            <button class="ghost danger" id="logoResetBtn" type="button">Reset logo settings</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modalFooter">
+        <button class="primary" id="logoDoneBtn" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./editor.js?v=17"></script>
 </body>
 </html>

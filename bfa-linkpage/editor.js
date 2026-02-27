@@ -888,41 +888,83 @@ function renderSocials(){
 }
 
 /* Profile */
+
+function syncLogoUI(){
+  const p = state.profile || {};
+  const size = Number(p.avatarSize ?? 54);
+  const pad  = Number(p.avatarPadding ?? 8);
+  const rad  = Number(p.avatarRadius ?? 16);
+  const scale = Number(p.avatarScale ?? 1);
+  const fit  = p.avatarFit || "contain";
+
+  // Mini preview
+  const mini = $("logoMiniImg");
+  if (mini){
+    mini.src = p.avatar || "";
+    applyAvatarStyle(mini, p);
+  }
+
+  // Modal preview
+  const stageImg = $("logoStageImg");
+  const stageShell = $("logoStageShell");
+  if (stageImg && stageShell){
+    stageImg.src = p.avatar || "";
+    stageShell.style.width = `${size}px`;
+    stageShell.style.height = `${size}px`;
+    stageShell.style.padding = `${pad}px`;
+    stageShell.style.borderRadius = `${rad}px`;
+    stageImg.style.objectFit = fit;
+    stageImg.style.transform = `scale(${scale})`;
+  }
+
+  // Labels
+  if ($("logoSizeValue")) $("logoSizeValue").textContent = String(size);
+  if ($("logoPadValue")) $("logoPadValue").textContent = String(pad);
+  if ($("logoRadValue")) $("logoRadValue").textContent = String(rad);
+  if ($("logoZoomValue")) $("logoZoomValue").textContent = Number(scale).toFixed(2);
+
+  // Fit segment
+  const contain = $("fitContain");
+  const cover = $("fitCover");
+  if (contain && cover){
+    contain.classList.toggle("isActive", fit === "contain");
+    cover.classList.toggle("isActive", fit === "cover");
+  }
+}
+
+function openLogoModal(){
+  const modal = $("logoModal");
+  if (!modal) return;
+  modal.classList.add("isOpen");
+  modal.setAttribute("aria-hidden","false");
+  syncLogoUI();
+}
+
+function closeLogoModal(){
+  const modal = $("logoModal");
+  if (!modal) return;
+  modal.classList.remove("isOpen");
+  modal.setAttribute("aria-hidden","true");
+}
+
+function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+
 function renderProfile(){
   $("p_name").value = state.profile?.name || "";
   $("p_avatar").value = state.profile?.avatar || "";
   $("p_bio").value = state.profile?.bio || "";
   $("brandName").textContent = state.profile?.name || "The BFA Group";
 
-  // Logo controls
-  if ($("logo_size")){
-    $("logo_size").value = Number(state.profile?.avatarSize ?? 54);
-    $("logo_size_label").textContent = $("logo_size").value;
-  }
-  if ($("logo_padding")){
-    $("logo_padding").value = Number(state.profile?.avatarPadding ?? 8);
-    $("logo_padding_label").textContent = $("logo_padding").value;
-  }
-  if ($("logo_fit")){
-    $("logo_fit").value = state.profile?.avatarFit || "contain";
-  }
-  if ($("logo_scale")){
-    $("logo_scale").value = Number(state.profile?.avatarScale ?? 1);
-    $("logo_scale_label").textContent = Number($("logo_scale").value).toFixed(2);
-  }
-  
-  if ($("logo_radius")){
-    $("logo_radius").value = Number(state.profile?.avatarRadius ?? 16);
-    $("logo_radius_label").textContent = $("logo_radius").value;
-  }
-
   // Theme UI
   const t = state.theme || {};
-
   if ($("bg_type")) $("bg_type").value = t.type || "default";
   if ($("bg_color")) $("bg_color").value = t.color || "#f6f7fb";
   if ($("bg_image")) $("bg_image").value = t.image || "";
+
+  // Logo mini + modal sync
+  syncLogoUI();
 }
+
 
 /* Export */
 function downloadJson(){
@@ -1061,6 +1103,119 @@ function wire(){
     if(!file) return;
     try{
       const dataUrl = await readFileAsDataURL(file);
+
+  // Logo modal
+  const openLogoBtn = $("openLogoModal");
+  if (openLogoBtn){
+    openLogoBtn.addEventListener("click", ()=>{
+      openLogoModal();
+    });
+  }
+
+  const closeBtn = $("logoModalClose");
+  const backdrop = $("logoModalBackdrop");
+  const doneBtn = $("logoDoneBtn");
+
+  const closeAll = ()=> closeLogoModal();
+  if (closeBtn) closeBtn.addEventListener("click", closeAll);
+  if (doneBtn) doneBtn.addEventListener("click", closeAll);
+  if (backdrop) backdrop.addEventListener("click", closeAll);
+
+  // Steppers
+  const step = (key, delta, min, max, decimals=false)=>{
+    const p = state.profile;
+    const v = Number(p[key] ?? 0);
+    const next = clamp(v + delta, min, max);
+    p[key] = decimals ? Number(next.toFixed(2)) : next;
+    syncLogoUI();
+    renderPreview();
+    debounceSave();
+  };
+
+  const sizeMinus = $("logoSizeMinus"), sizePlus = $("logoSizePlus");
+  if (sizeMinus) sizeMinus.addEventListener("click", ()=> step("avatarSize", -4, 44, 140));
+  if (sizePlus)  sizePlus.addEventListener("click",  ()=> step("avatarSize", +4, 44, 140));
+
+  const padMinus = $("logoPadMinus"), padPlus = $("logoPadPlus");
+  if (padMinus) padMinus.addEventListener("click", ()=> step("avatarPadding", -1, 0, 18));
+  if (padPlus)  padPlus.addEventListener("click",  ()=> step("avatarPadding", +1, 0, 18));
+
+  const zoomMinus = $("logoZoomMinus"), zoomPlus = $("logoZoomPlus");
+  if (zoomMinus) zoomMinus.addEventListener("click", ()=> step("avatarScale", -0.05, 0.6, 2.0, true));
+  if (zoomPlus)  zoomPlus.addEventListener("click",  ()=> step("avatarScale", +0.05, 0.6, 2.0, true));
+
+  const radMinus = $("logoRadMinus"), radPlus = $("logoRadPlus");
+  if (radMinus) radMinus.addEventListener("click", ()=> step("avatarRadius", -1, 0, 30));
+  if (radPlus)  radPlus.addEventListener("click",  ()=> step("avatarRadius", +1, 0, 30));
+
+  const fitContain = $("fitContain"), fitCover = $("fitCover");
+  if (fitContain) fitContain.addEventListener("click", ()=>{
+    state.profile.avatarFit = "contain";
+    syncLogoUI(); renderPreview(); debounceSave();
+  });
+  if (fitCover) fitCover.addEventListener("click", ()=>{
+    state.profile.avatarFit = "cover";
+    syncLogoUI(); renderPreview(); debounceSave();
+  });
+
+  const resetBtn = $("logoResetBtn");
+  if (resetBtn) resetBtn.addEventListener("click", ()=>{
+    state.profile.avatarSize = 54;
+    state.profile.avatarPadding = 8;
+    state.profile.avatarFit = "contain";
+    state.profile.avatarRadius = 16;
+    state.profile.avatarScale = 1;
+    syncLogoUI(); renderPreview(); debounceSave();
+  });
+
+  // Drag to resize
+  const handle = $("logoResizeHandle");
+  const shell = $("logoStageShell");
+  if (handle && shell){
+    let dragging = false;
+    let startX = 0;
+    let startSize = 54;
+
+    handle.addEventListener("pointerdown", (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      dragging = true;
+      startX = e.clientX;
+      startSize = Number(state.profile.avatarSize ?? 54);
+      handle.setPointerCapture(e.pointerId);
+    });
+
+    handle.addEventListener("pointermove", (e)=>{
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      const next = clamp(startSize + dx, 44, 140);
+      state.profile.avatarSize = Math.round(next/2)*2; // even steps
+      syncLogoUI(); renderPreview();
+    });
+
+    const end = (e)=>{
+      if (!dragging) return;
+      dragging = false;
+      debounceSave();
+      try{ handle.releasePointerCapture(e.pointerId); }catch{}
+    };
+    handle.addEventListener("pointerup", end);
+    handle.addEventListener("pointercancel", end);
+  }
+
+  // Scroll to zoom (stage)
+  const stage = $("logoStageShell");
+  if (stage){
+    stage.addEventListener("wheel", (e)=>{
+      e.preventDefault();
+      const delta = (e.deltaY > 0) ? -0.05 : 0.05;
+      const cur = Number(state.profile.avatarScale ?? 1);
+      state.profile.avatarScale = Number(clamp(cur + delta, 0.6, 2.0).toFixed(2));
+      syncLogoUI(); renderPreview(); debounceSave();
+    }, { passive: false });
+  }
+
+
       state.profile.avatar = dataUrl;
       $("p_avatar").value = dataUrl;
       renderPreview(); debounceSave();
