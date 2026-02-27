@@ -1,3 +1,17 @@
+
+// Show JS errors in the status pill (helps debug on GitHub Pages cache issues)
+window.addEventListener("error", (ev)=>{
+  try{
+    const msg = (ev && ev.message) ? ev.message : "Script error";
+    setStatus("JS error: " + msg);
+  }catch{}
+});
+window.addEventListener("unhandledrejection", (ev)=>{
+  try{
+    setStatus("Promise error");
+  }catch{}
+});
+
 const $ = (id) => document.getElementById(id);
 
 const LS_KEY = "bfa_linktree_editor_draft_v19";
@@ -720,6 +734,7 @@ function renderLinks(){
     editIconBtnLink.dataset.index = String(idx);
     editIconBtnLink.textContent = "Edit icon";
     editIconBtnLink.addEventListener("click", (e)=>{
+      e.preventDefault();
       e.stopPropagation();
       iconEditContext = { kind: "link", index: idx };
       openIconModal();
@@ -902,6 +917,7 @@ function renderSocials(){
     editIconBtnSocial.dataset.index = String(idx);
     editIconBtnSocial.textContent = "Edit icon";
     editIconBtnSocial.addEventListener("click", (e)=>{
+      e.preventDefault();
       e.stopPropagation();
       iconEditContext = { kind: "social", index: idx };
       openIconModal();
@@ -990,12 +1006,16 @@ function syncIconModalUI(){
 
 function openIconModal(){
   const t = getIconTarget();
-  if (!t || !t.iconImage){
+  if (!t){
+    setStatus("Select a link/icon first");
+    return;
+  }
+  if (!t.iconImage){
     setStatus("Add an icon image first");
     return;
   }
   const modal = $("iconModal");
-  if (!modal) return;
+  if (!modal){ setStatus("Icon modal missing"); return; }
   modal.classList.add("isOpen");
   modal.setAttribute("aria-hidden","false");
   syncIconModalUI();
