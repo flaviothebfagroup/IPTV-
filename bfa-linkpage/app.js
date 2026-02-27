@@ -283,8 +283,7 @@ function applyAvatar(imgEl, profile){
   img.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
   img.style.transformOrigin = "center";
 }
-async function init() {
-  const data = await loadJsonWithFallback();
+function renderFromData(data) {
 
   // Apply background/theme from links.json
   applyTheme(data.theme || data.background);
@@ -306,6 +305,36 @@ async function init() {
   (data.links || []).filter(l => l && l.enabled !== false).forEach(l => linksWrap.appendChild(createLink(l)));
 
   $("footerText").textContent = data.footerText || "";
+}
+
+async function init() {
+  const isPreview = new URLSearchParams(location.search).get("preview") === "1";
+
+  // If we're in preview mode, listen for editor updates and render them.
+  if (isPreview){
+    window.addEventListener("message", (e)=>{
+      const msg = e && e.data;
+      if (!msg || msg.type !== "previewState") return;
+      try{
+        renderFromData(msg.state);
+      }catch(err){
+        console.error(err);
+      }
+    });
+
+    // Also try loading links.json as a fallback (in case no message arrives)
+    try{
+      const data = await loadJsonWithFallback();
+      renderFromData(data);
+      return;
+    }catch(err){
+      // fall through to error handler
+      throw err;
+    }
+  }
+
+  const data = await loadJsonWithFallback();
+  renderFromData(data);
 }
 
 init().catch(err => {

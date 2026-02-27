@@ -1,8 +1,8 @@
 (() => {
   const $ = (id) => document.getElementById(id);
 
-  const BUILD = "v34";
-  const LS_KEY = "bfa_linktree_editor_draft_v34";
+  const BUILD = "v35";
+  const LS_KEY = "bfa_linktree_editor_draft_v35";
 
   const ICON_SVGS = {
     website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10S9.5 4.7 12 2z"/></svg>`,
@@ -191,7 +191,7 @@
 
   
   // Preview sizing (9:16 / 16:9) + Big toggle
-  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v34";
+  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v35";
   let previewPrefs = { aspect: "9:16", big: false };
   try{
     const saved = localStorage.getItem(PREVIEW_KEY);
@@ -447,37 +447,13 @@
   }
 
   function renderPreview(){
-    $("v_name").textContent = state.profile?.name || "Links";
-    $("v_bio").textContent = state.profile?.bio || "";
-    $("v_footer").textContent = state.footerText || "";
-
+    // Keep sidebar brand in sync
     $("brandName").textContent = state.profile?.name || "The BFA Group";
 
-    const av = $("v_avatar");
-    av.src = normalizeAssetPath(state.profile?.avatar || "");
-    applyAvatar(av, state.profile);
+    // Update iframe preview (same code as index page)
+    postPreviewState();
 
-    const mini = $("logoMiniImg");
-    if (mini){
-      mini.src = normalizeAssetPath(state.profile?.avatar || "");
-      applyAvatar(mini, state.profile);
-    }
-
-    const iWrap = $("v_socials");
-    iWrap.innerHTML = "";
-    (state.icons || []).forEach(it=>{
-      const el = createIconEl(it);
-      if (el) iWrap.appendChild(el);
-    });
-
-    const lWrap = $("v_links");
-    lWrap.innerHTML = "";
-    (state.links || []).forEach(l=>{
-      const el = createLinkPreview(l);
-      if (el) lWrap.appendChild(el);
-    });
-
-    applyThemeToPreview();
+    // Keep preview sizing responsive
     applyPreviewSize();
   }
 
@@ -1124,6 +1100,14 @@
 
     $("downloadTop").addEventListener("click", ()=> downloadJson());
 
+    // Preview iframe boot
+    const frame = $("previewFrame");
+    if (frame){
+      frame.src = "./index.html?preview=1&ts=" + Date.now();
+      frame.addEventListener("load", ()=>{ postPreviewState(); });
+    }
+
+
     $("toggleBig").addEventListener("click", ()=>{
       const on = !previewPrefs.big;
       $("toggleBig").setAttribute("aria-pressed", on ? "true" : "false");
@@ -1365,7 +1349,40 @@
     }, { passive:false });
   }
 
-  function downloadJson(){
+  
+  function buildExportData(){
+    const out = JSON.parse(JSON.stringify(state));
+    out.updatedAt = Date.now();
+
+    // legacy keys
+    out.profile.avatarShow = out.profile.show;
+    out.profile.avatarBg = out.profile.bg;
+    out.profile.avatarBgTransparent = out.profile.bgTransparent;
+    out.profile.avatarBorder = out.profile.border;
+    out.profile.avatarW = out.profile.w;
+    out.profile.avatarH = out.profile.h;
+    out.profile.avatarPadding = out.profile.pad;
+    out.profile.avatarRadius = out.profile.radius;
+    out.profile.avatarFit = out.profile.fit;
+    out.profile.avatarScale = out.profile.scale;
+    out.profile.avatarX = out.profile.x;
+    out.profile.avatarY = out.profile.y;
+
+    // public page expects socials
+    out.socials = out.icons;
+    return out;
+  }
+
+  function postPreviewState(){
+    const frame = $("previewFrame");
+    if (!frame) return;
+    const data = buildExportData();
+    try{
+      frame.contentWindow && frame.contentWindow.postMessage({ type: "previewState", state: data }, "*");
+    }catch{}
+  }
+
+function downloadJson(){
     // Map to compatible output keys too (so older app.js can still read if needed)
     const out = JSON.parse(JSON.stringify(state));
     out.updatedAt = Date.now();
