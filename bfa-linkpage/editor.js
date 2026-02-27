@@ -1306,7 +1306,8 @@ $("fitContain").addEventListener("click", ()=>{
   });
 
   // Import/export
-  $("import").addEventListener("change", async (e)=>{
+  const imp = $("import");
+  if (imp) imp.addEventListener("change", async (e)=>{
     const file = e.target.files?.[0];
     if(!file) return;
     try{
@@ -1323,8 +1324,10 @@ $("fitContain").addEventListener("click", ()=>{
     }
   });
 
-  $("download").addEventListener("click", downloadJson);
-  $("download2").addEventListener("click", downloadJson);
+  const d1 = $("download");
+  if (d1) d1.addEventListener("click", downloadJson);
+  const d2 = $("download2");
+  if (d2) d2.addEventListener("click", downloadJson);
 
   $("resetDraft").addEventListener("click", ()=>{
     try{ localStorage.removeItem(LS_KEY); }catch{}
