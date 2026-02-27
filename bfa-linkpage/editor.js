@@ -14,7 +14,7 @@ window.addEventListener("unhandledrejection", (ev)=>{
 
 const $ = (id) => document.getElementById(id);
 
-const LS_KEY = "bfa_linktree_editor_draft_v19";
+const LS_KEY = "bfa_linktree_editor_draft_v27";
 const SOCIAL_TYPES = ["instagram","website","linkedin","youtube","tiktok","facebook"];
 
 // Line icons (stroke SVG)
@@ -310,6 +310,7 @@ function createLinkEl(l){
     thumb.alt = "";
     thumb.loading = "lazy";
     thumb.classList.add("thumbIconImg");
+    applyIconCfg(thumb, l.iconCfg);
     applyIconCfg(thumb, l.iconCfg);
   } else {
     const wrap = document.createElement("div");
@@ -834,20 +835,6 @@ function renderLinks(){
     });
     grid.appendChild(field("Custom icon image (URL/path)", iconUrl, "Optional. If set, it replaces the line icon."));
 
-    const editIconBtnLink = document.createElement("button");
-    editIconBtnLink.type = "button";
-    editIconBtnLink.className = "ghost editIconBtn";
-    editIconBtnLink.dataset.kind = "link";
-    editIconBtnLink.dataset.index = String(idx);
-    editIconBtnLink.textContent = "Edit icon";
-    editIconBtnLink.addEventListener("click", (e)=>{
-      e.preventDefault();
-      e.stopPropagation();
-      iconEditContext = { kind: "link", index: idx };
-      
-    });
-    edit.appendChild(editIconBtnLink);
-
 
 
     const upload = document.createElement("input");
@@ -870,6 +857,13 @@ function renderLinks(){
       }
     });
     grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json."));
+
+    // Icon controls (only affects custom icon images)
+    edit.appendChild(iconControls(
+      ()=> (state.links[idx].iconCfg || (state.links[idx].iconCfg = { scale: 1, fit: "contain" })),
+      (cfg)=>{ state.links[idx].iconCfg = cfg; renderRowIcon(iconBox, state.links[idx]); renderPreview(); debounceSave(); }
+    ));
+grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json."));
 
     const clearBtn = document.createElement("button");
     clearBtn.type = "button";
@@ -1017,20 +1011,6 @@ function renderSocials(){
     });
     grid.appendChild(field("Custom icon image (URL/path)", iconUrl, "Optional. If set, it replaces the line icon."));
 
-    const editIconBtnSocial = document.createElement("button");
-    editIconBtnSocial.type = "button";
-    editIconBtnSocial.className = "ghost editIconBtn";
-    editIconBtnSocial.dataset.kind = "social";
-    editIconBtnSocial.dataset.index = String(idx);
-    editIconBtnSocial.textContent = "Edit icon";
-    editIconBtnSocial.addEventListener("click", (e)=>{
-      e.preventDefault();
-      e.stopPropagation();
-      iconEditContext = { kind: "social", index: idx };
-      
-    });
-    edit.appendChild(editIconBtnSocial);
-
 
 
     const upload = document.createElement("input");
@@ -1053,6 +1033,13 @@ function renderSocials(){
       }
     });
     grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json."));
+
+    // Icon controls (only affects custom icon images)
+    edit.appendChild(iconControls(
+      ()=> (state.socials[idx].iconCfg || (state.socials[idx].iconCfg = { scale: 1, fit: "contain" })),
+      (cfg)=>{ state.socials[idx].iconCfg = cfg; renderRowIcon(iconBox, { url: state.socials[idx].url, icon: state.socials[idx].type, iconImage: state.socials[idx].iconImage, iconCfg: state.socials[idx].iconCfg }); renderPreview(); debounceSave(); }
+    ));
+grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json."));
 
     const clearBtn = document.createElement("button");
     clearBtn.type = "button";
@@ -1344,107 +1331,7 @@ function wire(){
   $("openLogoModal").addEventListener("click", (e)=>{ e.preventDefault(); openLogoModal(); });
   $("logoModalClose").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
   $("logoModalBackdrop").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
-  $("logoDoneBtn").addEventListener("click", (e)=>{ e.preventDefault();
-
-
-  // Icon modal (edit custom icons)
-  const iconClose = $("iconModalClose");
-  const iconBackdrop = $("iconModalBackdrop");
-  const iconDone = $("iconDoneBtn");
-  if (iconClose) iconClose.addEventListener("click", (e)=>{ e.preventDefault(); closeIconModal(); });
-  if (iconDone) iconDone.addEventListener("click", (e)=>{ e.preventDefault(); closeIconModal(); });
-  if (iconBackdrop) iconBackdrop.addEventListener("click", (e)=>{ e.preventDefault(); closeIconModal(); });
-
-  const iconStep = (delta)=>{
-    const t = getIconTarget();
-    if (!t) return;
-    t.iconCfg = t.iconCfg || { scale: 1, fit: "contain" };
-    const cur = Number(t.iconCfg.scale ?? 1);
-    t.iconCfg.scale = Number(clamp(cur + delta, 0.4, 2.0).toFixed(2));
-    syncIconModalUI(); renderPreview(); debounceSave();
-  };
-
-  const izm = $("iconZoomMinus"), izp = $("iconZoomPlus");
-  if (izm) izm.addEventListener("click", ()=> iconStep(-0.05));
-  if (izp) izp.addEventListener("click", ()=> iconStep(+0.05));
-
-  const ifc = $("iconFitContain"), ifv = $("iconFitCover");
-  if (ifc) ifc.addEventListener("click", ()=>{
-    const t = getIconTarget(); if(!t) return;
-    t.iconCfg = t.iconCfg || { scale: 1, fit: "contain" };
-    t.iconCfg.fit = "contain";
-    syncIconModalUI(); renderPreview(); debounceSave();
-  });
-  if (ifv) ifv.addEventListener("click", ()=>{
-    const t = getIconTarget(); if(!t) return;
-    t.iconCfg = t.iconCfg || { scale: 1, fit: "contain" };
-    t.iconCfg.fit = "cover";
-    syncIconModalUI(); renderPreview(); debounceSave();
-  });
-
-  const ir = $("iconResetBtn");
-  if (ir) ir.addEventListener("click", ()=>{
-    const t = getIconTarget(); if(!t) return;
-    t.iconCfg = { scale: 1, fit: "contain" };
-    syncIconModalUI(); renderPreview(); debounceSave();
-  });
- closeLogoModal(); });
-
-  const step = (key, delta, min, max, decimals=false)=>{
-    const v = Number(state.profile[key] ?? 0);
-    const next = clamp(v + delta, min, max);
-    state.profile[key] = decimals ? Number(next.toFixed(2)) : next;
-    syncLogoUI(); renderPreview(); debounceSave();
-  };
-
-  $("logoSizeMinus").addEventListener("click", ()=>{ const w=Number(state.profile.avatarW ?? 54), h=Number(state.profile.avatarH ?? 54); const aspect=w/Math.max(1,h); const nw=clamp(w-4,60,220); state.profile.avatarW=nw; state.profile.avatarH=Math.round((nw/Math.max(0.2,aspect))/2)*2; syncLogoUI(); renderPreview(); debounceSave(); });
-  $("logoSizePlus").addEventListener("click", ()=>{ const w=Number(state.profile.avatarW ?? 54), h=Number(state.profile.avatarH ?? 54); const aspect=w/Math.max(1,h); const nw=clamp(w+4,60,220); state.profile.avatarW=nw; state.profile.avatarH=Math.round((nw/Math.max(0.2,aspect))/2)*2; syncLogoUI(); renderPreview(); debounceSave(); });
-
-  $("logoPadMinus").addEventListener("click", ()=> step("avatarPadding", -1, 0, 18));
-  $("logoPadPlus").addEventListener("click",  ()=> step("avatarPadding", +1, 0, 18));
-
-  $("logoZoomMinus").addEventListener("click", ()=> step("avatarScale", -0.05, 0.6, 2.0, true));
-  $("logoZoomPlus").addEventListener("click",  ()=> step("avatarScale", +0.05, 0.6, 2.0, true));
-
-  $("logoRadMinus").addEventListener("click", ()=> step("avatarRadius", -1, 0, 30));
-  $("logoRadPlus").addEventListener("click",  ()=> step("avatarRadius", +1, 0, 30));
-
-  
-  // Shape presets
-  const setShape = (w,h)=>{
-    state.profile.avatarW = w;
-    state.profile.avatarH = h;
-    syncLogoUI(); renderPreview(); debounceSave();
-  };
-
-  const sq = $("shapeSquare"), wd = $("shapeWide"), tl = $("shapeTall");
-  if (sq) sq.addEventListener("click", ()=> setShape(54,54));
-  if (wd) wd.addEventListener("click", ()=> setShape(120,54));
-  if (tl) tl.addEventListener("click", ()=> setShape(54,96));
-
-$("fitContain").addEventListener("click", ()=>{
-    state.profile.avatarFit = "contain";
-    syncLogoUI(); renderPreview(); debounceSave();
-  });
-  $("fitCover").addEventListener("click", ()=>{
-    state.profile.avatarFit = "cover";
-    syncLogoUI(); renderPreview(); debounceSave();
-  });
-
-  $("logoResetBtn").addEventListener("click", ()=>{
-    state.profile.avatarSize = 54;
-    state.profile.avatarPadding = 8;
-    state.profile.avatarFit = "contain";
-    state.profile.avatarRadius = 16;
-    state.profile.avatarScale = 1;
-    state.profile.avatarW = 54;
-    state.profile.avatarH = 54;
-    state.profile.avatarX = 0;
-    state.profile.avatarY = 0;
-    syncLogoUI(); renderPreview(); debounceSave();
-  });
-
-    // Drag corner to resize (keeps current aspect ratio)
+  $("logoDoneBtn").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
   const resizeHandle = $("logoResizeHandle");
   const stageShell = $("logoStageShell");
   if (resizeHandle && stageShell){
@@ -1532,7 +1419,7 @@ $("fitContain").addEventListener("click", ()=>{
   }
 
 // Scroll to zoom in modal stage
-  stageShell.addEventListener("wheel", (e)=>{
+  if (stageShell) stageShell.addEventListener("wheel", (e)=>{
     e.preventDefault();
     const delta = (e.deltaY > 0) ? -0.05 : 0.05;
     const cur = Number(state.profile.avatarScale ?? 1);
@@ -1604,4 +1491,3 @@ loadInitial();
 window.__openLogoModal = openLogoModal;
 window.__closeLogoModal = closeLogoModal;
 
-window.__closeIconModal = ()=> closeIconModal();
