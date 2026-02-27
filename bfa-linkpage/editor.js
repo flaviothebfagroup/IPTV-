@@ -14,7 +14,18 @@ window.addEventListener("unhandledrejection", (ev)=>{
 
 const $ = (id) => document.getElementById(id);
 
-const LS_KEY = "bfa_linktree_editor_draft_v27";
+function safeOn(id, evt, fn, opts){
+  const el = $(id);
+  if (!el) return;
+  el.addEventListener(evt, (e)=>{
+    try{ fn(e, el); }catch(err){
+      try{ setStatus("JS error: " + (err && err.message ? err.message : err)); }catch{}
+      console.error(err);
+    }
+  }, opts);
+}
+
+const LS_KEY = "bfa_linktree_editor_draft_v28";
 const SOCIAL_TYPES = ["instagram","website","linkedin","youtube","tiktok","facebook"];
 
 // Line icons (stroke SVG)
@@ -1220,29 +1231,29 @@ function wire(){
     btn.addEventListener("click", ()=> setTab(btn.dataset.tab));
   });
 
-  $("toggleBig").addEventListener("click", ()=>{
+  safeOn("toggleBig","click", ()=>{
     const on = document.body.classList.toggle("big");
     $("toggleBig").setAttribute("aria-pressed", on ? "true" : "false");
   });
 
-  $("p_name").addEventListener("input", (e)=>{
+  safeOn("p_name","input", (e)=>{
     state.profile.name = e.target.value;
     $("brandName").textContent = state.profile.name || "The BFA Group";
     renderPreview(); debounceSave();
   });
 
-  $("p_avatar").addEventListener("input", (e)=>{
+  safeOn("p_avatar","input", (e)=>{
     state.profile.avatar = normalizeAssetPath(e.target.value);
     syncLogoUI();
     renderPreview(); debounceSave();
   });
 
-  $("p_bio").addEventListener("input", (e)=>{
+  safeOn("p_bio","input", (e)=>{
     state.profile.bio = e.target.value;
     renderPreview(); debounceSave();
   });
 
-  $("p_avatar_file").addEventListener("change", async (e)=>{
+  safeOn("p_avatar_file","change", async (e)=>{
     const file = e.target.files?.[0];
     if(!file) return;
     try{
@@ -1294,22 +1305,22 @@ function wire(){
   });
 
 // Theme controls
-  $("bg_type").addEventListener("change", (e)=>{
+  safeOn("bg_type","change", (e)=>{
     state.theme.type = e.target.value;
     renderPreview(); debounceSave();
   });
 
-  $("bg_color").addEventListener("input", (e)=>{
+  safeOn("bg_color","input", (e)=>{
     state.theme.color = e.target.value;
     renderPreview(); debounceSave();
   });
 
-  $("bg_image").addEventListener("input", (e)=>{
+  safeOn("bg_image","input", (e)=>{
     state.theme.image = normalizeAssetPath(e.target.value);
     renderPreview(); debounceSave();
   });
 
-  $("bg_image_file").addEventListener("change", async (e)=>{
+  safeOn("bg_image_file","change", async (e)=>{
     const file = e.target.files?.[0];
     if(!file) return;
     try{
@@ -1328,10 +1339,10 @@ function wire(){
   });
 
   // Logo modal open/close (plus inline fallback in HTML)
-  $("openLogoModal").addEventListener("click", (e)=>{ e.preventDefault(); openLogoModal(); });
-  $("logoModalClose").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
-  $("logoModalBackdrop").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
-  $("logoDoneBtn").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
+  safeOn("openLogoModal","click", (e)=>{ e.preventDefault(); openLogoModal(); });
+  safeOn("logoModalClose","click", (e)=>{ e.preventDefault(); closeLogoModal(); });
+  safeOn("logoModalBackdrop","click", (e)=>{ e.preventDefault(); closeLogoModal(); });
+  safeOn("logoDoneBtn","click", (e)=>{ e.preventDefault(); closeLogoModal(); });
   const resizeHandle = $("logoResizeHandle");
   const stageShell = $("logoStageShell");
   if (resizeHandle && stageShell){
@@ -1428,12 +1439,12 @@ function wire(){
   }, { passive: false });
 
   // Add items
-  $("addLink").addEventListener("click", ()=>{
+  safeOn("addLink","click", ()=>{
     state.links.unshift({ title: "New link", subtitle: "", url: "", thumb: "", badge: "", enabled: true, icon: "", iconImage: "" });
     renderLinks(); renderPreview(); debounceSave();
   });
 
-  $("addSocial").addEventListener("click", ()=>{
+  safeOn("addSocial","click", ()=>{
     state.socials.push({ type: "website", url: "", enabled: true, iconImage: "" });
     renderSocials(); renderPreview(); debounceSave();
   });
@@ -1462,14 +1473,14 @@ function wire(){
   const d2 = $("download2");
   if (d2) d2.addEventListener("click", downloadJson);
 
-  $("resetDraft").addEventListener("click", ()=>{
+  safeOn("resetDraft","click", ()=>{
     try{ localStorage.removeItem(LS_KEY); }catch{}
     state = defaultState();
     renderAll();
     setStatus("Draft reset");
   });
 
-  $("reloadFromSite").addEventListener("click", async ()=>{
+  safeOn("reloadFromSite","click", async ()=>{
     try{ localStorage.removeItem(LS_KEY); }catch{}
     try{
       const res = await fetch("./links.json", { cache: "no-store" });
