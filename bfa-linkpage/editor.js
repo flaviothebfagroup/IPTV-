@@ -31,7 +31,11 @@ function defaultState(){
       avatarPadding: 8,
       avatarFit: "contain",
       avatarRadius: 16,
-      avatarScale: 1
+      avatarScale: 1,
+      avatarW: 54,
+      avatarH: 54,
+      avatarX: 0,
+      avatarY: 0
     },
     theme: { type: "default", color: "#f5f5f7", image: "" },
     socials: [
@@ -191,17 +195,20 @@ function ensureAvatarShell(imgEl){
 
 function applyAvatarStyle(imgEl, profile){
   const p = profile || {};
-  const size = Number(p.avatarSize ?? 54);
+  const w = Number(p.avatarW ?? p.avatarSize ?? 54);
+  const h = Number(p.avatarH ?? p.avatarSize ?? 54);
   const pad  = Number(p.avatarPadding ?? 8);
   const fit  = p.avatarFit || "contain";
   const rad  = Number(p.avatarRadius ?? 16);
   const scale = Number(p.avatarScale ?? 1);
+  const x = Number(p.avatarX ?? 0);
+  const y = Number(p.avatarY ?? 0);
 
   const { shell, img } = ensureAvatarShell(imgEl);
   if (!shell || !img) return;
 
-  shell.style.width = `${size}px`;
-  shell.style.height = `${size}px`;
+  shell.style.width = `${w}px`;
+  shell.style.height = `${h}px`;
   shell.style.padding = `${pad}px`;
   shell.style.borderRadius = `${rad}px`;
   shell.style.boxSizing = "border-box";
@@ -209,7 +216,7 @@ function applyAvatarStyle(imgEl, profile){
   img.style.width = "100%";
   img.style.height = "100%";
   img.style.objectFit = fit;
-  img.style.transform = `scale(${scale})`;
+  img.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
   img.style.transformOrigin = "center";
 }
 
@@ -906,11 +913,14 @@ function renderSocials(){
 /* Logo modal */
 function syncLogoUI(){
   const p = state.profile || {};
-  const size = Number(p.avatarSize ?? 54);
+  const w = Number(p.avatarW ?? p.avatarSize ?? 54);
+  const h = Number(p.avatarH ?? p.avatarSize ?? 54);
   const pad  = Number(p.avatarPadding ?? 8);
   const rad  = Number(p.avatarRadius ?? 16);
   const scale = Number(p.avatarScale ?? 1);
   const fit  = p.avatarFit || "contain";
+  const x = Number(p.avatarX ?? 0);
+  const y = Number(p.avatarY ?? 0);
 
   const mini = $("logoMiniImg");
   if (mini){
@@ -922,8 +932,8 @@ function syncLogoUI(){
   const stageShell = $("logoStageShell");
   if (stageImg && stageShell){
     stageImg.src = normalizeAssetPath(p.avatar || "");
-    stageShell.style.width = `${size}px`;
-    stageShell.style.height = `${size}px`;
+    stageShell.style.width = `${w}px`;
+    stageShell.style.height = `${h}px`;
     stageShell.style.padding = `${pad}px`;
     stageShell.style.borderRadius = `${rad}px`;
     stageShell.style.boxSizing = "border-box";
@@ -931,11 +941,11 @@ function syncLogoUI(){
     stageImg.style.width = "100%";
     stageImg.style.height = "100%";
     stageImg.style.objectFit = fit;
-    stageImg.style.transform = `scale(${scale})`;
+    stageImg.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
     stageImg.style.transformOrigin = "center";
   }
 
-  if ($("logoSizeValue")) $("logoSizeValue").textContent = String(size);
+  if ($("logoSizeValue")) $("logoSizeValue").textContent = `${w}×${h}`;
   if ($("logoPadValue")) $("logoPadValue").textContent = String(pad);
   if ($("logoRadValue")) $("logoRadValue").textContent = String(rad);
   if ($("logoZoomValue")) $("logoZoomValue").textContent = Number(scale).toFixed(2);
@@ -1141,8 +1151,8 @@ function wire(){
     syncLogoUI(); renderPreview(); debounceSave();
   };
 
-  $("logoSizeMinus").addEventListener("click", ()=> step("avatarSize", -4, 44, 140));
-  $("logoSizePlus").addEventListener("click",  ()=> step("avatarSize", +4, 44, 140));
+  $("logoSizeMinus").addEventListener("click", ()=>{ const w=Number(state.profile.avatarW ?? 54), h=Number(state.profile.avatarH ?? 54); const aspect=w/Math.max(1,h); const nw=clamp(w-4,60,220); state.profile.avatarW=nw; state.profile.avatarH=Math.round((nw/Math.max(0.2,aspect))/2)*2; syncLogoUI(); renderPreview(); debounceSave(); });
+  $("logoSizePlus").addEventListener("click", ()=>{ const w=Number(state.profile.avatarW ?? 54), h=Number(state.profile.avatarH ?? 54); const aspect=w/Math.max(1,h); const nw=clamp(w+4,60,220); state.profile.avatarW=nw; state.profile.avatarH=Math.round((nw/Math.max(0.2,aspect))/2)*2; syncLogoUI(); renderPreview(); debounceSave(); });
 
   $("logoPadMinus").addEventListener("click", ()=> step("avatarPadding", -1, 0, 18));
   $("logoPadPlus").addEventListener("click",  ()=> step("avatarPadding", +1, 0, 18));
@@ -1153,7 +1163,20 @@ function wire(){
   $("logoRadMinus").addEventListener("click", ()=> step("avatarRadius", -1, 0, 30));
   $("logoRadPlus").addEventListener("click",  ()=> step("avatarRadius", +1, 0, 30));
 
-  $("fitContain").addEventListener("click", ()=>{
+  
+  // Shape presets
+  const setShape = (w,h)=>{
+    state.profile.avatarW = w;
+    state.profile.avatarH = h;
+    syncLogoUI(); renderPreview(); debounceSave();
+  };
+
+  const sq = $("shapeSquare"), wd = $("shapeWide"), tl = $("shapeTall");
+  if (sq) sq.addEventListener("click", ()=> setShape(54,54));
+  if (wd) wd.addEventListener("click", ()=> setShape(120,54));
+  if (tl) tl.addEventListener("click", ()=> setShape(54,96));
+
+$("fitContain").addEventListener("click", ()=>{
     state.profile.avatarFit = "contain";
     syncLogoUI(); renderPreview(); debounceSave();
   });
@@ -1168,31 +1191,48 @@ function wire(){
     state.profile.avatarFit = "contain";
     state.profile.avatarRadius = 16;
     state.profile.avatarScale = 1;
+    state.profile.avatarW = 54;
+    state.profile.avatarH = 54;
+    state.profile.avatarX = 0;
+    state.profile.avatarY = 0;
     syncLogoUI(); renderPreview(); debounceSave();
   });
 
-  // Drag corner to resize
+    // Drag corner to resize (keeps current aspect ratio)
   const resizeHandle = $("logoResizeHandle");
   const stageShell = $("logoStageShell");
   if (resizeHandle && stageShell){
     let dragging = false;
     let startX = 0;
-    let startSize = 54;
+    let startW = 54;
+    let startH = 54;
+    let aspect = 1;
 
     resizeHandle.addEventListener("pointerdown", (e)=>{
       e.preventDefault();
       e.stopPropagation();
       dragging = true;
       startX = e.clientX;
-      startSize = Number(state.profile.avatarSize ?? 54);
+      startW = Number(state.profile.avatarW ?? state.profile.avatarSize ?? 54);
+      startH = Number(state.profile.avatarH ?? state.profile.avatarSize ?? 54);
+      aspect = startW / Math.max(1, startH);
       resizeHandle.setPointerCapture(e.pointerId);
     });
 
     resizeHandle.addEventListener("pointermove", (e)=>{
       if (!dragging) return;
       const dx = e.clientX - startX;
-      const next = clamp(startSize + dx, 44, 140);
-      state.profile.avatarSize = Math.round(next/2)*2;
+
+      let nextW = clamp(startW + dx, 60, 220);
+      let nextH = clamp(nextW / Math.max(0.2, aspect), 44, 180);
+
+      // snap
+      nextW = Math.round(nextW/2)*2;
+      nextH = Math.round(nextH/2)*2;
+
+      state.profile.avatarW = nextW;
+      state.profile.avatarH = nextH;
+
       syncLogoUI(); renderPreview();
     });
 
@@ -1206,7 +1246,46 @@ function wire(){
     resizeHandle.addEventListener("pointercancel", end);
   }
 
-  // Scroll to zoom in modal stage
+  
+  // Drag logo to move (inside the box)
+  const stageImg = $("logoStageImg");
+  if (stageImg){
+    let dragging = false;
+    let sx = 0, sy = 0, startX = 0, startY = 0;
+
+    stageImg.addEventListener("pointerdown", (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      dragging = true;
+      stageImg.setPointerCapture(e.pointerId);
+      sx = e.clientX; sy = e.clientY;
+      startX = Number(state.profile.avatarX ?? 0);
+      startY = Number(state.profile.avatarY ?? 0);
+      stageImg.style.cursor = "grabbing";
+    });
+
+    stageImg.addEventListener("pointermove", (e)=>{
+      if (!dragging) return;
+      const dx = e.clientX - sx;
+      const dy = e.clientY - sy;
+      state.profile.avatarX = Math.round((startX + dx) / 1);
+      state.profile.avatarY = Math.round((startY + dy) / 1);
+      syncLogoUI();
+      renderPreview();
+    });
+
+    const endMove = (e)=>{
+      if (!dragging) return;
+      dragging = false;
+      stageImg.style.cursor = "grab";
+      debounceSave();
+      try{ stageImg.releasePointerCapture(e.pointerId); }catch{}
+    };
+    stageImg.addEventListener("pointerup", endMove);
+    stageImg.addEventListener("pointercancel", endMove);
+  }
+
+// Scroll to zoom in modal stage
   stageShell.addEventListener("wheel", (e)=>{
     e.preventDefault();
     const delta = (e.deltaY > 0) ? -0.05 : 0.05;

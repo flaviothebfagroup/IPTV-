@@ -168,17 +168,20 @@ function ensureAvatarShell(imgEl){
 }
 function applyAvatar(imgEl, profile){
   const p = profile || {};
-  const size = Number(p.avatarSize ?? 54);
+  const w = Number(p.avatarW ?? p.avatarSize ?? 54);
+  const h = Number(p.avatarH ?? p.avatarSize ?? 54);
   const pad  = Number(p.avatarPadding ?? 8);
   const fit  = (p.avatarFit || "contain");
   const rad  = Number(p.avatarRadius ?? 16);
   const scale = Number(p.avatarScale ?? 1);
+  const x = Number(p.avatarX ?? 0);
+  const y = Number(p.avatarY ?? 0);
 
   const { shell, img } = ensureAvatarShell(imgEl);
   if (!shell || !img) return;
 
-  shell.style.width = `${size}px`;
-  shell.style.height = `${size}px`;
+  shell.style.width = `${w}px`;
+  shell.style.height = `${h}px`;
   shell.style.padding = `${pad}px`;
   shell.style.borderRadius = `${rad}px`;
   shell.style.boxSizing = "border-box";
@@ -186,7 +189,7 @@ function applyAvatar(imgEl, profile){
   img.style.width = "100%";
   img.style.height = "100%";
   img.style.objectFit = fit;
-  img.style.transform = `scale(${scale})`;
+  img.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
   img.style.transformOrigin = "center";
 }
 async function init() {
