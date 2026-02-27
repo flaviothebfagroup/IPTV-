@@ -1,12 +1,29 @@
 
 async function loadJsonWithFallback(){
+  if (location.protocol === "file:"){
+    throw new Error("Opened as file://. Please open via GitHub Pages (…github.io/…) or run a local server.");
+  }
+  if (location.hostname === "github.com"){
+    throw new Error("Opened on github.com. Please open the GitHub Pages URL (…github.io/…) for this site.");
+  }
+
   const ts = Date.now();
-  const base = new URL(".", location.href); // works for /index.html or /
+  const here = new URL(location.href);
+
+  let base;
+  if (here.pathname.endsWith("/")){
+    base = here;
+  } else if (here.pathname.endsWith(".html")){
+    base = new URL(".", here);
+  } else {
+    base = new URL(here.pathname + "/", here);
+  }
+  base = new URL(".", base);
+
   const candidates = [
-    new URL("links.json", base).toString(),
+    new URL("links.json", base).toString() + "?ts=" + ts,
     "./links.json?ts=" + ts,
-    "links.json?ts=" + ts,
-    "/links.json?ts=" + ts
+    "links.json?ts=" + ts
   ];
 
   let lastErr = null;
@@ -14,7 +31,11 @@ async function loadJsonWithFallback(){
     try{
       const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-      return await res.json();
+      const text = await res.text();
+      if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")){
+        throw new Error(`Got HTML instead of JSON for ${url}`);
+      }
+      return JSON.parse(text);
     }catch(err){
       lastErr = err;
     }

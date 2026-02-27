@@ -1,8 +1,8 @@
 (() => {
   const $ = (id) => document.getElementById(id);
 
-  const BUILD = "v30";
-  const LS_KEY = "bfa_linktree_editor_draft_v30";
+  const BUILD = "v31";
+  const LS_KEY = "bfa_linktree_editor_draft_v31";
 
   const ICON_SVGS = {
     website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10S9.5 4.7 12 2z"/></svg>`,
@@ -191,7 +191,7 @@
 
   
   // Preview sizing (9:16 / 16:9) + Big toggle
-  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v30";
+  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v31";
   let previewPrefs = { aspect: "9:16", big: false };
   try{
     const saved = localStorage.getItem(PREVIEW_KEY);
@@ -209,11 +209,24 @@
     const aspect = previewPrefs.aspect || "9:16";
     const big = !!previewPrefs.big;
 
-    const base = (aspect === "16:9") ? [640, 360] : [360, 640];
+    const previewEl = document.querySelector(".preview");
+    const maxW = Math.max(260, (previewEl?.clientWidth || 420) - 24); // padding
     const scale = big ? 1.18 : 1.0;
 
-    screen.style.width = `${Math.round(base[0] * scale)}px`;
-    screen.style.height = `${Math.round(base[1] * scale)}px`;
+    let w, h;
+    if (aspect === "16:9"){
+      w = Math.min(420 * scale, maxW);
+      h = Math.round(w * 9 / 16);
+      screen.style.aspectRatio = "16 / 9";
+    } else {
+      w = Math.min(360 * scale, maxW);
+      h = Math.round(w * 16 / 9);
+      h = Math.min(h, Math.round(720 * scale));
+      screen.style.aspectRatio = "9 / 16";
+    }
+
+    screen.style.width = `${Math.round(w)}px`;
+    screen.style.height = `${Math.round(h)}px`;
   }
 
   function setAspect(aspect){
