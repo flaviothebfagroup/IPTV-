@@ -35,7 +35,7 @@ async function loadJsonWithFallback(){
       if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")){
         throw new Error(`Got HTML instead of JSON for ${url}`);
       }
-      return JSON.parse(text);
+      try { return JSON.parse(text); } catch(parseErr){ throw new Error(`JSON parse error for ${url}: ${parseErr.message}`); }
     }catch(err){
       lastErr = err;
     }
@@ -284,5 +284,21 @@ async function init() {
 
 init().catch(err => {
   console.error(err);
-  $("name").textContent = "Could not load links.json";
+  const msg = (err && err.message) ? err.message : String(err);
+
+  const nameEl = $("name");
+  if (nameEl) nameEl.textContent = "Could not load links.json";
+
+  const errEl = $("loadError");
+  if (errEl){
+    const here = new URL(location.href);
+    const base = here.pathname.endsWith(".html") ? new URL(".", here) : new URL(".", new URL(here.pathname.endsWith("/") ? here.pathname : (here.pathname + "/"), here));
+    const expected = new URL("links.json", base).toString();
+    errEl.hidden = false;
+    errEl.textContent = `Expected: ${expected}
+
+Error: ${msg}
+
+Tip: If links.json opens in a tab, your JSON might be invalid (trailing comma). Re-export from editor.`;
+  }
 });
