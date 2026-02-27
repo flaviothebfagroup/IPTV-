@@ -105,6 +105,7 @@ function createLink(item) {
     thumb.alt = "";
     thumb.loading = "lazy";
     thumb.classList.add("thumbIconImg");
+    applyIconCfg(thumb, l.iconCfg);
   } else {
     const wrap = document.createElement("div");
     wrap.className = "thumbIconWrap";
@@ -165,6 +166,16 @@ function ensureAvatarShell(imgEl){
   shell.appendChild(imgEl);
   imgEl.classList.add("avatarImg");
   return { shell, img: imgEl };
+}
+
+function applyIconCfg(imgEl, cfg){
+  if (!imgEl) return;
+  const c = cfg || {};
+  const scale = Number(c.scale ?? 1);
+  const fit = c.fit || "contain";
+  imgEl.style.objectFit = fit;
+  imgEl.style.transform = `scale(${scale})`;
+  imgEl.style.transformOrigin = "center";
 }
 function applyAvatar(imgEl, profile){
   const p = profile || {};

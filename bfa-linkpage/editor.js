@@ -19,6 +19,7 @@ const ICON_SVGS = {
 let state = null;
 let saveTimer = null;
 let isSorting = false;
+let iconEditContext = null; // {kind:'link'|'social', index:number}
 const sortableAttached = new WeakSet();
 
 function defaultState(){
@@ -39,11 +40,11 @@ function defaultState(){
     },
     theme: { type: "default", color: "#f5f5f7", image: "" },
     socials: [
-      { type: "website", url: "https://www.thebfagroup.com/", enabled: true, iconImage: "" },
-      { type: "instagram", url: "https://www.instagram.com/bfa.autovisiontv/", enabled: true, iconImage: "" }
+      { type: "website", url: "https://www.thebfagroup.com/", enabled: true, iconImage: "", iconCfg: { scale: 1, fit: "contain" } },
+      { type: "instagram", url: "https://www.instagram.com/bfa.autovisiontv/", enabled: true, iconImage: "", iconCfg: { scale: 1, fit: "contain" } }
     ],
     links: [
-      { title: "Website", subtitle: "thebfagroup.com", url: "https://www.thebfagroup.com/", thumb: "", badge: "", enabled: true, icon: "", iconImage: "" }
+      { title: "Website", subtitle: "thebfagroup.com", url: "https://www.thebfagroup.com/", thumb: "", badge: "", enabled: true, icon: "", iconImage: "", iconCfg: { scale: 1, fit: "contain" } }
     ],
     footerText: "",
     updatedAt: null
@@ -220,6 +221,16 @@ function applyAvatarStyle(imgEl, profile){
   img.style.transformOrigin = "center";
 }
 
+
+function applyIconCfg(imgEl, cfg){
+  if (!imgEl) return;
+  const c = cfg || {};
+  const scale = Number(c.scale ?? 1);
+  const fit = c.fit || "contain";
+  imgEl.style.objectFit = fit;
+  imgEl.style.transform = `scale(${scale})`;
+  imgEl.style.transformOrigin = "center";
+}
 /* Preview rendering */
 function createSocialEl(s){
   if (s.enabled === false) return null;
@@ -235,7 +246,8 @@ function createSocialEl(s){
     img.alt = "";
     img.style.width = "18px";
     img.style.height = "18px";
-    img.style.objectFit = "contain";
+    img.style.display = "block";
+    applyIconCfg(img, s.iconCfg);
     a.appendChild(img);
   } else {
     const key = s.type || "link";
@@ -277,6 +289,7 @@ function createLinkEl(l){
     thumb.alt = "";
     thumb.loading = "lazy";
     thumb.classList.add("thumbIconImg");
+    applyIconCfg(thumb, l.iconCfg);
   } else {
     const wrap = document.createElement("div");
     wrap.className = "thumbIconWrap";
@@ -429,6 +442,7 @@ function renderRowIcon(container, item){
     const img = document.createElement("img");
     img.src = item.iconImage;
     img.alt = "";
+    applyIconCfg(img, item.iconCfg);
     container.appendChild(img);
     return;
   }
@@ -699,6 +713,19 @@ function renderLinks(){
     });
     grid.appendChild(field("Custom icon image (URL/path)", iconUrl, "Optional. If set, it replaces the line icon."));
 
+    const editIconBtnLink = document.createElement("button");
+    editIconBtnLink.type = "button";
+    editIconBtnLink.className = "ghost";
+    editIconBtnLink.textContent = "Edit icon";
+    editIconBtnLink.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      iconEditContext = { kind: "link", index: idx };
+      openIconModal();
+    });
+    edit.appendChild(editIconBtnLink);
+
+
+
     const upload = document.createElement("input");
     upload.type = "file";
     upload.accept = "image/*";
@@ -866,6 +893,19 @@ function renderSocials(){
     });
     grid.appendChild(field("Custom icon image (URL/path)", iconUrl, "Optional. If set, it replaces the line icon."));
 
+    const editIconBtnSocial = document.createElement("button");
+    editIconBtnSocial.type = "button";
+    editIconBtnSocial.className = "ghost";
+    editIconBtnSocial.textContent = "Edit icon";
+    editIconBtnSocial.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      iconEditContext = { kind: "social", index: idx };
+      openIconModal();
+    });
+    edit.appendChild(editIconBtnSocial);
+
+
+
     const upload = document.createElement("input");
     upload.type = "file";
     upload.accept = "image/*";
@@ -908,6 +948,60 @@ function renderSocials(){
   });
 
   attachSortable(wrap, ()=> state.socials, ()=>{ renderSocials(); renderPreview(); debounceSave(); });
+}
+
+
+/* Icon modal (for custom icon images on Links / Icons) */
+function getIconTarget(){
+  if (!iconEditContext) return null;
+  const { kind, index } = iconEditContext;
+  if (kind === "link") return state.links?.[index] || null;
+  if (kind === "social") return state.socials?.[index] || null;
+  return null;
+}
+
+function syncIconModalUI(){
+  const t = getIconTarget();
+  if (!t) return;
+  const cfg = t.iconCfg || (t.iconCfg = { scale: 1, fit: "contain" });
+
+  const img = $("iconStageImg");
+  const shell = $("iconStageShell");
+  if (img && shell){
+    img.src = t.iconImage || "";
+    img.style.width = "100%";
+    img.style.height = "100%";
+    applyIconCfg(img, cfg);
+  }
+
+  if ($("iconZoomValue")) $("iconZoomValue").textContent = Number(cfg.scale ?? 1).toFixed(2);
+
+  const contain = $("iconFitContain");
+  const cover = $("iconFitCover");
+  if (contain && cover){
+    contain.classList.toggle("isActive", (cfg.fit || "contain") === "contain");
+    cover.classList.toggle("isActive", (cfg.fit || "contain") === "cover");
+  }
+}
+
+function openIconModal(){
+  const t = getIconTarget();
+  if (!t || !t.iconImage){
+    setStatus("Add an icon image first");
+    return;
+  }
+  const modal = $("iconModal");
+  if (!modal) return;
+  modal.classList.add("isOpen");
+  modal.setAttribute("aria-hidden","false");
+  syncIconModalUI();
+}
+
+function closeIconModal(){
+  const modal = $("iconModal");
+  if (!modal) return;
+  modal.classList.remove("isOpen");
+  modal.setAttribute("aria-hidden","true");
 }
 
 /* Logo modal */
@@ -1047,8 +1141,8 @@ function normalizeState(){
   state = state || defaultState();
   state.profile = { ...defaultState().profile, ...(state.profile || {}) };
   state.theme = { ...defaultState().theme, ...(state.theme || state.background || {}) };
-  state.socials = (state.socials || []).map(s => ({ enabled: true, iconImage: "", ...s }));
-  state.links = (state.links || []).map(l => ({ enabled: true, icon: "", iconImage: "", ...l }));
+  state.socials = (state.socials || []).map(s => ({ enabled: true, iconImage: "", iconCfg: { scale: 1, fit: "contain" }, ...s, iconCfg: { scale: 1, fit: "contain", ...(s.iconCfg || {}) } }));
+  state.links = (state.links || []).map(l => ({ enabled: true, icon: "", iconImage: "", iconCfg: { scale: 1, fit: "contain" }, ...l, iconCfg: { scale: 1, fit: "contain", ...(l.iconCfg || {}) } }));
   state.footerText = state.footerText || "";
 }
 
@@ -1142,7 +1236,51 @@ function wire(){
   $("openLogoModal").addEventListener("click", (e)=>{ e.preventDefault(); openLogoModal(); });
   $("logoModalClose").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
   $("logoModalBackdrop").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
-  $("logoDoneBtn").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
+  $("logoDoneBtn").addEventListener("click", (e)=>{ e.preventDefault();
+
+
+  // Icon modal (edit custom icons)
+  const iconClose = $("iconModalClose");
+  const iconBackdrop = $("iconModalBackdrop");
+  const iconDone = $("iconDoneBtn");
+  if (iconClose) iconClose.addEventListener("click", (e)=>{ e.preventDefault(); closeIconModal(); });
+  if (iconDone) iconDone.addEventListener("click", (e)=>{ e.preventDefault(); closeIconModal(); });
+  if (iconBackdrop) iconBackdrop.addEventListener("click", (e)=>{ e.preventDefault(); closeIconModal(); });
+
+  const iconStep = (delta)=>{
+    const t = getIconTarget();
+    if (!t) return;
+    t.iconCfg = t.iconCfg || { scale: 1, fit: "contain" };
+    const cur = Number(t.iconCfg.scale ?? 1);
+    t.iconCfg.scale = Number(clamp(cur + delta, 0.4, 2.0).toFixed(2));
+    syncIconModalUI(); renderPreview(); debounceSave();
+  };
+
+  const izm = $("iconZoomMinus"), izp = $("iconZoomPlus");
+  if (izm) izm.addEventListener("click", ()=> iconStep(-0.05));
+  if (izp) izp.addEventListener("click", ()=> iconStep(+0.05));
+
+  const ifc = $("iconFitContain"), ifv = $("iconFitCover");
+  if (ifc) ifc.addEventListener("click", ()=>{
+    const t = getIconTarget(); if(!t) return;
+    t.iconCfg = t.iconCfg || { scale: 1, fit: "contain" };
+    t.iconCfg.fit = "contain";
+    syncIconModalUI(); renderPreview(); debounceSave();
+  });
+  if (ifv) ifv.addEventListener("click", ()=>{
+    const t = getIconTarget(); if(!t) return;
+    t.iconCfg = t.iconCfg || { scale: 1, fit: "contain" };
+    t.iconCfg.fit = "cover";
+    syncIconModalUI(); renderPreview(); debounceSave();
+  });
+
+  const ir = $("iconResetBtn");
+  if (ir) ir.addEventListener("click", ()=>{
+    const t = getIconTarget(); if(!t) return;
+    t.iconCfg = { scale: 1, fit: "contain" };
+    syncIconModalUI(); renderPreview(); debounceSave();
+  });
+ closeLogoModal(); });
 
   const step = (key, delta, min, max, decimals=false)=>{
     const v = Number(state.profile[key] ?? 0);
@@ -1356,3 +1494,6 @@ loadInitial();
 // Expose for inline fallback
 window.__openLogoModal = openLogoModal;
 window.__closeLogoModal = closeLogoModal;
+
+window.__openIconModal = ()=> openIconModal();
+window.__closeIconModal = ()=> closeIconModal();
