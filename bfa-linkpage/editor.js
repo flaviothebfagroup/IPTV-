@@ -715,7 +715,9 @@ function renderLinks(){
 
     const editIconBtnLink = document.createElement("button");
     editIconBtnLink.type = "button";
-    editIconBtnLink.className = "ghost";
+    editIconBtnLink.className = "ghost editIconBtn";
+    editIconBtnLink.dataset.kind = "link";
+    editIconBtnLink.dataset.index = String(idx);
     editIconBtnLink.textContent = "Edit icon";
     editIconBtnLink.addEventListener("click", (e)=>{
       e.stopPropagation();
@@ -895,7 +897,9 @@ function renderSocials(){
 
     const editIconBtnSocial = document.createElement("button");
     editIconBtnSocial.type = "button";
-    editIconBtnSocial.className = "ghost";
+    editIconBtnSocial.className = "ghost editIconBtn";
+    editIconBtnSocial.dataset.kind = "social";
+    editIconBtnSocial.dataset.index = String(idx);
     editIconBtnSocial.textContent = "Edit icon";
     editIconBtnSocial.addEventListener("click", (e)=>{
       e.stopPropagation();
@@ -1487,6 +1491,19 @@ $("fitContain").addEventListener("click", ()=>{
     }
   });
 }
+
+
+// Delegated click (robust): Edit icon buttons
+document.addEventListener("click", (e)=>{
+  const btn = e.target.closest && e.target.closest(".editIconBtn");
+  if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const kind = btn.dataset.kind;
+  const index = Number(btn.dataset.index);
+  iconEditContext = { kind, index };
+  openIconModal();
+}, true);
 
 wire();
 loadInitial();

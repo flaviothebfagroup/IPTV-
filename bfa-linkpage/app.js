@@ -197,6 +197,13 @@ function applyAvatar(imgEl, profile){
   shell.style.borderRadius = `${rad}px`;
   shell.style.boxSizing = "border-box";
 
+  // Shell appearance
+  const show = (p.avatarShow !== false);
+  shell.style.display = show ? "" : "none";
+  const bgIsTransparent = !!p.avatarBgTransparent;
+  shell.style.background = bgIsTransparent ? "transparent" : (p.avatarBg || "rgba(255,255,255,0.65)");
+  shell.style.border = (p.avatarBorder === false) ? "none" : "1px solid rgba(10,10,12,0.10)";
+
   img.style.width = "100%";
   img.style.height = "100%";
   img.style.objectFit = fit;
