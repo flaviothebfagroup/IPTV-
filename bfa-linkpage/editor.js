@@ -1,9 +1,9 @@
 const $ = (id) => document.getElementById(id);
 
-const LS_KEY = "bfa_linktree_editor_draft_v8";
+const LS_KEY = "bfa_linktree_editor_draft_v19";
 const SOCIAL_TYPES = ["instagram","website","linkedin","youtube","tiktok","facebook"];
 
-// Simple line icons (stroke SVG)
+// Line icons (stroke SVG)
 const ICON_SVGS = {
   website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10S9.5 4.7 12 2z"/></svg>`,
   link: `<svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"/><path d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"/></svg>`,
@@ -19,17 +19,30 @@ const ICON_SVGS = {
 let state = null;
 let saveTimer = null;
 let isSorting = false;
-
-// One-time sortable attachment guard
 const sortableAttached = new WeakSet();
 
 function defaultState(){
   return {
-    profile: { name: "The BFA Group", avatar: "./assets/logo.png", bio: "", avatarSize: 54, avatarPadding: 8, avatarFit: "contain", avatarRadius: 16, avatarScale: 1 },
-    theme: { type: "default", color: "#f6f7fb", image: "" },
-    socials: [{ type: "instagram", url: "", enabled: true, iconImage: "" }, { type: "website", url: "", enabled: true, iconImage: "" }],
-    links: [{ title: "Website", subtitle: "", url: "", thumb: "", badge: "", enabled: true, icon: "", iconImage: "" }],
-    footerText: ""
+    profile: {
+      name: "The BFA Group",
+      avatar: "./assets/logo.png",
+      bio: "Retail Automotive Marketing • Digital Signage • IPTV",
+      avatarSize: 54,
+      avatarPadding: 8,
+      avatarFit: "contain",
+      avatarRadius: 16,
+      avatarScale: 1
+    },
+    theme: { type: "default", color: "#f5f5f7", image: "" },
+    socials: [
+      { type: "website", url: "https://www.thebfagroup.com/", enabled: true, iconImage: "" },
+      { type: "instagram", url: "https://www.instagram.com/bfa.autovisiontv/", enabled: true, iconImage: "" }
+    ],
+    links: [
+      { title: "Website", subtitle: "thebfagroup.com", url: "https://www.thebfagroup.com/", thumb: "", badge: "", enabled: true, icon: "", iconImage: "" }
+    ],
+    footerText: "",
+    updatedAt: null
   };
 }
 
@@ -62,7 +75,8 @@ function guessIconFromUrl(url){
 }
 
 function setStatus(msg){
-  $("status").textContent = msg || "Ready";
+  const el = $("status");
+  if (el) el.textContent = msg || "Ready";
 }
 
 function debounceSave(){
@@ -86,9 +100,82 @@ function readFileAsDataURL(file){
   });
 }
 
+function preloadImage(url){
+  return new Promise((resolve, reject)=>{
+    if (!url) return reject(new Error("empty"));
+    const img = new Image();
+    img.onload = ()=> resolve(true);
+    img.onerror = ()=> reject(new Error("load_failed"));
+    img.referrerPolicy = "no-referrer";
+    img.src = url;
+  });
+}
 
+/* Tabs */
+function setTab(tab){
+  document.querySelectorAll(".navItem").forEach(b=>{
+    b.classList.toggle("isActive", b.dataset.tab === tab);
+  });
+  document.querySelectorAll(".tab").forEach(t=>{
+    t.classList.toggle("isActive", t.id === "tab-" + tab);
+  });
 
-function ensureAvatarShellEditor(imgEl){
+  const titles = {
+    links: ["Links", "Drag the dots OR use ↑ ↓. Click a row to edit. Toggle off to hide."],
+    profile: ["Profile", "Name, logo, bio + background"],
+    icons: ["Icons", "Drag the dots OR use ↑ ↓ to reorder icons under the name."],
+    export: ["Export", "Download your updated links.json."]
+  };
+  $("pageTitle").textContent = titles[tab]?.[0] || "Links";
+  $("pageHint").textContent = titles[tab]?.[1] || "";
+}
+
+/* Theme preview */
+let themePreviewToken = 0;
+function applyThemeToPreview(){
+  const screen = document.querySelector(".phoneScreen");
+  if (!screen) return;
+
+  const t = state.theme || {};
+  const type = t.type || "default";
+  const color = t.color || "#f5f5f7";
+  const image = t.image || "";
+
+  screen.style.background = "";
+  screen.style.backgroundImage = "";
+  screen.style.backgroundSize = "";
+  screen.style.backgroundPosition = "";
+  screen.style.backgroundRepeat = "";
+
+  if (type === "color"){
+    screen.style.background = color;
+    return;
+  }
+  if (type === "gradient"){
+    screen.style.background = `radial-gradient(900px 520px at 25% -120px, rgba(255,149,0,0.18), transparent 60%), radial-gradient(900px 520px at 85% 18%, rgba(10,10,12,0.06), transparent 60%), ${color}`;
+    return;
+  }
+  if (type === "image" && image){
+    const token = ++themePreviewToken;
+    screen.style.background = color;
+    screen.style.backgroundImage = "none";
+    preloadImage(image).then(()=>{
+      if (token !== themePreviewToken) return;
+      screen.style.backgroundImage = `url("${image}")`;
+      screen.style.backgroundSize = "cover";
+      screen.style.backgroundPosition = "center";
+      screen.style.backgroundRepeat = "no-repeat";
+      setStatus("Background loaded");
+    }).catch(()=>{
+      if (token !== themePreviewToken) return;
+      setStatus("Background URL didn't load (use direct .jpg/.png/.gif)");
+    });
+    return;
+  }
+}
+
+/* Avatar helpers (preview uses shell+inner image like live page) */
+function ensureAvatarShell(imgEl){
   if (!imgEl) return { shell:null, img:null };
   if (imgEl.parentElement && imgEl.parentElement.classList.contains("avatarShell")){
     imgEl.classList.add("avatarImg");
@@ -101,6 +188,7 @@ function ensureAvatarShellEditor(imgEl){
   imgEl.classList.add("avatarImg");
   return { shell, img: imgEl };
 }
+
 function applyAvatarStyle(imgEl, profile){
   const p = profile || {};
   const size = Number(p.avatarSize ?? 54);
@@ -109,7 +197,7 @@ function applyAvatarStyle(imgEl, profile){
   const rad  = Number(p.avatarRadius ?? 16);
   const scale = Number(p.avatarScale ?? 1);
 
-  const { shell, img } = ensureAvatarShellEditor(imgEl);
+  const { shell, img } = ensureAvatarShell(imgEl);
   if (!shell || !img) return;
 
   shell.style.width = `${size}px`;
@@ -124,83 +212,8 @@ function applyAvatarStyle(imgEl, profile){
   img.style.transform = `scale(${scale})`;
   img.style.transformOrigin = "center";
 }
-/* Tabs */
-function setTab(tab){
-  document.querySelectorAll(".navItem").forEach(b=>{
-    b.classList.toggle("isActive", b.dataset.tab === tab);
-  });
-  document.querySelectorAll(".tab").forEach(t=>{
-    t.classList.toggle("isActive", t.id === "tab-" + tab);
-  });
 
-  const titles = {
-    links: ["Links", "Drag the dots OR use ↑ ↓ to reorder. Click a row to edit. Toggle off to hide."],
-    profile: ["Profile", "Name, logo, bio + background"],
-    icons: ["Icons", "Drag the dots OR use ↑ ↓ to reorder icons under the name."],
-    export: ["Export", "Download your updated links.json."]
-  };
-  $("pageTitle").textContent = titles[tab]?.[0] || "Links";
-  $("pageHint").textContent = titles[tab]?.[1] || "";
-}
-
-/* Theme preview */
-function applyThemeToPreview(){
-  const screen = document.querySelector(".phoneScreen");
-  if (!screen) return;
-
-  const t = state.theme || {};
-  const type = t.type || "default";
-  const color = t.color || "#f6f7fb";
-  const image = t.image || "";
-
-  // Reset
-  screen.style.background = "";
-  screen.style.backgroundImage = "";
-  screen.style.backgroundSize = "";
-  screen.style.backgroundPosition = "";
-  screen.style.backgroundRepeat = "";
-  screen.style.backgroundAttachment = "";
-
-  if (type === "color"){
-    screen.style.background = color;
-    return;
-  }
-  if (type === "gradient"){
-    screen.style.background = `radial-gradient(900px 520px at 25% -120px, rgba(255,149,0,0.20), transparent 60%), radial-gradient(900px 520px at 85% 18%, rgba(10,10,12,0.06), transparent 60%), ${color}`;
-    return;
-  }
-  if (type === "image" && image){
-    // Preview: preload so users immediately know if the URL works
-    const url = image;
-    screen.style.background = color;
-    screen.style.backgroundImage = "none";
-    preloadImage(url).then(()=>{
-      screen.style.backgroundImage = `url("${url}")`;
-      screen.style.backgroundSize = "cover";
-      screen.style.backgroundPosition = "center";
-      screen.style.backgroundRepeat = "no-repeat";
-      setStatus("Background loaded");
-    }).catch(()=>{
-      // Keep solid color + show a hint
-      setStatus("Background URL didn't load (use direct .jpg/.png/.gif)");
-    });
-    return;
-  }
-  // default: keep empty so the phone shows neutral background
-}
-
-
-function preloadImage(url){
-  return new Promise((resolve, reject)=>{
-    if (!url) return reject(new Error("empty"));
-    const img = new Image();
-    img.onload = ()=> resolve(true);
-    img.onerror = ()=> reject(new Error("load_failed"));
-    img.referrerPolicy = "no-referrer"; // helps some CDNs
-    img.src = url;
-  });
-}
-/* Preview */
+/* Preview rendering */
 function createSocialEl(s){
   if (s.enabled === false) return null;
   const a = document.createElement("a");
@@ -231,7 +244,6 @@ function createSocialEl(s){
       svg.style.strokeLinejoin = "round";
     }
   }
-
   if (!s.url) a.style.opacity = "0.55";
   return a;
 }
@@ -248,6 +260,7 @@ function createLinkEl(l){
 
   const thumb = document.createElement((l.thumb || l.iconImage) ? "img" : "div");
   thumb.className = "thumb";
+
   if (l.thumb){
     thumb.src = normalizeAssetPath(l.thumb);
     thumb.alt = "";
@@ -329,7 +342,7 @@ function renderPreview(){
   applyThemeToPreview();
 }
 
-/* UI helpers */
+/* Basic UI components */
 function makeToggle(checked, onChange){
   const toggle = document.createElement("label");
   toggle.className = "toggle";
@@ -416,7 +429,6 @@ function renderRowIcon(container, item){
   container.innerHTML = ICON_SVGS[key] || ICON_SVGS.link;
 }
 
-/* Move helpers */
 function moveInArray(arr, from, to){
   if (!arr) return;
   if (from < 0 || to < 0 || from >= arr.length || to >= arr.length) return;
@@ -424,7 +436,7 @@ function moveInArray(arr, from, to){
   arr.splice(to, 0, item);
 }
 
-/* Pointer sortable (attached once per container) */
+/* Sortable (pointer drag) */
 function attachSortable(container, getArray, onAfter){
   if (sortableAttached.has(container)) return;
   sortableAttached.add(container);
@@ -440,7 +452,6 @@ function attachSortable(container, getArray, onAfter){
 
     const cards = Array.from(container.children).filter(el => el !== drag.placeholder);
     let placed = false;
-
     for (const c of cards){
       const r = c.getBoundingClientRect();
       const mid = r.top + r.height / 2;
@@ -499,7 +510,6 @@ function attachSortable(container, getArray, onAfter){
     e.stopPropagation();
 
     isSorting = true;
-
     document.querySelectorAll(".rowCard.isOpen").forEach(el => el.classList.remove("isOpen"));
 
     const cards = Array.from(container.querySelectorAll(".rowCard"));
@@ -532,7 +542,6 @@ function attachSortable(container, getArray, onAfter){
     };
 
     suppressClickUntil = Date.now() + 600;
-
     try { handle.setPointerCapture(e.pointerId); } catch {}
 
     document.addEventListener("pointermove", onMove, true);
@@ -547,13 +556,16 @@ function attachSortable(container, getArray, onAfter){
   }, true);
 }
 
-
 /* Lists */
 function renderLinks(){
   const wrap = $("linksList");
   wrap.innerHTML = "";
 
   (state.links || []).forEach((l, idx)=>{
+    if (l.enabled === undefined) l.enabled = true;
+    if (l.icon === undefined) l.icon = "";
+    if (l.iconImage === undefined) l.iconImage = "";
+
     const card = document.createElement("div");
     card.className = "rowCard";
 
@@ -590,6 +602,7 @@ function renderLinks(){
     });
 
     const editBtn = iconBtn("edit", "Edit", ()=>{
+      if (isSorting) return;
       document.querySelectorAll(".rowCard.isOpen").forEach(el=>{
         if (el !== card) el.classList.remove("isOpen");
       });
@@ -624,7 +637,7 @@ function renderLinks(){
     top.appendChild(main);
     top.appendChild(actions);
 
-    top.addEventListener("click", () => {
+    top.addEventListener("click", ()=>{
       if (isSorting) return;
       document.querySelectorAll(".rowCard.isOpen").forEach(el=>{
         if (el !== card) el.classList.remove("isOpen");
@@ -664,14 +677,13 @@ function renderLinks(){
     grid.appendChild(field("Thumbnail (optional)", inputText(l.thumb, "./assets/thumbs/retail.png", (v)=>{
       state.links[idx].thumb = normalizeAssetPath(v);
       renderPreview(); debounceSave();
-    }), "Leave empty if you don't want an image thumbnail."));
+    })));
 
-    const iconSel = selectIcon(l.icon || "", (v)=>{
+    grid.appendChild(field("Icon (line)", selectIcon(l.icon || "", (v)=>{
       state.links[idx].icon = v;
       if (!state.links[idx].iconImage) renderRowIcon(iconBox, state.links[idx]);
       renderPreview(); debounceSave();
-    });
-    grid.appendChild(field("Icon (line)", iconSel, "Auto picks based on the URL."));
+    }), "Auto picks based on the URL."));
 
     const iconUrl = inputText(l.iconImage || "", "Icon image URL or ./assets/icon.png", (v)=>{
       state.links[idx].iconImage = normalizeAssetPath(v);
@@ -699,7 +711,7 @@ function renderLinks(){
         upload.value = "";
       }
     });
-    grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json (no extra file)."));
+    grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json."));
 
     const clearBtn = document.createElement("button");
     clearBtn.type = "button";
@@ -721,7 +733,7 @@ function renderLinks(){
     wrap.appendChild(card);
   });
 
-  attachSortable(wrap, () => state.links, () => { renderLinks(); renderPreview(); debounceSave(); });
+  attachSortable(wrap, ()=> state.links, ()=>{ renderLinks(); renderPreview(); debounceSave(); });
 }
 
 function renderSocials(){
@@ -729,6 +741,9 @@ function renderSocials(){
   wrap.innerHTML = "";
 
   (state.socials || []).forEach((s, idx)=>{
+    if (s.enabled === undefined) s.enabled = true;
+    if (s.iconImage === undefined) s.iconImage = "";
+
     const card = document.createElement("div");
     card.className = "rowCard";
 
@@ -765,6 +780,7 @@ function renderSocials(){
     });
 
     const editBtn = iconBtn("edit", "Edit", ()=>{
+      if (isSorting) return;
       document.querySelectorAll(".rowCard.isOpen").forEach(el=>{
         if (el !== card) el.classList.remove("isOpen");
       });
@@ -799,7 +815,7 @@ function renderSocials(){
     top.appendChild(main);
     top.appendChild(actions);
 
-    top.addEventListener("click", () => {
+    top.addEventListener("click", ()=>{
       if (isSorting) return;
       document.querySelectorAll(".rowCard.isOpen").forEach(el=>{
         if (el !== card) el.classList.remove("isOpen");
@@ -862,7 +878,7 @@ function renderSocials(){
         upload.value = "";
       }
     });
-    grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json (no extra file)."));
+    grid.appendChild(field("Upload icon (optional)", upload, "Embeds into links.json."));
 
     const clearBtn = document.createElement("button");
     clearBtn.type = "button";
@@ -884,11 +900,10 @@ function renderSocials(){
     wrap.appendChild(card);
   });
 
-  attachSortable(wrap, () => state.socials, () => { renderSocials(); renderPreview(); debounceSave(); });
+  attachSortable(wrap, ()=> state.socials, ()=>{ renderSocials(); renderPreview(); debounceSave(); });
 }
 
-/* Profile */
-
+/* Logo modal */
 function syncLogoUI(){
   const p = state.profile || {};
   const size = Number(p.avatarSize ?? 54);
@@ -897,33 +912,34 @@ function syncLogoUI(){
   const scale = Number(p.avatarScale ?? 1);
   const fit  = p.avatarFit || "contain";
 
-  // Mini preview
   const mini = $("logoMiniImg");
   if (mini){
-    mini.src = p.avatar || "";
+    mini.src = normalizeAssetPath(p.avatar || "");
     applyAvatarStyle(mini, p);
   }
 
-  // Modal preview
   const stageImg = $("logoStageImg");
   const stageShell = $("logoStageShell");
   if (stageImg && stageShell){
-    stageImg.src = p.avatar || "";
+    stageImg.src = normalizeAssetPath(p.avatar || "");
     stageShell.style.width = `${size}px`;
     stageShell.style.height = `${size}px`;
     stageShell.style.padding = `${pad}px`;
     stageShell.style.borderRadius = `${rad}px`;
+    stageShell.style.boxSizing = "border-box";
+
+    stageImg.style.width = "100%";
+    stageImg.style.height = "100%";
     stageImg.style.objectFit = fit;
     stageImg.style.transform = `scale(${scale})`;
+    stageImg.style.transformOrigin = "center";
   }
 
-  // Labels
   if ($("logoSizeValue")) $("logoSizeValue").textContent = String(size);
   if ($("logoPadValue")) $("logoPadValue").textContent = String(pad);
   if ($("logoRadValue")) $("logoRadValue").textContent = String(rad);
   if ($("logoZoomValue")) $("logoZoomValue").textContent = Number(scale).toFixed(2);
 
-  // Fit segment
   const contain = $("fitContain");
   const cover = $("fitCover");
   if (contain && cover){
@@ -947,43 +963,27 @@ function closeLogoModal(){
   modal.setAttribute("aria-hidden","true");
 }
 
-// Expose for inline onclick fallback
-window.__openLogoModal = openLogoModal;
-window.__closeLogoModal = closeLogoModal;
-
-// Event delegation fallback (in case a handler fails to attach)
-document.addEventListener("click", (e)=>{
-  const openBtn = e.target.closest && e.target.closest("#openLogoModal");
-  if (openBtn){
-    e.preventDefault();
-    e.stopPropagation();
-    openLogoModal();
-  }
-}, true);
-
 function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
 
+/* Profile UI */
 function renderProfile(){
   $("p_name").value = state.profile?.name || "";
   $("p_avatar").value = state.profile?.avatar || "";
   $("p_bio").value = state.profile?.bio || "";
   $("brandName").textContent = state.profile?.name || "The BFA Group";
 
-  // Theme UI
   const t = state.theme || {};
-  if ($("bg_type")) $("bg_type").value = t.type || "default";
-  if ($("bg_color")) $("bg_color").value = t.color || "#f6f7fb";
-  if ($("bg_image")) $("bg_image").value = t.image || "";
+  $("bg_type").value = t.type || "default";
+  $("bg_color").value = t.color || "#f5f5f7";
+  $("bg_image").value = t.image || "";
 
-  // Logo mini + modal sync
   syncLogoUI();
 }
-
 
 /* Export */
 function downloadJson(){
   state.profile.avatar = normalizeAssetPath(state.profile.avatar);
-  state.theme = state.theme || { type:"default", color:"#f6f7fb", image:"" };
+  state.theme = state.theme || { type:"default", color:"#f5f5f7", image:"" };
   state.theme.image = normalizeAssetPath(state.theme.image);
 
   (state.links || []).forEach(l => {
@@ -1008,16 +1008,19 @@ function downloadJson(){
 }
 
 async function loadInitial(){
+  // draft first
   try{
     const saved = localStorage.getItem(LS_KEY);
     if (saved){
       state = JSON.parse(saved);
       setStatus("Loaded draft");
+      normalizeState();
       renderAll();
       return;
     }
   }catch{}
 
+  // site next
   try{
     const res = await fetch("./links.json", { cache: "no-store" });
     state = await res.json();
@@ -1026,13 +1029,17 @@ async function loadInitial(){
     state = defaultState();
     setStatus("New draft");
   }
+  normalizeState();
+  renderAll();
+}
 
-  state.profile = { name:"", avatar:"", bio:"", ...(state.profile || {}) };
-  state.theme = { type:"default", color:"#f6f7fb", image:"", ...(state.theme || state.background || {}) };
+function normalizeState(){
+  state = state || defaultState();
+  state.profile = { ...defaultState().profile, ...(state.profile || {}) };
+  state.theme = { ...defaultState().theme, ...(state.theme || state.background || {}) };
   state.socials = (state.socials || []).map(s => ({ enabled: true, iconImage: "", ...s }));
   state.links = (state.links || []).map(l => ({ enabled: true, icon: "", iconImage: "", ...l }));
-
-  renderAll();
+  state.footerText = state.footerText || "";
 }
 
 function renderAll(){
@@ -1061,55 +1068,13 @@ function wire(){
 
   $("p_avatar").addEventListener("input", (e)=>{
     state.profile.avatar = normalizeAssetPath(e.target.value);
+    syncLogoUI();
     renderPreview(); debounceSave();
   });
 
   $("p_bio").addEventListener("input", (e)=>{
     state.profile.bio = e.target.value;
-    renderPreview();
-
-  // Logo controls (live preview)
-  if ($("logo_size")){
-    $("logo_size").addEventListener("input", (e)=>{
-      state.profile.avatarSize = Number(e.target.value);
-      $("logo_size_label").textContent = e.target.value;
-      renderPreview(); debounceSave();
-    });
-  }
-  if ($("logo_padding")){
-    $("logo_padding").addEventListener("input", (e)=>{
-      state.profile.avatarPadding = Number(e.target.value);
-      $("logo_padding_label").textContent = e.target.value;
-      renderPreview(); debounceSave();
-    });
-  }
-
-  if ($("logo_scale")){
-    $("logo_scale").addEventListener("input", (e)=>{
-      state.profile.avatarScale = Number(e.target.value);
-      $("logo_scale_label").textContent = Number(e.target.value).toFixed(2);
-      renderPreview(); debounceSave();
-    });
-  }
-  if ($("logo_fit")){
-    $("logo_fit").addEventListener("change", (e)=>{
-      state.profile.avatarFit = e.target.value;
-      renderPreview(); debounceSave();
-    });
-  }
-  if ($("logo_scale")){
-    $("logo_scale").value = Number(state.profile?.avatarScale ?? 1);
-    $("logo_scale_label").textContent = Number($("logo_scale").value).toFixed(2);
-  }
-  
-  if ($("logo_radius")){
-    $("logo_radius").addEventListener("input", (e)=>{
-      state.profile.avatarRadius = Number(e.target.value);
-      $("logo_radius_label").textContent = e.target.value;
-      renderPreview(); debounceSave();
-    });
-  }
- debounceSave();
+    renderPreview(); debounceSave();
   });
 
   $("p_avatar_file").addEventListener("change", async (e)=>{
@@ -1117,123 +1082,9 @@ function wire(){
     if(!file) return;
     try{
       const dataUrl = await readFileAsDataURL(file);
-
-  // Logo modal
-  const openLogoBtn = $("openLogoModal");
-  if (openLogoBtn){
-    openLogoBtn.addEventListener("click", (e)=>{
-      e.preventDefault();
-      e.stopPropagation();
-      openLogoModal();
-    });
-  }
-
-  const closeBtn = $("logoModalClose");
-  const backdrop = $("logoModalBackdrop");
-  const doneBtn = $("logoDoneBtn");
-
-  const closeAll = ()=> closeLogoModal();
-  if (closeBtn) closeBtn.addEventListener("click", closeAll);
-  if (doneBtn) doneBtn.addEventListener("click", closeAll);
-  if (backdrop) backdrop.addEventListener("click", closeAll);
-
-  // Steppers
-  const step = (key, delta, min, max, decimals=false)=>{
-    const p = state.profile;
-    const v = Number(p[key] ?? 0);
-    const next = clamp(v + delta, min, max);
-    p[key] = decimals ? Number(next.toFixed(2)) : next;
-    syncLogoUI();
-    renderPreview();
-    debounceSave();
-  };
-
-  const sizeMinus = $("logoSizeMinus"), sizePlus = $("logoSizePlus");
-  if (sizeMinus) sizeMinus.addEventListener("click", ()=> step("avatarSize", -4, 44, 140));
-  if (sizePlus)  sizePlus.addEventListener("click",  ()=> step("avatarSize", +4, 44, 140));
-
-  const padMinus = $("logoPadMinus"), padPlus = $("logoPadPlus");
-  if (padMinus) padMinus.addEventListener("click", ()=> step("avatarPadding", -1, 0, 18));
-  if (padPlus)  padPlus.addEventListener("click",  ()=> step("avatarPadding", +1, 0, 18));
-
-  const zoomMinus = $("logoZoomMinus"), zoomPlus = $("logoZoomPlus");
-  if (zoomMinus) zoomMinus.addEventListener("click", ()=> step("avatarScale", -0.05, 0.6, 2.0, true));
-  if (zoomPlus)  zoomPlus.addEventListener("click",  ()=> step("avatarScale", +0.05, 0.6, 2.0, true));
-
-  const radMinus = $("logoRadMinus"), radPlus = $("logoRadPlus");
-  if (radMinus) radMinus.addEventListener("click", ()=> step("avatarRadius", -1, 0, 30));
-  if (radPlus)  radPlus.addEventListener("click",  ()=> step("avatarRadius", +1, 0, 30));
-
-  const fitContain = $("fitContain"), fitCover = $("fitCover");
-  if (fitContain) fitContain.addEventListener("click", ()=>{
-    state.profile.avatarFit = "contain";
-    syncLogoUI(); renderPreview(); debounceSave();
-  });
-  if (fitCover) fitCover.addEventListener("click", ()=>{
-    state.profile.avatarFit = "cover";
-    syncLogoUI(); renderPreview(); debounceSave();
-  });
-
-  const resetBtn = $("logoResetBtn");
-  if (resetBtn) resetBtn.addEventListener("click", ()=>{
-    state.profile.avatarSize = 54;
-    state.profile.avatarPadding = 8;
-    state.profile.avatarFit = "contain";
-    state.profile.avatarRadius = 16;
-    state.profile.avatarScale = 1;
-    syncLogoUI(); renderPreview(); debounceSave();
-  });
-
-  // Drag to resize
-  const handle = $("logoResizeHandle");
-  const shell = $("logoStageShell");
-  if (handle && shell){
-    let dragging = false;
-    let startX = 0;
-    let startSize = 54;
-
-    handle.addEventListener("pointerdown", (e)=>{
-      e.preventDefault();
-      e.stopPropagation();
-      dragging = true;
-      startX = e.clientX;
-      startSize = Number(state.profile.avatarSize ?? 54);
-      handle.setPointerCapture(e.pointerId);
-    });
-
-    handle.addEventListener("pointermove", (e)=>{
-      if (!dragging) return;
-      const dx = e.clientX - startX;
-      const next = clamp(startSize + dx, 44, 140);
-      state.profile.avatarSize = Math.round(next/2)*2; // even steps
-      syncLogoUI(); renderPreview();
-    });
-
-    const end = (e)=>{
-      if (!dragging) return;
-      dragging = false;
-      debounceSave();
-      try{ handle.releasePointerCapture(e.pointerId); }catch{}
-    };
-    handle.addEventListener("pointerup", end);
-    handle.addEventListener("pointercancel", end);
-  }
-
-  // Scroll to zoom (stage)
-  const stage = $("logoStageShell");
-  if (stage){
-    stage.addEventListener("wheel", (e)=>{
-      e.preventDefault();
-      const delta = (e.deltaY > 0) ? -0.05 : 0.05;
-      const cur = Number(state.profile.avatarScale ?? 1);
-      state.profile.avatarScale = Number(clamp(cur + delta, 0.6, 2.0).toFixed(2));
-      syncLogoUI(); renderPreview(); debounceSave();
-    }, { passive: false });
-  }
-
-
       state.profile.avatar = dataUrl;
       $("p_avatar").value = dataUrl;
+      syncLogoUI();
       renderPreview(); debounceSave();
       setStatus("Logo embedded");
     }catch{
@@ -1243,32 +1094,31 @@ function wire(){
     }
   });
 
-  // Theme controls (preview updates immediately)
-  if ($("bg_type")) $("bg_type").addEventListener("change", (e)=>{
-    state.theme = state.theme || {};
+  // Theme controls
+  $("bg_type").addEventListener("change", (e)=>{
     state.theme.type = e.target.value;
     renderPreview(); debounceSave();
   });
-  if ($("bg_color")) $("bg_color").addEventListener("input", (e)=>{
-    state.theme = state.theme || {};
+
+  $("bg_color").addEventListener("input", (e)=>{
     state.theme.color = e.target.value;
     renderPreview(); debounceSave();
   });
-  if ($("bg_image")) $("bg_image").addEventListener("input", (e)=>{
-    state.theme = state.theme || {};
+
+  $("bg_image").addEventListener("input", (e)=>{
     state.theme.image = normalizeAssetPath(e.target.value);
     renderPreview(); debounceSave();
   });
-  if ($("bg_image_file")) $("bg_image_file").addEventListener("change", async (e)=>{
+
+  $("bg_image_file").addEventListener("change", async (e)=>{
     const file = e.target.files?.[0];
     if(!file) return;
     try{
       const dataUrl = await readFileAsDataURL(file);
-      state.theme = state.theme || {};
-      state.theme.image = dataUrl;
-      $("bg_image").value = dataUrl;
       state.theme.type = "image";
-      if ($("bg_type")) $("bg_type").value = "image";
+      state.theme.image = dataUrl;
+      $("bg_type").value = "image";
+      $("bg_image").value = dataUrl;
       renderPreview(); debounceSave();
       setStatus("Background embedded");
     }catch{
@@ -1278,6 +1128,94 @@ function wire(){
     }
   });
 
+  // Logo modal open/close (plus inline fallback in HTML)
+  $("openLogoModal").addEventListener("click", (e)=>{ e.preventDefault(); openLogoModal(); });
+  $("logoModalClose").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
+  $("logoModalBackdrop").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
+  $("logoDoneBtn").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
+
+  const step = (key, delta, min, max, decimals=false)=>{
+    const v = Number(state.profile[key] ?? 0);
+    const next = clamp(v + delta, min, max);
+    state.profile[key] = decimals ? Number(next.toFixed(2)) : next;
+    syncLogoUI(); renderPreview(); debounceSave();
+  };
+
+  $("logoSizeMinus").addEventListener("click", ()=> step("avatarSize", -4, 44, 140));
+  $("logoSizePlus").addEventListener("click",  ()=> step("avatarSize", +4, 44, 140));
+
+  $("logoPadMinus").addEventListener("click", ()=> step("avatarPadding", -1, 0, 18));
+  $("logoPadPlus").addEventListener("click",  ()=> step("avatarPadding", +1, 0, 18));
+
+  $("logoZoomMinus").addEventListener("click", ()=> step("avatarScale", -0.05, 0.6, 2.0, true));
+  $("logoZoomPlus").addEventListener("click",  ()=> step("avatarScale", +0.05, 0.6, 2.0, true));
+
+  $("logoRadMinus").addEventListener("click", ()=> step("avatarRadius", -1, 0, 30));
+  $("logoRadPlus").addEventListener("click",  ()=> step("avatarRadius", +1, 0, 30));
+
+  $("fitContain").addEventListener("click", ()=>{
+    state.profile.avatarFit = "contain";
+    syncLogoUI(); renderPreview(); debounceSave();
+  });
+  $("fitCover").addEventListener("click", ()=>{
+    state.profile.avatarFit = "cover";
+    syncLogoUI(); renderPreview(); debounceSave();
+  });
+
+  $("logoResetBtn").addEventListener("click", ()=>{
+    state.profile.avatarSize = 54;
+    state.profile.avatarPadding = 8;
+    state.profile.avatarFit = "contain";
+    state.profile.avatarRadius = 16;
+    state.profile.avatarScale = 1;
+    syncLogoUI(); renderPreview(); debounceSave();
+  });
+
+  // Drag corner to resize
+  const resizeHandle = $("logoResizeHandle");
+  const stageShell = $("logoStageShell");
+  if (resizeHandle && stageShell){
+    let dragging = false;
+    let startX = 0;
+    let startSize = 54;
+
+    resizeHandle.addEventListener("pointerdown", (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      dragging = true;
+      startX = e.clientX;
+      startSize = Number(state.profile.avatarSize ?? 54);
+      resizeHandle.setPointerCapture(e.pointerId);
+    });
+
+    resizeHandle.addEventListener("pointermove", (e)=>{
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      const next = clamp(startSize + dx, 44, 140);
+      state.profile.avatarSize = Math.round(next/2)*2;
+      syncLogoUI(); renderPreview();
+    });
+
+    const end = (e)=>{
+      if (!dragging) return;
+      dragging = false;
+      debounceSave();
+      try{ resizeHandle.releasePointerCapture(e.pointerId); }catch{}
+    };
+    resizeHandle.addEventListener("pointerup", end);
+    resizeHandle.addEventListener("pointercancel", end);
+  }
+
+  // Scroll to zoom in modal stage
+  stageShell.addEventListener("wheel", (e)=>{
+    e.preventDefault();
+    const delta = (e.deltaY > 0) ? -0.05 : 0.05;
+    const cur = Number(state.profile.avatarScale ?? 1);
+    state.profile.avatarScale = Number(clamp(cur + delta, 0.6, 2.0).toFixed(2));
+    syncLogoUI(); renderPreview(); debounceSave();
+  }, { passive: false });
+
+  // Add items
   $("addLink").addEventListener("click", ()=>{
     state.links.unshift({ title: "New link", subtitle: "", url: "", thumb: "", badge: "", enabled: true, icon: "", iconImage: "" });
     renderLinks(); renderPreview(); debounceSave();
@@ -1288,16 +1226,14 @@ function wire(){
     renderSocials(); renderPreview(); debounceSave();
   });
 
+  // Import/export
   $("import").addEventListener("change", async (e)=>{
     const file = e.target.files?.[0];
     if(!file) return;
     try{
       const text = await file.text();
       state = JSON.parse(text);
-      state.profile = { name:"", avatar:"", bio:"", ...(state.profile || {}) };
-      state.theme = { type:"default", color:"#f6f7fb", image:"", ...(state.theme || state.background || {}) };
-      state.socials = (state.socials || []).map(s => ({ enabled: true, iconImage: "", ...s }));
-      state.links = (state.links || []).map(l => ({ enabled: true, icon: "", iconImage: "", ...l }));
+      normalizeState();
       localStorage.setItem(LS_KEY, JSON.stringify(state));
       setStatus("Imported");
       renderAll();
@@ -1308,28 +1244,7 @@ function wire(){
     }
   });
 
-  
-  // Reload from site (ignores local draft)
-  const reloadBtn = $("reloadFromSite");
-  if (reloadBtn){
-    reloadBtn.addEventListener("click", async ()=>{
-      try{ localStorage.removeItem(LS_KEY); }catch{}
-      try{
-        const res = await fetch("./links.json", { cache: "no-store" });
-        state = await res.json();
-        state.profile = { name:"", avatar:"", bio:"", ...(state.profile || {}) };
-        state.theme = { type:"default", color:"#f6f7fb", image:"", ...(state.theme || state.background || {}) };
-        state.socials = (state.socials || []).map(s => ({ enabled: true, iconImage: "", ...s }));
-        state.links = (state.links || []).map(l => ({ enabled: true, icon: "", iconImage: "", ...l }));
-        setStatus("Loaded from site");
-        renderAll();
-      }catch{
-        setStatus("Could not load site file");
-      }
-    });
-  }
-
-$("download").addEventListener("click", downloadJson);
+  $("download").addEventListener("click", downloadJson);
   $("download2").addEventListener("click", downloadJson);
 
   $("resetDraft").addEventListener("click", ()=>{
@@ -1338,7 +1253,24 @@ $("download").addEventListener("click", downloadJson);
     renderAll();
     setStatus("Draft reset");
   });
+
+  $("reloadFromSite").addEventListener("click", async ()=>{
+    try{ localStorage.removeItem(LS_KEY); }catch{}
+    try{
+      const res = await fetch("./links.json", { cache: "no-store" });
+      state = await res.json();
+      normalizeState();
+      setStatus("Loaded from site");
+      renderAll();
+    }catch{
+      setStatus("Could not load site file");
+    }
+  });
 }
 
 wire();
 loadInitial();
+
+// Expose for inline fallback
+window.__openLogoModal = openLogoModal;
+window.__closeLogoModal = closeLogoModal;
