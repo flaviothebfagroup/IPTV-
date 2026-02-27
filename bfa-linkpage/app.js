@@ -1,3 +1,27 @@
+
+async function loadJsonWithFallback(){
+  const ts = Date.now();
+  const base = new URL(".", location.href); // works for /index.html or /
+  const candidates = [
+    new URL("links.json", base).toString(),
+    "./links.json?ts=" + ts,
+    "links.json?ts=" + ts,
+    "/links.json?ts=" + ts
+  ];
+
+  let lastErr = null;
+  for (const url of candidates){
+    try{
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+      return await res.json();
+    }catch(err){
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error("Could not load links.json");
+}
+
 const $ = (id) => document.getElementById(id);
 
 const ICONS = {
@@ -213,8 +237,7 @@ function applyAvatar(imgEl, profile){
   img.style.transformOrigin = "center";
 }
 async function init() {
-  const res = await fetch("./links.json", { cache: "no-store" });
-  const data = await res.json();
+  const data = await loadJsonWithFallback();
 
   // Apply background/theme from links.json
   applyTheme(data.theme || data.background);

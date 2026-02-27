@@ -1,8 +1,8 @@
 (() => {
   const $ = (id) => document.getElementById(id);
 
-  const BUILD = "v29";
-  const LS_KEY = "bfa_linktree_editor_draft_v29";
+  const BUILD = "v30";
+  const LS_KEY = "bfa_linktree_editor_draft_v30";
 
   const ICON_SVGS = {
     website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10S9.5 4.7 12 2z"/></svg>`,
@@ -189,7 +189,48 @@
     $("pageHint").textContent = TAB_TITLES[tab]?.[1] || "";
   }
 
-  // Preview theme
+  
+  // Preview sizing (9:16 / 16:9) + Big toggle
+  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v30";
+  let previewPrefs = { aspect: "9:16", big: false };
+  try{
+    const saved = localStorage.getItem(PREVIEW_KEY);
+    if (saved) previewPrefs = { ...previewPrefs, ...JSON.parse(saved) };
+  }catch{}
+
+  function savePreviewPrefs(){
+    try{ localStorage.setItem(PREVIEW_KEY, JSON.stringify(previewPrefs)); }catch{}
+  }
+
+  function applyPreviewSize(){
+    const screen = $("phoneScreen");
+    if (!screen) return;
+
+    const aspect = previewPrefs.aspect || "9:16";
+    const big = !!previewPrefs.big;
+
+    const base = (aspect === "16:9") ? [640, 360] : [360, 640];
+    const scale = big ? 1.18 : 1.0;
+
+    screen.style.width = `${Math.round(base[0] * scale)}px`;
+    screen.style.height = `${Math.round(base[1] * scale)}px`;
+  }
+
+  function setAspect(aspect){
+    previewPrefs.aspect = aspect;
+    savePreviewPrefs();
+    $("aspect916")?.classList.toggle("isActive", aspect === "9:16");
+    $("aspect169")?.classList.toggle("isActive", aspect === "16:9");
+    applyPreviewSize();
+  }
+
+  function setBig(on){
+    previewPrefs.big = !!on;
+    savePreviewPrefs();
+    applyPreviewSize();
+  }
+
+// Preview theme
   let bgToken = 0;
   function preloadImage(url){
     return new Promise((resolve, reject)=>{
@@ -424,6 +465,7 @@
     });
 
     applyThemeToPreview();
+    applyPreviewSize();
   }
 
   // Inline icon controls UI
@@ -1070,10 +1112,9 @@
     $("downloadTop").addEventListener("click", ()=> downloadJson());
 
     $("toggleBig").addEventListener("click", ()=>{
-      const on = document.body.classList.toggle("big");
+      const on = !previewPrefs.big;
       $("toggleBig").setAttribute("aria-pressed", on ? "true" : "false");
-      // simple: scale preview container via CSS class
-      document.querySelector(".preview")?.classList.toggle("isBig", on);
+      setBig(on);
     });
 
     // Links/icons add
@@ -1377,6 +1418,9 @@
   safe(()=>{
     setTab("links");
     wire();
+    setAspect(previewPrefs.aspect || "9:16");
+    $("toggleBig").setAttribute("aria-pressed", previewPrefs.big ? "true" : "false");
+    setBig(!!previewPrefs.big);
     loadInitial(false);
   });
 })();
