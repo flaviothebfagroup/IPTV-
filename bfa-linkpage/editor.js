@@ -947,6 +947,20 @@ function closeLogoModal(){
   modal.setAttribute("aria-hidden","true");
 }
 
+// Expose for inline onclick fallback
+window.__openLogoModal = openLogoModal;
+window.__closeLogoModal = closeLogoModal;
+
+// Event delegation fallback (in case a handler fails to attach)
+document.addEventListener("click", (e)=>{
+  const openBtn = e.target.closest && e.target.closest("#openLogoModal");
+  if (openBtn){
+    e.preventDefault();
+    e.stopPropagation();
+    openLogoModal();
+  }
+}, true);
+
 function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
 
 function renderProfile(){
@@ -1107,7 +1121,9 @@ function wire(){
   // Logo modal
   const openLogoBtn = $("openLogoModal");
   if (openLogoBtn){
-    openLogoBtn.addEventListener("click", ()=>{
+    openLogoBtn.addEventListener("click", (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
       openLogoModal();
     });
   }
