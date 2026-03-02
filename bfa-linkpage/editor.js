@@ -1,8 +1,8 @@
 (() => {
   const $ = (id) => document.getElementById(id);
 
-  const BUILD = "v43";
-  const LS_KEY = "bfa_linktree_editor_draft_v43";
+  const BUILD = "v44";
+  const LS_KEY = "bfa_linktree_editor_draft_v44";
 
   const ICON_SVGS = {
     website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10S9.5 4.7 12 2z"/></svg>`,
@@ -178,7 +178,33 @@
     export: ["Export", "Download your updated links.json"]
   };
 
-  function setTab(tab){
+  
+  const STEP_ORDER = ["links","profile","icons","export"];
+
+  function getCurrentTab(){
+    const active = document.querySelector(".navItem.isActive");
+    return active?.getAttribute("data-tab") || "links";
+  }
+
+  function updateStepperUI(){
+    const tab = getCurrentTab();
+    const idx = STEP_ORDER.indexOf(tab);
+    const step = idx >= 0 ? idx + 1 : 1;
+
+    const hint = $("stepHint");
+    if (hint) hint.textContent = `Step ${step} of 4`;
+
+    const nextBtn = $("stepNext");
+    if (!nextBtn) return;
+
+    if (tab === "export"){
+      nextBtn.textContent = "DOWNLOAD LINKS.JSON";
+    } else {
+      nextBtn.textContent = "Next";
+    }
+  }
+
+function setTab(tab){
     document.querySelectorAll(".navItem").forEach(b=>{
       b.classList.toggle("isActive", b.dataset.tab === tab);
     });
@@ -187,11 +213,13 @@
     });
     $("pageTitle").textContent = TAB_TITLES[tab]?.[0] || "Links";
     $("pageHint").textContent = TAB_TITLES[tab]?.[1] || "";
+  
+    updateStepperUI();
   }
 
   
   // Preview sizing (9:16 / 16:9) + Big toggle
-  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v43";
+  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v44";
   let previewPrefs = { aspect: "9:16", big: false };
   try{
     const saved = localStorage.getItem(PREVIEW_KEY);
@@ -199,7 +227,7 @@
   }catch{}
 
   
-  const FLOAT_KEY = "bfa_linktree_preview_float_v43";
+  const FLOAT_KEY = "bfa_linktree_preview_float_v44";
   let floatOn = false;
   try{ floatOn = localStorage.getItem(FLOAT_KEY) === "1"; }catch{}
   function setFloat(on){
@@ -1200,6 +1228,23 @@ function openLogoModal(){
     });
 
     $("downloadTop").addEventListener("click", ()=> downloadJson());
+    // Stepper: Next button
+    $("stepNext")?.addEventListener("click", (e)=>{
+      e.preventDefault();
+      const tab = getCurrentTab();
+      const idx = STEP_ORDER.indexOf(tab);
+
+      if (tab === "export"){
+        downloadJson();
+        return;
+      }
+      const nextTab = STEP_ORDER[Math.min(idx + 1, STEP_ORDER.length - 1)] || "export";
+      setTab(nextTab);
+      // scroll to top of the editor pane
+      document.querySelector(".tabsCol")?.scrollTo({ top: 0, behavior: "smooth" });
+      updateStepperUI();
+    });
+
     $("downloadCta")?.addEventListener("click", (e)=>{ e.preventDefault(); downloadJson(); });
 
 
@@ -1266,7 +1311,7 @@ function openLogoModal(){
       const grip = document.getElementById("previewResize");
       if (!dock || !grip) return;
 
-      const KEY = "bfa_preview_dock_size_v43";
+      const KEY = "bfa_preview_dock_size_v44";
       try{
         const saved = JSON.parse(localStorage.getItem(KEY) || "null");
         if (saved && saved.w){
@@ -1746,6 +1791,7 @@ function downloadJson(){
   // init
   safe(()=>{
     setTab("links");
+    updateStepperUI();
     wire();
     setAspect(previewPrefs.aspect || "9:16");
     $("toggleBig").setAttribute("aria-pressed", previewPrefs.big ? "true" : "false");
