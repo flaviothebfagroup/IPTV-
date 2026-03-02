@@ -1,8 +1,8 @@
 (() => {
   const $ = (id) => document.getElementById(id);
 
-  const BUILD = "v38";
-  const LS_KEY = "bfa_linktree_editor_draft_v38";
+  const BUILD = "v39";
+  const LS_KEY = "bfa_linktree_editor_draft_v39";
 
   const ICON_SVGS = {
     website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10S9.5 4.7 12 2z"/></svg>`,
@@ -191,7 +191,7 @@
 
   
   // Preview sizing (9:16 / 16:9) + Big toggle
-  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v38";
+  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v39";
   let previewPrefs = { aspect: "9:16", big: false };
   try{
     const saved = localStorage.getItem(PREVIEW_KEY);
@@ -199,7 +199,7 @@
   }catch{}
 
   
-  const FLOAT_KEY = "bfa_linktree_preview_float_v38";
+  const FLOAT_KEY = "bfa_linktree_preview_float_v39";
   let floatOn = false;
   try{ floatOn = localStorage.getItem(FLOAT_KEY) === "1"; }catch{}
   function setFloat(on){
@@ -214,24 +214,27 @@ function savePreviewPrefs(){
 
   function applyPreviewSize(){
     const screen = $("phoneScreen");
-    if (!screen) return;
+    const panel = document.querySelector(".preview");
+    if (!screen || !panel) return;
 
     const aspect = previewPrefs.aspect || "9:16";
     const big = !!previewPrefs.big;
 
-    const previewEl = document.querySelector(".preview");
-    const maxW = Math.max(260, (previewEl?.clientWidth || 420) - 24);
+    // available area inside preview panel (minus handle)
+    const maxW = Math.max(260, (panel.clientWidth || 420) - 24);
+    const maxH = Math.max(260, (panel.clientHeight || 640) - 64); // handle + padding
+
     const scale = big ? 1.18 : 1.0;
 
     let w, h;
     if (aspect === "16:9"){
-      w = Math.min(520 * scale, maxW);
+      // width limited by both maxW and maxH
+      w = Math.min(560 * scale, maxW, Math.floor(maxH * 16 / 9));
       h = Math.round(w * 9 / 16);
       screen.style.aspectRatio = "16 / 9";
     } else {
-      w = Math.min(360 * scale, maxW);
+      w = Math.min(380 * scale, maxW, Math.floor(maxH * 9 / 16));
       h = Math.round(w * 16 / 9);
-      h = Math.min(h, Math.round(720 * scale));
       screen.style.aspectRatio = "9 / 16";
     }
 
