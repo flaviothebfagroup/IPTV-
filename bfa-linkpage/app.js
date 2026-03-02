@@ -231,7 +231,9 @@ function applyIconCfg(imgEl, cfg){
   const scale = Number(c.scale ?? 1);
   const fit = c.fit || "contain";
   imgEl.style.objectFit = fit;
-  imgEl.style.transform = `scale(${scale})`;
+  const x = Number(c.x ?? 0);
+  const y = Number(c.y ?? 0);
+  imgEl.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
   imgEl.style.transformOrigin = "center";
 }
 

@@ -1,8 +1,8 @@
 (() => {
   const $ = (id) => document.getElementById(id);
 
-  const BUILD = "v35";
-  const LS_KEY = "bfa_linktree_editor_draft_v35";
+  const BUILD = "v36";
+  const LS_KEY = "bfa_linktree_editor_draft_v36";
 
   const ICON_SVGS = {
     website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10S9.5 4.7 12 2z"/></svg>`,
@@ -110,11 +110,11 @@
       },
       theme: { type: "default", color: "#f5f5f7", image: "" },
       icons: [
-        { type: "website", url: "https://www.thebfagroup.com/", enabled: true, iconImage: "", iconCfg: { scale: 1, fit: "contain" } },
-        { type: "instagram", url: "https://www.instagram.com/bfa.autovisiontv/", enabled: true, iconImage: "", iconCfg: { scale: 1, fit: "contain" } }
+        { type: "website", url: "https://www.thebfagroup.com/", enabled: true, iconImage: "", iconCfg: { scale: 1, fit: "contain", x: 0, y: 0 } },
+        { type: "instagram", url: "https://www.instagram.com/bfa.autovisiontv/", enabled: true, iconImage: "", iconCfg: { scale: 1, fit: "contain", x: 0, y: 0 } }
       ],
       links: [
-        { title: "Website", subtitle: "thebfagroup.com", url: "https://www.thebfagroup.com/", badge: "", thumb: "", enabled: true, icon: "", iconImage: "", iconCfg: { scale: 1, fit: "contain" } }
+        { title: "Website", subtitle: "thebfagroup.com", url: "https://www.thebfagroup.com/", badge: "", thumb: "", enabled: true, icon: "", iconImage: "", iconCfg: { scale: 1, fit: "contain", x: 0, y: 0 } }
       ],
       footerText: "",
       updatedAt: null
@@ -136,7 +136,7 @@
       icons: (s.icons || s.socials || d.icons).map(it => ({
         enabled: true,
         iconImage: "",
-        iconCfg: { scale: 1, fit: "contain" },
+        iconCfg: { scale: 1, fit: "contain", x: 0, y: 0 },
         ...it,
         iconCfg: { scale: 1, fit: "contain", ...(it.iconCfg || {}) }
       })),
@@ -144,7 +144,7 @@
         enabled: true,
         icon: "",
         iconImage: "",
-        iconCfg: { scale: 1, fit: "contain" },
+        iconCfg: { scale: 1, fit: "contain", x: 0, y: 0 },
         ...l,
         iconCfg: { scale: 1, fit: "contain", ...(l.iconCfg || {}) }
       })),
@@ -191,7 +191,7 @@
 
   
   // Preview sizing (9:16 / 16:9) + Big toggle
-  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v35";
+  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v36";
   let previewPrefs = { aspect: "9:16", big: false };
   try{
     const saved = localStorage.getItem(PREVIEW_KEY);
@@ -328,8 +328,12 @@
   function applyIconCfg(imgEl, cfg){
     if (!imgEl) return;
     const c = cfg || {};
-    imgEl.style.objectFit = c.fit || "contain";
-    imgEl.style.transform = `scale(${Number(c.scale ?? 1)})`;
+    const scale = Number(c.scale ?? 1);
+    const fit = c.fit || "contain";
+    const x = Number(c.x ?? 0);
+    const y = Number(c.y ?? 0);
+    imgEl.style.objectFit = fit;
+    imgEl.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
     imgEl.style.transformOrigin = "center";
   }
 
@@ -530,7 +534,7 @@
     });
     reset.addEventListener("click", (e)=>{
       e.preventDefault(); e.stopPropagation();
-      setCfg({ scale: 1, fit: "contain" });
+      setCfg({ scale: 1, fit: "contain", x: 0, y: 0 });
       refresh();
     });
 
@@ -886,10 +890,36 @@
 
       g.appendChild(field("Upload icon", upload, "Embeds into links.json."));
 
+      // Advanced icon positioning (move/zoom)
+      const editIconBtn2 = document.createElement("button");
+      editIconBtn2.type = "button";
+      editIconBtn2.className = "primary";
+      editIconBtn2.textContent = "Edit icon (advanced)";
+      editIconBtn2.addEventListener("click", (e)=>{
+        e.preventDefault(); e.stopPropagation();
+        iconEditContext = { kind: "icon", index: idx };
+        openIconModal();
+      });
+      edit.appendChild(editIconBtn2);
+
+
+      // Advanced icon positioning (move/zoom)
+      const editIconBtn = document.createElement("button");
+      editIconBtn.type = "button";
+      editIconBtn.className = "primary";
+      editIconBtn.textContent = "Edit icon (advanced)";
+      editIconBtn.addEventListener("click", (e)=>{
+        e.preventDefault(); e.stopPropagation();
+        iconEditContext = { kind: "link", index: idx };
+        openIconModal();
+      });
+      edit.appendChild(editIconBtn);
+
+
       edit.appendChild(g);
 
       edit.appendChild(iconControls(
-        ()=> (state.links[idx].iconCfg || (state.links[idx].iconCfg = { scale: 1, fit: "contain" })),
+        ()=> (state.links[idx].iconCfg || (state.links[idx].iconCfg = { scale: 1, fit: "contain", x: 0, y: 0 })),
         (cfg)=>{ state.links[idx].iconCfg = cfg; renderRowIcon(iconBox, { url: state.links[idx].url, icon: state.links[idx].icon, iconImage: state.links[idx].iconImage, iconCfg: cfg }); renderPreview(); debounceSave(); }
       ));
 
@@ -1032,7 +1062,7 @@
       edit.appendChild(g);
 
       edit.appendChild(iconControls(
-        ()=> (state.icons[idx].iconCfg || (state.icons[idx].iconCfg = { scale: 1, fit: "contain" })),
+        ()=> (state.icons[idx].iconCfg || (state.icons[idx].iconCfg = { scale: 1, fit: "contain", x: 0, y: 0 })),
         (cfg)=>{ state.icons[idx].iconCfg = cfg; renderRowIcon(iconBox, { type: state.icons[idx].type, url: state.icons[idx].url, iconImage: state.icons[idx].iconImage, iconCfg: cfg }); renderPreview(); debounceSave(); }
       ));
 
@@ -1079,7 +1109,62 @@
     $("fitCover").classList.toggle("isActive", (p.fit || "contain") === "cover");
   }
 
-  function openLogoModal(){
+  
+  // Icon modal (for custom icon images)
+  let iconEditContext = null; // { kind: "link"|"icon", index: number }
+
+  function getIconTarget(){
+    if (!iconEditContext) return null;
+    const { kind, index } = iconEditContext;
+    if (kind === "link") return state.links?.[index] || null;
+    if (kind === "icon") return state.icons?.[index] || null;
+    return null;
+  }
+
+  function ensureIconCfg(target){
+    if (!target) return { scale: 1, fit: "contain", x: 0, y: 0 };
+    target.iconCfg = { scale: 1, fit: "contain", x: 0, y: 0, ...(target.iconCfg || {}) };
+    return target.iconCfg;
+  }
+
+  function syncIconModal(){
+    const t = getIconTarget();
+    const img = $("iconStageImg");
+    const shell = $("iconStageShell");
+    if (!t || !img || !shell){
+      return;
+    }
+    const cfg = ensureIconCfg(t);
+
+    // set image source (prefer iconImage)
+    const src = t.iconImage || "";
+    img.src = src;
+
+    img.style.objectFit = cfg.fit || "contain";
+    img.style.transform = `translate(${Number(cfg.x||0)}px, ${Number(cfg.y||0)}px) scale(${Number(cfg.scale||1)})`;
+
+    $("iconFitContain")?.classList.toggle("isActive", (cfg.fit || "contain") === "contain");
+    $("iconFitCover")?.classList.toggle("isActive", (cfg.fit || "contain") === "cover");
+  }
+
+  function openIconModal(){
+    const t = getIconTarget();
+    if (!t || !t.iconImage){
+      setStatus("Add an icon image first");
+      return;
+    }
+    $("iconModal")?.classList.add("isOpen");
+    $("iconModal")?.setAttribute("aria-hidden","false");
+    syncIconModal();
+  }
+
+  function closeIconModal(){
+    $("iconModal")?.classList.remove("isOpen");
+    $("iconModal")?.setAttribute("aria-hidden","true");
+    iconEditContext = null;
+  }
+
+function openLogoModal(){
     $("logoModal").classList.add("isOpen");
     $("logoModal").setAttribute("aria-hidden","false");
     syncLogoModal();
@@ -1240,7 +1325,91 @@
       await loadInitial(true);
     });
 
-    // Logo modal open/close
+    
+    // Icon modal open/close
+    $("iconModalClose")?.addEventListener("click", (e)=>{ e.preventDefault(); closeIconModal(); });
+    $("iconModalBackdrop")?.addEventListener("click", (e)=>{ e.preventDefault(); closeIconModal(); });
+    $("iconDoneBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); closeIconModal(); });
+
+    $("iconFitContain")?.addEventListener("click", (e)=>{
+      e.preventDefault();
+      const t = getIconTarget(); if(!t) return;
+      const cfg = ensureIconCfg(t);
+      cfg.fit = "contain";
+      syncIconModal(); renderPreview(); debounceSave();
+    });
+    $("iconFitCover")?.addEventListener("click", (e)=>{
+      e.preventDefault();
+      const t = getIconTarget(); if(!t) return;
+      const cfg = ensureIconCfg(t);
+      cfg.fit = "cover";
+      syncIconModal(); renderPreview(); debounceSave();
+    });
+
+    $("iconResetBtn")?.addEventListener("click", (e)=>{
+      e.preventDefault();
+      const t = getIconTarget(); if(!t) return;
+      t.iconCfg = { scale: 1, fit: "contain", x: 0, y: 0 };
+      syncIconModal(); renderPreview(); debounceSave();
+    });
+
+    // Drag icon to move
+    (function(){
+      const img = $("iconStageImg");
+      if (!img) return;
+      let moving = false;
+      let mx=0,my=0,sx=0,sy=0;
+
+      img.addEventListener("pointerdown", (e)=>{
+        if (!iconEditContext) return;
+        e.preventDefault(); e.stopPropagation();
+        const t = getIconTarget(); if(!t) return;
+        const cfg = ensureIconCfg(t);
+
+        moving = true;
+        mx = e.clientX; my = e.clientY;
+        sx = Number(cfg.x||0); sy = Number(cfg.y||0);
+        img.setPointerCapture(e.pointerId);
+        img.style.cursor = "grabbing";
+      });
+
+      img.addEventListener("pointermove", (e)=>{
+        if (!moving) return;
+        const t = getIconTarget(); if(!t) return;
+        const cfg = ensureIconCfg(t);
+
+        const dx = e.clientX - mx;
+        const dy = e.clientY - my;
+        cfg.x = Math.round(sx + dx);
+        cfg.y = Math.round(sy + dy);
+
+        syncIconModal(); renderPreview();
+      });
+
+      const endMove = (e)=>{
+        if (!moving) return;
+        moving = false;
+        img.style.cursor = "grab";
+        debounceSave();
+        try{ img.releasePointerCapture(e.pointerId); }catch{}
+      };
+
+      img.addEventListener("pointerup", endMove);
+      img.addEventListener("pointercancel", endMove);
+    })();
+
+    // Scroll to zoom
+    $("iconStageShell")?.addEventListener("wheel", (e)=>{
+      if (!iconEditContext) return;
+      e.preventDefault();
+      const t = getIconTarget(); if(!t) return;
+      const cfg = ensureIconCfg(t);
+      const delta = (e.deltaY > 0) ? -0.05 : 0.05;
+      cfg.scale = Number(clamp((Number(cfg.scale ?? 1) + delta), 0.4, 3.0).toFixed(2));
+      syncIconModal(); renderPreview(); debounceSave();
+    }, { passive:false });
+
+// Logo modal open/close
     $("openLogoModal").addEventListener("click", (e)=>{ e.preventDefault(); openLogoModal(); });
     $("logoModalClose").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
     $("logoModalBackdrop").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
