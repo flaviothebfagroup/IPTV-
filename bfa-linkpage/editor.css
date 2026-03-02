@@ -588,204 +588,65 @@ input[type="checkbox"], input[type="radio"], input[type="range"], input[type="co
 }
 
 
-/* v38 layout: preview is a separate right column container (no overlap) */
-.work{
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 440px;
-  gap: 14px;
-  padding: 14px;
-  height: 100%;
-  overflow: hidden;
-}
-.editorPane{
-  min-width: 0;
-  overflow: hidden;
-}
-.editorPane .content{
-  /* allow the tabs to scroll without pushing preview */
-  height: 100%;
-  overflow: hidden;
-  padding: 0;
-  grid-template-columns: 1fr; /* tabs only */
-}
-.editorPane .tab{
-  height: 100%;
-  overflow: auto;
-}
-
-.preview{
-  align-self: start;
-  position: sticky;
-  top: 14px;
-  height: calc(100vh - 140px);
-  min-height: 560px;
-  overflow: hidden;
-}
-.preview .phone{
-  height: 100%;
-}
-.preview .phoneScreen{
-  width: 100%;
-  height: calc(100% - 42px);
-  max-width: 100%;
-}
-
-.previewHandle{
-  height: 34px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap: 8px;
-  font-weight: 950;
-  font-size: 12px;
-  color: rgba(10,10,12,0.55);
-  border-radius: 16px;
-  border: 1px solid rgba(10,10,12,0.08);
-  background: rgba(255,255,255,0.60);
-  margin-bottom: 8px;
-  cursor: grab;
-  user-select:none;
-}
-
-@media (max-width: 1200px){
-  .work{ grid-template-columns: minmax(0, 1fr) 380px; }
-}
-@media (max-width: 1050px){
-  .work{ grid-template-columns: minmax(0, 1fr) 340px; }
-}
-@media (max-width: 920px){
-  .work{ grid-template-columns: minmax(0, 1fr) 320px; }
-}
-
-/* Float mode (moveable preview) */
-body.previewFloat .preview{
-  position: fixed;
-  right: 18px;
-  top: 86px;
-  width: 360px;
-  height: 640px;
-  min-height: 0;
-  z-index: 9999;
-  box-shadow: 0 24px 90px rgba(10,10,12,0.25);
-}
-body.previewFloat .preview .phoneScreen{
-  height: calc(100% - 42px);
-}
-
-
-/* v39: lock preview as RIGHT column + resizable container */
+/* v41: Stable RIGHT preview dock (never overlaps / never disappears)
+   - Keeps the editor on the left
+   - Keeps the preview in its own right “island”
+   - Corner resize via the orange grip (bottom-right)
+*/
 .content{
-  display:block !important;  /* stop any old grid behavior */
-  height: 100%;
-  overflow: hidden;
-  padding: 0 !important;
-}
-
-.work{
-  display:grid;
-  grid-template-columns: minmax(520px, 1fr) auto; /* preview column sizes to its own width */
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) var(--dockW, 420px) !important;
   gap: 14px;
   padding: 14px;
-  height: calc(100vh - 86px); /* header height */
+  height: 100%;
   overflow: hidden;
   align-items: start;
 }
 
-.editorPane{
-  min-width: 0;
-  height: 100%;
-  overflow: hidden;
-}
-.editorPane .tab{
-  height: 100%;
-  overflow: auto;
-}
-
-/* Preview is a separate right-side panel */
-.preview{
-  grid-column: 2;
-  justify-self: end;
-  position: sticky;
-  top: 14px;
-  width: 420px;
-  height: calc(100vh - 140px);
-  min-width: 320px;
-  min-height: 420px;
-  max-width: 60vw;
-  max-height: calc(100vh - 120px);
-  resize: both;            /* drag corner to resize */
-  overflow: hidden;        /* required for resize handle */
-  border-radius: 22px;
-}
-
-/* Keep iframe filling the panel below the handle */
-.preview .phone{
-  height: calc(100% - 42px);
-}
-.preview .phoneScreen{
-  width: 100%;
-  height: 100%;
-  max-width: 100%;
-}
-
-/* When very small, allow horizontal scroll instead of overlap */
-@media (max-width: 980px){
-  .work{
-    grid-template-columns: 1fr auto;
-    overflow-x: auto;
-  }
-}
-
-
-/* v40: docked preview in a true right column "island" */
-.content.contentDock{
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--dockW, 420px);
-  gap: 14px;
-  padding: 14px;
-  height: 100%;
-  overflow: hidden;
-}
+/* The left editor column (tabs) */
 .tabsCol{
   min-width: 0;
   height: 100%;
   overflow: auto;
   padding-right: 4px;
 }
-.tabsCol .tab{
-  display:none;
-}
-.tabsCol .tab.isActive{
-  display:block;
-}
+.tabsCol > .tab{ display:none; }
+.tabsCol > .tab.isActive{ display:block; }
 
-/* Preview dock island */
-.previewDock{
+/* Right preview “island” */
+.preview.previewDock{
   position: sticky;
   top: 14px;
   align-self: start;
-  height: calc(100vh - 140px);
+
+  width: var(--dockW, 420px);
+  min-width: 300px;
+  max-width: 720px;
+
+  height: var(--dockH, calc(100vh - 140px));
   min-height: 520px;
+  max-height: 920px;
+
   border-radius: 22px;
   background: rgba(255,255,255,0.66);
   border: 1px solid rgba(10,10,12,0.06);
   padding: 12px;
-  box-shadow: 0 18px 60px rgba(10,10,12,0.12);
+  box-shadow: var(--shadow);
   backdrop-filter: blur(18px) saturate(1.2);
   -webkit-backdrop-filter: blur(18px) saturate(1.2);
   overflow: hidden;
 }
-.previewDock .phone{
-  height: 100%;
-}
-.previewDock .phoneScreen{
+
+.preview.previewDock .phone{ height: 100%; }
+.preview.previewDock .phoneScreen{
   width: 100%;
   height: calc(100% - 42px);
   max-width: 100%;
   border-radius: 18px;
-  overflow:hidden;
+  overflow: hidden;
 }
 
+/* Resize grip */
 .dockResize{
   position:absolute;
   right: 10px;
@@ -798,40 +659,36 @@ body.previewFloat .preview .phoneScreen{
   cursor: nwse-resize;
 }
 
-.previewDock{ position: sticky; } /* ensure override */
-.previewDock{ position: sticky; }
-
-/* Responsive: shrink dock instead of stacking/overlap */
-@media (max-width: 1100px){
-  .content.contentDock{
-    grid-template-columns: minmax(0, 1fr) var(--dockW, 360px);
+/* Do NOT auto-stack preview under editor on small widths.
+   Instead: keep dock, but allow it to shrink. */
+@media (max-width: 980px){
+  .content{
+    grid-template-columns: minmax(0,1fr) var(--dockW, 340px) !important;
   }
+  .preview.previewDock{ min-width: 260px; }
 }
-@media (max-width: 920px){
-  .content.contentDock{
-    grid-template-columns: 1fr;
+
+/* Super small: allow float preview to avoid squeezing too much */
+@media (max-width: 760px){
+  .content{
+    grid-template-columns: 1fr !important;
   }
-  .previewDock{
+  .preview.previewDock{
     position: relative;
     top: 0;
-    height: 520px;
-    margin-top: 10px;
+    width: 100%;
+    max-width: none;
+    height: 640px;
   }
 }
 
-/* v40 float mode overrides */
-body.previewFloat .content.contentDock{
-  grid-template-columns: 1fr;
-}
-body.previewFloat #previewDock{
+/* Float preview mode */
+body.previewFloat .preview.previewDock{
   position: fixed;
   right: 18px;
   top: 86px;
   width: var(--dockW, 360px);
   height: var(--dockH, 640px);
-  min-height: 0;
   z-index: 9999;
-}
-body.previewFloat #previewDock .phoneScreen{
-  height: calc(100% - 42px);
+  box-shadow: 0 24px 90px rgba(10,10,12,0.25);
 }

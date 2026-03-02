@@ -1,8 +1,8 @@
 (() => {
   const $ = (id) => document.getElementById(id);
 
-  const BUILD = "v40";
-  const LS_KEY = "bfa_linktree_editor_draft_v40";
+  const BUILD = "v41";
+  const LS_KEY = "bfa_linktree_editor_draft_v41";
 
   const ICON_SVGS = {
     website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10S9.5 4.7 12 2z"/></svg>`,
@@ -191,7 +191,7 @@
 
   
   // Preview sizing (9:16 / 16:9) + Big toggle
-  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v40";
+  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v41";
   let previewPrefs = { aspect: "9:16", big: false };
   try{
     const saved = localStorage.getItem(PREVIEW_KEY);
@@ -199,7 +199,7 @@
   }catch{}
 
   
-  const FLOAT_KEY = "bfa_linktree_preview_float_v40";
+  const FLOAT_KEY = "bfa_linktree_preview_float_v41";
   let floatOn = false;
   try{ floatOn = localStorage.getItem(FLOAT_KEY) === "1"; }catch{}
   function setFloat(on){
@@ -1264,13 +1264,13 @@ function openLogoModal(){
       const grip = document.getElementById("previewResize");
       if (!dock || !grip) return;
 
-      const KEY = "bfa_preview_dock_size_v40";
+      const KEY = "bfa_preview_dock_size_v41";
       try{
         const saved = JSON.parse(localStorage.getItem(KEY) || "null");
         if (saved && saved.w){
           document.documentElement.style.setProperty("--dockW", saved.w + "px");
         }
-        if (saved && saved.h && floatOn){
+        if (saved && saved.h){
           document.documentElement.style.setProperty("--dockH", saved.h + "px");
         }
       }catch{}
@@ -1294,9 +1294,7 @@ function openLogoModal(){
         const w = Math.max(300, Math.min(720, sw + dx));
         const h = Math.max(420, Math.min(900, sh + dy));
         document.documentElement.style.setProperty("--dockW", Math.round(w) + "px");
-        if (floatOn){
-          document.documentElement.style.setProperty("--dockH", Math.round(h) + "px");
-        }
+        document.documentElement.style.setProperty("--dockH", Math.round(h) + "px");
         applyPreviewSize();
       };
 
