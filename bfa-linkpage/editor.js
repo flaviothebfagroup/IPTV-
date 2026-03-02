@@ -1,8 +1,8 @@
 (() => {
   const $ = (id) => document.getElementById(id);
 
-  const BUILD = "v37";
-  const LS_KEY = "bfa_linktree_editor_draft_v37";
+  const BUILD = "v38";
+  const LS_KEY = "bfa_linktree_editor_draft_v38";
 
   const ICON_SVGS = {
     website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10S9.5 4.7 12 2z"/></svg>`,
@@ -191,14 +191,24 @@
 
   
   // Preview sizing (9:16 / 16:9) + Big toggle
-  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v37";
+  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v38";
   let previewPrefs = { aspect: "9:16", big: false };
   try{
     const saved = localStorage.getItem(PREVIEW_KEY);
     if (saved) previewPrefs = { ...previewPrefs, ...JSON.parse(saved) };
   }catch{}
 
-  function savePreviewPrefs(){
+  
+  const FLOAT_KEY = "bfa_linktree_preview_float_v38";
+  let floatOn = false;
+  try{ floatOn = localStorage.getItem(FLOAT_KEY) === "1"; }catch{}
+  function setFloat(on){
+    floatOn = !!on;
+    document.body.classList.toggle("previewFloat", floatOn);
+    try{ localStorage.setItem(FLOAT_KEY, floatOn ? "1" : "0"); }catch{}
+  }
+
+function savePreviewPrefs(){
     try{ localStorage.setItem(PREVIEW_KEY, JSON.stringify(previewPrefs)); }catch{}
   }
 
@@ -1185,6 +1195,57 @@ function openLogoModal(){
 
     $("downloadTop").addEventListener("click", ()=> downloadJson());
 
+    // Float preview toggle (moveable)
+    $("toggleFloat")?.addEventListener("click", ()=>{
+      const on = !floatOn;
+      $("toggleFloat").setAttribute("aria-pressed", on ? "true" : "false");
+      setFloat(on);
+    });
+
+    // Drag preview when floating
+    (function(){
+      const handle = $("previewHandle");
+      const panel = document.querySelector(".preview");
+      if (!handle || !panel) return;
+
+      let dragging = false;
+      let sx=0, sy=0, startLeft=0, startTop=0;
+
+      const down = (e)=>{
+        if (!floatOn) return;
+        dragging = true;
+        handle.style.cursor = "grabbing";
+        sx = e.clientX; sy = e.clientY;
+        const r = panel.getBoundingClientRect();
+        startLeft = r.left; startTop = r.top;
+        handle.setPointerCapture && handle.setPointerCapture(e.pointerId);
+        e.preventDefault();
+      };
+      const move = (e)=>{
+        if (!dragging) return;
+        const dx = e.clientX - sx;
+        const dy = e.clientY - sy;
+        const left = startLeft + dx;
+        const top = startTop + dy;
+        panel.style.left = left + "px";
+        panel.style.top = top + "px";
+        panel.style.right = "auto";
+        panel.style.bottom = "auto";
+      };
+      const up = (e)=>{
+        if (!dragging) return;
+        dragging = false;
+        handle.style.cursor = "grab";
+        try{ handle.releasePointerCapture && handle.releasePointerCapture(e.pointerId); }catch{}
+      };
+
+      handle.addEventListener("pointerdown", down);
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+      window.addEventListener("pointercancel", up);
+    })();
+
+
     // Preview iframe boot
     const frame = $("previewFrame");
     if (frame){
@@ -1626,6 +1687,8 @@ function downloadJson(){
     setAspect(previewPrefs.aspect || "9:16");
     $("toggleBig").setAttribute("aria-pressed", previewPrefs.big ? "true" : "false");
     setBig(!!previewPrefs.big);
+    $("toggleFloat")?.setAttribute("aria-pressed", floatOn ? "true" : "false");
+    setFloat(floatOn);
     loadInitial(false);
   });
 })();
