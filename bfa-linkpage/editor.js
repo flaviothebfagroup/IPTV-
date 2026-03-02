@@ -1,8 +1,8 @@
 (() => {
   const $ = (id) => document.getElementById(id);
 
-  const BUILD = "v39";
-  const LS_KEY = "bfa_linktree_editor_draft_v39";
+  const BUILD = "v40";
+  const LS_KEY = "bfa_linktree_editor_draft_v40";
 
   const ICON_SVGS = {
     website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10S9.5 4.7 12 2z"/></svg>`,
@@ -191,7 +191,7 @@
 
   
   // Preview sizing (9:16 / 16:9) + Big toggle
-  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v39";
+  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v40";
   let previewPrefs = { aspect: "9:16", big: false };
   try{
     const saved = localStorage.getItem(PREVIEW_KEY);
@@ -199,7 +199,7 @@
   }catch{}
 
   
-  const FLOAT_KEY = "bfa_linktree_preview_float_v39";
+  const FLOAT_KEY = "bfa_linktree_preview_float_v40";
   let floatOn = false;
   try{ floatOn = localStorage.getItem(FLOAT_KEY) === "1"; }catch{}
   function setFloat(on){
@@ -214,32 +214,35 @@ function savePreviewPrefs(){
 
   function applyPreviewSize(){
     const screen = $("phoneScreen");
-    const panel = document.querySelector(".preview");
-    if (!screen || !panel) return;
+    if (!screen) return;
 
     const aspect = previewPrefs.aspect || "9:16";
     const big = !!previewPrefs.big;
 
-    // available area inside preview panel (minus handle)
-    const maxW = Math.max(260, (panel.clientWidth || 420) - 24);
-    const maxH = Math.max(260, (panel.clientHeight || 640) - 64); // handle + padding
+    const dock = document.getElementById("previewDock") || document.querySelector(".preview");
+    const handleH = 42; // handle bar height + gap
+    const pad = 24;     // approximate inner padding
 
-    const scale = big ? 1.18 : 1.0;
+    const vw = Math.max(240, (dock?.clientWidth || 420) - pad);
+    const vh = Math.max(240, (dock?.clientHeight || 640) - handleH - pad);
 
-    let w, h;
-    if (aspect === "16:9"){
-      // width limited by both maxW and maxH
-      w = Math.min(560 * scale, maxW, Math.floor(maxH * 16 / 9));
-      h = Math.round(w * 9 / 16);
-      screen.style.aspectRatio = "16 / 9";
-    } else {
-      w = Math.min(380 * scale, maxW, Math.floor(maxH * 9 / 16));
-      h = Math.round(w * 16 / 9);
-      screen.style.aspectRatio = "9 / 16";
+    const ratio = (aspect === "16:9") ? (16/9) : (9/16); // width/height
+    // fit rect inside vw x vh
+    let w = vw;
+    let h = w / ratio;
+    if (h > vh){
+      h = vh;
+      w = h * ratio;
     }
+
+    // "Bigger preview" reduces margins slightly
+    const scale = big ? 1.08 : 1.0;
+    w = Math.min(vw, w * scale);
+    h = Math.min(vh, h * scale);
 
     screen.style.width = `${Math.round(w)}px`;
     screen.style.height = `${Math.round(h)}px`;
+    screen.style.margin = "0 auto";
   }
 
   function setAspect(aspect){
@@ -1254,6 +1257,63 @@ function openLogoModal(){
     if (frame){
       frame.src = "./index.html?preview=1&ts=" + Date.now();
       frame.addEventListener("load", ()=>{ postPreviewState(); });
+
+    // Dock resize (drag corner)
+    (function(){
+      const dock = document.getElementById("previewDock");
+      const grip = document.getElementById("previewResize");
+      if (!dock || !grip) return;
+
+      const KEY = "bfa_preview_dock_size_v40";
+      try{
+        const saved = JSON.parse(localStorage.getItem(KEY) || "null");
+        if (saved && saved.w){
+          document.documentElement.style.setProperty("--dockW", saved.w + "px");
+        }
+        if (saved && saved.h && floatOn){
+          document.documentElement.style.setProperty("--dockH", saved.h + "px");
+        }
+      }catch{}
+
+      let resizing = false;
+      let sx=0, sy=0, sw=0, sh=0;
+
+      grip.addEventListener("pointerdown", (e)=>{
+        e.preventDefault(); e.stopPropagation();
+        resizing = true;
+        sx = e.clientX; sy = e.clientY;
+        const r = dock.getBoundingClientRect();
+        sw = r.width; sh = r.height;
+        grip.setPointerCapture && grip.setPointerCapture(e.pointerId);
+      });
+
+      const move = (e)=>{
+        if (!resizing) return;
+        const dx = e.clientX - sx;
+        const dy = e.clientY - sy;
+        const w = Math.max(300, Math.min(720, sw + dx));
+        const h = Math.max(420, Math.min(900, sh + dy));
+        document.documentElement.style.setProperty("--dockW", Math.round(w) + "px");
+        if (floatOn){
+          document.documentElement.style.setProperty("--dockH", Math.round(h) + "px");
+        }
+        applyPreviewSize();
+      };
+
+      const up = (e)=>{
+        if (!resizing) return;
+        resizing = false;
+        try{ grip.releasePointerCapture && grip.releasePointerCapture(e.pointerId); }catch{}
+        try{
+          const r = dock.getBoundingClientRect();
+          localStorage.setItem(KEY, JSON.stringify({ w: Math.round(r.width), h: Math.round(r.height) }));
+        }catch{}
+      };
+
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+      window.addEventListener("pointercancel", up);
+    })();
     }
 
 

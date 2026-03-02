@@ -658,9 +658,6 @@ input[type="checkbox"], input[type="radio"], input[type="range"], input[type="co
 }
 
 /* Float mode (moveable preview) */
-body.previewFloat .work{
-  grid-template-columns: 1fr;
-}
 body.previewFloat .preview{
   position: fixed;
   right: 18px;
@@ -737,4 +734,104 @@ body.previewFloat .preview .phoneScreen{
     grid-template-columns: 1fr auto;
     overflow-x: auto;
   }
+}
+
+
+/* v40: docked preview in a true right column "island" */
+.content.contentDock{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--dockW, 420px);
+  gap: 14px;
+  padding: 14px;
+  height: 100%;
+  overflow: hidden;
+}
+.tabsCol{
+  min-width: 0;
+  height: 100%;
+  overflow: auto;
+  padding-right: 4px;
+}
+.tabsCol .tab{
+  display:none;
+}
+.tabsCol .tab.isActive{
+  display:block;
+}
+
+/* Preview dock island */
+.previewDock{
+  position: sticky;
+  top: 14px;
+  align-self: start;
+  height: calc(100vh - 140px);
+  min-height: 520px;
+  border-radius: 22px;
+  background: rgba(255,255,255,0.66);
+  border: 1px solid rgba(10,10,12,0.06);
+  padding: 12px;
+  box-shadow: 0 18px 60px rgba(10,10,12,0.12);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  overflow: hidden;
+}
+.previewDock .phone{
+  height: 100%;
+}
+.previewDock .phoneScreen{
+  width: 100%;
+  height: calc(100% - 42px);
+  max-width: 100%;
+  border-radius: 18px;
+  overflow:hidden;
+}
+
+.dockResize{
+  position:absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1px solid rgba(10,10,12,0.14);
+  background: rgba(255,149,0,0.18);
+  cursor: nwse-resize;
+}
+
+.previewDock{ position: sticky; } /* ensure override */
+.previewDock{ position: sticky; }
+
+/* Responsive: shrink dock instead of stacking/overlap */
+@media (max-width: 1100px){
+  .content.contentDock{
+    grid-template-columns: minmax(0, 1fr) var(--dockW, 360px);
+  }
+}
+@media (max-width: 920px){
+  .content.contentDock{
+    grid-template-columns: 1fr;
+  }
+  .previewDock{
+    position: relative;
+    top: 0;
+    height: 520px;
+    margin-top: 10px;
+  }
+}
+
+/* v40 float mode overrides */
+body.previewFloat .content.contentDock{
+  grid-template-columns: 1fr;
+}
+body.previewFloat #previewDock{
+  position: fixed;
+  right: 18px;
+  top: 86px;
+  width: var(--dockW, 360px);
+  height: var(--dockH, 640px);
+  min-height: 0;
+  z-index: 9999;
+}
+body.previewFloat #previewDock .phoneScreen{
+  height: calc(100% - 42px);
 }
