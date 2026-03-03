@@ -9,21 +9,37 @@
         #ticker-label { background: #000; color: #fff; padding: 0 20px; height: 100%; display: flex; align-items: center; font-weight: bold; font-size: 16px; min-width: 120px; }
         #ticker-wrap { flex: 1; overflow: hidden; height: 100%; position: relative; background: #c41230; }
         #ticker { 
-            display: inline-block; 
+            display: inline-flex; 
             white-space: nowrap; 
-            padding-left: 100%; 
-            animation: ticker 90s linear infinite;  /* SLOWED DOWN from 45s to 90s */
+            animation: ticker 120s linear infinite;
             height: 100%; 
             line-height: 60px; 
             color: #fff; 
             font-size: 20px; 
-            font-weight: bold;  /* BOLD TEXT */
+            font-weight: bold;
+            align-items: center;
         }
         @keyframes ticker { 
             0% { transform: translate3d(0, 0, 0); } 
-            100% { transform: translate3d(-100%, 0, 0); } 
+            100% { transform: translate3d(-50%, 0, 0); } 
         }
-        .item { display: inline-block; padding: 0 50px; }
+        .item { 
+            display: inline-flex; 
+            align-items: center; 
+            padding: 0 40px; 
+        }
+        .divider {
+            display: inline-flex;
+            align-items: center;
+            padding: 0 20px;
+            height: 40px;
+        }
+        .divider img {
+            height: 30px;
+            width: auto;
+            vertical-align: middle;
+            filter: brightness(0) invert(1); /* Makes logo white */
+        }
     </style>
 </head>
 <body>
@@ -49,10 +65,20 @@
         ];
 
         const ticker = document.getElementById('ticker');
+        const logoUrl = 'https://1000logos.net/wp-content/uploads/2021/10/CBC-Logo.png';
+        
+        function createTickerContent(headlines) {
+            let content = '';
+            headlines.forEach((headline) => {
+                content += `<span class="item">${headline}</span>`;
+                content += `<span class="divider"><img src="${logoUrl}" alt="CBC" onerror="this.style.display='none'"></span>`;
+            });
+            // Duplicate for seamless loop
+            return content + content;
+        }
         
         function showFallback() {
-            const text = fallbackNews.concat(fallbackNews).join('  •  ');
-            ticker.innerHTML = '<span class="item">' + text + '</span>';
+            ticker.innerHTML = createTickerContent(fallbackNews);
         }
         
         async function fetchNews() {
@@ -73,8 +99,7 @@
                 
                 if (data.items && data.items.length > 0) {
                     const headlines = data.items.slice(0, 10).map(i => i.title);
-                    const text = headlines.concat(headlines).join('  •  ');
-                    ticker.innerHTML = '<span class="item">' + text + '</span>';
+                    ticker.innerHTML = createTickerContent(headlines);
                 } else {
                     throw new Error('No items in feed');
                 }
