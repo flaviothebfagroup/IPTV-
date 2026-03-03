@@ -1,8 +1,8 @@
 (() => {
   const $ = (id) => document.getElementById(id);
 
-  const BUILD = "v52";
-  const LS_KEY = "bfa_linktree_editor_draft_v52";
+  const BUILD = "v53";
+  const LS_KEY = "bfa_linktree_editor_draft_v53";
 
   const ICON_SVGS = {
     website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10S9.5 4.7 12 2z"/></svg>`,
@@ -219,7 +219,7 @@ function setTab(tab){
 
   
   // Preview sizing (9:16 / 16:9) + Big toggle
-  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v52";
+  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v53";
   let previewPrefs = { aspect: "9:16", big: false };
   try{
     const saved = localStorage.getItem(PREVIEW_KEY);
@@ -227,7 +227,7 @@ function setTab(tab){
   }catch{}
 
   
-  const FLOAT_KEY = "bfa_linktree_preview_float_v52";
+  const FLOAT_KEY = "bfa_linktree_preview_float_v53";
   let floatOn = false;
   try{ floatOn = localStorage.getItem(FLOAT_KEY) === "1"; }catch{}
   function setFloat(on){
@@ -1311,7 +1311,7 @@ function openLogoModal(){
       const grip = document.getElementById("previewResize");
       if (!dock || !grip) return;
 
-      const KEY = "bfa_preview_dock_size_v52";
+      const KEY = "bfa_preview_dock_size_v53";
       try{
         const saved = JSON.parse(localStorage.getItem(KEY) || "null");
         if (saved && saved.w){
