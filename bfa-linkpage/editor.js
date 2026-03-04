@@ -3,6 +3,207 @@
 
   const BUILD = "v57";
   const LS_KEY = "bfa_linktree_editor_draft_v57";
+  const LANG_KEY = "bfa_linktree_language_v57";
+
+  // Bilingual translations
+  const i18n = {
+    en: {
+      editorSubtitle: "Link page editor",
+      navProfile: "Profile",
+      navIcons: "Icons",
+      navLinks: "Links",
+      navExport: "Export",
+      nextBtn: "Next",
+      stepHint: "Step {current} of {total}",
+      cacheTip: "Tip: After updating GitHub, open <b>editor.html?v=57</b> to bypass cache.",
+      titleLinks: "Links",
+      hintLinks: "Click a row to edit. Drag the dots to reorder.",
+      floatPreview: "Float preview",
+      biggerPreview: "Bigger preview",
+      downloadJson: "Download links.json",
+      linksTitle: "Links",
+      linksSubtitle: "Drag to reorder • Toggle to hide",
+      addLink: "+ Add link",
+      logoTitle: "Logo",
+      logoSubtitle: "Upload, preview, size, and background",
+      logoUrlLabel: "Logo (URL/path or embedded)",
+      logoUrlHelp: "Paste a URL or upload below.",
+      logoUploadLabel: "Upload logo",
+      logoUploadHelp: "Upload embeds into links.json (no extra file).",
+      logoSizingLabel: "Logo sizing",
+      editLogo: "Edit logo",
+      logoSizingHelp: "Resize box • drag logo to move • scroll to zoom.",
+      logoPreviewLabel: "Logo preview",
+      logoPreviewHelp: "Tap to edit (updates automatically).",
+      showLogoLabel: "Show logo",
+      showLogoHelp: "Turn off to hide the logo completely.",
+      logoBgLabel: "Logo background",
+      transparent: "Transparent",
+      border: "Border",
+      logoBgHelp: "Pick a color or set transparent.",
+      bioTitle: "Bio",
+      bioSubtitle: "Name and short description",
+      nameLabel: "Name",
+      bioLabel: "Bio",
+      bgTitle: "Background",
+      bgSubtitle: "Solid, gradient, or image",
+      bgStyleLabel: "Background style",
+      bgDefault: "Default",
+      bgSolid: "Solid",
+      bgGradient: "Soft gradient",
+      bgImage: "Image",
+      bgColorLabel: "Background color",
+      bgImageUrlLabel: "Background image (URL/path)",
+      bgImageUrlHelp: "Use a direct image URL (jpg/png/gif).",
+      bgUploadLabel: "Upload background image",
+      bgUploadHelp: "Embeds into links.json.",
+      iconsTitle: "Icons",
+      iconsSubtitle: "Top icons under the name",
+      addIcon: "+ Add icon",
+      exportTitle: "Export",
+      exportSubtitle: "Save changes to GitHub by replacing links.json",
+      downloadJsonBtn: "⬇ Download links.json",
+      importJson: "Import JSON",
+      reloadFromSite: "Reload from site",
+      resetDraft: "Reset draft",
+      workflowTip: "Workflow: edit → download links.json → replace repo file → refresh index.",
+      saveTitle: "Save",
+      saveSubtitle: "Download your updated links.json and upload it to GitHub.",
+      downloadCta: "DOWNLOAD LINKS.JSON",
+      previewLabel: "Preview",
+      logoSettingsTitle: "Logo settings",
+      logoSettingsSubtitle: "Drag corner to resize • Drag logo to move • Scroll to zoom",
+      logoStageTip: "Tip: use \"Wide\" for horizontal logos.",
+      shapeLabel: "Shape",
+      shapeSquare: "Square",
+      shapeWide: "Wide",
+      shapeTall: "Tall",
+      fitLabel: "Fit",
+      fitContain: "Contain",
+      fitCover: "Cover",
+      resetLabel: "Reset",
+      resetLogo: "Reset logo",
+      doneLabel: "Done",
+      doneBtn: "Done",
+      iconSettingsTitle: "Icon settings",
+      iconSettingsSubtitle: "Drag icon to move • Scroll to zoom • Use Contain to avoid cropping",
+      iconStageTip: "Tip: Use Contain for icons8 / SVG-like PNGs.",
+      resetIcon: "Reset icon",
+      statusReady: "Ready",
+      statusSaved: "Saved",
+      statusUnsaved: "Unsaved",
+      statusError: "Error",
+      statusLoaded: "Loaded from site",
+      statusDraft: "Loaded draft",
+      statusNew: "New draft",
+      statusDownloaded: "Downloaded links.json",
+      statusIconEmbedded: "Icon embedded",
+      statusBgEmbedded: "Background embedded",
+      statusImportFailed: "Import failed",
+      statusReadError: "Could not read image",
+      statusBgLoadError: "Background URL didn't load",
+      stepOf: "Step {step} of 4"
+    },
+    fr: {
+      editorSubtitle: "Éditeur de page de liens",
+      navProfile: "Profil",
+      navIcons: "Icônes",
+      navLinks: "Liens",
+      navExport: "Exporter",
+      nextBtn: "Suivant",
+      stepHint: "Étape {current} sur {total}",
+      cacheTip: "Astuce : Après mise à jour GitHub, ouvrez <b>editor.html?v=57</b> pour contourner le cache.",
+      titleLinks: "Liens",
+      hintLinks: "Cliquez sur une ligne pour modifier. Glissez les points pour réorganiser.",
+      floatPreview: "Aperçu flottant",
+      biggerPreview: "Aperçu plus grand",
+      downloadJson: "Télécharger links.json",
+      linksTitle: "Liens",
+      linksSubtitle: "Glisser pour réorganiser • Basculer pour masquer",
+      addLink: "+ Ajouter un lien",
+      logoTitle: "Logo",
+      logoSubtitle: "Télécharger, aperçu, taille et arrière-plan",
+      logoUrlLabel: "Logo (URL/chemin ou intégré)",
+      logoUrlHelp: "Collez une URL ou téléchargez ci-dessous.",
+      logoUploadLabel: "Télécharger le logo",
+      logoUploadHelp: "S'intègre dans links.json (pas de fichier supplémentaire).",
+      logoSizingLabel: "Dimensionnement du logo",
+      editLogo: "Modifier le logo",
+      logoSizingHelp: "Redimensionner • glisser pour déplacer • scroll pour zoomer.",
+      logoPreviewLabel: "Aperçu du logo",
+      logoPreviewHelp: "Tapez pour modifier (mise à jour automatique).",
+      showLogoLabel: "Afficher le logo",
+      showLogoHelp: "Désactiver pour cacher complètement le logo.",
+      logoBgLabel: "Arrière-plan du logo",
+      transparent: "Transparent",
+      border: "Bordure",
+      logoBgHelp: "Choisissez une couleur ou transparent.",
+      bioTitle: "Bio",
+      bioSubtitle: "Nom et courte description",
+      nameLabel: "Nom",
+      bioLabel: "Bio",
+      bgTitle: "Arrière-plan",
+      bgSubtitle: "Uni, dégradé ou image",
+      bgStyleLabel: "Style d'arrière-plan",
+      bgDefault: "Défaut",
+      bgSolid: "Uni",
+      bgGradient: "Dégradé doux",
+      bgImage: "Image",
+      bgColorLabel: "Couleur d'arrière-plan",
+      bgImageUrlLabel: "Image d'arrière-plan (URL/chemin)",
+      bgImageUrlHelp: "Utilisez une URL d'image directe (jpg/png/gif).",
+      bgUploadLabel: "Télécharger l'image d'arrière-plan",
+      bgUploadHelp: "S'intègre dans links.json.",
+      iconsTitle: "Icônes",
+      iconsSubtitle: "Icônes en haut sous le nom",
+      addIcon: "+ Ajouter une icône",
+      exportTitle: "Exporter",
+      exportSubtitle: "Enregistrer les modifications sur GitHub en remplaçant links.json",
+      downloadJsonBtn: "⬇ Télécharger links.json",
+      importJson: "Importer JSON",
+      reloadFromSite: "Recharger depuis le site",
+      resetDraft: "Réinitialiser le brouillon",
+      workflowTip: "Flux : modifier → télécharger links.json → remplacer le fichier du dépôt → rafraîchir l'index.",
+      saveTitle: "Enregistrer",
+      saveSubtitle: "Téléchargez votre links.json mis à jour et téléversez-le sur GitHub.",
+      downloadCta: "TÉLÉCHARGER LINKS.JSON",
+      previewLabel: "Aperçu",
+      logoSettingsTitle: "Paramètres du logo",
+      logoSettingsSubtitle: "Glisser le coin pour redimensionner • Glisser le logo pour déplacer • Scroll pour zoomer",
+      logoStageTip: "Astuce : utilisez \"Large\" pour les logos horizontaux.",
+      shapeLabel: "Forme",
+      shapeSquare: "Carré",
+      shapeWide: "Large",
+      shapeTall: "Haut",
+      fitLabel: "Adaptation",
+      fitContain: "Contenir",
+      fitCover: "Couvrir",
+      resetLabel: "Réinitialiser",
+      resetLogo: "Réinitialiser le logo",
+      doneLabel: "Terminé",
+      doneBtn: "Terminé",
+      iconSettingsTitle: "Paramètres de l'icône",
+      iconSettingsSubtitle: "Glisser pour déplacer • Scroll pour zoomer • Utilisez Contenir pour éviter le rognage",
+      iconStageTip: "Astuce : Utilisez Contenir pour les PNG style icons8 / SVG.",
+      resetIcon: "Réinitialiser l'icône",
+      statusReady: "Prêt",
+      statusSaved: "Enregistré",
+      statusUnsaved: "Non enregistré",
+      statusError: "Erreur",
+      statusLoaded: "Chargé depuis le site",
+      statusDraft: "Brouillon chargé",
+      statusNew: "Nouveau brouillon",
+      statusDownloaded: "links.json téléchargé",
+      statusIconEmbedded: "Icône intégrée",
+      statusBgEmbedded: "Arrière-plan intégré",
+      statusImportFailed: "Importation échouée",
+      statusReadError: "Impossible de lire l'image",
+      statusBgLoadError: "L'URL de l'arrière-plan n'a pas chargé",
+      stepOf: "Étape {step} sur 4"
+    }
+  };
+
+  let currentLang = 'en';
 
   const ICON_SVGS = {
     website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10S9.5 4.7 12 2z"/></svg>`,
@@ -24,10 +225,66 @@
 
   const sortableAttached = new WeakSet();
 
+  // Translation helpers
+  function t(key, replacements = {}) {
+    const text = i18n[currentLang][key] || i18n.en[key] || key;
+    return text.replace(/\{(\w+)\}/g, (match, name) => replacements[name] || match);
+  }
+
+  function setLanguage(lang) {
+    currentLang = lang === 'fr' ? 'fr' : 'en';
+    localStorage.setItem(LANG_KEY, currentLang);
+    document.documentElement.lang = currentLang === 'fr' ? 'fr' : 'en';
+    updateUI();
+  }
+
+  function updateUI() {
+    // Update all elements with data-i18n attribute
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (key) {
+        const text = t(key);
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+          el.placeholder = text;
+        } else if (el.tagName === 'OPTION') {
+          el.textContent = text;
+        } else {
+          // Preserve HTML in translation
+          if (text.includes('<')) {
+            el.innerHTML = text;
+          } else {
+            el.textContent = text;
+          }
+        }
+      }
+    });
+
+    // Update step hint
+    const tab = getCurrentTab();
+    const idx = STEP_ORDER.indexOf(tab);
+    const step = idx >= 0 ? idx + 1 : 1;
+    const hint = $('stepHint');
+    if (hint) {
+      hint.textContent = t('stepOf', { step });
+    }
+
+    // Update status
+    setStatus($('status')?.textContent || t('statusReady'));
+
+    // Update language buttons
+    $('langEn')?.classList.toggle('isActive', currentLang === 'en');
+    $('langFr')?.classList.toggle('isActive', currentLang === 'fr');
+  }
+
   function setStatus(msg){
     const el = $("status");
-    if (el) el.textContent = msg || "Ready";
+    if (el) {
+      // Map English status messages to keys
+      const key = Object.keys(i18n.en).find(k => i18n.en[k] === msg);
+      el.textContent = key ? t(key) : msg;
+    }
   }
+
   function showError(msg){
     const bar = $("errorBar");
     if (!bar) return;
@@ -38,7 +295,7 @@
     try{ return fn(); }catch(err){
       console.error(err);
       showError("JS error: " + (err?.message || String(err)));
-      setStatus("Error");
+      setStatus("statusError");
     }
   }
 
@@ -47,9 +304,9 @@
     saveTimer = setTimeout(()=>{
       try{
         localStorage.setItem(LS_KEY, JSON.stringify(state));
-        setStatus("Saved");
+        setStatus("statusSaved");
       }catch{
-        setStatus("Can't save draft");
+        setStatus("statusUnsaved");
       }
     }, 250);
   }
@@ -93,7 +350,7 @@
     return {
       profile: {
         name: "The BFA Group",
-        bio: "Retail Automotive Marketing • Digital Signage • IPTV",
+        bio: currentLang === 'fr' ? "Marketing automobile de détail • Affichage numérique • IPTV" : "Retail Automotive Marketing • Digital Signage • IPTV",
         avatar: "./assets/logo.png",
         show: true,
         bg: "#ffffff",
@@ -114,7 +371,7 @@
         { type: "instagram", url: "https://www.instagram.com/bfa.autovisiontv/", enabled: true, iconImage: "", iconCfg: { scale: 1, fit: "contain", x: 0, y: 0 } }
       ],
       links: [
-        { title: "Website", subtitle: "thebfagroup.com", url: "https://www.thebfagroup.com/", badge: "", thumb: "", enabled: true, icon: "", iconImage: "", iconCfg: { scale: 1, fit: "contain", x: 0, y: 0 } }
+        { title: currentLang === 'fr' ? "Site Web" : "Website", subtitle: "thebfagroup.com", url: "https://www.thebfagroup.com/", badge: "", thumb: "", enabled: true, icon: "", iconImage: "", iconCfg: { scale: 1, fit: "contain", x: 0, y: 0 } }
       ],
       footerText: "",
       updatedAt: null
@@ -124,9 +381,7 @@
   function normalizeIncoming(raw){
     const d = defaultState();
     const s = raw || {};
-    // Backward-compat mapping
     const profileIn = { ...(s.profile || {}) };
-    // map old keys if present
     profileIn.avatar = profileIn.avatar ?? (s.profile?.avatar) ?? d.profile.avatar;
     const themeIn = s.theme || s.background || d.theme;
 
@@ -152,7 +407,6 @@
       updatedAt: s.updatedAt ?? null
     };
 
-    // If old avatarW/avatarH exist, map
     out.profile.w = out.profile.w ?? out.profile.avatarW ?? d.profile.w;
     out.profile.h = out.profile.h ?? out.profile.avatarH ?? d.profile.h;
     out.profile.pad = out.profile.pad ?? out.profile.avatarPadding ?? d.profile.pad;
@@ -172,14 +426,12 @@
 
   // Tabs
   const TAB_TITLES = {
-    links: ["Links", "Click a row to edit. Drag the dots to reorder."],
-    profile: ["Profile", "Logo + name + background"],
-    icons: ["Icons", "Top icons under the name"],
-    export: ["Export", "Download your updated links.json"]
+    links: ["titleLinks", "hintLinks"],
+    profile: ["Profile", "Profile + name + background"],
+    icons: ["iconsTitle", "iconsSubtitle"],
+    export: ["exportTitle", "exportSubtitle"]
   };
 
-  
-  
   // v55: mobile hamburger menu
   function setMenuOpen(on){
     document.body.classList.toggle("menuOpen", !!on);
@@ -189,7 +441,7 @@
     $("drawerBackdrop")?.setAttribute("aria-hidden", on ? "false" : "true");
   }
 
-const STEP_ORDER = ["profile","icons","links","export"];
+  const STEP_ORDER = ["profile","icons","links","export"];
 
   function getCurrentTab(){
     const active = document.querySelector(".navItem.isActive");
@@ -202,32 +454,35 @@ const STEP_ORDER = ["profile","icons","links","export"];
     const step = idx >= 0 ? idx + 1 : 1;
 
     const hint = $("stepHint");
-    if (hint) hint.textContent = `Step ${step} of 4`;
+    if (hint) hint.textContent = t('stepOf', { step });
 
     const nextBtn = $("stepNext");
     if (!nextBtn) return;
 
     if (tab === "export"){
-      nextBtn.textContent = "DOWNLOAD LINKS.JSON";
+      nextBtn.textContent = t('downloadCta');
     } else {
-      nextBtn.textContent = "Next";
+      nextBtn.textContent = t('nextBtn');
     }
   }
 
-function setTab(tab){
+  function setTab(tab){
     document.querySelectorAll(".navItem").forEach(b=>{
       b.classList.toggle("isActive", b.dataset.tab === tab);
     });
     document.querySelectorAll(".tab").forEach(s=>{
       s.classList.toggle("isActive", s.id === ("tab-" + tab));
     });
-    $("pageTitle").textContent = TAB_TITLES[tab]?.[0] || "Links";
-    $("pageHint").textContent = TAB_TITLES[tab]?.[1] || "";
+    
+    // Update titles with translation
+    const titleKey = TAB_TITLES[tab]?.[0] || 'titleLinks';
+    const hintKey = TAB_TITLES[tab]?.[1] || 'hintLinks';
+    $("pageTitle").textContent = t(titleKey);
+    $("pageHint").textContent = t(hintKey);
   
     updateStepperUI();
   }
 
-  
   // Preview sizing (9:16 / 16:9) + Big toggle
   const PREVIEW_KEY = "bfa_linktree_preview_prefs_v57";
   let previewPrefs = { aspect: "9:16", big: false };
@@ -236,7 +491,6 @@ function setTab(tab){
     if (saved) previewPrefs = { ...previewPrefs, ...JSON.parse(saved) };
   }catch{}
 
-  
   const FLOAT_KEY = "bfa_linktree_preview_float_v57";
   let floatOn = false;
   try{ floatOn = localStorage.getItem(FLOAT_KEY) === "1"; }catch{}
@@ -246,7 +500,7 @@ function setTab(tab){
     try{ localStorage.setItem(FLOAT_KEY, floatOn ? "1" : "0"); }catch{}
   }
 
-function savePreviewPrefs(){
+  function savePreviewPrefs(){
     try{ localStorage.setItem(PREVIEW_KEY, JSON.stringify(previewPrefs)); }catch{}
   }
 
@@ -258,14 +512,13 @@ function savePreviewPrefs(){
     const big = !!previewPrefs.big;
 
     const dock = document.getElementById("previewDock") || document.querySelector(".preview");
-    const handleH = 42; // handle bar height + gap
-    const pad = 24;     // approximate inner padding
+    const handleH = 42;
+    const pad = 24;
 
     const vw = Math.max(240, (dock?.clientWidth || 420) - pad);
     const vh = Math.max(240, (dock?.clientHeight || 640) - handleH - pad);
 
-    const ratio = (aspect === "16:9") ? (16/9) : (9/16); // width/height
-    // fit rect inside vw x vh
+    const ratio = (aspect === "16:9") ? (16/9) : (9/16);
     let w = vw;
     let h = w / ratio;
     if (h > vh){
@@ -273,7 +526,6 @@ function savePreviewPrefs(){
       w = h * ratio;
     }
 
-    // "Bigger preview" reduces margins slightly
     const scale = big ? 1.08 : 1.0;
     w = Math.min(vw, w * scale);
     h = Math.min(vh, h * scale);
@@ -297,7 +549,7 @@ function savePreviewPrefs(){
     applyPreviewSize();
   }
 
-// Preview theme
+  // Preview theme
   let bgToken = 0;
   function preloadImage(url){
     return new Promise((resolve, reject)=>{
@@ -338,7 +590,7 @@ function savePreviewPrefs(){
         screen.style.backgroundPosition = "center";
       }).catch(()=>{
         if (token !== bgToken) return;
-        setStatus("Background URL didn't load");
+        setStatus("statusBgLoadError");
       });
       return;
     }
@@ -488,7 +740,7 @@ function savePreviewPrefs(){
     main.style.flex = "1 1 auto";
     const t = document.createElement("div");
     t.style.fontWeight = "950";
-    t.textContent = l.title || "Untitled";
+    t.textContent = l.title || (currentLang === 'fr' ? "Sans titre" : "Untitled");
     main.appendChild(t);
 
     if (l.subtitle){
@@ -505,13 +757,8 @@ function savePreviewPrefs(){
   }
 
   function renderPreview(){
-    // Keep sidebar brand in sync
     $("brandName").textContent = state.profile?.name || "The BFA Group";
-
-    // Update iframe preview (same code as index page)
     postPreviewState();
-
-    // Keep preview sizing responsive
     applyPreviewSize();
   }
 
@@ -522,7 +769,7 @@ function savePreviewPrefs(){
 
     const label = document.createElement("div");
     label.className = "iconControlsLabel";
-    label.textContent = "Icon size";
+    label.textContent = currentLang === 'fr' ? "Taille de l'icône" : "Icon size";
     wrap.appendChild(label);
 
     const minus = document.createElement("button");
@@ -541,15 +788,15 @@ function savePreviewPrefs(){
     const seg = document.createElement("div");
     seg.className = "seg";
     const cBtn = document.createElement("button");
-    cBtn.type="button"; cBtn.className="segBtn"; cBtn.textContent="Contain";
+    cBtn.type="button"; cBtn.className="segBtn"; cBtn.textContent= t('fitContain');
     const vBtn = document.createElement("button");
-    vBtn.type="button"; vBtn.className="segBtn"; vBtn.textContent="Cover";
+    vBtn.type="button"; vBtn.className="segBtn"; vBtn.textContent= t('fitCover');
     seg.appendChild(cBtn); seg.appendChild(vBtn);
 
     const reset = document.createElement("button");
     reset.type="button";
     reset.className="ghost danger";
-    reset.textContent="Reset";
+    reset.textContent= t('resetLabel');
 
     const refresh = ()=>{
       const cfg = getCfg();
@@ -667,12 +914,12 @@ function savePreviewPrefs(){
   function selectIcon(value, onChange){
     const sel = document.createElement("select");
     const options = [
-      ["", "Auto"],
-      ["website","Website"],
-      ["instagram","Instagram"],
-      ["youtube","YouTube"],
-      ["linkedin","LinkedIn"],
-      ["link","Generic link"]
+      ["", currentLang === 'fr' ? "Auto" : "Auto"],
+      ["website", "Website"],
+      ["instagram", "Instagram"],
+      ["youtube", "YouTube"],
+      ["linkedin", "LinkedIn"],
+      ["link", currentLang === 'fr' ? "Lien générique" : "Generic link"]
     ];
     options.forEach(([v,t])=>{
       const o = document.createElement("option");
@@ -833,10 +1080,10 @@ function savePreviewPrefs(){
       main.className = "rowMain";
       const title = document.createElement("div");
       title.className = "rowTitle";
-      title.textContent = l.title || "Untitled";
+      title.textContent = l.title || (currentLang === 'fr' ? "Sans titre" : "Untitled");
       const url = document.createElement("div");
       url.className = "rowUrl";
-      url.textContent = l.url ? safeHost(l.url) : "No URL yet";
+      url.textContent = l.url ? safeHost(l.url) : (currentLang === 'fr' ? "Pas encore d'URL" : "No URL yet");
       main.appendChild(title);
       main.appendChild(url);
 
@@ -848,19 +1095,19 @@ function savePreviewPrefs(){
         renderPreview(); debounceSave();
       });
 
-      const up = iconBtn("up", "Move up", ()=>{
+      const up = iconBtn("up", currentLang === 'fr' ? "Monter" : "Move up", ()=>{
         if (idx === 0) return;
         moveInArray(state.links, idx, idx-1);
         renderLinks(); renderPreview(); debounceSave();
       }, { disabled: idx===0 });
 
-      const down = iconBtn("down", "Move down", ()=>{
+      const down = iconBtn("down", currentLang === 'fr' ? "Descendre" : "Move down", ()=>{
         if (idx === state.links.length - 1) return;
         moveInArray(state.links, idx, idx+1);
         renderLinks(); renderPreview(); debounceSave();
       }, { disabled: idx===state.links.length-1 });
 
-      const del = iconBtn("trash", "Delete", ()=>{
+      const del = iconBtn("trash", currentLang === 'fr' ? "Supprimer" : "Delete", ()=>{
         state.links.splice(idx, 1);
         renderLinks(); renderPreview(); debounceSave();
       }, { danger: true });
@@ -889,41 +1136,41 @@ function savePreviewPrefs(){
       const g = document.createElement("div");
       g.className = "grid2";
 
-      g.appendChild(field("Title", inputText(l.title, "Website", (v)=>{
+      g.appendChild(field(currentLang === 'fr' ? "Titre" : "Title", inputText(l.title, "Website", (v)=>{
         state.links[idx].title = v;
-        title.textContent = v || "Untitled";
+        title.textContent = v || (currentLang === 'fr' ? "Sans titre" : "Untitled");
         renderPreview(); debounceSave();
       })));
 
       g.appendChild(field("URL", inputText(l.url, "https://...", (v)=>{
         state.links[idx].url = v;
-        url.textContent = v ? safeHost(v) : "No URL yet";
+        url.textContent = v ? safeHost(v) : (currentLang === 'fr' ? "Pas encore d'URL" : "No URL yet");
         if (!state.links[idx].icon && !state.links[idx].iconImage) renderRowIcon(iconBox, state.links[idx]);
         renderPreview(); debounceSave();
       })));
 
-      g.appendChild(field("Subtitle", inputText(l.subtitle, "@bfa.autovisiontv", (v)=>{
+      g.appendChild(field(currentLang === 'fr' ? "Sous-titre" : "Subtitle", inputText(l.subtitle, "@bfa.autovisiontv", (v)=>{
         state.links[idx].subtitle = v;
         renderPreview(); debounceSave();
       })));
 
-      g.appendChild(field("Badge", inputText(l.badge, "New", (v)=>{
+      g.appendChild(field(currentLang === 'fr' ? "Badge" : "Badge", inputText(l.badge, "New", (v)=>{
         state.links[idx].badge = v;
         renderPreview(); debounceSave();
       })));
 
-      g.appendChild(field("Icon (line)", selectIcon(l.icon || "", (v)=>{
+      g.appendChild(field(currentLang === 'fr' ? "Icône (ligne)" : "Icon (line)", selectIcon(l.icon || "", (v)=>{
         state.links[idx].icon = v;
         if (!state.links[idx].iconImage) renderRowIcon(iconBox, state.links[idx]);
         renderPreview(); debounceSave();
-      }), "Auto picks based on the URL."));
+      }), currentLang === 'fr' ? "Auto détecte selon l'URL." : "Auto picks based on the URL."));
 
-      const iconUrl = inputText(l.iconImage || "", "Icon image URL or ./assets/icon.png", (v)=>{
+      const iconUrl = inputText(l.iconImage || "", currentLang === 'fr' ? "URL image icône ou ./assets/icon.png" : "Icon image URL or ./assets/icon.png", (v)=>{
         state.links[idx].iconImage = normalizeAssetPath(v);
         renderRowIcon(iconBox, { url: state.links[idx].url, icon: state.links[idx].icon, iconImage: state.links[idx].iconImage, iconCfg: state.links[idx].iconCfg });
         renderPreview(); debounceSave();
       });
-      g.appendChild(field("Custom icon image", iconUrl, "Optional."));
+      g.appendChild(field(currentLang === 'fr' ? "Image icône personnalisée" : "Custom icon image", iconUrl, currentLang === 'fr' ? "Optionnel." : "Optional."));
 
       const upload = document.createElement("input");
       upload.type = "file";
@@ -937,18 +1184,17 @@ function savePreviewPrefs(){
           iconUrl.value = dataUrl;
           renderRowIcon(iconBox, { url: state.links[idx].url, icon: state.links[idx].icon, iconImage: dataUrl, iconCfg: state.links[idx].iconCfg });
           renderPreview(); debounceSave();
-          setStatus("Icon embedded");
-        }catch{ setStatus("Could not read image"); }
+          setStatus("statusIconEmbedded");
+        }catch{ setStatus("statusReadError"); }
         finally{ upload.value = ""; }
       });
 
-      g.appendChild(field("Upload icon", upload, "Embeds into links.json."));
+      g.appendChild(field(currentLang === 'fr' ? "Télécharger icône" : "Upload icon", upload, currentLang === 'fr' ? "S'intègre dans links.json." : "Embeds into links.json."));
 
-      // Advanced icon positioning (move/zoom)
       const editIconBtn2 = document.createElement("button");
       editIconBtn2.type = "button";
       editIconBtn2.className = "primary";
-      editIconBtn2.textContent = "Edit icon (advanced)";
+      editIconBtn2.textContent = currentLang === 'fr' ? "Modifier icône (avancé)" : "Edit icon (advanced)";
       editIconBtn2.addEventListener("click", (e)=>{
         e.preventDefault(); e.stopPropagation();
         iconEditContext = { kind: "icon", index: idx };
@@ -956,19 +1202,16 @@ function savePreviewPrefs(){
       });
       edit.appendChild(editIconBtn2);
 
-
-      // Advanced icon positioning (move/zoom)
       const editIconBtn = document.createElement("button");
       editIconBtn.type = "button";
       editIconBtn.className = "primary";
-      editIconBtn.textContent = "Edit icon (advanced)";
+      editIconBtn.textContent = currentLang === 'fr' ? "Modifier icône (avancé)" : "Edit icon (advanced)";
       editIconBtn.addEventListener("click", (e)=>{
         e.preventDefault(); e.stopPropagation();
         iconEditContext = { kind: "link", index: idx };
         openIconModal();
       });
       edit.appendChild(editIconBtn);
-
 
       edit.appendChild(g);
 
@@ -1013,7 +1256,7 @@ function savePreviewPrefs(){
       title.textContent = it.type || "icon";
       const url = document.createElement("div");
       url.className = "rowUrl";
-      url.textContent = it.url ? safeHost(it.url) : "No URL yet";
+      url.textContent = it.url ? safeHost(it.url) : (currentLang === 'fr' ? "Pas encore d'URL" : "No URL yet");
       main.appendChild(title);
       main.appendChild(url);
 
@@ -1025,19 +1268,19 @@ function savePreviewPrefs(){
         renderPreview(); debounceSave();
       });
 
-      const up = iconBtn("up", "Move up", ()=>{
+      const up = iconBtn("up", currentLang === 'fr' ? "Monter" : "Move up", ()=>{
         if (idx === 0) return;
         moveInArray(state.icons, idx, idx-1);
         renderIcons(); renderPreview(); debounceSave();
       }, { disabled: idx===0 });
 
-      const down = iconBtn("down", "Move down", ()=>{
+      const down = iconBtn("down", currentLang === 'fr' ? "Descendre" : "Move down", ()=>{
         if (idx === state.icons.length - 1) return;
         moveInArray(state.icons, idx, idx+1);
         renderIcons(); renderPreview(); debounceSave();
       }, { disabled: idx===state.icons.length-1 });
 
-      const del = iconBtn("trash", "Delete", ()=>{
+      const del = iconBtn("trash", currentLang === 'fr' ? "Supprimer" : "Delete", ()=>{
         state.icons.splice(idx, 1);
         renderIcons(); renderPreview(); debounceSave();
       }, { danger:true });
@@ -1080,20 +1323,20 @@ function savePreviewPrefs(){
         renderRowIcon(iconBox, { type: state.icons[idx].type, url: state.icons[idx].url, iconImage: state.icons[idx].iconImage, iconCfg: state.icons[idx].iconCfg });
         renderPreview(); debounceSave();
       });
-      g.appendChild(field("Type", sel));
+      g.appendChild(field(currentLang === 'fr' ? "Type" : "Type", sel));
 
       g.appendChild(field("URL", inputText(it.url, "https://...", (v)=>{
         state.icons[idx].url = v;
-        url.textContent = v ? safeHost(v) : "No URL yet";
+        url.textContent = v ? safeHost(v) : (currentLang === 'fr' ? "Pas encore d'URL" : "No URL yet");
         renderPreview(); debounceSave();
       })));
 
-      const iconUrl = inputText(it.iconImage || "", "Icon image URL or ./assets/icon.png", (v)=>{
+      const iconUrl = inputText(it.iconImage || "", currentLang === 'fr' ? "URL image icône ou ./assets/icon.png" : "Icon image URL or ./assets/icon.png", (v)=>{
         state.icons[idx].iconImage = normalizeAssetPath(v);
         renderRowIcon(iconBox, { type: state.icons[idx].type, url: state.icons[idx].url, iconImage: state.icons[idx].iconImage, iconCfg: state.icons[idx].iconCfg });
         renderPreview(); debounceSave();
       });
-      g.appendChild(field("Custom icon image", iconUrl, "Optional."));
+      g.appendChild(field(currentLang === 'fr' ? "Image icône personnalisée" : "Custom icon image", iconUrl, currentLang === 'fr' ? "Optionnel." : "Optional."));
 
       const upload = document.createElement("input");
       upload.type = "file";
@@ -1107,11 +1350,11 @@ function savePreviewPrefs(){
           iconUrl.value = dataUrl;
           renderRowIcon(iconBox, { type: state.icons[idx].type, url: state.icons[idx].url, iconImage: dataUrl, iconCfg: state.icons[idx].iconCfg });
           renderPreview(); debounceSave();
-          setStatus("Icon embedded");
-        }catch{ setStatus("Could not read image"); }
+          setStatus("statusIconEmbedded");
+        }catch{ setStatus("statusReadError"); }
         finally{ upload.value = ""; }
       });
-      g.appendChild(field("Upload icon", upload, "Embeds into links.json."));
+      g.appendChild(field(currentLang === 'fr' ? "Télécharger icône" : "Upload icon", upload, currentLang === 'fr' ? "S'intègre dans links.json." : "Embeds into links.json."));
 
       edit.appendChild(g);
 
@@ -1163,9 +1406,8 @@ function savePreviewPrefs(){
     $("fitCover").classList.toggle("isActive", (p.fit || "contain") === "cover");
   }
 
-  
   // Icon modal (for custom icon images)
-  let iconEditContext = null; // { kind: "link"|"icon", index: number }
+  let iconEditContext = null;
 
   function getIconTarget(){
     if (!iconEditContext) return null;
@@ -1190,7 +1432,6 @@ function savePreviewPrefs(){
     }
     const cfg = ensureIconCfg(t);
 
-    // set image source (prefer iconImage)
     const src = t.iconImage || "";
     img.src = src;
 
@@ -1204,7 +1445,7 @@ function savePreviewPrefs(){
   function openIconModal(){
     const t = getIconTarget();
     if (!t || !t.iconImage){
-      setStatus("Add an icon image first");
+      setStatus(currentLang === 'fr' ? "Ajoutez d'abord une image d'icône" : "Add an icon image first");
       return;
     }
     $("iconModal")?.classList.add("isOpen");
@@ -1218,7 +1459,7 @@ function savePreviewPrefs(){
     iconEditContext = null;
   }
 
-function openLogoModal(){
+  function openLogoModal(){
     $("logoModal").classList.add("isOpen");
     $("logoModal").setAttribute("aria-hidden","false");
     syncLogoModal();
@@ -1229,7 +1470,10 @@ function openLogoModal(){
   }
 
   function wire(){
-    
+    // Language toggle
+    $("langEn")?.addEventListener("click", (e)=>{ e.preventDefault(); setLanguage('en'); });
+    $("langFr")?.addEventListener("click", (e)=>{ e.preventDefault(); setLanguage('fr'); });
+
     // Mobile menu
     $("hamburgerBtn")?.addEventListener("click", (e)=>{
       e.preventDefault();
@@ -1239,7 +1483,7 @@ function openLogoModal(){
     $("drawerBackdrop")?.addEventListener("click", ()=> setMenuOpen(false));
     window.addEventListener("keydown", (e)=>{ if (e.key === "Escape") setMenuOpen(false); });
 
-// Tabs
+    // Tabs
     document.querySelectorAll(".navItem").forEach(btn=>{
       btn.addEventListener("click", (e)=>{
         e.preventDefault();
@@ -1248,7 +1492,7 @@ function openLogoModal(){
     });
 
     $("downloadTop").addEventListener("click", ()=> downloadJson());
-    // Stepper: Next button
+    
     $("stepNext")?.addEventListener("click", (e)=>{
       e.preventDefault();
       const tab = getCurrentTab();
@@ -1260,15 +1504,13 @@ function openLogoModal(){
       }
       const nextTab = STEP_ORDER[Math.min(idx + 1, STEP_ORDER.length - 1)] || "export";
       setTab(nextTab);
-      // scroll to top of the editor pane
       document.querySelector(".tabsCol")?.scrollTo({ top: 0, behavior: "smooth" });
       updateStepperUI();
     });
 
     $("downloadCta")?.addEventListener("click", (e)=>{ e.preventDefault(); downloadJson(); });
 
-
-    // Float preview toggle (moveable)
+    // Float preview toggle
     $("toggleFloat")?.addEventListener("click", ()=>{
       const on = !floatOn;
       $("toggleFloat").setAttribute("aria-pressed", on ? "true" : "false");
@@ -1318,69 +1560,67 @@ function openLogoModal(){
       window.addEventListener("pointercancel", up);
     })();
 
-
     // Preview iframe boot
     const frame = $("previewFrame");
     if (frame){
       frame.src = "./index.html?preview=1&ts=" + Date.now();
       frame.addEventListener("load", ()=>{ postPreviewState(); });
 
-    // Dock resize (drag corner)
-    (function(){
-      const dock = document.getElementById("previewDock");
-      const grip = document.getElementById("previewResize");
-      if (!dock || !grip) return;
+      // Dock resize
+      (function(){
+        const dock = document.getElementById("previewDock");
+        const grip = document.getElementById("previewResize");
+        if (!dock || !grip) return;
 
-      const KEY = "bfa_preview_dock_size_v57";
-      try{
-        const saved = JSON.parse(localStorage.getItem(KEY) || "null");
-        if (saved && saved.w){
-          document.documentElement.style.setProperty("--dockW", saved.w + "px");
-        }
-        if (saved && saved.h){
-          document.documentElement.style.setProperty("--dockH", saved.h + "px");
-        }
-      }catch{}
-
-      let resizing = false;
-      let sx=0, sy=0, sw=0, sh=0;
-
-      grip.addEventListener("pointerdown", (e)=>{
-        e.preventDefault(); e.stopPropagation();
-        resizing = true;
-        sx = e.clientX; sy = e.clientY;
-        const r = dock.getBoundingClientRect();
-        sw = r.width; sh = r.height;
-        grip.setPointerCapture && grip.setPointerCapture(e.pointerId);
-      });
-
-      const move = (e)=>{
-        if (!resizing) return;
-        const dx = e.clientX - sx;
-        const dy = e.clientY - sy;
-        const w = Math.max(300, Math.min(720, sw + dx));
-        const h = Math.max(420, Math.min(900, sh + dy));
-        document.documentElement.style.setProperty("--dockW", Math.round(w) + "px");
-        document.documentElement.style.setProperty("--dockH", Math.round(h) + "px");
-        applyPreviewSize();
-      };
-
-      const up = (e)=>{
-        if (!resizing) return;
-        resizing = false;
-        try{ grip.releasePointerCapture && grip.releasePointerCapture(e.pointerId); }catch{}
+        const KEY = "bfa_preview_dock_size_v57";
         try{
-          const r = dock.getBoundingClientRect();
-          localStorage.setItem(KEY, JSON.stringify({ w: Math.round(r.width), h: Math.round(r.height) }));
+          const saved = JSON.parse(localStorage.getItem(KEY) || "null");
+          if (saved && saved.w){
+            document.documentElement.style.setProperty("--dockW", saved.w + "px");
+          }
+          if (saved && saved.h){
+            document.documentElement.style.setProperty("--dockH", saved.h + "px");
+          }
         }catch{}
-      };
 
-      window.addEventListener("pointermove", move);
-      window.addEventListener("pointerup", up);
-      window.addEventListener("pointercancel", up);
-    })();
+        let resizing = false;
+        let sx=0, sy=0, sw=0, sh=0;
+
+        grip.addEventListener("pointerdown", (e)=>{
+          e.preventDefault(); e.stopPropagation();
+          resizing = true;
+          sx = e.clientX; sy = e.clientY;
+          const r = dock.getBoundingClientRect();
+          sw = r.width; sh = r.height;
+          grip.setPointerCapture && grip.setPointerCapture(e.pointerId);
+        });
+
+        const move = (e)=>{
+          if (!resizing) return;
+          const dx = e.clientX - sx;
+          const dy = e.clientY - sy;
+          const w = Math.max(300, Math.min(720, sw + dx));
+          const h = Math.max(420, Math.min(900, sh + dy));
+          document.documentElement.style.setProperty("--dockW", Math.round(w) + "px");
+          document.documentElement.style.setProperty("--dockH", Math.round(h) + "px");
+          applyPreviewSize();
+        };
+
+        const up = (e)=>{
+          if (!resizing) return;
+          resizing = false;
+          try{ grip.releasePointerCapture && grip.releasePointerCapture(e.pointerId); }catch{}
+          try{
+            const r = dock.getBoundingClientRect();
+            localStorage.setItem(KEY, JSON.stringify({ w: Math.round(r.width), h: Math.round(r.height) }));
+          }catch{}
+        };
+
+        window.addEventListener("pointermove", move);
+        window.addEventListener("pointerup", up);
+        window.addEventListener("pointercancel", up);
+      })();
     }
-
 
     $("toggleBig").addEventListener("click", ()=>{
       const on = !previewPrefs.big;
@@ -1393,14 +1633,29 @@ function openLogoModal(){
     $("aspect169")?.addEventListener("click", (e)=>{ e.preventDefault(); setAspect("16:9"); });
     window.addEventListener("resize", ()=> applyPreviewSize());
 
-
     // Links/icons add
     $("addLink").addEventListener("click", ()=>{
-      state.links.unshift({ title:"New link", subtitle:"", url:"", badge:"", thumb:"", enabled:true, icon:"", iconImage:"", iconCfg:{ scale:1, fit:"contain" } });
+      state.links.unshift({ 
+        title: currentLang === 'fr' ? "Nouveau lien" : "New link", 
+        subtitle:"", 
+        url:"", 
+        badge:"", 
+        thumb:"", 
+        enabled:true, 
+        icon:"", 
+        iconImage:"", 
+        iconCfg:{ scale:1, fit:"contain" } 
+      });
       renderLinks(); renderPreview(); debounceSave();
     });
     $("addIcon").addEventListener("click", ()=>{
-      state.icons.push({ type:"website", url:"", enabled:true, iconImage:"", iconCfg:{ scale:1, fit:"contain" } });
+      state.icons.push({ 
+        type:"website", 
+        url:"", 
+        enabled:true, 
+        iconImage:"", 
+        iconCfg:{ scale:1, fit:"contain" } 
+      });
       renderIcons(); renderPreview(); debounceSave();
     });
 
@@ -1426,9 +1681,9 @@ function openLogoModal(){
         state.profile.avatar = dataUrl;
         $("p_avatar").value = dataUrl;
         renderPreview(); debounceSave();
-        setStatus("Logo embedded");
+        setStatus("statusIconEmbedded");
       }catch{
-        setStatus("Could not read logo");
+        setStatus("statusReadError");
       }finally{
         $("p_avatar_file").value = "";
       }
@@ -1477,9 +1732,9 @@ function openLogoModal(){
         $("bg_type").value = "image";
         $("bg_image").value = dataUrl;
         renderPreview(); debounceSave();
-        setStatus("Background embedded");
+        setStatus("statusBgEmbedded");
       }catch{
-        setStatus("Could not read background");
+        setStatus("statusReadError");
       }finally{
         $("bg_image_file").value = "";
       }
@@ -1495,10 +1750,10 @@ function openLogoModal(){
         const parsed = JSON.parse(txt);
         state = normalizeIncoming(parsed);
         localStorage.setItem(LS_KEY, JSON.stringify(state));
-        setStatus("Imported");
+        setStatus("statusLoaded");
         renderAll();
       }catch{
-        setStatus("Import failed");
+        setStatus("statusImportFailed");
       }finally{
         $("import").value = "";
       }
@@ -1507,14 +1762,13 @@ function openLogoModal(){
       try{ localStorage.removeItem(LS_KEY); }catch{}
       state = defaultState();
       renderAll();
-      setStatus("Draft reset");
+      setStatus("statusNew");
     });
     $("reloadFromSite").addEventListener("click", async ()=>{
       try{ localStorage.removeItem(LS_KEY); }catch{}
       await loadInitial(true);
     });
 
-    
     // Icon modal open/close
     $("iconModalClose")?.addEventListener("click", (e)=>{ e.preventDefault(); closeIconModal(); });
     $("iconModalBackdrop")?.addEventListener("click", (e)=>{ e.preventDefault(); closeIconModal(); });
@@ -1598,12 +1852,24 @@ function openLogoModal(){
       syncIconModal(); renderPreview(); debounceSave();
     }, { passive:false });
 
-// Logo modal open/close
-    $("openLogoModal").addEventListener("click", (e)=>{ e.preventDefault();
+    // Logo modal open/close
+    $("openLogoModal").addEventListener("click", (e)=>{ 
+      e.preventDefault();
+      openLogoModal(); 
+    });
+    
     // Tap logo preview to edit logo
-    $("logoPreviewBox")?.addEventListener("click", (e)=>{ e.preventDefault(); openLogoModal(); });
-    $("logoPreviewBox")?.addEventListener("keydown", (e)=>{ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); openLogoModal(); } });
- openLogoModal(); });
+    $("logoPreviewBox")?.addEventListener("click", (e)=>{ 
+      e.preventDefault(); 
+      openLogoModal(); 
+    });
+    $("logoPreviewBox")?.addEventListener("keydown", (e)=>{ 
+      if (e.key === "Enter" || e.key === " "){ 
+        e.preventDefault(); 
+        openLogoModal(); 
+      } 
+    });
+    
     $("logoModalClose").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
     $("logoModalBackdrop").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
     $("logoDoneBtn").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
@@ -1634,7 +1900,6 @@ function openLogoModal(){
 
     $("logoResetBtn").addEventListener("click", ()=>{
       const d = defaultState().profile;
-      // keep avatar
       const avatar = state.profile.avatar;
       state.profile = { ...d, avatar };
       renderProfileForm();
@@ -1643,7 +1908,7 @@ function openLogoModal(){
       debounceSave();
     });
 
-    // Drag resize handle (free resize)
+    // Drag resize handle
     const handle = $("logoResizeHandle");
     let resizing = false;
     let startX=0, startY=0, startW=0, startH=0;
@@ -1711,12 +1976,10 @@ function openLogoModal(){
     }, { passive:false });
   }
 
-  
   function buildExportData(){
     const out = JSON.parse(JSON.stringify(state));
     out.updatedAt = Date.now();
 
-    // legacy keys
     out.profile.avatarShow = out.profile.show;
     out.profile.avatarBg = out.profile.bg;
     out.profile.avatarBgTransparent = out.profile.bgTransparent;
@@ -1730,7 +1993,6 @@ function openLogoModal(){
     out.profile.avatarX = out.profile.x;
     out.profile.avatarY = out.profile.y;
 
-    // public page expects socials
     out.socials = out.icons;
     return out;
   }
@@ -1744,12 +2006,10 @@ function openLogoModal(){
     }catch{}
   }
 
-function downloadJson(){
-    // Map to compatible output keys too (so older app.js can still read if needed)
+  function downloadJson(){
     const out = JSON.parse(JSON.stringify(state));
     out.updatedAt = Date.now();
 
-    // Provide legacy keys
     out.profile.avatarShow = out.profile.show;
     out.profile.avatarBg = out.profile.bg;
     out.profile.avatarBgTransparent = out.profile.bgTransparent;
@@ -1763,7 +2023,6 @@ function downloadJson(){
     out.profile.avatarX = out.profile.x;
     out.profile.avatarY = out.profile.y;
 
-    // Also expose socials alias
     out.socials = out.icons;
 
     const dataStr = JSON.stringify(out, null, 2);
@@ -1776,7 +2035,7 @@ function downloadJson(){
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    setStatus("Downloaded links.json");
+    setStatus("statusDownloaded");
   }
 
   async function loadInitial(forceSite=false){
@@ -1786,7 +2045,7 @@ function downloadJson(){
         const saved = localStorage.getItem(LS_KEY);
         if (saved){
           state = normalizeIncoming(JSON.parse(saved));
-          setStatus("Loaded draft");
+          setStatus("statusDraft");
           renderAll();
           return;
         }
@@ -1797,10 +2056,10 @@ function downloadJson(){
       const res = await fetch("./links.json", { cache: "no-store" });
       const data = await res.json();
       state = normalizeIncoming(data);
-      setStatus("Loaded from site");
+      setStatus("statusLoaded");
     }catch{
       state = defaultState();
-      setStatus("New draft");
+      setStatus("statusNew");
     }
     renderAll();
   }
@@ -1810,10 +2069,19 @@ function downloadJson(){
     renderLinks();
     renderIcons();
     renderPreview();
+    updateUI();
   }
 
   // init
   safe(()=>{
+    // Load saved language preference
+    try{
+      const savedLang = localStorage.getItem(LANG_KEY);
+      if (savedLang && i18n[savedLang]) {
+        currentLang = savedLang;
+      }
+    }catch{}
+
     setTab("profile");
     updateStepperUI();
     wire();
@@ -1822,7 +2090,7 @@ function downloadJson(){
     setBig(!!previewPrefs.big);
     $("toggleFloat")?.setAttribute("aria-pressed", floatOn ? "true" : "false");
     setFloat(floatOn);
-    // v54: Auto-float preview on small screens (mobile)
+    
     try{
       if (window.matchMedia && window.matchMedia("(max-width: 820px)").matches){
         setFloat(true);
