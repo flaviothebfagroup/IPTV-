@@ -1,8 +1,8 @@
 (() => {
   const $ = (id) => document.getElementById(id);
 
-  const BUILD = "v57";
-  const LS_KEY = "bfa_linktree_editor_draft_v57";
+  const BUILD = "v49";
+  const LS_KEY = "bfa_linktree_editor_draft_v49";
 
   const ICON_SVGS = {
     website: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M2 12h20"/><path d="M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10S9.5 4.7 12 2z"/></svg>`,
@@ -179,17 +179,7 @@
   };
 
   
-  
-  // v55: mobile hamburger menu
-  function setMenuOpen(on){
-    document.body.classList.toggle("menuOpen", !!on);
-    const btn = $("hamburgerBtn");
-    btn?.setAttribute("aria-expanded", on ? "true" : "false");
-    $("drawer")?.setAttribute("aria-hidden", on ? "false" : "true");
-    $("drawerBackdrop")?.setAttribute("aria-hidden", on ? "false" : "true");
-  }
-
-const STEP_ORDER = ["profile","icons","links","export"];
+  const STEP_ORDER = ["profile","icons","links","export"];
 
   function getCurrentTab(){
     const active = document.querySelector(".navItem.isActive");
@@ -229,7 +219,7 @@ function setTab(tab){
 
   
   // Preview sizing (9:16 / 16:9) + Big toggle
-  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v57";
+  const PREVIEW_KEY = "bfa_linktree_preview_prefs_v49";
   let previewPrefs = { aspect: "9:16", big: false };
   try{
     const saved = localStorage.getItem(PREVIEW_KEY);
@@ -237,7 +227,7 @@ function setTab(tab){
   }catch{}
 
   
-  const FLOAT_KEY = "bfa_linktree_preview_float_v57";
+  const FLOAT_KEY = "bfa_linktree_preview_float_v49";
   let floatOn = false;
   try{ floatOn = localStorage.getItem(FLOAT_KEY) === "1"; }catch{}
   function setFloat(on){
@@ -1229,17 +1219,7 @@ function openLogoModal(){
   }
 
   function wire(){
-    
-    // Mobile menu
-    $("hamburgerBtn")?.addEventListener("click", (e)=>{
-      e.preventDefault();
-      const open = !document.body.classList.contains("menuOpen");
-      setMenuOpen(open);
-    });
-    $("drawerBackdrop")?.addEventListener("click", ()=> setMenuOpen(false));
-    window.addEventListener("keydown", (e)=>{ if (e.key === "Escape") setMenuOpen(false); });
-
-// Tabs
+    // Tabs
     document.querySelectorAll(".navItem").forEach(btn=>{
       btn.addEventListener("click", (e)=>{
         e.preventDefault();
@@ -1331,7 +1311,7 @@ function openLogoModal(){
       const grip = document.getElementById("previewResize");
       if (!dock || !grip) return;
 
-      const KEY = "bfa_preview_dock_size_v57";
+      const KEY = "bfa_preview_dock_size_v49";
       try{
         const saved = JSON.parse(localStorage.getItem(KEY) || "null");
         if (saved && saved.w){
@@ -1599,11 +1579,7 @@ function openLogoModal(){
     }, { passive:false });
 
 // Logo modal open/close
-    $("openLogoModal").addEventListener("click", (e)=>{ e.preventDefault();
-    // Tap logo preview to edit logo
-    $("logoPreviewBox")?.addEventListener("click", (e)=>{ e.preventDefault(); openLogoModal(); });
-    $("logoPreviewBox")?.addEventListener("keydown", (e)=>{ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); openLogoModal(); } });
- openLogoModal(); });
+    $("openLogoModal").addEventListener("click", (e)=>{ e.preventDefault(); openLogoModal(); });
     $("logoModalClose").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
     $("logoModalBackdrop").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
     $("logoDoneBtn").addEventListener("click", (e)=>{ e.preventDefault(); closeLogoModal(); });
@@ -1822,14 +1798,6 @@ function downloadJson(){
     setBig(!!previewPrefs.big);
     $("toggleFloat")?.setAttribute("aria-pressed", floatOn ? "true" : "false");
     setFloat(floatOn);
-    // v54: Auto-float preview on small screens (mobile)
-    try{
-      if (window.matchMedia && window.matchMedia("(max-width: 820px)").matches){
-        setFloat(true);
-        $("toggleFloat")?.setAttribute("aria-pressed","true");
-      }
-    }catch{}
-
     loadInitial(false);
   });
 })();

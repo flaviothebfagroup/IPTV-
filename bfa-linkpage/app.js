@@ -1,10 +1,10 @@
 
 async function loadJsonWithFallback(){
   if (location.protocol === "file:"){
-    throw new Error(t("openedFile"));
+    throw new Error("Opened as file://. Please open via GitHub Pages (…github.io/…) or run a local server.");
   }
   if (location.hostname === "github.com"){
-    throw new Error(t("openedGithub"));
+    throw new Error("Opened on github.com. Please open the GitHub Pages URL (…github.io/…) for this site.");
   }
 
   const ts = Date.now();
@@ -40,86 +40,10 @@ async function loadJsonWithFallback(){
       lastErr = err;
     }
   }
-  throw lastErr || new Error(t("couldNotLoad"));
+  throw lastErr || new Error("Could not load links.json");
 }
 
 const $ = (id) => document.getElementById(id);
-
-const I18N = {
-  en: {
-    pageTitle: "Links",
-    loading: "Loading…",
-    couldNotLoad: "Could not load links.json",
-    expected: "Expected",
-    error: "Error",
-    tip: "Tip: If links.json opens in a tab, your JSON might be invalid (trailing comma). Re-export from editor.",
-    openedFile: "Opened as file://. Please open via GitHub Pages (…github.io/…) or run a local server.",
-    openedGithub: "Opened on github.com. Please open the GitHub Pages URL (…github.io/…) for this site."
-  },
-  fr: {
-    pageTitle: "Liens",
-    loading: "Chargement…",
-    couldNotLoad: "Impossible de charger links.json",
-    expected: "Attendu",
-    error: "Erreur",
-    tip: "Astuce : si links.json s’ouvre dans un onglet, votre JSON est peut‑être invalide (virgule finale). Réexportez depuis l’éditeur.",
-    openedFile: "Ouvert en file://. Ouvrez via GitHub Pages (…github.io/…) ou lancez un serveur local.",
-    openedGithub: "Ouvert sur github.com. Ouvrez l’URL GitHub Pages (…github.io/…) de ce site."
-  }
-};
-
-function getLang(){
-  const qs = new URLSearchParams(location.search);
-  const ql = (qs.get("lang") || "").toLowerCase();
-  if (ql === "fr" || ql === "en") return ql;
-  const stored = (localStorage.getItem("bfa_lang") || "").toLowerCase();
-  if (stored === "fr" || stored === "en") return stored;
-  // Default: English
-  return "en";
-}
-let LANG = getLang();
-function t(key){
-  return (I18N[LANG] && I18N[LANG][key]) || I18N.en[key] || key;
-}
-function setLang(lang){
-  LANG = (lang === "fr") ? "fr" : "en";
-  try { localStorage.setItem(LANG_KEY, LANG); } catch(e) {}
-  applyLangUI();
-  return LANG;
-}
-
-function bindLangToggle(){
-  const wrap = $("langToggle");
-  if(!wrap) return;
-  wrap.addEventListener("click", (e)=>{
-    const btn = e.target && e.target.closest ? e.target.closest("[data-lang]") : null;
-    if(!btn) return;
-    e.preventDefault();
-    const next = btn.getAttribute("data-lang");
-    if(!next || next === LANG) return;
-    setLang(next);
-    if(window.__bfaData) render(window.__bfaData);
-  });
-  applyLangUI();
-}
-
-function applyLangUI(){
-  document.documentElement.lang = LANG;
-  const wrap = $("langToggle");
-  if (!wrap) return;
-  wrap.querySelectorAll("[data-lang]").forEach((btn)=>{
-    const on = btn.getAttribute("data-lang") === LANG;
-    btn.classList.toggle("active", on);
-    btn.setAttribute("aria-pressed", on ? "true" : "false");
-  });
-}
-
-function pickText(obj, key, fallback=""){
-  if(!obj) return fallback;
-  if(LANG === "fr" && obj[key + "_fr"]) return obj[key + "_fr"]; // optional *_fr
-  const v = obj[key];
-  return (v === undefined || v === null) ? fallback : v;
-}
 
 const ICONS = {
   instagram: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2zm9 2h-9A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4z"/><path d="M12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M17.6 6.3a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2z"/></svg>`,
@@ -269,13 +193,13 @@ function createLink(item) {
 
   const title = document.createElement("div");
   title.className = "title";
-  title.textContent = pickText(item, "title", "Untitled");
+  title.textContent = item.title || "Untitled";
   titleRow.appendChild(title);
 
   if (item.badge) {
     const badge = document.createElement("span");
     badge.className = "badge";
-    badge.textContent = badgeText;
+    badge.textContent = item.badge;
     titleRow.appendChild(badge);
   }
 
@@ -284,7 +208,7 @@ function createLink(item) {
   if (item.subtitle) {
     const sub = document.createElement("div");
     sub.className = "subtitle";
-    sub.textContent = subText;
+    sub.textContent = item.subtitle;
     main.appendChild(sub);
   }
 
@@ -420,7 +344,7 @@ init().catch(err => {
   const msg = (err && err.message) ? err.message : String(err);
 
   const nameEl = $("name");
-  if (nameEl) nameEl.textContent = t("couldNotLoad");
+  if (nameEl) nameEl.textContent = "Could not load links.json";
 
   const errEl = $("loadError");
   if (errEl){
