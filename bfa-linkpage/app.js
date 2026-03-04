@@ -81,35 +81,44 @@ let LANG = getLang();
 function t(key){
   return (I18N[LANG] && I18N[LANG][key]) || I18N.en[key] || key;
 }
-function setLang(next){
-  LANG = (next === "fr") ? "fr" : "en";
-  localStorage.setItem("bfa_lang", LANG);
+function setLang(lang){
+  LANG = (lang === "fr") ? "fr" : "en";
+  try { localStorage.setItem(LANG_KEY, LANG); } catch(e) {}
   applyLangUI();
-  const lt = $("langToggle");
-  if (lt){
-    lt.addEventListener("click", (e)=>{
-      const btn = e.target && e.target.closest ? e.target.closest("[data-lang]") : null;
-      if (!btn) return;
-      e.preventDefault();
-      setLang(btn.getAttribute("data-lang"));
-      // Re-render current data if already loaded
-      if (window.__bfaData) render(window.__bfaData);
-    });
-  }
+  return LANG;
 }
+
+function bindLangToggle(){
+  const wrap = $("langToggle");
+  if(!wrap) return;
+  wrap.addEventListener("click", (e)=>{
+    const btn = e.target && e.target.closest ? e.target.closest("[data-lang]") : null;
+    if(!btn) return;
+    e.preventDefault();
+    const next = btn.getAttribute("data-lang");
+    if(!next || next === LANG) return;
+    setLang(next);
+    if(window.__bfaData) render(window.__bfaData);
+  });
+  applyLangUI();
+}
+
 function applyLangUI(){
   document.documentElement.lang = LANG;
-  document.title = "Links";
-  const nameEl = $("name");
-  if (nameEl && (nameEl.textContent.trim() === "" || nameEl.textContent.trim() === "…" || nameEl.textContent.includes("Loading") || nameEl.textContent.includes("Chargement"))){
-    nameEl.textContent = t("loading");
-  }
-  const toggle = $("langToggle");
-  if (toggle){
-    toggle.querySelectorAll("[data-lang]").forEach(btn=>{
-      btn.classList.toggle("active", btn.getAttribute("data-lang") === LANG);
-    });
-  }
+  const wrap = $("langToggle");
+  if (!wrap) return;
+  wrap.querySelectorAll("[data-lang]").forEach((btn)=>{
+    const on = btn.getAttribute("data-lang") === LANG;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+}
+
+function pickText(obj, key, fallback=""){
+  if(!obj) return fallback;
+  if(LANG === "fr" && obj[key + "_fr"]) return obj[key + "_fr"]; // optional *_fr
+  const v = obj[key];
+  return (v === undefined || v === null) ? fallback : v;
 }
 
 const ICONS = {
@@ -260,13 +269,13 @@ function createLink(item) {
 
   const title = document.createElement("div");
   title.className = "title";
-  title.textContent = item.title || "Untitled";
+  title.textContent = pickText(item, "title", "Untitled");
   titleRow.appendChild(title);
 
   if (item.badge) {
     const badge = document.createElement("span");
     badge.className = "badge";
-    badge.textContent = item.badge;
+    badge.textContent = badgeText;
     titleRow.appendChild(badge);
   }
 
@@ -275,7 +284,7 @@ function createLink(item) {
   if (item.subtitle) {
     const sub = document.createElement("div");
     sub.className = "subtitle";
-    sub.textContent = item.subtitle;
+    sub.textContent = subText;
     main.appendChild(sub);
   }
 
