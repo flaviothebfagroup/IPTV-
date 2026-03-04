@@ -45,6 +45,240 @@ async function loadJsonWithFallback(){
 
 const $ = (id) => document.getElementById(id);
 
+// ------------------------
+// EN / FR language toggle
+// ------------------------
+// You keep editing links.json in English.
+// Index page can show French via a toggle:
+// 1) If a field has an override like title_fr / subtitle_fr / bio_fr, we use it.
+// 2) Otherwise we auto-translate (dictionary + free public translator) and cache in localStorage.
+
+const LANG_KEY = "bfa_index_lang";
+
+function getLang(){
+  const q = (new URLSearchParams(location.search)).get("lang");
+  if(q === "en" || q === "fr") return q;
+  const stored = localStorage.getItem(LANG_KEY);
+  if(stored === "en" || stored === "fr") return stored;
+  const nav = (navigator.language || "en").toLowerCase();
+  return nav.startsWith("fr") ? "fr" : "en";
+}
+
+let CURRENT_LANG = getLang();
+document.documentElement.lang = CURRENT_LANG;
+
+const UI = {
+  loading: { en: "Loading…", fr: "Chargement…" },
+  loadFail: { en: "Could not load links.json", fr: "Impossible de charger links.json" },
+  expected: { en: "Expected:", fr: "Attendu :" },
+  tip: {
+    en: "Tip: If links.json opens in a tab, your JSON might be invalid (trailing comma). Re-export from editor.",
+    fr: "Astuce : si links.json s’ouvre dans un onglet, votre JSON est peut-être invalide (virgule finale). Réexportez depuis l’éditeur."
+  }
+};
+
+function tUI(key){
+  return (UI[key] && (UI[key][CURRENT_LANG] || UI[key].en)) || "";
+}
+
+const FR_DICT = {
+  "dealers": "Concessionnaires",
+  "monthly deals": "Offres mensuelles",
+  "parts & service": "Pièces et service",
+  "parts and service": "Pièces et service",
+  "live chat": "Clavardage en direct",
+  "google reviews": "Avis Google",
+  "video installation": "Installation vidéo",
+  "click here": "Cliquez ici",
+  "new": "Nouveau",
+  "website": "Site web"
+};
+
+function norm(s){
+  return String(s || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[“”]/g, '"')
+    .replace(/[’]/g, "'");
+}
+
+function dictTranslate(en){
+  const k = norm(en);
+  if(!k) return "";
+  if(FR_DICT[k]) return FR_DICT[k];
+  // simple word hints (best-effort)
+  let out = k;
+  out = out.replace(/\bdeals\b/g, "offres");
+  out = out.replace(/\bdeal\b/g, "offre");
+  out = out.replace(/\bparts\b/g, "pièces");
+  out = out.replace(/\breviews\b/g, "avis");
+  out = out.replace(/\bvideo\b/g, "vidéo");
+  if(out !== k){
+    return out.charAt(0).toUpperCase() + out.slice(1);
+  }
+  return "";
+}
+
+function loadFrCache(){
+  try{ return JSON.parse(localStorage.getItem("bfa_fr_cache_v1") || "{}") || {}; }
+  catch(_){ return {}; }
+}
+
+function saveFrCache(cache){
+  try{ localStorage.setItem("bfa_fr_cache_v1", JSON.stringify(cache)); }catch(_){ }
+}
+
+const FR_CACHE = loadFrCache();
+const FR_PENDING = Object.create(null);
+
+function shouldTranslate(en){
+  const s = String(en || "").trim();
+  if(!s) return false;
+  if(/^https?:\/\//i.test(s)) return false;
+  if(/^[0-9\s\-_.\/()]+$/.test(s)) return false;
+  return true;
+}
+
+async function translateOnline(en){
+  // Free public translator. If it fails (rate limits), we fall back to English.
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(en)}&langpair=en|fr`;
+  const res = await fetch(url, { cache: "no-store" });
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  const js = await res.json();
+  const out = js && js.responseData && js.responseData.translatedText;
+  return typeof out === "string" ? out : "";
+}
+
+async function toFrench(en){
+  const src = String(en || "").trim();
+  if(!src) return "";
+  if(FR_CACHE[src]) return FR_CACHE[src];
+  const d = dictTranslate(src);
+  if(d){
+    FR_CACHE[src] = d;
+    saveFrCache(FR_CACHE);
+    return d;
+  }
+  if(!shouldTranslate(src)) return "";
+  if(!FR_PENDING[src]){
+    FR_PENDING[src] = (async()=>{
+      try{
+        const online = await translateOnline(src);
+        const cleaned = (online || "").trim();
+        if(cleaned){
+          FR_CACHE[src] = cleaned;
+          saveFrCache(FR_CACHE);
+          return cleaned;
+        }
+      }catch(_){
+        // ignore
+      }
+      return "";
+    })();
+  }
+  return FR_PENDING[src];
+}
+
+function updateLangToggleUI(){
+  const wrap = $("langToggle");
+  if(!wrap) return;
+  wrap.querySelectorAll(".langBtn").forEach(btn=>{
+    btn.classList.toggle("active", btn.dataset.lang === CURRENT_LANG);
+  });
+}
+
+function setLang(lang){
+  if(lang !== "en" && lang !== "fr") return;
+  CURRENT_LANG = lang;
+  document.documentElement.lang = lang;
+  try{ localStorage.setItem(LANG_KEY, lang); }catch(_){ }
+  updateLangToggleUI();
+  if(LAST_DATA) renderFromData(LAST_DATA);
+}
+
+function setupLangToggle(){
+  const wrap = $("langToggle");
+  if(!wrap) return;
+  wrap.addEventListener("click", (e)=>{
+    const btn = e.target.closest("button[data-lang]");
+    if(!btn) return;
+    setLang(btn.dataset.lang);
+  });
+  updateLangToggleUI();
+}
+
+function getOverrideFr(obj, key){
+  if(!obj) return "";
+  const v1 = obj[`${key}_fr`];
+  const v2 = obj[`${key}Fr`];
+  if(typeof v1 === "string" && v1.trim()) return v1.trim();
+  if(typeof v2 === "string" && v2.trim()) return v2.trim();
+  const v = obj[key];
+  if(v && typeof v === "object" && typeof v.fr === "string" && v.fr.trim()) return v.fr.trim();
+  return "";
+}
+
+function getEn(obj, key, fallback=""){
+  if(!obj) return fallback;
+  const v = obj[key];
+  if(v == null) return fallback;
+  if(v && typeof v === "object"){
+    if(typeof v.en === "string") return v.en;
+    if(typeof v.fr === "string") return v.fr;
+  }
+  return String(v);
+}
+
+function setLocalizedText(el, obj, key, fallback=""){
+  if(!el) return;
+  el.removeAttribute("data-needs-fr");
+  el.removeAttribute("data-en");
+  const en = getEn(obj, key, fallback);
+  if(CURRENT_LANG === "en"){
+    el.textContent = en;
+    return;
+  }
+  const frOvr = getOverrideFr(obj, key);
+  if(frOvr){
+    el.textContent = frOvr;
+    return;
+  }
+  const cached = FR_CACHE[en] || dictTranslate(en);
+  if(cached){
+    if(cached && cached !== en){
+      FR_CACHE[en] = cached;
+      saveFrCache(FR_CACHE);
+    }
+    el.textContent = cached || en;
+    return;
+  }
+  // Render EN now, replace async.
+  el.textContent = en;
+  if(shouldTranslate(en)){
+    el.dataset.en = en;
+    el.dataset.needsFr = "1";
+  }
+}
+
+async function translateMissingInDom(){
+  if(CURRENT_LANG !== "fr") return;
+  const els = Array.from(document.querySelectorAll("[data-needs-fr='1'][data-en]"));
+  const unique = Array.from(new Set(els.map(e=>e.dataset.en).filter(Boolean)));
+  for(const en of unique){
+    const fr = await toFrench(en);
+    if(!fr) continue;
+    els.forEach(el=>{
+      if(el.dataset.en === en){
+        el.textContent = fr;
+        el.removeAttribute("data-needs-fr");
+      }
+    });
+  }
+}
+
+let LAST_DATA = null;
+
 const ICONS = {
   instagram: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2zm9 2h-9A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4z"/><path d="M12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M17.6 6.3a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2z"/></svg>`,
   youtube: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.6 7.2a3 3 0 0 0-2.1-2.1C17.8 4.6 12 4.6 12 4.6s-5.8 0-7.5.5A3 3 0 0 0 2.4 7.2 31 31 0 0 0 2 12a31 31 0 0 0 .4 4.8 3 3 0 0 0 2.1 2.1c1.7.5 7.5.5 7.5.5s5.8 0 7.5-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 22 12a31 31 0 0 0-.4-4.8zM10 15.3V8.7L16 12l-6 3.3z"/></svg>`,
@@ -193,13 +427,13 @@ function createLink(item) {
 
   const title = document.createElement("div");
   title.className = "title";
-  title.textContent = item.title || "Untitled";
+  setLocalizedText(title, item, "title", "Untitled");
   titleRow.appendChild(title);
 
   if (item.badge) {
     const badge = document.createElement("span");
     badge.className = "badge";
-    badge.textContent = item.badge;
+    setLocalizedText(badge, item, "badge", "");
     titleRow.appendChild(badge);
   }
 
@@ -208,7 +442,7 @@ function createLink(item) {
   if (item.subtitle) {
     const sub = document.createElement("div");
     sub.className = "subtitle";
-    sub.textContent = item.subtitle;
+    setLocalizedText(sub, item, "subtitle", "");
     main.appendChild(sub);
   }
 
@@ -290,13 +524,13 @@ function renderFromData(data) {
   // Apply background/theme from links.json
   applyTheme(data.theme || data.background);
 
-  $("name").textContent = data.profile?.name || "Links";
+  setLocalizedText($("name"), data.profile || {}, "name", "Links");
   const avatar = $("avatar");
   avatar.src = data.profile?.avatar || "";
   avatar.alt = (data.profile?.name || "Profile") + " logo";
   applyAvatar(avatar, data.profile);
 
-  $("bio").textContent = data.profile?.bio || "";
+  setLocalizedText($("bio"), data.profile || {}, "bio", "");
 
   const socialsWrap = $("socials");
   socialsWrap.innerHTML = "";
@@ -306,10 +540,19 @@ function renderFromData(data) {
   linksWrap.innerHTML = "";
   (data.links || []).filter(l => l && l.enabled !== false).forEach(l => linksWrap.appendChild(createLink(l)));
 
-  $("footerText").textContent = data.footerText || "";
+  setLocalizedText($("footerText"), data || {}, "footerText", "");
+
+  // Async translation pass (FR)
+  setTimeout(() => {
+    translateMissingInDom().catch(() => {});
+  }, 0);
 }
 
 async function init() {
+  setupLangToggle();
+  const nameEl0 = $("name");
+  if (nameEl0) nameEl0.textContent = tUI("loading");
+
   const isPreview = new URLSearchParams(location.search).get("preview") === "1";
 
   // If we're in preview mode, listen for editor updates and render them.
@@ -318,6 +561,7 @@ async function init() {
       const msg = e && e.data;
       if (!msg || msg.type !== "previewState") return;
       try{
+        LAST_DATA = msg.state;
         renderFromData(msg.state);
       }catch(err){
         console.error(err);
@@ -327,6 +571,7 @@ async function init() {
     // Also try loading links.json as a fallback (in case no message arrives)
     try{
       const data = await loadJsonWithFallback();
+      LAST_DATA = data;
       renderFromData(data);
       return;
     }catch(err){
@@ -336,6 +581,7 @@ async function init() {
   }
 
   const data = await loadJsonWithFallback();
+  LAST_DATA = data;
   renderFromData(data);
 }
 
@@ -344,7 +590,7 @@ init().catch(err => {
   const msg = (err && err.message) ? err.message : String(err);
 
   const nameEl = $("name");
-  if (nameEl) nameEl.textContent = "Could not load links.json";
+  if (nameEl) nameEl.textContent = tUI("loadFail");
 
   const errEl = $("loadError");
   if (errEl){
@@ -352,10 +598,10 @@ init().catch(err => {
     const base = here.pathname.endsWith(".html") ? new URL(".", here) : new URL(".", new URL(here.pathname.endsWith("/") ? here.pathname : (here.pathname + "/"), here));
     const expected = new URL("links.json", base).toString();
     errEl.hidden = false;
-    errEl.textContent = `Expected: ${expected}
+    errEl.textContent = `${tUI("expected")} ${expected}
 
 Error: ${msg}
 
-Tip: If links.json opens in a tab, your JSON might be invalid (trailing comma). Re-export from editor.`;
+${tUI("tip")}`;
   }
 });
