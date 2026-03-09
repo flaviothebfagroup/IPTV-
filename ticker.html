@@ -25,6 +25,10 @@
             font-weight: bold; 
             font-size: 16px; 
             min-width: 120px; 
+            transition: all 0.3s;
+        }
+        #ticker-label.hidden {
+            display: none;
         }
         #ticker-wrap { 
             flex: 1; 
@@ -208,17 +212,6 @@
             background: rgba(0,0,0,0.85);
             z-index: 999;
         }
-        .hint {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            color: #666;
-            font-size: 12px;
-            z-index: 100;
-            background: rgba(0,0,0,0.7);
-            padding: 5px 10px;
-            border-radius: 3px;
-        }
         .current-value {
             color: #e31837;
             font-weight: bold;
@@ -309,6 +302,34 @@
             outline: none;
             border-color: #e31837;
         }
+        
+        /* Size inputs */
+        .size-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .size-row input {
+            flex: 1;
+        }
+        .size-row span {
+            color: #aaa;
+            min-width: 60px;
+        }
+        
+        /* Hidden edit button - completely invisible but clickable */
+        #edit-btn {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 1px;
+            height: 1px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            z-index: 100;
+            opacity: 0;
+        }
     </style>
 </head>
 <body>
@@ -320,8 +341,11 @@
         </div>
     </div>
 
+    <!-- Hidden Edit Button (1px at bottom right corner) -->
+    <button id="edit-btn" onclick="openEdit()" title="Edit Settings"></button>
+
     <!-- Edit Panel -->
-    <div id="overlay"></div>
+    <div id="overlay" onclick="closeEdit()"></div>
     <div id="edit-panel">
         <h2>⚙️ Ticker Settings</h2>
         
@@ -351,6 +375,40 @@
             <label>Static Messages (one per line)</label>
             <textarea id="staticMessages" placeholder="Enter your messages here...&#10;One message per line&#10;Example:&#10;Welcome to our dealership!&#10;Check out our new Kia models!&#10;Open Monday-Saturday 9AM-6PM"></textarea>
             <small>Each line becomes a scrolling message. Leave empty to use default messages.</small>
+        </div>
+
+        <!-- Label Box Settings -->
+        <div class="form-group">
+            <label>Label Box (Left Side)</label>
+            <div class="toggle-container">
+                <div class="toggle-switch" id="labelToggle" onclick="toggleLabel()">
+                    <div class="toggle-slider"></div>
+                </div>
+                <div>
+                    <div class="toggle-label" id="labelToggleLabel">Label Box: ON</div>
+                    <div class="toggle-status" id="labelToggleStatus">Showing label box</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group" id="labelSettings">
+            <label>Label Text</label>
+            <input type="text" id="labelText" value="CBC NEWS" autocomplete="off">
+            
+            <label style="margin-top: 15px;">Label Box Width (px)</label>
+            <div class="size-row">
+                <input type="number" id="labelWidth" value="120" min="0" max="500" step="10">
+                <span>pixels</span>
+            </div>
+            <small>Set to 0 to auto-fit text</small>
+        </div>
+
+        <div class="form-group">
+            <label>Ticker Height (px)</label>
+            <div class="size-row">
+                <input type="number" id="tickerHeight" value="60" min="30" max="200" step="5">
+                <span>pixels</span>
+            </div>
         </div>
 
         <div class="form-group">
@@ -385,7 +443,7 @@
         </div>
 
         <div class="form-group">
-            <label>Background Color (Left)</label>
+            <label>Background Color (Left/Label)</label>
             <div class="color-row">
                 <input type="color" id="bgColor" value="#1a1a1a">
                 <span class="color-value" id="bgColorValue">#1a1a1a</span>
@@ -408,11 +466,6 @@
             </div>
         </div>
 
-        <div class="form-group">
-            <label>Label Text (Left Box)</label>
-            <input type="text" id="labelText" value="CBC NEWS" autocomplete="off">
-        </div>
-
         <div class="button-group">
             <button class="btn-save" onclick="saveSettings()">💾 Save & Apply</button>
             <button class="btn-cancel" onclick="closeEdit()">❌ Cancel</button>
@@ -420,22 +473,23 @@
         </div>
     </div>
 
-    <div class="hint">Press 'E' to edit settings</div>
-
     <script>
         // Default settings
         const defaults = {
             rssEnabled: false,
             rssUrl: 'https://www.cbc.ca/webfeed/rss/rss-topstories',
             staticMessages: '',
+            labelEnabled: true,
+            labelText: 'CBC NEWS',
+            labelWidth: 120,
+            tickerHeight: 60,
             scrollSpeed: 120,
             logoUrl: 'https://1000logos.net/wp-content/uploads/2021/10/CBC-Logo.png',
             customText: '',
             customTextColor: '#e31837',
             bgColor: '#1a1a1a',
             stripColor: '#2d2d2d',
-            textColor: '#ffffff',
-            labelText: 'CBC NEWS'
+            textColor: '#ffffff'
         };
 
         let settings = {...defaults};
@@ -490,11 +544,31 @@
 
         // Apply settings
         function applySettings() {
-            document.getElementById('ticker-container').style.background = settings.bgColor;
-            document.getElementById('ticker-wrap').style.background = settings.stripColor;
-            document.getElementById('ticker-label').textContent = settings.labelText;
-            document.getElementById('ticker').style.animationDuration = settings.scrollSpeed + 's';
-            document.getElementById('ticker').style.color = settings.textColor;
+            const container = document.getElementById('ticker-container');
+            const label = document.getElementById('ticker-label');
+            const wrap = document.getElementById('ticker-wrap');
+            const ticker = document.getElementById('ticker');
+            
+            // Height
+            container.style.height = settings.tickerHeight + 'px';
+            
+            // Label box
+            if (settings.labelEnabled) {
+                label.classList.remove('hidden');
+                label.textContent = settings.labelText;
+                label.style.width = settings.labelWidth > 0 ? settings.labelWidth + 'px' : 'auto';
+                label.style.minWidth = settings.labelWidth > 0 ? settings.labelWidth + 'px' : '120px';
+            } else {
+                label.classList.add('hidden');
+            }
+            
+            // Colors
+            container.style.background = settings.bgColor;
+            wrap.style.background = settings.stripColor;
+            ticker.style.color = settings.textColor;
+            ticker.style.animationDuration = settings.scrollSpeed + 's';
+            ticker.style.lineHeight = settings.tickerHeight + 'px';
+            label.style.lineHeight = settings.tickerHeight + 'px';
             
             updateCustomTextStyle();
             updateTicker();
@@ -511,7 +585,7 @@
                     color: ${settings.customTextColor} !important; 
                     margin-right: 10px; 
                     font-weight: bold;
-                    font-size: 22px;
+                    font-size: ${Math.max(16, settings.tickerHeight / 3)}px;
                 }
             `;
             document.head.appendChild(customTextStyle);
@@ -520,10 +594,9 @@
         // Get messages to display
         function getMessages() {
             if (settings.rssEnabled) {
-                return null; // Will fetch from RSS
+                return null;
             }
             
-            // Use static messages
             if (settings.staticMessages && settings.staticMessages.trim()) {
                 return settings.staticMessages.split('\n').filter(m => m.trim());
             }
@@ -559,13 +632,11 @@
             const ticker = document.getElementById('ticker');
             
             if (!settings.rssEnabled) {
-                // Use static messages
                 const messages = getMessages();
                 ticker.innerHTML = createTickerContent(messages);
                 return;
             }
             
-            // Fetch RSS
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -588,7 +659,6 @@
                     throw new Error('No items in feed');
                 }
             } catch (error) {
-                // Fallback to static if RSS fails
                 ticker.innerHTML = createTickerContent(fallbackNews);
             }
         }
@@ -596,7 +666,7 @@
         // Start refresh timer
         function startRefreshTimer() {
             if (refreshInterval) clearInterval(refreshInterval);
-            refreshInterval = setInterval(updateTicker, 300000); // 5 minutes
+            refreshInterval = setInterval(updateTicker, 300000);
         }
 
         // Toggle RSS
@@ -628,23 +698,38 @@
             }
         }
 
+        // Toggle Label
+        function toggleLabel() {
+            settings.labelEnabled = !settings.labelEnabled;
+            updateLabelToggleUI();
+        }
+
+        // Update label toggle UI
+        function updateLabelToggleUI() {
+            const toggle = document.getElementById('labelToggle');
+            const label = document.getElementById('labelToggleLabel');
+            const status = document.getElementById('labelToggleStatus');
+            const settingsGroup = document.getElementById('labelSettings');
+            
+            if (settings.labelEnabled) {
+                toggle.classList.add('active');
+                label.textContent = 'Label Box: ON';
+                status.textContent = 'Showing label box';
+                settingsGroup.style.display = 'block';
+            } else {
+                toggle.classList.remove('active');
+                label.textContent = 'Label Box: OFF';
+                status.textContent = 'Hidden - full width ticker';
+                settingsGroup.style.display = 'none';
+            }
+        }
+
         // Setup event listeners
         function setupEventListeners() {
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'e' || e.key === 'E') {
-                    e.preventDefault();
-                    toggleEdit();
-                }
-            });
-
-            document.getElementById('overlay').addEventListener('click', closeEdit);
-
-            // Real-time preview for custom text
             const customTextInput = document.getElementById('customText');
             customTextInput.addEventListener('input', updatePreview);
             customTextInput.addEventListener('keyup', updatePreview);
 
-            // Color pickers
             document.getElementById('customTextColor').addEventListener('input', function() {
                 document.getElementById('customTextColorValue').textContent = this.value;
                 updatePreview();
@@ -672,24 +757,16 @@
             previewCustom.style.color = color;
         }
 
-        // Toggle edit panel
-        function toggleEdit() {
-            const panel = document.getElementById('edit-panel');
-            if (panel.style.display === 'block') {
-                closeEdit();
-            } else {
-                openEdit();
-            }
-        }
-
         // Open edit panel
         function openEdit() {
-            // RSS toggle
             updateRSSToggleUI();
+            updateLabelToggleUI();
             
-            // Fields
             document.getElementById('rssUrl').value = settings.rssUrl;
             document.getElementById('staticMessages').value = settings.staticMessages;
+            document.getElementById('labelText').value = settings.labelText;
+            document.getElementById('labelWidth').value = settings.labelWidth;
+            document.getElementById('tickerHeight').value = settings.tickerHeight;
             document.getElementById('scrollSpeed').value = settings.scrollSpeed;
             document.getElementById('logoUrl').value = settings.logoUrl;
             document.getElementById('customText').value = settings.customText;
@@ -697,9 +774,7 @@
             document.getElementById('bgColor').value = settings.bgColor;
             document.getElementById('stripColor').value = settings.stripColor;
             document.getElementById('textColor').value = settings.textColor;
-            document.getElementById('labelText').value = settings.labelText;
             
-            // Displays
             document.getElementById('customTextColorValue').textContent = settings.customTextColor;
             document.getElementById('bgColorValue').textContent = settings.bgColor;
             document.getElementById('stripColorValue').textContent = settings.stripColor;
@@ -721,6 +796,9 @@
         function saveSettings() {
             settings.rssUrl = document.getElementById('rssUrl').value || defaults.rssUrl;
             settings.staticMessages = document.getElementById('staticMessages').value;
+            settings.labelText = document.getElementById('labelText').value || 'NEWS';
+            settings.labelWidth = parseInt(document.getElementById('labelWidth').value) || 120;
+            settings.tickerHeight = parseInt(document.getElementById('tickerHeight').value) || 60;
             settings.scrollSpeed = parseInt(document.getElementById('scrollSpeed').value) || 120;
             settings.logoUrl = document.getElementById('logoUrl').value;
             settings.customText = document.getElementById('customText').value;
@@ -728,7 +806,6 @@
             settings.bgColor = document.getElementById('bgColor').value;
             settings.stripColor = document.getElementById('stripColor').value;
             settings.textColor = document.getElementById('textColor').value;
-            settings.labelText = document.getElementById('labelText').value || 'NEWS';
             
             try {
                 localStorage.setItem('tickerSettings', JSON.stringify(settings));
