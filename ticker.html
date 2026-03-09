@@ -2,18 +2,21 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <title>CBC News Ticker</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #000; overflow: hidden; }
+        
+        /* Ticker Styles */
         #ticker-container { 
             width: 100%; 
             height: 60px; 
-            background: #1a1a1a;  /* Kia dark gray/black */
+            background: #1a1a1a;
             display: flex; 
             align-items: center; 
         }
         #ticker-label { 
-            background: #000;  /* Pure black */
+            background: #000;
             color: #fff; 
             padding: 0 20px; 
             height: 100%; 
@@ -28,7 +31,7 @@
             overflow: hidden; 
             height: 100%; 
             position: relative; 
-            background: #2d2d2d;  /* Kia medium gray */
+            background: #2d2d2d;
         }
         #ticker { 
             display: inline-flex; 
@@ -60,11 +63,120 @@
             height: 30px;
             width: auto;
             vertical-align: middle;
-            filter: brightness(0) invert(1); /* White logo */
+            filter: brightness(0) invert(1);
+        }
+        
+        /* Edit Panel Styles */
+        #edit-panel {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1a1a1a;
+            border: 2px solid #444;
+            border-radius: 10px;
+            padding: 30px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+        }
+        #edit-panel h2 {
+            color: #fff;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e31837;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            color: #ccc;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group input[type="url"],
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            background: #2d2d2d;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #e31837;
+        }
+        .form-group small {
+            color: #888;
+            font-size: 12px;
+            display: block;
+            margin-top: 5px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .btn-save {
+            background: #e31837;
+            color: #fff;
+        }
+        .btn-save:hover {
+            background: #c41230;
+        }
+        .btn-cancel {
+            background: #444;
+            color: #fff;
+        }
+        .btn-cancel:hover {
+            background: #555;
+        }
+        .btn-reset {
+            background: #666;
+            color: #fff;
+        }
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 999;
+        }
+        .hint {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            color: #666;
+            font-size: 12px;
+            z-index: 100;
         }
     </style>
 </head>
 <body>
+    <!-- Ticker -->
     <div id="ticker-container">
         <div id="ticker-label">CBC NEWS</div>
         <div id="ticker-wrap">
@@ -72,7 +184,75 @@
         </div>
     </div>
 
+    <!-- Edit Panel -->
+    <div id="overlay" onclick="closeEdit()"></div>
+    <div id="edit-panel">
+        <h2>⚙️ Ticker Settings</h2>
+        
+        <div class="form-group">
+            <label>RSS Feed URL</label>
+            <input type="url" id="rssUrl" value="https://www.cbc.ca/webfeed/rss/rss-topstories">
+            <small>Enter any RSS feed URL</small>
+        </div>
+
+        <div class="form-group">
+            <label>Scroll Speed (seconds)</label>
+            <input type="number" id="scrollSpeed" value="120" min="10" max="600">
+            <small>Lower = faster, Higher = slower (10-600 seconds)</small>
+        </div>
+
+        <div class="form-group">
+            <label>Divider Logo URL</label>
+            <input type="url" id="logoUrl" value="https://1000logos.net/wp-content/uploads/2021/10/CBC-Logo.png">
+            <small>Leave empty to use text divider (•)</small>
+        </div>
+
+        <div class="form-group">
+            <label>Custom Text Prefix (Optional)</label>
+            <input type="text" id="customText" value="" placeholder="BREAKING: ">
+            <small>Adds text before each headline (e.g., BREAKING: )</small>
+        </div>
+
+        <div class="form-group">
+            <label>Background Color</label>
+            <select id="bgColor">
+                <option value="#1a1a1a">Kia Dark Gray</option>
+                <option value="#000000">Pure Black</option>
+                <option value="#2d2d2d">Medium Gray</option>
+                <option value="#e31837">CBC Red</option>
+                <option value="#003366">Navy Blue</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Label Text</label>
+            <input type="text" id="labelText" value="CBC NEWS">
+        </div>
+
+        <div class="button-group">
+            <button class="btn-save" onclick="saveSettings()">💾 Save & Apply</button>
+            <button class="btn-cancel" onclick="closeEdit()">❌ Cancel</button>
+            <button class="btn-reset" onclick="resetDefaults()">🔄 Reset</button>
+        </div>
+    </div>
+
+    <div class="hint">Press 'E' to edit settings</div>
+
     <script>
+        // Default settings
+        const defaults = {
+            rssUrl: 'https://www.cbc.ca/webfeed/rss/rss-topstories',
+            scrollSpeed: 120,
+            logoUrl: 'https://1000logos.net/wp-content/uploads/2021/10/CBC-Logo.png',
+            customText: '',
+            bgColor: '#1a1a1a',
+            labelText: 'CBC NEWS'
+        };
+
+        // Current settings
+        let settings = {...defaults};
+
+        // Fallback news
         const fallbackNews = [
             "Canadian dollar falls amid U.S. tariff uncertainty",
             "Winter storm warnings issued across Ontario and Quebec", 
@@ -86,29 +266,48 @@
             "New healthcare funding announced by federal government"
         ];
 
-        const ticker = document.getElementById('ticker');
-        const logoUrl = 'https://1000logos.net/wp-content/uploads/2021/10/CBC-Logo.png';
-        
+        // Load saved settings from localStorage
+        function loadSettings() {
+            const saved = localStorage.getItem('tickerSettings');
+            if (saved) {
+                settings = JSON.parse(saved);
+                applySettings();
+            }
+        }
+
+        // Apply settings to page
+        function applySettings() {
+            document.getElementById('ticker-container').style.background = settings.bgColor;
+            document.getElementById('ticker-label').textContent = settings.labelText;
+            document.getElementById('ticker').style.animationDuration = settings.scrollSpeed + 's';
+            fetchNews();
+        }
+
+        // Create ticker content
         function createTickerContent(headlines) {
             let content = '';
+            const prefix = settings.customText || '';
+            const logoHtml = settings.logoUrl ? 
+                `<img src="${settings.logoUrl}" alt="logo" onerror="this.style.display='none'; this.parentElement.innerHTML='•';">` : 
+                '•';
+            
             headlines.forEach((headline) => {
-                content += `<span class="item">${headline}</span>`;
-                content += `<span class="divider"><img src="${logoUrl}" alt="CBC" onerror="this.style.display='none'"></span>`;
+                content += `<span class="item">${prefix}${headline}</span>`;
+                content += `<span class="divider">${logoHtml}</span>`;
             });
             return content + content;
         }
-        
-        function showFallback() {
-            ticker.innerHTML = createTickerContent(fallbackNews);
-        }
-        
+
+        // Fetch news
         async function fetchNews() {
+            const ticker = document.getElementById('ticker');
+            
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 5000);
                 
                 const response = await fetch(
-                    'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent('https://www.cbc.ca/webfeed/rss/rss-topstories'),
+                    'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(settings.rssUrl),
                     { signal: controller.signal }
                 );
                 
@@ -125,12 +324,64 @@
                     throw new Error('No items in feed');
                 }
             } catch (error) {
-                showFallback();
+                ticker.innerHTML = createTickerContent(fallbackNews);
             }
         }
 
-        showFallback();
-        fetchNews();
+        // Open edit panel
+        function openEdit() {
+            document.getElementById('rssUrl').value = settings.rssUrl;
+            document.getElementById('scrollSpeed').value = settings.scrollSpeed;
+            document.getElementById('logoUrl').value = settings.logoUrl;
+            document.getElementById('customText').value = settings.customText;
+            document.getElementById('bgColor').value = settings.bgColor;
+            document.getElementById('labelText').value = settings.labelText;
+            
+            document.getElementById('edit-panel').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        // Close edit panel
+        function closeEdit() {
+            document.getElementById('edit-panel').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        // Save settings
+        function saveSettings() {
+            settings.rssUrl = document.getElementById('rssUrl').value || defaults.rssUrl;
+            settings.scrollSpeed = parseInt(document.getElementById('scrollSpeed').value) || 120;
+            settings.logoUrl = document.getElementById('logoUrl').value;
+            settings.customText = document.getElementById('customText').value;
+            settings.bgColor = document.getElementById('bgColor').value;
+            settings.labelText = document.getElementById('labelText').value || 'NEWS';
+            
+            localStorage.setItem('tickerSettings', JSON.stringify(settings));
+            applySettings();
+            closeEdit();
+        }
+
+        // Reset to defaults
+        function resetDefaults() {
+            settings = {...defaults};
+            localStorage.removeItem('tickerSettings');
+            applySettings();
+            closeEdit();
+        }
+
+        // Keyboard shortcut
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'e' || e.key === 'E') {
+                if (document.getElementById('edit-panel').style.display === 'block') {
+                    closeEdit();
+                } else {
+                    openEdit();
+                }
+            }
+        });
+
+        // Initialize
+        loadSettings();
         setInterval(fetchNews, 300000);
     </script>
 </body>
