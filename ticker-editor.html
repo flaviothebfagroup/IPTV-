@@ -202,6 +202,14 @@
             background: #666;
             color: #fff;
         }
+        .btn-download {
+            background: #28a745;
+            color: #fff;
+            flex: 2;
+        }
+        .btn-download:hover {
+            background: #218838;
+        }
         #overlay {
             display: none;
             position: fixed;
@@ -317,7 +325,7 @@
             min-width: 60px;
         }
         
-        /* Hidden edit button - completely invisible but clickable */
+        /* Hidden edit button */
         #edit-btn {
             position: fixed;
             bottom: 0;
@@ -330,6 +338,19 @@
             z-index: 100;
             opacity: 0;
         }
+        
+        /* Info box */
+        .info-box {
+            background: #1a3a1a;
+            border: 1px solid #28a745;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        .info-box strong {
+            color: #28a745;
+        }
     </style>
 </head>
 <body>
@@ -341,13 +362,21 @@
         </div>
     </div>
 
-    <!-- Hidden Edit Button (1px at bottom right corner) -->
+    <!-- Hidden Edit Button -->
     <button id="edit-btn" onclick="openEdit()" title="Edit Settings"></button>
 
     <!-- Edit Panel -->
     <div id="overlay" onclick="closeEdit()"></div>
     <div id="edit-panel">
         <h2>⚙️ Ticker Settings</h2>
+        
+        <div class="info-box">
+            <strong>💡 How to save permanently:</strong><br>
+            1. Adjust your settings below<br>
+            2. Click <strong>"Download HTML File"</strong><br>
+            3. Save the downloaded file to your computer<br>
+            4. Use the new file in Signagelive
+        </div>
         
         <!-- RSS Toggle -->
         <div class="form-group">
@@ -467,15 +496,18 @@
         </div>
 
         <div class="button-group">
-            <button class="btn-save" onclick="saveSettings()">💾 Save & Apply</button>
-            <button class="btn-cancel" onclick="closeEdit()">❌ Cancel</button>
-            <button class="btn-reset" onclick="resetDefaults()">🔄 Reset All</button>
+            <button class="btn-download" onclick="downloadConfiguredFile()">⬇️ Download HTML File</button>
+        </div>
+        <div class="button-group">
+            <button class="btn-save" onclick="saveSettings()">💾 Preview Changes</button>
+            <button class="btn-cancel" onclick="closeEdit()">❌ Close</button>
+            <button class="btn-reset" onclick="resetDefaults()">🔄 Reset</button>
         </div>
     </div>
 
     <script>
-        // Default settings
-        const defaults = {
+        // Default settings embedded in the file
+        const defaultSettings = {
             rssEnabled: false,
             rssUrl: 'https://www.cbc.ca/webfeed/rss/rss-topstories',
             staticMessages: '',
@@ -492,7 +524,7 @@
             textColor: '#ffffff'
         };
 
-        let settings = {...defaults};
+        let settings = {...defaultSettings};
         let customTextStyle = null;
         let refreshInterval = null;
 
@@ -529,7 +561,7 @@
             startRefreshTimer();
         }
 
-        // Load settings
+        // Load settings from localStorage or use defaults
         function loadSettings() {
             try {
                 const saved = localStorage.getItem('tickerSettings');
@@ -542,7 +574,7 @@
             applySettings();
         }
 
-        // Apply settings
+        // Apply settings to page
         function applySettings() {
             const container = document.getElementById('ticker-container');
             const label = document.getElementById('ticker-label');
@@ -792,9 +824,9 @@
             document.getElementById('overlay').style.display = 'none';
         }
 
-        // Save settings
+        // Save settings to localStorage and apply
         function saveSettings() {
-            settings.rssUrl = document.getElementById('rssUrl').value || defaults.rssUrl;
+            settings.rssUrl = document.getElementById('rssUrl').value || defaultSettings.rssUrl;
             settings.staticMessages = document.getElementById('staticMessages').value;
             settings.labelText = document.getElementById('labelText').value || 'NEWS';
             settings.labelWidth = parseInt(document.getElementById('labelWidth').value) || 120;
@@ -814,17 +846,199 @@
             }
             
             applySettings();
-            closeEdit();
+            alert('Settings applied! Click "Download HTML File" to save permanently.');
+        }
+
+        // Download configured HTML file
+        function downloadConfiguredFile() {
+            // Get current settings from inputs
+            const currentSettings = {
+                rssEnabled: document.getElementById('rssToggle').classList.contains('active'),
+                rssUrl: document.getElementById('rssUrl').value || defaultSettings.rssUrl,
+                staticMessages: document.getElementById('staticMessages').value,
+                labelEnabled: document.getElementById('labelToggle').classList.contains('active'),
+                labelText: document.getElementById('labelText').value || 'NEWS',
+                labelWidth: parseInt(document.getElementById('labelWidth').value) || 120,
+                tickerHeight: parseInt(document.getElementById('tickerHeight').value) || 60,
+                scrollSpeed: parseInt(document.getElementById('scrollSpeed').value) || 120,
+                logoUrl: document.getElementById('logoUrl').value,
+                customText: document.getElementById('customText').value,
+                customTextColor: document.getElementById('customTextColor').value,
+                bgColor: document.getElementById('bgColor').value,
+                stripColor: document.getElementById('stripColor').value,
+                textColor: document.getElementById('textColor').value
+            };
+
+            // Generate new HTML with embedded settings
+            const newHtml = generateHtmlFile(currentSettings);
+            
+            // Create download
+            const blob = new Blob([newHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ticker-configured.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('File downloaded! Use this new file in Signagelive with your settings permanently embedded.');
+        }
+
+        // Generate HTML file with embedded settings
+        function generateHtmlFile(config) {
+            const staticMessagesArray = config.staticMessages ? 
+                config.staticMessages.split('\n').filter(m => m.trim()).map(m => `            "${m.replace(/"/g, '\\"')}"`).join(',\n') : 
+                '';
+            
+            return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>News Ticker</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #000; overflow: hidden; }
+        #ticker-container { 
+            width: 100%; 
+            height: ${config.tickerHeight}px; 
+            background: ${config.bgColor};
+            display: flex; 
+            align-items: center; 
+        }
+        #ticker-label { 
+            background: #000;
+            color: #fff; 
+            padding: 0 20px; 
+            height: 100%; 
+            display: ${config.labelEnabled ? 'flex' : 'none'}; 
+            align-items: center; 
+            font-weight: bold; 
+            font-size: 16px; 
+            min-width: ${config.labelWidth > 0 ? config.labelWidth + 'px' : '120px'}; 
+            width: ${config.labelWidth > 0 ? config.labelWidth + 'px' : 'auto'};
+        }
+        #ticker-wrap { 
+            flex: 1; 
+            overflow: hidden; 
+            height: 100%; 
+            position: relative; 
+            background: ${config.stripColor};
+        }
+        #ticker { 
+            display: inline-flex; 
+            white-space: nowrap; 
+            animation: ticker ${config.scrollSpeed}s linear infinite;
+            height: 100%; 
+            line-height: ${config.tickerHeight}px; 
+            color: ${config.textColor}; 
+            font-size: 20px; 
+            font-weight: bold;
+            align-items: center;
+        }
+        @keyframes ticker { 
+            0% { transform: translate3d(0, 0, 0); } 
+            100% { transform: translate3d(-50%, 0, 0); } 
+        }
+        .item { 
+            display: inline-flex; 
+            align-items: center; 
+            padding: 0 40px; 
+        }
+        .custom-text {
+            color: ${config.customTextColor};
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .divider {
+            display: inline-flex;
+            align-items: center;
+            padding: 0 20px;
+            height: 40px;
+        }
+        .divider img {
+            height: 30px;
+            width: auto;
+            vertical-align: middle;
+            filter: brightness(0) invert(1);
+        }
+    </style>
+</head>
+<body>
+    <div id="ticker-container">
+        <div id="ticker-label">${config.labelText}</div>
+        <div id="ticker-wrap">
+            <div id="ticker">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        const settings = {
+            rssEnabled: ${config.rssEnabled},
+            rssUrl: "${config.rssUrl.replace(/"/g, '\\"')}",
+            staticMessages: [${staticMessagesArray}],
+            customText: "${config.customText.replace(/"/g, '\\"')}",
+            customTextColor: "${config.customTextColor}",
+            logoUrl: "${config.logoUrl.replace(/"/g, '\\"')}"
+        };
+
+        const fallbackNews = [
+            "Welcome to our dealership!",
+            "Check out our new Kia models",
+            "Open Monday-Saturday 9AM-6PM"
+        ];
+
+        function createTickerContent(messages) {
+            let content = '';
+            const prefix = settings.customText ? '<span class="custom-text">' + settings.customText + '</span>' : '';
+            const logoHtml = settings.logoUrl ? '<img src="' + settings.logoUrl + '" alt="logo" onerror="this.style.display=\\'none\\'; this.parentElement.innerHTML=\\'•\\';">' : '•';
+            
+            messages.forEach((message) => {
+                content += '<span class="item">' + prefix + message + '</span>';
+                content += '<span class="divider">' + logoHtml + '</span>';
+            });
+            return content + content;
+        }
+
+        async function updateTicker() {
+            const ticker = document.getElementById('ticker');
+            
+            if (!settings.rssEnabled) {
+                const messages = settings.staticMessages.length > 0 ? settings.staticMessages : fallbackNews;
+                ticker.innerHTML = createTickerContent(messages);
+                return;
+            }
+            
+            try {
+                const response = await fetch('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(settings.rssUrl));
+                const data = await response.json();
+                if (data.items && data.items.length > 0) {
+                    const headlines = data.items.slice(0, 10).map(i => i.title);
+                    ticker.innerHTML = createTickerContent(headlines);
+                } else {
+                    throw new Error('No items');
+                }
+            } catch (error) {
+                ticker.innerHTML = createTickerContent(fallbackNews);
+            }
+        }
+
+        updateTicker();
+        setInterval(updateTicker, 300000);
+    <\/script>
+</body>
+</html>`;
         }
 
         // Reset to defaults
         function resetDefaults() {
-            settings = {...defaults};
+            settings = {...defaultSettings};
             try {
                 localStorage.removeItem('tickerSettings');
             } catch (e) {}
             applySettings();
-            closeEdit();
+            openEdit(); // Reopen with defaults
         }
 
         // Start
