@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>News Ticker</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #000; overflow: hidden; }
+        #ticker-container { 
+            width: 100%; 
+            height: 60px; 
+            background: #1a1a1a;
+            display: flex; 
+            align-items: center; 
+        }
+        #ticker-label { 
+            background: #000;
+            color: #fff; 
+            padding: 0 20px; 
+            height: 100%; 
+            display: none; 
+            align-items: center; 
+            font-weight: bold; 
+            font-size: 16px; 
+            min-width: 120px; 
+            width: 120px;
+        }
+        #ticker-wrap { 
+            flex: 1; 
+            overflow: hidden; 
+            height: 100%; 
+            position: relative; 
+            background: #2d2d2d;
+        }
+        #ticker { 
+            display: inline-flex; 
+            white-space: nowrap; 
+            animation: ticker 250s linear infinite;
+            height: 100%; 
+            line-height: 60px; 
+            color: #ffffff; 
+            font-size: 20px; 
+            font-weight: bold;
+            align-items: center;
+        }
+        @keyframes ticker { 
+            0% { transform: translate3d(0, 0, 0); } 
+            100% { transform: translate3d(-50%, 0, 0); } 
+        }
+        .item { 
+            display: inline-flex; 
+            align-items: center; 
+            padding: 0 40px; 
+        }
+        .custom-text {
+            color: #ffffff;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .divider {
+            display: inline-flex;
+            align-items: center;
+            padding: 0 20px;
+            height: 40px;
+        }
+        .divider img {
+            height: 30px;
+            width: auto;
+            vertical-align: middle;
+            filter: brightness(0) invert(1);
+        }
+    </style>
+</head>
+<body>
+    <div id="ticker-container">
+        <div id="ticker-label"> </div>
+        <div id="ticker-wrap">
+            <div id="ticker">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        const settings = {
+            rssEnabled: false,
+            rssUrl: "https://www.cbc.ca/webfeed/rss/rss-topstories",
+            staticMessages: [            "\"Inquire With Our Sales Team About This Month's Elantra Special Offer\"",
+            "\"Inquire With Our Sales Team About This Month's Elantra Special Offer\"",
+            "\"Inquire With Our Sales Team About This Month's Elantra Special Offer\"",
+            "\"Inquire With Our Sales Team About This Month's Elantra Special Offer\"",
+            "\"Inquire With Our Sales Team About This Month's Elantra Special Offer\"",
+            "\"Inquire With Our Sales Team About This Month's Elantra Special Offer\"",
+            "\"Inquire With Our Sales Team About This Month's Elantra Special Offer\""],
+            customText: "",
+            customTextColor: "#ffffff",
+            logoUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/KIA_logo3.svg/3840px-KIA_logo3.svg.png?_=20241230161505"
+        };
+
+        const fallbackNews = [
+            "Welcome to our dealership!",
+            "Check out our new Kia models",
+            "Open Monday-Saturday 9AM-6PM"
+        ];
+
+        function createTickerContent(messages) {
+            let content = '';
+            const prefix = settings.customText ? '<span class="custom-text">' + settings.customText + '</span>' : '';
+            const logoHtml = settings.logoUrl ? '<img src="' + settings.logoUrl + '" alt="logo" onerror="this.style.display=\'none\'; this.parentElement.innerHTML=\'•\';">' : '•';
+            
+            messages.forEach((message) => {
+                content += '<span class="item">' + prefix + message + '</span>';
+                content += '<span class="divider">' + logoHtml + '</span>';
+            });
+            return content + content;
+        }
+
+        async function updateTicker() {
+            const ticker = document.getElementById('ticker');
+            
+            if (!settings.rssEnabled) {
+                const messages = settings.staticMessages.length > 0 ? settings.staticMessages : fallbackNews;
+                ticker.innerHTML = createTickerContent(messages);
+                return;
+            }
+            
+            try {
+                const response = await fetch('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(settings.rssUrl));
+                const data = await response.json();
+                if (data.items && data.items.length > 0) {
+                    const headlines = data.items.slice(0, 10).map(i => i.title);
+                    ticker.innerHTML = createTickerContent(headlines);
+                } else {
+                    throw new Error('No items');
+                }
+            } catch (error) {
+                ticker.innerHTML = createTickerContent(fallbackNews);
+            }
+        }
+
+        updateTicker();
+        setInterval(updateTicker, 300000);
+    </script>
+</body>
+</html>
