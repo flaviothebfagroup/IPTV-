@@ -1,1464 +1,945 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ticker Editor Pro</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --primary: #f97316;
-            --primary-dark: #ea580c;
-            --primary-light: #fdba74;
-            --secondary: #1a1a1a;
-            --surface: #2d2d2d;
-            --surface-light: #3d3d3d;
-            --text: #ffffff;
-            --text-muted: #aaaaaa;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --border-radius: 12px;
-            --shadow: 0 4px 20px rgba(0,0,0,0.4);
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        [data-theme="light"] {
-            --secondary: #f8fafc;
-            --surface: #ffffff;
-            --surface-light: #f1f5f9;
-            --text: #1e293b;
-            --text-muted: #64748b;
-            --shadow: 0 4px 20px rgba(0,0,0,0.1);
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
-            min-height: 100vh;
-            color: var(--text);
-            line-height: 1.6;
-            transition: var(--transition);
-        }
-
-        [data-theme="light"] body {
-            background: linear-gradient(135deg, #e2e8f0 0%, #f8fafc 100%);
-        }
-
-        .theme-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1001;
-            background: var(--surface);
-            border: 2px solid var(--primary);
-            border-radius: 50px;
-            padding: 8px 16px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 600;
-            color: var(--text);
-            transition: var(--transition);
-            box-shadow: var(--shadow);
-        }
-
-        .theme-toggle:hover {
-            transform: scale(1.05);
-            background: var(--primary);
-            color: white;
-        }
-
-        .header {
-            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
-            padding: 30px;
-            text-align: center;
-            box-shadow: var(--shadow);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-            opacity: 0.3;
-        }
-
-        .header h1 {
-            font-size: 2.5rem;
-            font-weight: 800;
-            letter-spacing: -1px;
-            position: relative;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            color: white;
-        }
-
-        .header p {
-            opacity: 0.9;
-            margin-top: 8px;
-            font-size: 1.1rem;
-            position: relative;
-            color: white;
-        }
-
-        .live-indicator {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255,255,255,0.2);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: white;
-            backdrop-filter: blur(10px);
-        }
-
-        .live-dot {
-            width: 8px;
-            height: 8px;
-            background: #22c55e;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-            box-shadow: 0 0 10px #22c55e;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 30px;
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 30px;
-        }
-
-        @media (max-width: 1024px) {
-            .container { grid-template-columns: 1fr; }
-        }
-
-        .card {
-            background: var(--surface);
-            border-radius: var(--border-radius);
-            padding: 25px;
-            box-shadow: var(--shadow);
-            border: 1px solid rgba(255,255,255,0.05);
-            transition: var(--transition);
-            animation: fadeIn 0.4s ease-out;
-        }
-
-        [data-theme="light"] .card { border: 1px solid rgba(0,0,0,0.05); }
-
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-        }
-
-        [data-theme="light"] .card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.15); }
-
-        .card-title {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: var(--text);
-        }
-
-        .card-title svg { width: 24px; height: 24px; color: var(--primary); }
-
-        .preview-section {
-            grid-column: 1 / -1;
-            background: linear-gradient(135deg, var(--surface) 0%, var(--secondary) 100%);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .preview-section::before {
-            content: 'LIVE PREVIEW';
-            position: absolute;
-            top: 10px;
-            right: 20px;
-            font-size: 0.75rem;
-            font-weight: 800;
-            color: var(--primary);
-            letter-spacing: 2px;
-            opacity: 0.5;
-        }
-
-        .preview-container {
-            background: #000;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-top: 15px;
-            border: 2px solid rgba(255,255,255,0.1);
-        }
-
-        .rss-status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-            padding: 10px;
-            background: rgba(249, 115, 22, 0.1);
-            border-radius: 6px;
-            border: 1px solid rgba(249, 115, 22, 0.2);
-        }
-        .rss-status.loading { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.2); }
-        .rss-status.error { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); }
-        .rss-status.success { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); }
-        .rss-status-icon { font-size: 1.2rem; }
-        .rss-status-text { font-size: 0.875rem; color: var(--text-muted); }
-
-        .form-group { margin-bottom: 24px; }
-        .form-group:last-child { margin-bottom: 0; }
-
-        .form-label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .form-input, .form-textarea, .form-select {
-            width: 100%;
-            padding: 14px 16px;
-            background: var(--secondary);
-            border: 2px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            color: var(--text);
-            font-size: 1rem;
-            transition: var(--transition);
-            font-family: inherit;
-        }
-
-        [data-theme="light"] .form-input,
-        [data-theme="light"] .form-textarea,
-        [data-theme="light"] .form-select {
-            border: 2px solid rgba(0,0,0,0.1);
-        }
-
-        .form-input:focus, .form-textarea:focus, .form-select:focus {
-            outline: none;
-            border-color: var(--primary);
-            background: rgba(249, 115, 22, 0.05);
-        }
-
-        .form-input::placeholder, .form-textarea::placeholder {
-            color: rgba(255,255,255,0.3);
-        }
-
-        [data-theme="light"] .form-input::placeholder,
-        [data-theme="light"] .form-textarea::placeholder {
-            color: rgba(0,0,0,0.3);
-        }
-
-        .form-textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
-
-        .form-hint {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 6px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .toggle-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 20px;
-            background: var(--secondary);
-            border-radius: 10px;
-            border: 2px solid rgba(255,255,255,0.05);
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        [data-theme="light"] .toggle-wrapper { border: 2px solid rgba(0,0,0,0.05); }
-        .toggle-wrapper:hover { border-color: rgba(249, 115, 22, 0.3); }
-        .toggle-info h4 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; color: var(--text); }
-        .toggle-info p { font-size: 0.85rem; color: var(--text-muted); }
-
-        .toggle-switch {
-            position: relative;
-            width: 60px;
-            height: 32px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 16px;
-            transition: var(--transition);
-            flex-shrink: 0;
-        }
-        .toggle-switch.active { background: var(--primary); }
-        .toggle-slider {
-            position: absolute;
-            top: 4px;
-            left: 4px;
-            width: 24px;
-            height: 24px;
-            background: white;
-            border-radius: 50%;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
-        .toggle-switch.active .toggle-slider { transform: translateX(28px); }
-
-        .color-picker-wrapper { display: flex; align-items: center; gap: 15px; }
-        .color-picker {
-            width: 60px; height: 60px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            cursor: pointer;
-            overflow: hidden;
-            transition: var(--transition);
-            flex-shrink: 0;
-        }
-        .color-picker:hover { transform: scale(1.05); border-color: var(--primary); }
-        .color-picker input[type="color"] {
-            width: 150%; height: 150%;
-            padding: 0; border: none;
-            transform: translate(-25%, -25%);
-            cursor: pointer;
-        }
-        .color-info { flex: 1; }
-        .color-value {
-            font-family: 'Courier New', monospace;
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text);
-            background: var(--secondary);
-            padding: 8px 12px;
-            border-radius: 6px;
-            display: inline-block;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        [data-theme="light"] .color-value { border: 1px solid rgba(0,0,0,0.1); }
-
-        .font-selector {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .font-option {
-            padding: 12px;
-            background: var(--secondary);
-            border: 2px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            cursor: pointer;
-            text-align: center;
-            transition: var(--transition);
-            font-size: 1.1rem;
-        }
-        [data-theme="light"] .font-option { border: 2px solid rgba(0,0,0,0.1); }
-        .font-option:hover { border-color: var(--primary); }
-        .font-option.active { border-color: var(--primary); background: rgba(249, 115, 22, 0.1); }
-        .font-option .font-name { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; }
-
-        /* ─── Local Font Upload ─── */
-        .font-upload-zone {
-            position: relative;
-            border: 2px dashed rgba(249, 115, 22, 0.35);
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: var(--transition);
-            background: rgba(249, 115, 22, 0.03);
-            overflow: hidden;
-        }
-
-        .font-upload-zone:hover,
-        .font-upload-zone.drag-over {
-            border-color: var(--primary);
-            background: rgba(249, 115, 22, 0.08);
-            transform: scale(1.01);
-        }
-
-        .font-upload-zone input[type="file"] {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            cursor: pointer;
-            width: 100%;
-            height: 100%;
-        }
-
-        .font-upload-icon {
-            font-size: 2rem;
-            margin-bottom: 8px;
-            display: block;
-            transition: transform 0.3s ease;
-        }
-
-        .font-upload-zone:hover .font-upload-icon { transform: translateY(-3px); }
-
-        .font-upload-title {
-            font-weight: 700;
-            font-size: 0.95rem;
-            color: var(--text);
-            margin-bottom: 4px;
-        }
-
-        .font-upload-sub {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .font-loaded-badge {
-            display: none;
-            align-items: center;
-            gap: 10px;
-            margin-top: 12px;
-            padding: 10px 14px;
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            border-radius: 8px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: #22c55e;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .font-loaded-badge.visible { display: flex; }
-
-        .font-loaded-name {
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            color: var(--text);
-            font-weight: 500;
-        }
-
-        .font-clear-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 2px 6px;
-            border-radius: 4px;
-            transition: var(--transition);
-            flex-shrink: 0;
-        }
-
-        .font-clear-btn:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
-
-        .font-preview-text {
-            margin-top: 10px;
-            padding: 12px 16px;
-            background: var(--secondary);
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.08);
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: var(--text);
-            display: none;
-        }
-
-        .font-preview-text.visible { display: block; }
-
-        /* ─── end Local Font Upload ─── */
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 14px 28px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
-        }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(249, 115, 22, 0.6); }
-        .btn-success {
-            background: linear-gradient(135deg, var(--success) 0%, #16a34a 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
-        }
-        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34, 197, 94, 0.6); }
-        .btn-secondary {
-            background: var(--surface-light);
-            color: var(--text);
-            border: 2px solid rgba(255,255,255,0.1);
-        }
-        [data-theme="light"] .btn-secondary { border: 2px solid rgba(0,0,0,0.1); }
-        .btn-secondary:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
-        [data-theme="light"] .btn-secondary:hover { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.2); }
-        .btn-danger { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
-        .btn-danger:hover { background: var(--primary); color: white; }
-        .btn-group { display: flex; gap: 12px; flex-wrap: wrap; }
-        .btn-group .btn { flex: 1; min-width: 140px; }
-
-        .filename-group { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; }
-        .filename-input { flex: 1; }
-        .filename-extension {
-            color: var(--text-muted);
-            font-weight: 600;
-            padding: 14px;
-            background: var(--secondary);
-            border-radius: 8px;
-            border: 2px solid rgba(255,255,255,0.1);
-        }
-        [data-theme="light"] .filename-extension { border: 2px solid rgba(0,0,0,0.1); }
-
-        .section-divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            margin: 30px 0;
-        }
-        [data-theme="light"] .section-divider { background: linear-gradient(90deg, transparent, rgba(0,0,0,0.1), transparent); }
-
-        .live-preview {
-            background: var(--secondary);
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 15px;
-            border: 2px solid rgba(249, 115, 22, 0.2);
-        }
-        .live-preview-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); margin-bottom: 10px; font-weight: 700; }
-        .live-preview-content { font-size: 1.2rem; line-height: 1.6; color: var(--text); }
-        .preview-prefix { color: var(--primary); font-weight: 700; margin-right: 8px; }
-
-        .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-
-        .tooltip { position: relative; display: inline-block; cursor: help; }
-        .tooltip:hover::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%; left: 50%;
-            transform: translateX(-50%);
-            padding: 8px 12px;
-            background: var(--secondary);
-            color: var(--text);
-            font-size: 0.8rem;
-            border-radius: 6px;
-            white-space: nowrap;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: var(--shadow);
-            z-index: 1000;
-            margin-bottom: 8px;
-        }
-        [data-theme="light"] .tooltip:hover::after { border: 1px solid rgba(0,0,0,0.1); }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        ::-webkit-scrollbar { width: 10px; height: 10px; }
-        ::-webkit-scrollbar-track { background: var(--secondary); }
-        ::-webkit-scrollbar-thumb { background: var(--surface-light); border-radius: 5px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
-
-        .collapsible { overflow: hidden; transition: max-height 0.3s ease-out; }
-        .collapsible.collapsed { max-height: 0; }
-
-        .number-input-wrapper { display: flex; align-items: center; gap: 10px; }
-        .number-btn {
-            width: 36px; height: 36px;
-            border: 2px solid rgba(255,255,255,0.1);
-            background: var(--secondary);
-            color: var(--text);
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1.2rem;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        [data-theme="light"] .number-btn { border: 2px solid rgba(0,0,0,0.1); }
-        .number-btn:hover { border-color: var(--primary); color: var(--primary); }
-        .form-input.number-input { text-align: center; font-weight: 600; }
-
-        .updating { animation: flash 0.3s ease; }
-        @keyframes flash {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-
-        .refresh-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.875rem;
-            font-weight: 600;
-            margin-left: 10px;
-            transition: var(--transition);
-        }
-        .refresh-btn:hover { background: var(--primary-dark); }
-        .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ticker Editor Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --primary:#f97316;--primary-dark:#ea580c;
+  --secondary:#1a1a1a;--surface:#2d2d2d;--surface-light:#3d3d3d;
+  --text:#ffffff;--text-muted:#aaaaaa;--success:#22c55e;--danger:#ef4444;
+  --border-radius:12px;--shadow:0 4px 20px rgba(0,0,0,0.4);
+  --transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+[data-theme="light"]{
+  --secondary:#f8fafc;--surface:#ffffff;--surface-light:#f1f5f9;
+  --text:#1e293b;--text-muted:#64748b;--shadow:0 4px 20px rgba(0,0,0,0.1);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:linear-gradient(135deg,#0f0f0f 0%,#1a1a1a 100%);
+  min-height:100vh;color:var(--text);line-height:1.6;transition:var(--transition);}
+[data-theme="light"] body{background:linear-gradient(135deg,#e2e8f0 0%,#f8fafc 100%);}
+
+.topbar{position:fixed;top:14px;right:14px;z-index:1001;display:flex;gap:8px;align-items:center;}
+.topbar-btn{background:var(--surface);border:2px solid var(--primary);border-radius:50px;
+  padding:7px 15px;cursor:pointer;display:flex;align-items:center;gap:6px;
+  font-weight:600;font-size:.82rem;color:var(--text);transition:var(--transition);
+  box-shadow:var(--shadow);white-space:nowrap;}
+.topbar-btn:hover{transform:scale(1.05);background:var(--primary);color:white;}
+
+.header{background:linear-gradient(90deg,var(--primary),var(--primary-dark));
+  padding:26px 30px;text-align:center;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+.header::before{content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23fff' fill-opacity='.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");opacity:.3;}
+.header h1{font-size:2rem;font-weight:800;letter-spacing:-1px;position:relative;color:white;text-shadow:0 2px 4px rgba(0,0,0,.3);}
+.header p{opacity:.9;margin-top:5px;font-size:.95rem;position:relative;color:white;}
+.live-ind{position:absolute;top:18px;left:18px;display:flex;align-items:center;gap:7px;
+  background:rgba(255,255,255,.2);padding:6px 13px;border-radius:20px;
+  font-size:.78rem;font-weight:600;color:white;backdrop-filter:blur(10px);}
+.live-dot{width:7px;height:7px;background:#22c55e;border-radius:50%;
+  animation:pulse 2s infinite;box-shadow:0 0 7px #22c55e;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.3);}}
+
+.container{max-width:1440px;margin:0 auto;padding:26px;
+  display:grid;grid-template-columns:1fr 420px;gap:24px;}
+@media(max-width:1100px){.container{grid-template-columns:1fr;}}
+
+.card{background:var(--surface);border-radius:var(--border-radius);padding:22px;
+  box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.05);
+  transition:var(--transition);animation:fadeIn .35s ease-out;}
+[data-theme="light"] .card{border:1px solid rgba(0,0,0,.06);}
+.card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,.5);}
+[data-theme="light"] .card:hover{box-shadow:0 8px 28px rgba(0,0,0,.14);}
+.card-title{font-size:1.05rem;font-weight:700;margin-bottom:16px;
+  display:flex;align-items:center;gap:8px;color:var(--text);}
+.card-title svg{width:19px;height:19px;color:var(--primary);}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* presets */
+.presets-wrap{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:16px 22px;}
+.presets-lbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+  color:var(--text-muted);flex-shrink:0;}
+.preset-chip{padding:7px 16px;border-radius:50px;border:2px solid rgba(255,255,255,.1);
+  background:var(--surface);color:var(--text);font-size:.82rem;font-weight:600;
+  cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:6px;}
+[data-theme="light"] .preset-chip{border-color:rgba(0,0,0,.1);}
+.preset-chip:hover,.preset-chip.active{border-color:var(--primary);background:rgba(249,115,22,.12);color:var(--primary);}
+.pdot{width:8px;height:8px;border-radius:50%;}
+
+/* preview */
+.preview-section{grid-column:1/-1;position:relative;overflow:hidden;}
+.preview-section::after{content:'LIVE PREVIEW';position:absolute;top:11px;right:18px;
+  font-size:.68rem;font-weight:800;color:var(--primary);letter-spacing:2px;opacity:.4;}
+.preview-outer{border-radius:9px;overflow:hidden;margin-top:13px;
+  border:2px solid rgba(255,255,255,.1);background:#000;transition:background .25s ease;}
+.preview-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.preview-hint{font-size:.76rem;color:var(--text-muted);margin-top:7px;display:flex;align-items:center;gap:5px;}
+.live-preview{background:var(--secondary);padding:16px;border-radius:8px;
+  margin-top:12px;border:2px solid rgba(249,115,22,.2);}
+.lp-lbl{font-size:.68rem;text-transform:uppercase;letter-spacing:1px;color:var(--primary);margin-bottom:7px;font-weight:700;}
+.lp-content{font-size:1.05rem;line-height:1.6;color:var(--text);}
+.pfx{color:var(--primary);font-weight:700;margin-right:6px;}
+
+/* saved configs */
+.saved-chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px;}
+.saved-chip{display:flex;align-items:center;gap:5px;padding:5px 11px;
+  border-radius:7px;background:var(--secondary);border:1.5px solid rgba(255,255,255,.08);
+  font-size:.78rem;font-weight:600;color:var(--text);cursor:pointer;transition:var(--transition);}
+[data-theme="light"] .saved-chip{border-color:rgba(0,0,0,.08);}
+.saved-chip:hover{border-color:var(--primary);color:var(--primary);}
+.sdel{background:none;border:none;cursor:pointer;color:var(--text-muted);
+  padding:0 3px;font-size:.85rem;transition:color .2s;}
+.sdel:hover{color:var(--danger);}
+.no-saves{font-size:.8rem;color:var(--text-muted);font-style:italic;padding:5px 0;}
+
+/* form */
+.form-group{margin-bottom:20px;}
+.form-group:last-child{margin-bottom:0;}
+.form-label{display:block;font-size:.8rem;font-weight:600;color:var(--text-muted);
+  margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+.form-input,.form-textarea{width:100%;padding:11px 14px;background:var(--secondary);
+  border:2px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);
+  font-size:.92rem;transition:var(--transition);font-family:inherit;}
+[data-theme="light"] .form-input,[data-theme="light"] .form-textarea{border-color:rgba(0,0,0,.1);}
+.form-input:focus,.form-textarea:focus{outline:none;border-color:var(--primary);background:rgba(249,115,22,.04);}
+.form-input::placeholder,.form-textarea::placeholder{color:rgba(255,255,255,.25);}
+[data-theme="light"] .form-input::placeholder,[data-theme="light"] .form-textarea::placeholder{color:rgba(0,0,0,.28);}
+.form-textarea{min-height:100px;resize:vertical;line-height:1.5;}
+.form-hint{font-size:.76rem;color:var(--text-muted);margin-top:5px;}
+.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);margin:20px 0;}
+[data-theme="light"] .divider{background:linear-gradient(90deg,transparent,rgba(0,0,0,.1),transparent);}
+
+/* toggle */
+.toggle-wrap{display:flex;align-items:center;justify-content:space-between;
+  padding:16px;background:var(--secondary);border-radius:10px;
+  border:2px solid rgba(255,255,255,.05);cursor:pointer;transition:var(--transition);}
+[data-theme="light"] .toggle-wrap{border-color:rgba(0,0,0,.05);}
+.toggle-wrap:hover{border-color:rgba(249,115,22,.3);}
+.ti h4{font-size:.9rem;font-weight:600;margin-bottom:2px;color:var(--text);}
+.ti p{font-size:.8rem;color:var(--text-muted);}
+.ts{position:relative;width:54px;height:28px;background:rgba(255,255,255,.1);
+  border-radius:14px;transition:var(--transition);flex-shrink:0;}
+.ts.on{background:var(--primary);}
+.tslider{position:absolute;top:3px;left:3px;width:22px;height:22px;background:white;
+  border-radius:50%;transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:0 2px 5px rgba(0,0,0,.3);}
+.ts.on .tslider{transform:translateX(26px);}
+
+/* color */
+.cpw{display:flex;align-items:center;gap:11px;}
+.cp{width:52px;height:52px;border:3px solid rgba(255,255,255,.1);border-radius:9px;
+  cursor:pointer;overflow:hidden;transition:var(--transition);flex-shrink:0;}
+.cp:hover{transform:scale(1.06);border-color:var(--primary);}
+.cp input[type="color"]{width:150%;height:150%;padding:0;border:none;transform:translate(-25%,-25%);cursor:pointer;}
+.cv{font-family:'Courier New',monospace;font-size:.92rem;font-weight:600;color:var(--text);
+  background:var(--secondary);padding:6px 10px;border-radius:6px;
+  border:1px solid rgba(255,255,255,.1);}
+[data-theme="light"] .cv{border-color:rgba(0,0,0,.1);}
+
+/* font grid */
+.font-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px;}
+.font-opt{padding:9px;background:var(--secondary);border:2px solid rgba(255,255,255,.1);
+  border-radius:8px;cursor:pointer;text-align:center;transition:var(--transition);font-size:1rem;}
+[data-theme="light"] .font-opt{border-color:rgba(0,0,0,.1);}
+.font-opt:hover{border-color:var(--primary);}
+.font-opt.on{border-color:var(--primary);background:rgba(249,115,22,.1);}
+.font-opt .fn{font-size:.68rem;color:var(--text-muted);margin-top:2px;text-transform:uppercase;}
+
+/* font upload */
+.fup-zone{position:relative;border:2px dashed rgba(249,115,22,.35);border-radius:10px;
+  padding:16px;text-align:center;cursor:pointer;transition:var(--transition);
+  background:rgba(249,115,22,.03);overflow:hidden;}
+.fup-zone:hover,.fup-zone.drag{border-color:var(--primary);background:rgba(249,115,22,.08);transform:scale(1.01);}
+.fup-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.fup-icon{font-size:1.6rem;margin-bottom:5px;display:block;transition:transform .3s;}
+.fup-zone:hover .fup-icon{transform:translateY(-3px);}
+.fup-title{font-weight:700;font-size:.85rem;color:var(--text);margin-bottom:2px;}
+.fup-sub{font-size:.73rem;color:var(--text-muted);}
+.fbadge{display:none;align-items:center;gap:9px;margin-top:9px;padding:8px 12px;
+  background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:7px;
+  font-size:.8rem;font-weight:600;color:#22c55e;}
+.fbadge.on{display:flex;}
+.fname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-weight:500;}
+.fclr{background:none;border:none;cursor:pointer;color:var(--text-muted);padding:0 4px;border-radius:4px;transition:var(--transition);}
+.fclr:hover{color:var(--danger);background:rgba(239,68,68,.1);}
+.fprev{margin-top:8px;padding:10px 14px;background:var(--secondary);border-radius:8px;
+  border:1px solid rgba(255,255,255,.08);font-size:1.2rem;font-weight:bold;color:var(--text);display:none;}
+.fprev.on{display:block;}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:11px 22px;border:none;border-radius:8px;font-size:.88rem;font-weight:600;
+  cursor:pointer;transition:var(--transition);text-transform:uppercase;letter-spacing:.4px;}
+.btn-success{background:linear-gradient(135deg,var(--success),#16a34a);color:white;box-shadow:0 4px 13px rgba(34,197,94,.4);}
+.btn-success:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(34,197,94,.6);}
+.btn-secondary{background:var(--surface-light);color:var(--text);border:2px solid rgba(255,255,255,.1);}
+[data-theme="light"] .btn-secondary{border-color:rgba(0,0,0,.1);}
+.btn-secondary:hover{background:rgba(255,255,255,.1);}
+[data-theme="light"] .btn-secondary:hover{background:rgba(0,0,0,.05);}
+.btn-outline{background:transparent;color:var(--primary);border:2px solid var(--primary);}
+.btn-outline:hover{background:var(--primary);color:white;}
+.btn-sm{padding:7px 14px;font-size:.78rem;}
+.btn-group{display:flex;gap:9px;flex-wrap:wrap;}
+.btn-group .btn{flex:1;min-width:110px;}
+
+/* number */
+.nw{display:flex;align-items:center;gap:7px;}
+.nb{width:32px;height:32px;border:2px solid rgba(255,255,255,.1);background:var(--secondary);
+  color:var(--text);border-radius:7px;cursor:pointer;font-size:1rem;
+  transition:var(--transition);display:flex;align-items:center;justify-content:center;}
+[data-theme="light"] .nb{border-color:rgba(0,0,0,.1);}
+.nb:hover{border-color:var(--primary);color:var(--primary);}
+.form-input.ni{text-align:center;font-weight:600;}
+
+/* collapsible */
+.coll{overflow:hidden;transition:max-height .3s ease-out;}
+.coll.closed{max-height:0;}
+
+/* rss status */
+.rss-st{display:flex;align-items:center;gap:9px;margin-top:9px;padding:9px;
+  background:rgba(249,115,22,.08);border-radius:6px;border:1px solid rgba(249,115,22,.2);}
+.rss-st.loading{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.2);}
+.rss-st.error{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2);}
+.rss-st.success{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.2);}
+.rss-st-txt{font-size:.8rem;color:var(--text-muted);}
+.rss-rfr{background:var(--primary);color:white;border:none;padding:6px 12px;
+  border-radius:5px;cursor:pointer;font-size:.76rem;font-weight:600;
+  margin-left:7px;transition:var(--transition);}
+.rss-rfr:hover{background:var(--primary-dark);}
+
+/* modal */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:2000;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s ease;}
+.modal-ov.on{opacity:1;pointer-events:all;}
+.modal{background:var(--surface);border-radius:15px;padding:28px;
+  width:min(450px,90vw);box-shadow:0 20px 60px rgba(0,0,0,.5);
+  transform:scale(.93);transition:transform .2s ease;
+  border:1px solid rgba(255,255,255,.08);}
+.modal-ov.on .modal{transform:scale(1);}
+.modal h3{font-size:1.15rem;font-weight:700;margin-bottom:5px;color:var(--text);}
+.modal p{font-size:.82rem;color:var(--text-muted);margin-bottom:18px;}
+.modal-acts{display:flex;gap:9px;margin-top:18px;}
+.modal-acts .btn{flex:1;}
+
+/* tooltip */
+.tt{position:relative;display:inline-block;cursor:help;}
+.tt:hover::after{content:attr(data-t);position:absolute;bottom:100%;left:50%;
+  transform:translateX(-50%);padding:6px 10px;background:var(--secondary);color:var(--text);
+  font-size:.74rem;border-radius:6px;white-space:nowrap;
+  border:1px solid rgba(255,255,255,.1);box-shadow:var(--shadow);z-index:1000;margin-bottom:6px;}
+
+/* toast */
+#toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);
+  background:var(--surface);color:var(--text);border:1.5px solid var(--primary);
+  padding:9px 20px;border-radius:50px;font-weight:600;font-size:.88rem;
+  box-shadow:var(--shadow);z-index:3000;opacity:0;transition:opacity .35s ease;pointer-events:none;}
+
+.upd{animation:flash .3s ease;}
+@keyframes flash{0%{opacity:1;}50%{opacity:.6;}100%{opacity:1;}}
+#ticker.paused{animation-play-state:paused!important;}
+::-webkit-scrollbar{width:7px;}
+::-webkit-scrollbar-track{background:var(--secondary);}
+::-webkit-scrollbar-thumb{background:var(--surface-light);border-radius:4px;}
+::-webkit-scrollbar-thumb:hover{background:var(--primary);}
+</style>
 </head>
 <body>
-    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
-        <span id="themeIcon">☀️</span>
-        <span id="themeText">Light</span>
-    </button>
 
-    <div class="header">
-        <div class="live-indicator">
-            <span class="live-dot"></span>
-            <span>LIVE PREVIEW</span>
-        </div>
-        <h1>🎛️ Ticker Editor Pro</h1>
-        <p>Changes apply automatically as you type</p>
+<div id="toast"></div>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <button class="topbar-btn" onclick="openSaveModal()">💾 Save Config</button>
+  <button class="topbar-btn" onclick="previewInTab()">🚀 Test Live</button>
+  <button class="topbar-btn" onclick="toggleTheme()">
+    <span id="tIcon">☀️</span><span id="tTxt">Light</span>
+  </button>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="live-ind"><span class="live-dot"></span>LIVE PREVIEW</div>
+  <h1>🎛️ Ticker Editor Pro</h1>
+  <p>Changes apply instantly as you edit</p>
+</div>
+
+<div class="container">
+
+  <!-- Presets -->
+  <div class="card presets-wrap" style="padding:14px 20px;grid-column:1/-1;">
+    <span class="presets-lbl">Quick Presets:</span>
+    <div class="preset-chip" onclick="applyPreset('breaking')" id="p-breaking"><span class="pdot" style="background:#ef4444;"></span>Breaking News</div>
+    <div class="preset-chip" onclick="applyPreset('sports')" id="p-sports"><span class="pdot" style="background:#3b82f6;"></span>Sports</div>
+    <div class="preset-chip" onclick="applyPreset('retail')" id="p-retail"><span class="pdot" style="background:#22c55e;"></span>Retail / Promo</div>
+    <div class="preset-chip" onclick="applyPreset('weather')" id="p-weather"><span class="pdot" style="background:#06b6d4;"></span>Weather</div>
+    <div class="preset-chip" onclick="applyPreset('corporate')" id="p-corporate"><span class="pdot" style="background:#a855f7;"></span>Corporate</div>
+    <div class="preset-chip active" onclick="applyPreset('default')" id="p-default"><span class="pdot" style="background:#f97316;"></span>Default Dark</div>
+  </div>
+
+  <!-- Live Preview -->
+  <div class="card preview-section" id="previewCard">
+    <div class="card-title">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+      Live Preview
+      <button class="rss-rfr" id="rssRfr" onclick="forceRssRefresh()" style="display:none;">🔄 Refresh RSS</button>
+    </div>
+    <div class="rss-st" id="rssSt" style="display:none;">
+      <span>⏳</span><span class="rss-st-txt" id="rssStTxt">Loading RSS...</span>
     </div>
 
-    <div class="container">
-        <!-- Live Preview -->
-        <div class="card preview-section" id="previewCard">
-            <div class="card-title">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                Live Preview
-                <button class="refresh-btn" id="refreshRssBtn" onclick="forceRssRefresh()" style="display: none;">🔄 Refresh RSS</button>
-            </div>
-            <div class="rss-status" id="rssStatus" style="display: none;">
-                <span class="rss-status-icon">⏳</span>
-                <span class="rss-status-text" id="rssStatusText">Loading RSS feed...</span>
-            </div>
-            <div class="preview-container" id="previewContainer">
-                <div id="ticker-container" style="width:100%;height:60px;background:#1a1a1a;display:flex;align-items:center;">
-                    <div id="ticker-label" style="background:#000;color:#fff;padding:0 20px;height:100%;display:flex;align-items:center;font-weight:bold;font-size:16px;min-width:120px;">CBC NEWS</div>
-                    <div id="ticker-wrap" style="flex:1;overflow:hidden;height:100%;position:relative;background:#2d2d2d;">
-                        <div id="ticker" style="display:inline-flex;white-space:nowrap;animation:ticker 120s linear infinite;height:100%;line-height:60px;color:#fff;font-size:20px;font-weight:bold;align-items:center;">
-                            <span class="item" style="display:inline-flex;align-items:center;padding:0 40px;">Your message will appear here...</span>
-                        </div>
-                    </div>
-                </div>
-                <style>@keyframes ticker{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(-50%,0,0)}}</style>
-            </div>
-            <div class="live-preview">
-                <div class="live-preview-label">Text Preview</div>
-                <div class="live-preview-content">
-                    <span class="preview-prefix" id="previewPrefix"></span>
-                    <span id="previewText">Your scrolling message will look like this</span>
-                </div>
-            </div>
+    <!-- background mirrors bgColor via JS -->
+    <div class="preview-outer" id="previewOuter">
+      <div id="tc" style="width:100%;height:60px;display:flex;align-items:center;background:#1a1a1a;">
+        <div id="tl" style="background:#000;color:#fff;padding:0 20px;height:100%;display:flex;align-items:center;font-weight:bold;font-size:16px;min-width:120px;width:120px;">CBC NEWS</div>
+        <div id="tw" style="flex:1;overflow:hidden;height:100%;position:relative;background:#2d2d2d;">
+          <div id="ticker" style="display:inline-flex;white-space:nowrap;animation:tkr 120s linear infinite;height:100%;color:#fff;font-size:20px;font-weight:bold;align-items:center;">
+            <span style="padding:0 40px;">Your message will appear here…</span>
+          </div>
         </div>
+      </div>
+    </div>
+    <style>@keyframes tkr{0%{transform:translate3d(0,0,0);}100%{transform:translate3d(-50%,0,0);}}</style>
 
-        <!-- Main Settings -->
-        <div class="card">
-            <div class="card-title">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                Content Source
-            </div>
+    <div class="preview-actions">
+      <button class="btn btn-secondary btn-sm" onclick="togglePause()" id="pauseBtn">⏸ Pause</button>
+      <button class="btn btn-secondary btn-sm" onclick="copyEmbed()">📋 Copy Embed</button>
+    </div>
+    <div class="preview-hint">💡 Hover the ticker to pause scrolling</div>
 
-            <div class="form-group">
-                <div class="toggle-wrapper" onclick="toggleRSS()" id="rssToggleWrapper">
-                    <div class="toggle-info">
-                        <h4>RSS Feed Mode</h4>
-                        <p id="rssDesc">Use live news from RSS feed</p>
-                    </div>
-                    <div class="toggle-switch" id="rssToggle"><div class="toggle-slider"></div></div>
-                </div>
-            </div>
+    <div class="live-preview">
+      <div class="lp-lbl">Text Preview</div>
+      <div class="lp-content"><span class="pfx" id="lpPfx"></span><span id="lpTxt">Your scrolling message will look like this</span></div>
+    </div>
+  </div>
 
-            <div class="form-group collapsible" id="rssSection">
-                <label class="form-label">RSS Feed URL</label>
-                <input type="url" class="form-input" id="rssUrl" placeholder="https://example.com/feed.xml" value="https://www.cbc.ca/webfeed/rss/rss-topstories">
-                <div class="form-hint">Enter any valid RSS feed URL. Preview will update automatically.</div>
-            </div>
-
-            <div class="form-group collapsible collapsed" id="staticSection">
-                <label class="form-label">Static Messages</label>
-                <textarea class="form-textarea" id="staticMessages" placeholder="Enter one message per line...&#10;Welcome to our dealership!&#10;Check out our new models&#10;Open Monday-Saturday 9AM-6PM"></textarea>
-                <div class="form-hint">Each line becomes a separate scrolling message</div>
-            </div>
-
-            <div class="section-divider"></div>
-
-            <div class="card-title">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/></svg>
-                Text &amp; Styling
-            </div>
-
-            <!-- Font Family -->
-            <div class="form-group">
-                <label class="form-label">Font Family</label>
-                <div class="font-selector" id="fontSelector">
-                    <div class="font-option active" onclick="selectFont('Arial')" style="font-family:Arial,sans-serif;">Aa<div class="font-name">Arial</div></div>
-                    <div class="font-option" onclick="selectFont('Georgia')" style="font-family:Georgia,serif;">Aa<div class="font-name">Georgia</div></div>
-                    <div class="font-option" onclick="selectFont('Impact')" style="font-family:Impact,sans-serif;">Aa<div class="font-name">Impact</div></div>
-                    <div class="font-option" onclick="selectFont('Courier New')" style="font-family:'Courier New',monospace;">Aa<div class="font-name">Courier</div></div>
-                    <div class="font-option" onclick="selectFont('Verdana')" style="font-family:Verdana,sans-serif;">Aa<div class="font-name">Verdana</div></div>
-                    <div class="font-option" onclick="selectFont('Times New Roman')" style="font-family:'Times New Roman',serif;">Aa<div class="font-name">Times</div></div>
-                </div>
-
-                <label class="form-label" style="margin-top:15px;">Custom Font (Google Font or URL)</label>
-                <input type="text" class="form-input" id="customFont" placeholder="e.g., Roboto, Open Sans, or https://fonts.googleapis.com/..." style="font-family:monospace;">
-                <div class="form-hint" style="margin-bottom: 16px;">Enter a Google Font name or full CSS URL</div>
-
-                <!-- ─── LOCAL FONT UPLOAD ─── -->
-                <label class="form-label">Upload Font from Your Computer</label>
-                <div class="font-upload-zone" id="fontUploadZone">
-                    <input type="file" id="localFontFile" accept=".ttf,.otf,.woff,.woff2" onchange="handleLocalFont(event)">
-                    <span class="font-upload-icon">🔤</span>
-                    <div class="font-upload-title">Drop a font file here or click to browse</div>
-                    <div class="font-upload-sub">Supports .ttf &nbsp;·&nbsp; .otf &nbsp;·&nbsp; .woff &nbsp;·&nbsp; .woff2</div>
-                </div>
-
-                <div class="font-loaded-badge" id="fontLoadedBadge">
-                    ✅
-                    <span class="font-loaded-name" id="fontLoadedName">—</span>
-                    <button class="font-clear-btn" onclick="clearLocalFont()" title="Remove font">✕</button>
-                </div>
-
-                <div class="font-preview-text" id="fontPreviewText">
-                    The quick brown fox jumps over the lazy dog
-                </div>
-                <!-- ─── END LOCAL FONT UPLOAD ─── -->
-            </div>
-
-            <!-- Custom Prefix -->
-            <div class="form-group">
-                <label class="form-label">Custom Prefix <span class="tooltip" data-tooltip="Appears before each message">ⓘ</span></label>
-                <input type="text" class="form-input" id="customText" placeholder="e.g., BREAKING: or SALE:" maxlength="20">
-                <div class="form-hint">Short text that appears before every message (optional)</div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Prefix Color</label>
-                <div class="color-picker-wrapper">
-                    <div class="color-picker"><input type="color" id="customTextColor" value="#f97316"></div>
-                    <div class="color-info">
-                        <div class="color-value" id="customTextColorValue">#f97316</div>
-                        <div class="form-hint">Click to change color</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Divider Logo URL</label>
-                <input type="url" class="form-input" id="logoUrl" placeholder="https://example.com/logo.png" value="https://1000logos.net/wp-content/uploads/2021/10/CBC-Logo.png">
-                <div class="form-hint">Image between messages (leave empty for dot •)</div>
-            </div>
-        </div>
-
-        <!-- Appearance Settings -->
-        <div class="card">
-            <div class="card-title">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
-                Appearance
-            </div>
-
-            <div class="form-group">
-                <div class="toggle-wrapper" onclick="toggleLabel()" id="labelToggleWrapper">
-                    <div class="toggle-info">
-                        <h4>Show Label Box</h4>
-                        <p id="labelDesc">Display label on the left side</p>
-                    </div>
-                    <div class="toggle-switch active" id="labelToggle"><div class="toggle-slider"></div></div>
-                </div>
-            </div>
-
-            <div class="collapsible" id="labelSettingsSection">
-                <div class="form-group">
-                    <label class="form-label">Label Text</label>
-                    <input type="text" class="form-input" id="labelText" value="CBC NEWS" maxlength="15">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Label Width (px)</label>
-                    <div class="number-input-wrapper">
-                        <button class="number-btn" onclick="adjustNumber('labelWidth',-10)">−</button>
-                        <input type="number" class="form-input number-input" id="labelWidth" value="120" min="0" max="500" step="10">
-                        <button class="number-btn" onclick="adjustNumber('labelWidth',10)">+</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section-divider"></div>
-
-            <div class="settings-grid">
-                <div class="form-group">
-                    <label class="form-label">Background</label>
-                    <div class="color-picker-wrapper">
-                        <div class="color-picker"><input type="color" id="bgColor" value="#1a1a1a"></div>
-                        <div class="color-value" id="bgColorValue">#1a1a1a</div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Ticker Strip</label>
-                    <div class="color-picker-wrapper">
-                        <div class="color-picker"><input type="color" id="stripColor" value="#2d2d2d"></div>
-                        <div class="color-value" id="stripColorValue">#2d2d2d</div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Text Color</label>
-                    <div class="color-picker-wrapper">
-                        <div class="color-picker"><input type="color" id="textColor" value="#ffffff"></div>
-                        <div class="color-value" id="textColorValue">#ffffff</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section-divider"></div>
-
-            <div class="form-group">
-                <label class="form-label">Ticker Height (px)</label>
-                <div class="number-input-wrapper">
-                    <button class="number-btn" onclick="adjustNumber('tickerHeight',-5)">−</button>
-                    <input type="number" class="form-input number-input" id="tickerHeight" value="60" min="30" max="200" step="5">
-                    <button class="number-btn" onclick="adjustNumber('tickerHeight',5)">+</button>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Scroll Speed <span class="tooltip" data-tooltip="Seconds for full cycle">ⓘ</span></label>
-                <div class="number-input-wrapper">
-                    <button class="number-btn" onclick="adjustNumber('scrollSpeed',-10)">−</button>
-                    <input type="number" class="form-input number-input" id="scrollSpeed" value="120" min="10" max="600" step="10">
-                    <button class="number-btn" onclick="adjustNumber('scrollSpeed',10)">+</button>
-                </div>
-                <div class="form-hint">Lower = faster, Higher = slower (seconds)</div>
-            </div>
-        </div>
-
-        <!-- Actions -->
-        <div class="card" style="grid-column: 1 / -1;">
-            <div class="card-title">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                Export &amp; Save
-            </div>
-            <div class="form-group">
-                <label class="form-label">Filename</label>
-                <div class="filename-group">
-                    <input type="text" class="form-input filename-input" id="filename" placeholder="my-ticker" value="ticker-final">
-                    <span class="filename-extension">.html</span>
-                </div>
-                <div class="form-hint">Choose a name for your exported file (without extension)</div>
-            </div>
-            <div class="btn-group">
-                <button class="btn btn-success" onclick="downloadConfiguredFile()">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:20px;height:20px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                    Download HTML
-                </button>
-                <button class="btn btn-secondary" onclick="resetDefaults()">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:20px;height:20px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                    Reset All
-                </button>
-            </div>
-        </div>
+  <!-- Content + Font -->
+  <div class="card">
+    <div class="card-title">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      Content Source
     </div>
 
-    <script>
-        // ─── State ───────────────────────────────────────────────────────────────
-        let settings = {
-            rssEnabled: false,
-            labelEnabled: true,
-            fontFamily: 'Arial, sans-serif',
-            customFontUrl: '',
-            localFontName: '',      // name for @font-face
-            localFontDataUrl: '',   // base64 data URL of the uploaded font file
-        };
-
-        let currentRssData = null;
-        let rssRefreshTimer = null;
-
-        // ─── Debounce ─────────────────────────────────────────────────────────────
-        function debounce(func, wait) {
-            let timeout;
-            return function(...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func(...args), wait);
-            };
-        }
-
-        // ─── Theme ────────────────────────────────────────────────────────────────
-        function toggleTheme() {
-            const html = document.documentElement;
-            const newTheme = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-            html.setAttribute('data-theme', newTheme);
-            document.getElementById('themeIcon').textContent = newTheme === 'light' ? '🌙' : '☀️';
-            document.getElementById('themeText').textContent = newTheme === 'light' ? 'Dark' : 'Light';
-            localStorage.setItem('theme', newTheme);
-        }
-
-        function loadTheme() {
-            const saved = localStorage.getItem('theme') || 'dark';
-            document.documentElement.setAttribute('data-theme', saved);
-            document.getElementById('themeIcon').textContent = saved === 'light' ? '🌙' : '☀️';
-            document.getElementById('themeText').textContent = saved === 'light' ? 'Dark' : 'Light';
-        }
-
-        // ─── Init ─────────────────────────────────────────────────────────────────
-        function init() {
-            loadTheme();
-            setupEventListeners();
-            setupDragDrop();
-            updatePreview();
-        }
-
-        // ─── Event Listeners ──────────────────────────────────────────────────────
-        function setupEventListeners() {
-            ['customTextColor','bgColor','stripColor','textColor'].forEach(id => {
-                document.getElementById(id).addEventListener('input', (e) => {
-                    document.getElementById(id + 'Value').textContent = e.target.value;
-                    updatePreview();
-                });
-            });
-
-            ['customText','labelText','logoUrl','filename'].forEach(id => {
-                document.getElementById(id).addEventListener('input', debounce(updatePreview, 100));
-            });
-
-            document.getElementById('customFont').addEventListener('input', debounce(() => {
-                loadCustomFont();
-                updatePreview();
-            }, 500));
-
-            document.getElementById('rssUrl').addEventListener('change', () => {
-                if (settings.rssEnabled) fetchRssFeed();
-            });
-
-            document.getElementById('staticMessages').addEventListener('input', debounce(() => {
-                if (!settings.rssEnabled) updatePreview();
-            }, 200));
-
-            ['labelWidth','tickerHeight','scrollSpeed'].forEach(id => {
-                document.getElementById(id).addEventListener('input', updatePreview);
-            });
-        }
-
-        // ─── Drag & Drop on the upload zone ───────────────────────────────────────
-        function setupDragDrop() {
-            const zone = document.getElementById('fontUploadZone');
-            zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
-            zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-            zone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                zone.classList.remove('drag-over');
-                const file = e.dataTransfer.files[0];
-                if (file) processLocalFont(file);
-            });
-        }
-
-        // ─── Local Font Upload ────────────────────────────────────────────────────
-        function handleLocalFont(event) {
-            const file = event.target.files[0];
-            if (file) processLocalFont(file);
-        }
-
-        function processLocalFont(file) {
-            const allowed = ['font/ttf','font/otf','font/woff','font/woff2',
-                             'application/font-woff','application/font-woff2',
-                             'application/octet-stream','application/x-font-ttf'];
-            const extOk = /\.(ttf|otf|woff|woff2)$/i.test(file.name);
-            if (!extOk) { alert('Please upload a .ttf, .otf, .woff, or .woff2 font file.'); return; }
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const dataUrl = e.target.result;
-
-                // Determine format for @font-face src
-                const ext = file.name.split('.').pop().toLowerCase();
-                const formatMap = { ttf: 'truetype', otf: 'opentype', woff: 'woff', woff2: 'woff2' };
-                const format = formatMap[ext] || 'truetype';
-
-                // Unique font family name (strip extension)
-                const fontName = 'LocalFont_' + file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_');
-
-                // Inject @font-face
-                let styleEl = document.getElementById('localFontStyle');
-                if (!styleEl) {
-                    styleEl = document.createElement('style');
-                    styleEl.id = 'localFontStyle';
-                    document.head.appendChild(styleEl);
-                }
-                styleEl.textContent = `@font-face { font-family: '${fontName}'; src: url('${dataUrl}') format('${format}'); font-weight: normal; font-style: normal; }`;
-
-                // Store in settings
-                settings.localFontName = fontName;
-                settings.localFontDataUrl = dataUrl;
-                settings.fontFamily = `'${fontName}', sans-serif`;
-                settings.customFontUrl = '';
-
-                // Clear preset selections
-                document.querySelectorAll('.font-option').forEach(el => el.classList.remove('active'));
-                document.getElementById('customFont').value = '';
-
-                // Show badge + preview
-                document.getElementById('fontLoadedName').textContent = file.name;
-                const badge = document.getElementById('fontLoadedBadge');
-                badge.classList.add('visible');
-
-                const previewEl = document.getElementById('fontPreviewText');
-                previewEl.style.fontFamily = settings.fontFamily;
-                previewEl.classList.add('visible');
-
-                updatePreview();
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function clearLocalFont() {
-            settings.localFontName = '';
-            settings.localFontDataUrl = '';
-            settings.fontFamily = 'Arial, sans-serif';
-
-            const styleEl = document.getElementById('localFontStyle');
-            if (styleEl) styleEl.textContent = '';
-
-            document.getElementById('fontLoadedBadge').classList.remove('visible');
-            document.getElementById('fontPreviewText').classList.remove('visible');
-            document.getElementById('localFontFile').value = '';
-
-            // Restore first preset
-            document.querySelectorAll('.font-option').forEach((el, i) => {
-                el.classList.toggle('active', i === 0);
-            });
-
-            updatePreview();
-        }
-
-        // ─── Font Presets ─────────────────────────────────────────────────────────
-        function selectFont(fontName) {
-            document.querySelectorAll('.font-option').forEach(el => el.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-
-            document.getElementById('customFont').value = '';
-
-            // Clear any local font
-            if (settings.localFontName) {
-                settings.localFontName = '';
-                settings.localFontDataUrl = '';
-                document.getElementById('fontLoadedBadge').classList.remove('visible');
-                document.getElementById('fontPreviewText').classList.remove('visible');
-                document.getElementById('localFontFile').value = '';
-            }
-
-            settings.fontFamily = fontName + ', sans-serif';
-            settings.customFontUrl = '';
-            updatePreview();
-        }
-
-        function loadCustomFont() {
-            const input = document.getElementById('customFont').value.trim();
-            if (!input) return;
-
-            // Clear local font if switching to URL/Google
-            if (settings.localFontName) {
-                settings.localFontName = '';
-                settings.localFontDataUrl = '';
-                document.getElementById('fontLoadedBadge').classList.remove('visible');
-                document.getElementById('fontPreviewText').classList.remove('visible');
-            }
-
-            if (input.startsWith('http')) {
-                settings.customFontUrl = input;
-                settings.fontFamily = 'CustomFont, sans-serif';
-                const link = document.createElement('link');
-                link.rel = 'stylesheet';
-                link.href = input;
-                document.head.appendChild(link);
-            } else {
-                const fontName = input.replace(/\s+/g, '+');
-                settings.customFontUrl = `https://fonts.googleapis.com/css2?family=${fontName}:wght@400;700&display=swap`;
-                settings.fontFamily = input + ', sans-serif';
-                const link = document.createElement('link');
-                link.rel = 'stylesheet';
-                link.href = settings.customFontUrl;
-                document.head.appendChild(link);
-            }
-            document.querySelectorAll('.font-option').forEach(el => el.classList.remove('active'));
-        }
-
-        // ─── RSS ──────────────────────────────────────────────────────────────────
-        async function fetchRssFeed() {
-            if (!settings.rssEnabled) return;
-            const rssUrl = document.getElementById('rssUrl').value;
-            const statusDiv = document.getElementById('rssStatus');
-            const statusText = document.getElementById('rssStatusText');
-            const refreshBtn = document.getElementById('refreshRssBtn');
-
-            statusDiv.style.display = 'flex';
-            statusDiv.className = 'rss-status loading';
-            statusText.textContent = 'Loading RSS feed...';
-            refreshBtn.style.display = 'none';
-
-            try {
-                const controller = new AbortController();
-                const tid = setTimeout(() => controller.abort(), 10000);
-                const response = await fetch('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(rssUrl), { signal: controller.signal });
-                clearTimeout(tid);
-                if (!response.ok) throw new Error('Network error');
-                const data = await response.json();
-                if (data.items && data.items.length > 0) {
-                    currentRssData = data.items.slice(0, 10).map(i => i.title);
-                    statusDiv.className = 'rss-status success';
-                    statusText.textContent = `✓ Loaded ${currentRssData.length} items from RSS`;
-                    refreshBtn.style.display = 'inline-block';
-                    updateTickerContent(currentRssData);
-                } else throw new Error('No items');
-            } catch (err) {
-                statusDiv.className = 'rss-status error';
-                statusText.textContent = '⚠ Failed to load RSS. Using fallback data.';
-                refreshBtn.style.display = 'inline-block';
-                currentRssData = null;
-                updateTickerContent(getFallbackNews());
-            }
-        }
-
-        function forceRssRefresh() { fetchRssFeed(); }
-
-        function getFallbackNews() {
-            return ["Canadian dollar falls amid U.S. tariff uncertainty","Winter storm warnings issued across Ontario and Quebec","B.C. teen who died in Australia remembered as 'bold and alive'","Free income tax clinics open across Canada","Why this butterfly could become Quebec's first insect symbol","Woman injured in Abbotsford trailer fire","Trump delays some tariffs until April","Russia-Ukraine war enters new phase","Climate change affecting Canadian agriculture","New healthcare funding announced by federal government"];
-        }
-
-        function getStaticMessages() {
-            const t = document.getElementById('staticMessages').value;
-            if (t && t.trim()) return t.split('\n').filter(m => m.trim());
-            return ["Welcome to our dealership!","Check out our new Kia models","Open Monday-Saturday 9AM-6PM","Service center available","Financing options available","Test drives welcome","Family owned and operated","Quality vehicles guaranteed"];
-        }
-
-        function escapeHtml(text) {
-            const d = document.createElement('div');
-            d.textContent = text;
-            return d.innerHTML;
-        }
-
-        function updateTickerContent(messages) {
-            const ticker = document.getElementById('ticker');
-            const customText = document.getElementById('customText').value;
-            const customTextColor = document.getElementById('customTextColor').value;
-            const logoUrl = document.getElementById('logoUrl').value;
-
-            const prefixHtml = customText
-                ? `<span style="color:${customTextColor};margin-right:10px;font-weight:bold;font-family:${settings.fontFamily};">${escapeHtml(customText)}</span>`
-                : '';
-            const dividerHtml = logoUrl
-                ? `<span style="display:inline-flex;align-items:center;padding:0 20px;"><img src="${logoUrl}" style="height:30px;filter:brightness(0) invert(1);" onerror="this.style.display='none';this.parentElement.innerHTML='•';"></span>`
-                : `<span style="padding:0 20px;">•</span>`;
-
-            let content = '';
-            messages.forEach(msg => {
-                content += `<span style="display:inline-flex;align-items:center;padding:0 40px;font-family:${settings.fontFamily};">${prefixHtml}${escapeHtml(msg)}</span>`;
-                content += dividerHtml;
-            });
-            ticker.innerHTML = content + content;
-        }
-
-        // ─── Toggles ──────────────────────────────────────────────────────────────
-        function toggleRSS() {
-            settings.rssEnabled = !settings.rssEnabled;
-            const toggle = document.getElementById('rssToggle');
-            const rssSection = document.getElementById('rssSection');
-            const staticSection = document.getElementById('staticSection');
-            const statusDiv = document.getElementById('rssStatus');
-
-            if (settings.rssEnabled) {
-                toggle.classList.add('active');
-                rssSection.style.maxHeight = rssSection.scrollHeight + 'px';
-                staticSection.style.maxHeight = '0';
-                document.getElementById('rssDesc').textContent = 'Live news from RSS feed';
-                statusDiv.style.display = 'flex';
-                fetchRssFeed();
-                if (rssRefreshTimer) clearInterval(rssRefreshTimer);
-                rssRefreshTimer = setInterval(fetchRssFeed, 300000);
-            } else {
-                toggle.classList.remove('active');
-                rssSection.style.maxHeight = '0';
-                staticSection.style.maxHeight = staticSection.scrollHeight + 'px';
-                document.getElementById('rssDesc').textContent = 'Use custom static messages';
-                statusDiv.style.display = 'none';
-                document.getElementById('refreshRssBtn').style.display = 'none';
-                if (rssRefreshTimer) clearInterval(rssRefreshTimer);
-                updatePreview();
-            }
-        }
-
-        function toggleLabel() {
-            settings.labelEnabled = !settings.labelEnabled;
-            const toggle = document.getElementById('labelToggle');
-            const section = document.getElementById('labelSettingsSection');
-
-            if (settings.labelEnabled) {
-                toggle.classList.add('active');
-                section.style.maxHeight = section.scrollHeight + 'px';
-                document.getElementById('labelDesc').textContent = 'Display label on the left side';
-            } else {
-                toggle.classList.remove('active');
-                section.style.maxHeight = '0';
-                document.getElementById('labelDesc').textContent = 'Hide label, full width ticker';
-            }
-            updatePreview();
-        }
-
-        function adjustNumber(id, delta) {
-            const input = document.getElementById(id);
-            let val = parseInt(input.value) || 0;
-            val = Math.max(parseInt(input.min)||0, Math.min(parseInt(input.max)||9999, val + delta));
-            input.value = val;
-            updatePreview();
-        }
-
-        // ─── Full Preview Update ──────────────────────────────────────────────────
-        function updatePreview() {
-            const container = document.getElementById('ticker-container');
-            const label = document.getElementById('ticker-label');
-            const wrap = document.getElementById('ticker-wrap');
-            const ticker = document.getElementById('ticker');
-            const previewCard = document.getElementById('previewCard');
-
-            previewCard.classList.add('updating');
-            setTimeout(() => previewCard.classList.remove('updating'), 300);
-
-            const height = document.getElementById('tickerHeight').value;
-            const bgColor = document.getElementById('bgColor').value;
-            const stripColor = document.getElementById('stripColor').value;
-            const textColor = document.getElementById('textColor').value;
-            const labelText = document.getElementById('labelText').value;
-            const labelWidth = document.getElementById('labelWidth').value;
-            const speed = document.getElementById('scrollSpeed').value;
-            const customText = document.getElementById('customText').value;
-            const customTextColor = document.getElementById('customTextColor').value;
-
-            container.style.height = height + 'px';
-            container.style.background = bgColor;
-            wrap.style.background = stripColor;
-            ticker.style.color = textColor;
-            ticker.style.lineHeight = height + 'px';
-            ticker.style.animationDuration = speed + 's';
-            ticker.style.fontFamily = settings.fontFamily;
-            label.style.fontFamily = settings.fontFamily;
-
-            if (settings.labelEnabled) {
-                label.style.display = 'flex';
-                label.textContent = labelText;
-                label.style.width = labelWidth > 0 ? labelWidth + 'px' : 'auto';
-                label.style.minWidth = labelWidth > 0 ? labelWidth + 'px' : '120px';
-                label.style.lineHeight = height + 'px';
-            } else {
-                label.style.display = 'none';
-            }
-
-            const prefixEl = document.getElementById('previewPrefix');
-            prefixEl.textContent = customText;
-            prefixEl.style.color = customTextColor;
-            prefixEl.style.fontFamily = settings.fontFamily;
-
-            if (settings.rssEnabled) {
-                updateTickerContent(currentRssData || getFallbackNews());
-            } else {
-                updateTickerContent(getStaticMessages());
-            }
-        }
-
-        // ─── Download ─────────────────────────────────────────────────────────────
-        function downloadConfiguredFile() {
-            const filename = document.getElementById('filename').value.trim() || 'ticker';
-            const config = {
-                rssEnabled: settings.rssEnabled,
-                rssUrl: document.getElementById('rssUrl').value,
-                staticMessages: document.getElementById('staticMessages').value,
-                labelEnabled: settings.labelEnabled,
-                labelText: document.getElementById('labelText').value,
-                labelWidth: parseInt(document.getElementById('labelWidth').value) || 120,
-                tickerHeight: parseInt(document.getElementById('tickerHeight').value) || 60,
-                scrollSpeed: parseInt(document.getElementById('scrollSpeed').value) || 120,
-                logoUrl: document.getElementById('logoUrl').value,
-                customText: document.getElementById('customText').value,
-                customTextColor: document.getElementById('customTextColor').value,
-                bgColor: document.getElementById('bgColor').value,
-                stripColor: document.getElementById('stripColor').value,
-                textColor: document.getElementById('textColor').value,
-                fontFamily: settings.fontFamily,
-                customFontUrl: settings.customFontUrl,
-                localFontName: settings.localFontName,
-                localFontDataUrl: settings.localFontDataUrl,
-            };
-
-            const staticArr = config.staticMessages
-                ? config.staticMessages.split('\n').filter(m => m.trim()).map(m => `"${m.replace(/"/g,'\\"')}"`).join(',\n            ')
-                : '';
-
-            // Font CSS for exported file
-            let fontLink = '';
-            let fontFaceBlock = '';
-            let fontCss = `font-family: ${config.fontFamily};`;
-
-            if (config.localFontName && config.localFontDataUrl) {
-                // Embed font as base64 in the exported HTML so it's fully self-contained
-                const ext = config.localFontDataUrl.split(';')[0].split('/')[1] || 'truetype';
-                const formatMap = { ttf: 'truetype', otf: 'opentype', woff: 'woff', woff2: 'woff2', 'x-font-ttf': 'truetype' };
-                const fmt = formatMap[ext] || 'truetype';
-                fontFaceBlock = `@font-face { font-family: '${config.localFontName}'; src: url('${config.localFontDataUrl}') format('${fmt}'); }`;
-                fontCss = `font-family: '${config.localFontName}', sans-serif;`;
-            } else if (config.customFontUrl) {
-                fontLink = `<link rel="stylesheet" href="${config.customFontUrl}">`;
-                fontCss = `font-family: '${config.fontFamily.split(',')[0].trim()}', sans-serif;`;
-            }
-
-            const html = `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>News Ticker</title>
-    ${fontLink}
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #000; overflow: hidden; }
-        ${fontFaceBlock}
-        #ticker-container {
-            width: 100%; height: ${config.tickerHeight}px;
-            background: ${config.bgColor}; display: flex; align-items: center;
-        }
-        #ticker-label {
-            background: #000; color: #fff; padding: 0 20px; height: 100%;
-            display: ${config.labelEnabled ? 'flex' : 'none'}; align-items: center;
-            font-weight: bold; font-size: 16px;
-            min-width: ${config.labelWidth}px; width: ${config.labelWidth}px;
-            ${fontCss}
-        }
-        #ticker-wrap { flex: 1; overflow: hidden; height: 100%; position: relative; background: ${config.stripColor}; }
-        #ticker {
-            display: inline-flex; white-space: nowrap;
-            animation: ticker ${config.scrollSpeed}s linear infinite;
-            height: 100%; line-height: ${config.tickerHeight}px;
-            color: ${config.textColor}; font-size: 20px; font-weight: bold;
-            align-items: center; ${fontCss}
-        }
-        @keyframes ticker { 0% { transform: translate3d(0,0,0); } 100% { transform: translate3d(-50%,0,0); } }
-        .item { display: inline-flex; align-items: center; padding: 0 40px; }
-        .custom-text { color: ${config.customTextColor}; margin-right: 10px; font-weight: bold; }
-        .divider { display: inline-flex; align-items: center; padding: 0 20px; height: 40px; }
-        .divider img { height: 30px; width: auto; vertical-align: middle; filter: brightness(0) invert(1); }
-    </style>
-</head>
-<body>
-    <div id="ticker-container">
-        <div id="ticker-label">${config.labelText}</div>
-        <div id="ticker-wrap"><div id="ticker">Loading...</div></div>
+    <div class="form-group">
+      <div class="toggle-wrap" onclick="toggleRSS()">
+        <div class="ti"><h4>RSS Feed Mode</h4><p id="rssDesc">Use live news from RSS</p></div>
+        <div class="ts" id="rssTs"><div class="tslider"></div></div>
+      </div>
     </div>
-    <script>
-        const settings = {
-            rssEnabled: ${config.rssEnabled},
-            rssUrl: "${config.rssUrl.replace(/"/g,'\\"')}",
-            staticMessages: [${staticArr}],
-            customText: "${config.customText.replace(/"/g,'\\"')}",
-            customTextColor: "${config.customTextColor}",
-            logoUrl: "${config.logoUrl.replace(/"/g,'\\"')}"
-        };
-        const fallbackNews = ["Welcome!","Check out our deals","Open today"];
+    <div class="form-group coll" id="rssSec">
+      <label class="form-label">RSS Feed URL</label>
+      <input type="url" class="form-input" id="rssUrl" value="https://www.cbc.ca/webfeed/rss/rss-topstories" placeholder="https://example.com/feed.xml">
+    </div>
+    <div class="form-group coll closed" id="staticSec">
+      <label class="form-label">Static Messages</label>
+      <textarea class="form-textarea" id="staticMsgs" placeholder="One message per line&#10;Welcome!&#10;Check out our deals"></textarea>
+      <div class="form-hint">Each line = one scrolling message</div>
+    </div>
 
-        function createTickerContent(messages) {
-            let content = '';
-            const prefix = settings.customText ? '<span class="custom-text">' + settings.customText + '<\/span>' : '';
-            const logo = settings.logoUrl
-                ? '<img src="' + settings.logoUrl + '" alt="logo" onerror="this.style.display=\\'none\\';this.parentElement.innerHTML=\\'•\\';">'
-                : '•';
-            messages.forEach(msg => {
-                content += '<span class="item">' + prefix + msg + '<\/span>';
-                content += '<span class="divider">' + logo + '<\/span>';
-            });
-            return content + content;
-        }
+    <div class="divider"></div>
 
-        async function updateTicker() {
-            const ticker = document.getElementById('ticker');
-            if (!settings.rssEnabled) {
-                ticker.innerHTML = createTickerContent(settings.staticMessages.length ? settings.staticMessages : fallbackNews);
-                return;
-            }
-            try {
-                const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(settings.rssUrl));
-                const data = await res.json();
-                if (data.items && data.items.length) {
-                    ticker.innerHTML = createTickerContent(data.items.slice(0,10).map(i => i.title));
-                } else throw new Error('empty');
-            } catch(e) {
-                ticker.innerHTML = createTickerContent(fallbackNews);
-            }
-        }
+    <div class="card-title" style="margin-bottom:14px;">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/></svg>
+      Text &amp; Font
+    </div>
 
-        updateTicker();
-        setInterval(updateTicker, 300000);
-    <\/script>
-</body>
-</html>`;
+    <div class="form-group">
+      <label class="form-label">Font Family</label>
+      <div class="font-grid" id="fontGrid">
+        <div class="font-opt on" onclick="pickFont('Arial')" style="font-family:Arial,sans-serif;">Aa<div class="fn">Arial</div></div>
+        <div class="font-opt" onclick="pickFont('Georgia')" style="font-family:Georgia,serif;">Aa<div class="fn">Georgia</div></div>
+        <div class="font-opt" onclick="pickFont('Impact')" style="font-family:Impact,sans-serif;">Aa<div class="fn">Impact</div></div>
+        <div class="font-opt" onclick="pickFont('Courier New')" style="font-family:'Courier New',monospace;">Aa<div class="fn">Courier</div></div>
+        <div class="font-opt" onclick="pickFont('Verdana')" style="font-family:Verdana,sans-serif;">Aa<div class="fn">Verdana</div></div>
+        <div class="font-opt" onclick="pickFont('Times New Roman')" style="font-family:'Times New Roman',serif;">Aa<div class="fn">Times</div></div>
+      </div>
+      <label class="form-label" style="margin-top:10px;">Google Font or URL</label>
+      <input type="text" class="form-input" id="customFont" placeholder="e.g., Roboto" style="font-family:monospace;margin-bottom:12px;">
 
-            const blob = new Blob([html], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = filename + '.html';
-            document.body.appendChild(a); a.click();
-            document.body.removeChild(a); URL.revokeObjectURL(url);
+      <label class="form-label">Upload Font from Computer</label>
+      <div class="fup-zone" id="fupZone">
+        <input type="file" id="fupFile" accept=".ttf,.otf,.woff,.woff2" onchange="handleFont(event)">
+        <span class="fup-icon">🔤</span>
+        <div class="fup-title">Drop font file here or click to browse</div>
+        <div class="fup-sub">.ttf · .otf · .woff · .woff2</div>
+      </div>
+      <div class="fbadge" id="fbadge">✅ <span class="fname" id="fname">—</span><button class="fclr" onclick="clearFont()">✕</button></div>
+      <div class="fprev" id="fprev">The quick brown fox jumps over the lazy dog</div>
+    </div>
 
-            const btn = document.querySelector('.btn-success');
-            const orig = btn.innerHTML;
-            btn.innerHTML = '✓ Downloaded!';
-            setTimeout(() => btn.innerHTML = orig, 2000);
-        }
+    <div class="form-group">
+      <label class="form-label">Custom Prefix <span class="tt" data-t="Appears before every message">ⓘ</span></label>
+      <input type="text" class="form-input" id="customText" placeholder="e.g., BREAKING: or SALE:" maxlength="20">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Prefix Color</label>
+      <div class="cpw">
+        <div class="cp"><input type="color" id="customTextColor" value="#f97316"></div>
+        <div class="cv" id="customTextColorValue">#f97316</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Divider Logo URL</label>
+      <input type="url" class="form-input" id="logoUrl" value="https://1000logos.net/wp-content/uploads/2021/10/CBC-Logo.png" placeholder="https://example.com/logo.png">
+      <div class="form-hint">Leave blank for bullet •</div>
+    </div>
+  </div>
 
-        // ─── Reset ────────────────────────────────────────────────────────────────
-        function resetDefaults() {
-            if (!confirm('Reset all settings to default?')) return;
-            document.getElementById('rssUrl').value = 'https://www.cbc.ca/webfeed/rss/rss-topstories';
-            document.getElementById('staticMessages').value = '';
-            document.getElementById('customText').value = '';
-            document.getElementById('customTextColor').value = '#f97316';
-            document.getElementById('logoUrl').value = 'https://1000logos.net/wp-content/uploads/2021/10/CBC-Logo.png';
-            document.getElementById('labelText').value = 'CBC NEWS';
-            document.getElementById('labelWidth').value = '120';
-            document.getElementById('tickerHeight').value = '60';
-            document.getElementById('scrollSpeed').value = '120';
-            document.getElementById('bgColor').value = '#1a1a1a';
-            document.getElementById('stripColor').value = '#2d2d2d';
-            document.getElementById('textColor').value = '#ffffff';
-            document.getElementById('filename').value = 'ticker-final';
-            document.getElementById('customFont').value = '';
-            ['customTextColor','bgColor','stripColor','textColor'].forEach(id => {
-                document.getElementById(id + 'Value').textContent = document.getElementById(id).value;
-            });
-            clearLocalFont();
-            settings.fontFamily = 'Arial, sans-serif';
-            settings.customFontUrl = '';
-            document.querySelectorAll('.font-option').forEach((el,i) => el.classList.toggle('active', i===0));
-            if (settings.rssEnabled) toggleRSS();
-            if (!settings.labelEnabled) toggleLabel();
-            currentRssData = null;
-            updatePreview();
-        }
+  <!-- Appearance -->
+  <div class="card">
+    <div class="card-title">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+      Appearance
+    </div>
 
-        init();
-    </script>
+    <div class="form-group">
+      <div class="toggle-wrap" onclick="toggleLabel()">
+        <div class="ti"><h4>Show Label Box</h4><p id="lblDesc">Display label on the left</p></div>
+        <div class="ts on" id="lblTs"><div class="tslider"></div></div>
+      </div>
+    </div>
+    <div class="coll" id="lblSec">
+      <div class="form-group">
+        <label class="form-label">Label Text</label>
+        <input type="text" class="form-input" id="labelText" value="CBC NEWS" maxlength="15">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Label Background</label>
+        <div class="cpw"><div class="cp"><input type="color" id="labelBgColor" value="#000000"></div><div class="cv" id="labelBgColorValue">#000000</div></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Label Text Color</label>
+        <div class="cpw"><div class="cp"><input type="color" id="labelTextColor" value="#ffffff"></div><div class="cv" id="labelTextColorValue">#ffffff</div></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Label Width (px)</label>
+        <div class="nw">
+          <button class="nb" onclick="adj('labelWidth',-10)">−</button>
+          <input type="number" class="form-input ni" id="labelWidth" value="120" min="0" max="500" step="10">
+          <button class="nb" onclick="adj('labelWidth',10)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;">
+      <div class="form-group">
+        <label class="form-label">Background</label>
+        <div class="cpw"><div class="cp"><input type="color" id="bgColor" value="#1a1a1a"></div><div class="cv" id="bgColorValue">#1a1a1a</div></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ticker Strip</label>
+        <div class="cpw"><div class="cp"><input type="color" id="stripColor" value="#2d2d2d"></div><div class="cv" id="stripColorValue">#2d2d2d</div></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Text Color</label>
+        <div class="cpw"><div class="cp"><input type="color" id="textColor" value="#ffffff"></div><div class="cv" id="textColorValue">#ffffff</div></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="form-group">
+      <label class="form-label">Ticker Height (px)</label>
+      <div class="nw">
+        <button class="nb" onclick="adj('tickerHeight',-5)">−</button>
+        <input type="number" class="form-input ni" id="tickerHeight" value="60" min="30" max="200" step="5">
+        <button class="nb" onclick="adj('tickerHeight',5)">+</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Font Size (px)</label>
+      <div class="nw">
+        <button class="nb" onclick="adj('fontSize',-1)">−</button>
+        <input type="number" class="form-input ni" id="fontSize" value="20" min="10" max="80" step="1">
+        <button class="nb" onclick="adj('fontSize',1)">+</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Scroll Speed <span class="tt" data-t="Seconds for full cycle — lower = faster">ⓘ</span></label>
+      <div class="nw">
+        <button class="nb" onclick="adj('scrollSpeed',-10)">−</button>
+        <input type="number" class="form-input ni" id="scrollSpeed" value="120" min="10" max="600" step="10">
+        <button class="nb" onclick="adj('scrollSpeed',10)">+</button>
+      </div>
+      <div class="form-hint">Lower = faster · Higher = slower (seconds)</div>
+    </div>
+  </div>
+
+  <!-- Export -->
+  <div class="card" style="grid-column:1/-1;">
+    <div class="card-title">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+      Export &amp; Saved Configs
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Saved Configs</label>
+      <div id="savedList"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="form-group">
+      <label class="form-label">Filename</label>
+      <div style="display:flex;gap:9px;align-items:center;">
+        <input type="text" class="form-input" id="filename" value="ticker-final" placeholder="my-ticker" style="flex:1;">
+        <span style="color:var(--text-muted);font-weight:600;padding:11px;background:var(--secondary);border-radius:8px;border:2px solid rgba(255,255,255,.1);">.html</span>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-success" onclick="download()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        Download HTML
+      </button>
+      <button class="btn btn-secondary" onclick="previewInTab()">🚀 Test Live</button>
+      <button class="btn btn-secondary" onclick="copyEmbed()">📋 Copy Embed</button>
+      <button class="btn btn-outline" onclick="resetAll()">↺ Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save Modal -->
+<div class="modal-ov" id="saveModal" onclick="modalOutside(event)">
+  <div class="modal">
+    <h3>💾 Save Current Config</h3>
+    <p>Name this setup so you can reload it any time.</p>
+    <label class="form-label">Config Name</label>
+    <input type="text" class="form-input" id="saveConfigName" placeholder="e.g., CBC Breaking News" maxlength="30">
+    <div class="modal-acts">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-success" onclick="saveConfig()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+let S = {
+  rssEnabled:false, labelEnabled:true,
+  fontFamily:'Arial, sans-serif', customFontUrl:'',
+  localFontName:'', localFontDataUrl:'',
+};
+let rssData=null, rssTimer=null, paused=false;
+
+// ── PRESETS ────────────────────────────────────────────────────────────────
+const PRESETS = {
+  breaking:{bgColor:'#cc0000',stripColor:'#ff0000',textColor:'#ffffff',labelBgColor:'#000000',labelTextColor:'#ffffff',customText:'BREAKING:',customTextColor:'#ffff00',labelText:'BREAKING',tickerHeight:65,fontSize:22,scrollSpeed:80},
+  sports:  {bgColor:'#0a2342',stripColor:'#1a3a6b',textColor:'#ffffff',labelBgColor:'#f59e0b',labelTextColor:'#000000',customText:'',customTextColor:'#f59e0b',labelText:'SPORTS',tickerHeight:60,fontSize:20,scrollSpeed:100},
+  retail:  {bgColor:'#064e3b',stripColor:'#065f46',textColor:'#ffffff',labelBgColor:'#22c55e',labelTextColor:'#000000',customText:'SALE:',customTextColor:'#fde68a',labelText:'DEALS',tickerHeight:60,fontSize:20,scrollSpeed:110},
+  weather: {bgColor:'#0c4a6e',stripColor:'#075985',textColor:'#e0f2fe',labelBgColor:'#0284c7',labelTextColor:'#ffffff',customText:'',customTextColor:'#7dd3fc',labelText:'WEATHER',tickerHeight:60,fontSize:20,scrollSpeed:130},
+  corporate:{bgColor:'#1e1b4b',stripColor:'#312e81',textColor:'#e0e7ff',labelBgColor:'#7c3aed',labelTextColor:'#ffffff',customText:'',customTextColor:'#c4b5fd',labelText:'LIVE',tickerHeight:55,fontSize:18,scrollSpeed:140},
+  default: {bgColor:'#1a1a1a',stripColor:'#2d2d2d',textColor:'#ffffff',labelBgColor:'#000000',labelTextColor:'#ffffff',customText:'',customTextColor:'#f97316',labelText:'CBC NEWS',tickerHeight:60,fontSize:20,scrollSpeed:120},
+};
+
+function applyPreset(name){
+  const p=PRESETS[name]; if(!p) return;
+  document.querySelectorAll('.preset-chip').forEach(c=>c.classList.remove('active'));
+  const chip=document.getElementById('p-'+name); if(chip) chip.classList.add('active');
+  Object.keys(p).forEach(k=>{
+    const el=document.getElementById(k); if(!el) return;
+    el.value=p[k];
+    const vEl=document.getElementById(k+'Value'); if(vEl) vEl.textContent=p[k];
+  });
+  updatePreview();
+}
+
+// ── THEME ──────────────────────────────────────────────────────────────────
+function toggleTheme(){
+  const html=document.documentElement;
+  const nt=html.getAttribute('data-theme')==='light'?'dark':'light';
+  html.setAttribute('data-theme',nt);
+  document.getElementById('tIcon').textContent=nt==='light'?'🌙':'☀️';
+  document.getElementById('tTxt').textContent=nt==='light'?'Dark':'Light';
+  localStorage.setItem('theme',nt);
+}
+function loadTheme(){
+  const s=localStorage.getItem('theme')||'dark';
+  document.documentElement.setAttribute('data-theme',s);
+  document.getElementById('tIcon').textContent=s==='light'?'🌙':'☀️';
+  document.getElementById('tTxt').textContent=s==='light'?'Dark':'Light';
+}
+
+// ── DEBOUNCE ───────────────────────────────────────────────────────────────
+function deb(fn,ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+function init(){
+  loadTheme(); setupListeners(); setupDrag(); setupHover();
+  renderSaved(); updatePreview();
+}
+
+function setupListeners(){
+  const colorIds=['customTextColor','bgColor','stripColor','textColor','labelBgColor','labelTextColor'];
+  colorIds.forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.addEventListener('input',e=>{
+      const vEl=document.getElementById(id+'Value'); if(vEl) vEl.textContent=e.target.value;
+      updatePreview();
+    });
+  });
+  ['customText','labelText','logoUrl','filename'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.addEventListener('input',deb(updatePreview,80));
+  });
+  document.getElementById('customFont').addEventListener('input',deb(()=>{loadCustomFont();updatePreview();},400));
+  document.getElementById('rssUrl').addEventListener('change',()=>{if(S.rssEnabled) fetchRss();});
+  document.getElementById('staticMsgs').addEventListener('input',deb(()=>{if(!S.rssEnabled) updatePreview();},160));
+  ['labelWidth','tickerHeight','scrollSpeed','fontSize'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.addEventListener('input',updatePreview);
+  });
+  document.getElementById('saveConfigName').addEventListener('keydown',e=>{if(e.key==='Enter') saveConfig();});
+}
+
+// ── PAUSE ──────────────────────────────────────────────────────────────────
+function setupHover(){
+  const tw=document.getElementById('tw');
+  tw.addEventListener('mouseenter',()=>document.getElementById('ticker').classList.add('paused'));
+  tw.addEventListener('mouseleave',()=>{if(!paused) document.getElementById('ticker').classList.remove('paused');});
+}
+function togglePause(){
+  paused=!paused;
+  document.getElementById('ticker').classList.toggle('paused',paused);
+  document.getElementById('pauseBtn').textContent=paused?'▶ Resume':'⏸ Pause';
+}
+
+// ── DRAG & DROP FONT ───────────────────────────────────────────────────────
+function setupDrag(){
+  const z=document.getElementById('fupZone');
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('drag');});
+  z.addEventListener('dragleave',()=>z.classList.remove('drag'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('drag');const f=e.dataTransfer.files[0];if(f) procFont(f);});
+}
+function handleFont(e){const f=e.target.files[0];if(f) procFont(f);}
+function procFont(file){
+  if(!/\.(ttf|otf|woff|woff2)$/i.test(file.name)){alert('Use .ttf, .otf, .woff, or .woff2');return;}
+  const r=new FileReader();
+  r.onload=e=>{
+    const data=e.target.result;
+    const ext=file.name.split('.').pop().toLowerCase();
+    const fmt={ttf:'truetype',otf:'opentype',woff:'woff',woff2:'woff2'}[ext]||'truetype';
+    const fn='LF_'+file.name.replace(/\.[^.]+$/,'').replace(/[^a-zA-Z0-9_-]/g,'_');
+    let st=document.getElementById('lfStyle');
+    if(!st){st=document.createElement('style');st.id='lfStyle';document.head.appendChild(st);}
+    st.textContent=`@font-face{font-family:'${fn}';src:url('${data}') format('${fmt}');}`;
+    S.localFontName=fn; S.localFontDataUrl=data; S.fontFamily=`'${fn}',sans-serif`; S.customFontUrl='';
+    document.querySelectorAll('.font-opt').forEach(el=>el.classList.remove('on'));
+    document.getElementById('customFont').value='';
+    document.getElementById('fname').textContent=file.name;
+    document.getElementById('fbadge').classList.add('on');
+    const fp=document.getElementById('fprev'); fp.style.fontFamily=S.fontFamily; fp.classList.add('on');
+    updatePreview();
+  };
+  r.readAsDataURL(file);
+}
+function clearFont(silent=false){
+  S.localFontName=''; S.localFontDataUrl='';
+  const st=document.getElementById('lfStyle'); if(st) st.textContent='';
+  document.getElementById('fbadge').classList.remove('on');
+  document.getElementById('fprev').classList.remove('on');
+  document.getElementById('fupFile').value='';
+  if(!silent){S.fontFamily='Arial, sans-serif';document.querySelectorAll('.font-opt').forEach((el,i)=>el.classList.toggle('on',i===0));updatePreview();}
+}
+function pickFont(name){
+  document.querySelectorAll('.font-opt').forEach(el=>el.classList.remove('on'));
+  event.currentTarget.classList.add('on');
+  document.getElementById('customFont').value='';
+  if(S.localFontName) clearFont(true);
+  S.fontFamily=name+', sans-serif'; S.customFontUrl=''; updatePreview();
+}
+function loadCustomFont(){
+  const v=document.getElementById('customFont').value.trim(); if(!v) return;
+  if(S.localFontName) clearFont(true);
+  const url=v.startsWith('http')?v:`https://fonts.googleapis.com/css2?family=${v.replace(/\s+/g,'+')}:wght@400;700&display=swap`;
+  S.customFontUrl=url; S.fontFamily=(v.startsWith('http')?'CustomFont':v)+', sans-serif';
+  const lk=document.createElement('link'); lk.rel='stylesheet'; lk.href=url; document.head.appendChild(lk);
+  document.querySelectorAll('.font-opt').forEach(el=>el.classList.remove('on'));
+}
+
+// ── RSS ────────────────────────────────────────────────────────────────────
+async function fetchRss(){
+  if(!S.rssEnabled) return;
+  const url=document.getElementById('rssUrl').value;
+  const sd=document.getElementById('rssSt'), st=document.getElementById('rssStTxt'), rb=document.getElementById('rssRfr');
+  sd.style.display='flex'; sd.className='rss-st loading'; st.textContent='Loading RSS...'; rb.style.display='none';
+  try{
+    const ctrl=new AbortController(); const tid=setTimeout(()=>ctrl.abort(),10000);
+    const res=await fetch('https://api.rss2json.com/v1/api.json?rss_url='+encodeURIComponent(url),{signal:ctrl.signal});
+    clearTimeout(tid); if(!res.ok) throw 0;
+    const d=await res.json();
+    if(d.items&&d.items.length){
+      rssData=d.items.slice(0,10).map(i=>i.title);
+      sd.className='rss-st success'; st.textContent=`✓ ${rssData.length} headlines loaded`; rb.style.display='inline-block';
+      updateContent(rssData);
+    } else throw 0;
+  }catch{
+    sd.className='rss-st error'; st.textContent='⚠ RSS failed — using fallback'; rb.style.display='inline-block';
+    rssData=null; updateContent(fallback());
+  }
+}
+function forceRssRefresh(){fetchRss();}
+function fallback(){return["Canadian dollar falls amid tariff uncertainty","Winter storm warnings across Ontario","Free income tax clinics open across Canada","New healthcare funding announced","Climate change affecting Canadian agriculture"];}
+function staticMsgs(){
+  const t=document.getElementById('staticMsgs').value;
+  return t&&t.trim()?t.split('\n').filter(m=>m.trim()):["Welcome to our dealership!","Check out our new models","Open Mon–Sat 9AM–6PM","Financing available","Test drives welcome"];
+}
+function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+
+function updateContent(msgs){
+  const ticker=document.getElementById('ticker');
+  const ct=document.getElementById('customText').value;
+  const cc=document.getElementById('customTextColor').value;
+  const logo=document.getElementById('logoUrl').value;
+  const pfx=ct?`<span style="color:${cc};margin-right:10px;font-weight:bold;font-family:${S.fontFamily};">${esc(ct)}</span>`:'';
+  const div=logo
+    ?`<span style="display:inline-flex;align-items:center;padding:0 20px;"><img src="${logo}" style="height:30px;filter:brightness(0) invert(1);" onerror="this.style.display='none';this.parentElement.innerHTML='•';"></span>`
+    :`<span style="padding:0 20px;">•</span>`;
+  let h=''; msgs.forEach(m=>{h+=`<span style="display:inline-flex;align-items:center;padding:0 40px;font-family:${S.fontFamily};">${pfx}${esc(m)}</span>${div}`;});
+  ticker.innerHTML=h+h;
+}
+
+// ── TOGGLES ────────────────────────────────────────────────────────────────
+function toggleRSS(){
+  S.rssEnabled=!S.rssEnabled;
+  const ts=document.getElementById('rssTs');
+  const rs=document.getElementById('rssSec'), ss=document.getElementById('staticSec');
+  const sd=document.getElementById('rssSt');
+  if(S.rssEnabled){ts.classList.add('on');rs.style.maxHeight=rs.scrollHeight+'px';ss.style.maxHeight='0';document.getElementById('rssDesc').textContent='Live news from RSS';sd.style.display='flex';fetchRss();if(rssTimer) clearInterval(rssTimer);rssTimer=setInterval(fetchRss,300000);}
+  else{ts.classList.remove('on');rs.style.maxHeight='0';ss.style.maxHeight=ss.scrollHeight+'px';document.getElementById('rssDesc').textContent='Use custom static messages';sd.style.display='none';document.getElementById('rssRfr').style.display='none';if(rssTimer) clearInterval(rssTimer);updatePreview();}
+}
+function toggleLabel(){
+  S.labelEnabled=!S.labelEnabled;
+  const ts=document.getElementById('lblTs'), sec=document.getElementById('lblSec');
+  if(S.labelEnabled){ts.classList.add('on');sec.style.maxHeight=sec.scrollHeight+'px';document.getElementById('lblDesc').textContent='Display label on the left';}
+  else{ts.classList.remove('on');sec.style.maxHeight='0';document.getElementById('lblDesc').textContent='Hide label — full width ticker';}
+  updatePreview();
+}
+function adj(id,delta){
+  const el=document.getElementById(id);
+  let v=parseInt(el.value)||0;
+  v=Math.max(parseInt(el.min)||0,Math.min(parseInt(el.max)||9999,v+delta));
+  el.value=v; updatePreview();
+}
+
+// ── UPDATE PREVIEW ─────────────────────────────────────────────────────────
+function updatePreview(){
+  const tc=document.getElementById('tc');
+  const tl=document.getElementById('tl');
+  const tw=document.getElementById('tw');
+  const ticker=document.getElementById('ticker');
+  const outer=document.getElementById('previewOuter');
+  const card=document.getElementById('previewCard');
+
+  card.classList.add('upd'); setTimeout(()=>card.classList.remove('upd'),300);
+
+  const h   = parseInt(document.getElementById('tickerHeight').value)||60;
+  const bg  = document.getElementById('bgColor').value;
+  const sc  = document.getElementById('stripColor').value;
+  const tc2 = document.getElementById('textColor').value;
+  const lbg = document.getElementById('labelBgColor').value;
+  const ltc = document.getElementById('labelTextColor').value;
+  const lTxt= document.getElementById('labelText').value;
+  const lW  = parseInt(document.getElementById('labelWidth').value)||120;
+  const spd = parseInt(document.getElementById('scrollSpeed').value)||120;
+  const fs  = parseInt(document.getElementById('fontSize').value)||20;
+  const ct  = document.getElementById('customText').value;
+  const cc  = document.getElementById('customTextColor').value;
+
+  // ── background: both the container AND the outer preview wrapper update ──
+  tc.style.background = bg;
+  outer.style.background = bg;
+
+  tw.style.background = sc;
+  ticker.style.color = tc2;
+  ticker.style.animationDuration = spd+'s';
+  ticker.style.fontSize = fs+'px';
+  ticker.style.fontFamily = S.fontFamily;
+  tl.style.fontFamily = S.fontFamily;
+
+  if(S.labelEnabled){
+    tl.style.display='flex'; tl.textContent=lTxt;
+    tl.style.background=lbg; tl.style.color=ltc;
+    tl.style.width=lW+'px'; tl.style.minWidth=lW+'px';
+  } else { tl.style.display='none'; }
+
+  // also update body background for full immersion
+  const isDark=!document.documentElement.getAttribute('data-theme')||document.documentElement.getAttribute('data-theme')==='dark';
+  document.body.style.background=isDark
+    ?`linear-gradient(135deg, ${bg} 0%, ${bg}cc 100%)`
+    :`linear-gradient(135deg, ${bg}33 0%, ${bg}11 100%)`;
+
+  const pfxEl=document.getElementById('lpPfx');
+  pfxEl.textContent=ct; pfxEl.style.color=cc; pfxEl.style.fontFamily=S.fontFamily;
+  document.getElementById('lpTxt').style.fontFamily=S.fontFamily;
+  document.getElementById('lpTxt').style.color=tc2;
+
+  if(S.rssEnabled) updateContent(rssData||fallback());
+  else updateContent(staticMsgs());
+}
+
+// ── SAVE / LOAD ────────────────────────────────────────────────────────────
+function openSaveModal(){document.getElementById('saveModal').classList.add('on');setTimeout(()=>document.getElementById('saveConfigName').focus(),120);}
+function closeModal(){document.getElementById('saveModal').classList.remove('on');document.getElementById('saveConfigName').value='';}
+function modalOutside(e){if(e.target===document.getElementById('saveModal')) closeModal();}
+
+function gather(){
+  return{
+    rssEnabled:S.rssEnabled,labelEnabled:S.labelEnabled,
+    fontFamily:S.fontFamily,customFontUrl:S.customFontUrl,
+    rssUrl:document.getElementById('rssUrl').value,
+    staticMessages:document.getElementById('staticMsgs').value,
+    labelText:document.getElementById('labelText').value,
+    labelWidth:document.getElementById('labelWidth').value,
+    tickerHeight:document.getElementById('tickerHeight').value,
+    fontSize:document.getElementById('fontSize').value,
+    scrollSpeed:document.getElementById('scrollSpeed').value,
+    logoUrl:document.getElementById('logoUrl').value,
+    customText:document.getElementById('customText').value,
+    customTextColor:document.getElementById('customTextColor').value,
+    bgColor:document.getElementById('bgColor').value,
+    stripColor:document.getElementById('stripColor').value,
+    textColor:document.getElementById('textColor').value,
+    labelBgColor:document.getElementById('labelBgColor').value,
+    labelTextColor:document.getElementById('labelTextColor').value,
+  };
+}
+
+function saveConfig(){
+  const name=document.getElementById('saveConfigName').value.trim();
+  if(!name){document.getElementById('saveConfigName').style.borderColor='var(--danger)';return;}
+  const all=JSON.parse(localStorage.getItem('tkConfigs')||'{}');
+  all[name]=gather(); localStorage.setItem('tkConfigs',JSON.stringify(all));
+  closeModal(); renderSaved(); toast(`✅ Saved "${name}"`);
+}
+
+function loadConfig(name){
+  const all=JSON.parse(localStorage.getItem('tkConfigs')||'{}');
+  const c=all[name]; if(!c) return;
+  const colorFields=['bgColor','stripColor','textColor','customTextColor','labelBgColor','labelTextColor'];
+  colorFields.forEach(k=>{if(c[k]){const el=document.getElementById(k);if(el) el.value=c[k];const vEl=document.getElementById(k+'Value');if(vEl) vEl.textContent=c[k];}});
+  ['labelText','labelWidth','tickerHeight','fontSize','scrollSpeed','logoUrl','customText','rssUrl','staticMessages'].forEach(k=>{const el=document.getElementById(k);if(el&&c[k]!==undefined) el.value=c[k];});
+  S.fontFamily=c.fontFamily||'Arial, sans-serif'; S.customFontUrl=c.customFontUrl||'';
+  if(c.rssEnabled!==S.rssEnabled) toggleRSS();
+  if(c.labelEnabled!==S.labelEnabled) toggleLabel();
+  updatePreview(); toast(`📂 Loaded "${name}"`);
+}
+
+function deleteConfig(name){
+  if(!confirm(`Delete "${name}"?`)) return;
+  const all=JSON.parse(localStorage.getItem('tkConfigs')||'{}');
+  delete all[name]; localStorage.setItem('tkConfigs',JSON.stringify(all)); renderSaved();
+}
+
+function renderSaved(){
+  const el=document.getElementById('savedList');
+  const all=JSON.parse(localStorage.getItem('tkConfigs')||'{}');
+  const keys=Object.keys(all);
+  if(!keys.length){el.innerHTML='<div class="no-saves">No saved configs yet — click 💾 Save Config to store your setup</div>';return;}
+  el.innerHTML='<div class="saved-chips">'+keys.map(k=>`<div class="saved-chip" onclick="loadConfig('${k.replace(/'/g,"\\'")}')">📄 ${esc(k)}<button class="sdel" onclick="event.stopPropagation();deleteConfig('${k.replace(/'/g,"\\'")}')">✕</button></div>`).join('')+'</div>';
+}
+
+// ── TOAST ──────────────────────────────────────────────────────────────────
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.opacity='1';
+  clearTimeout(t._t); t._t=setTimeout(()=>{t.style.opacity='0';},2400);
+}
+
+// ── EXPORT BUILD ───────────────────────────────────────────────────────────
+function buildHtml(){
+  const c={...gather(),localFontName:S.localFontName,localFontDataUrl:S.localFontDataUrl};
+  const msgs=c.staticMessages?c.staticMessages.split('\n').filter(m=>m.trim()).map(m=>`"${m.replace(/"/g,'\\"')}"`).join(','):'';
+  let fontLink='',fontFace='',fontCss=`font-family:${c.fontFamily};`;
+  if(c.localFontName&&c.localFontDataUrl){
+    const ext=c.localFontDataUrl.split(';')[0].split('/')[1]||'truetype';
+    const fm={ttf:'truetype',otf:'opentype',woff:'woff',woff2:'woff2','x-font-ttf':'truetype'};
+    fontFace=`@font-face{font-family:'${c.localFontName}';src:url('${c.localFontDataUrl}') format('${fm[ext]||'truetype'}');}`;
+    fontCss=`font-family:'${c.localFontName}',sans-serif;`;
+  } else if(c.customFontUrl){fontLink=`<link rel="stylesheet" href="${c.customFontUrl}">`;fontCss=`font-family:${c.fontFamily};`;}
+  return`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>News Ticker</title>${fontLink}
+<style>*{margin:0;padding:0;box-sizing:border-box;}body{background:#000;overflow:hidden;}
+${fontFace}
+#tc{width:100%;height:${c.tickerHeight}px;background:${c.bgColor};display:flex;align-items:center;}
+#tl{background:${c.labelBgColor};color:${c.labelTextColor};padding:0 20px;height:100%;
+  display:${c.labelEnabled?'flex':'none'};align-items:center;font-weight:bold;
+  font-size:16px;min-width:${c.labelWidth}px;width:${c.labelWidth}px;${fontCss}}
+#tw{flex:1;overflow:hidden;height:100%;position:relative;background:${c.stripColor};}
+#tk{display:inline-flex;white-space:nowrap;animation:tkr ${c.scrollSpeed}s linear infinite;
+  height:100%;color:${c.textColor};font-size:${c.fontSize||20}px;font-weight:bold;align-items:center;${fontCss}}
+@keyframes tkr{0%{transform:translate3d(0,0,0);}100%{transform:translate3d(-50%,0,0);}}
+.item{display:inline-flex;align-items:center;padding:0 40px;}
+.ct{color:${c.customTextColor};margin-right:10px;font-weight:bold;}
+.dv{display:inline-flex;align-items:center;padding:0 20px;}
+.dv img{height:30px;filter:brightness(0) invert(1);}
+</style></head><body>
+<div id="tc"><div id="tl">${esc(c.labelText)}</div><div id="tw"><div id="tk">Loading...</div></div></div>
+<script>
+const S={rssEnabled:${c.rssEnabled},rssUrl:"${c.rssUrl.replace(/"/g,'\\"')}",
+  msgs:[${msgs}],ct:"${c.customText.replace(/"/g,'\\"')}",
+  cc:"${c.customTextColor}",logo:"${c.logoUrl.replace(/"/g,'\\"')}"};
+const FB=["Welcome!","Check out our deals","Open today"];
+function render(a){
+  const p=S.ct?'<span class="ct">'+S.ct+'<\\/span>':'';
+  const d=S.logo?'<img src="'+S.logo+'" onerror="this.style.display=\\'none\\';this.parentElement.innerHTML=\\'•\\';">':'•';
+  let h='';a.forEach(m=>{h+='<span class="item">'+p+m+'<\\/span><span class="dv">'+d+'<\\/span>';});
+  document.getElementById('tk').innerHTML=h+h;
+}
+async function load(){
+  if(!S.rssEnabled){render(S.msgs.length?S.msgs:FB);return;}
+  try{const r=await fetch('https://api.rss2json.com/v1/api.json?rss_url='+encodeURIComponent(S.rssUrl));
+    const d=await r.json();if(d.items&&d.items.length){render(d.items.slice(0,10).map(i=>i.title));}else throw 0;
+  }catch{render(FB);}
+}
+load();setInterval(load,300000);
+<\/script></body></html>`;
+}
+
+function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+
+function download(){
+  const fn=document.getElementById('filename').value.trim()||'ticker';
+  const blob=new Blob([buildHtml()],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=fn+'.html';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  const btn=document.querySelector('.btn-success'); const orig=btn.innerHTML;
+  btn.innerHTML='✅ Downloaded!'; setTimeout(()=>btn.innerHTML=orig,2000);
+}
+
+function previewInTab(){
+  const blob=new Blob([buildHtml()],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  window.open(url,'_blank'); setTimeout(()=>URL.revokeObjectURL(url),10000);
+}
+
+function copyEmbed(){
+  const h=parseInt(document.getElementById('tickerHeight').value)||60;
+  const code=`<iframe src="YOUR_TICKER_URL.html" width="100%" height="${h}" frameborder="0" scrolling="no" style="display:block;"></iframe>`;
+  navigator.clipboard.writeText(code).then(()=>toast('📋 Embed code copied!')).catch(()=>prompt('Copy:',code));
+}
+
+function resetAll(){
+  if(!confirm('Reset all settings?')) return;
+  applyPreset('default');
+  document.getElementById('rssUrl').value='https://www.cbc.ca/webfeed/rss/rss-topstories';
+  document.getElementById('staticMsgs').value='';
+  document.getElementById('logoUrl').value='https://1000logos.net/wp-content/uploads/2021/10/CBC-Logo.png';
+  document.getElementById('filename').value='ticker-final';
+  document.getElementById('customFont').value='';
+  S.fontFamily='Arial, sans-serif'; S.customFontUrl='';
+  clearFont(true);
+  document.querySelectorAll('.font-opt').forEach((el,i)=>el.classList.toggle('on',i===0));
+  document.querySelectorAll('.preset-chip').forEach(c=>c.classList.remove('active'));
+  document.getElementById('p-default').classList.add('active');
+  if(S.rssEnabled) toggleRSS();
+  if(!S.labelEnabled) toggleLabel();
+  rssData=null; updatePreview();
+}
+
+init();
+</script>
 </body>
 </html>
